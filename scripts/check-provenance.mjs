@@ -17,6 +17,8 @@ export const DENYLIST = [
   { pattern: /\bworkspaces-run\.mjs\b/, label: 'Dragonboat script workspaces-run.mjs' },
   { pattern: /\bbuild-chain-audit-baseline\b/, label: 'Dragonboat build-chain audit baseline' },
   { pattern: /SPDX-License-Identifier:\s*Apache-2\.0/, label: 'Apache-2.0 SPDX header' },
+  { pattern: /--profile[= ](?!specter-preview(?![\w-]))\S+/, label: 'AWS CLI profile other than specter-preview' },
+  { pattern: /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/, label: 'AWS access key ID' },
 ];
 
 const SELF = 'scripts/check-provenance.mjs';

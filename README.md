@@ -43,6 +43,7 @@ These arrive with later FP-00 PRs and are not runnable yet:
 - `SECURITY.md`: secret handling
 - `docs/development/adapters.md`: SOP provider keys and the CI check list
 - `docs/architecture/component-index.md`: component ownership
+- `docs/ops/preview.md`: the per-PR preview stack and how the owner deploys it
 - `docs/provenance.md` and `DEPENDENCIES.md`: where things come from
 
 ## License

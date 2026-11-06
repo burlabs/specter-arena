@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
  * @typedef {{ packages?: Record<string, LockNode> }} Lockfile
  */
 
-export const DEFAULT_LOCKFILES = ['package-lock.json'];
+export const DEFAULT_LOCKFILES = ['package-lock.json', 'infra/package-lock.json'];
 
 /**
  * @param {LockNode} node

@@ -30,7 +30,7 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI
 
 - **One open PR at a time for shared files.** Root `package.json` and `package-lock.json`, `.github/workflows/ci.yml`, `infra/package*.json`, `backend/uv.lock`, and `requirements.txt` are changed by one open PR at a time. A PR that changes a manifest regenerates its lock in the same PR.
 - **Draft PRs only.** Agents open draft PRs. A human publishes, reviews, and merges.
-- **No settings or cloud changes.** Agents never change repository settings and never call AWS. Preview infrastructure is deployed by Eric.
+- **No settings or cloud changes.** Agents never change repository settings and never call AWS. Preview infrastructure (`infra/`) is deployed by Eric; agents may run `npm ci`, `typecheck`, `synth` and `test` in `infra/`, never `bootstrap`, `deploy` or `destroy` (`docs/ops/preview.md`).
 - **No secrets.** Nothing secret is committed. `.env` files are ignored; `.env.example` holds placeholders only.
 - **Nothing copied from Dragonboat.** `burlabs/dragonboat-cms` is a read-only pattern reference. See `docs/provenance.md`.
 - **No root `pyproject.toml`.** Crew refuses one on the desktop interpreter. Python project config lives in `backend/pyproject.toml`.

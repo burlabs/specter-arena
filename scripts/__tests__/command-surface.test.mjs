@@ -32,7 +32,7 @@ const CI_CHECKS = [
   'e2e-smoke',
 ];
 
-const CURRENT_JOBS = CI_CHECKS.slice(0, 9);
+const CURRENT_JOBS = CI_CHECKS.slice(0, 10);
 
 /**
  * npm commands referenced in a markdown document, skipping any section whose
@@ -144,5 +144,39 @@ describe('ci.yml', () => {
 
   it('never uses pull_request_target', () => {
     assert.equal(ci.includes('pull_request_target'), false);
+  });
+
+  it('installs both npm locks on Linux and synthesizes the preview stack offline', () => {
+    assert.match(ci, /run: npm ci\n\s+working-directory: infra/);
+    assert.match(ci, /cdk-synth:[\s\S]*run: npm run synth[\s\S]*run: npm test/);
+    assert.equal(/aws-actions\/configure-aws-credentials/.test(ci), false);
+  });
+});
+
+describe('preview workflows', () => {
+  for (const file of ['.github/workflows/preview.yml', '.github/workflows/preview-cleanup.yml']) {
+    const workflow = read(file);
+
+    it(`${file} runs only for same-repository PRs in the preview environment`, () => {
+      assert.equal(workflow.includes('pull_request_target'), false);
+      assert.match(workflow, /if: github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+      assert.match(workflow, /environment: preview/);
+      assert.match(workflow, /id-token: write/);
+    });
+
+    it(`${file} skips with a notice when the preview variables are unset`, () => {
+      assert.match(workflow, /if \[ -z "\$PREVIEW_ROLE_ARN" \]/);
+      assert.match(workflow, /::notice title=Preview[^:]*::preview infrastructure not configured/);
+      assert.match(workflow, /configured=false/);
+    });
+  }
+
+  it('posts a URL only after a successful upload, built from the configured domain', () => {
+    const preview = read('.github/workflows/preview.yml');
+    const upload = preview.indexOf('aws s3 sync ui/preview-dist');
+    const comment = preview.indexOf('gh pr comment');
+    assert.ok(upload > 0 && comment > upload);
+    assert.match(preview, /url="https:\/\/\$\{PREVIEW_DOMAIN\}\/pr-\$\{PR_NUMBER\}\/"/);
+    assert.equal((preview.match(/https:\/\//g) ?? []).length, 1);
   });
 });

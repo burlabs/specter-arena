@@ -27,7 +27,7 @@ The final set has 13 jobs. Each PR in the FP-00 sequence adds the jobs it can ma
 | `lockfile-linux` | PR-1 Foundation | `npm ci` on `ubuntu-latest` plus `npm run check:lock` (which also checks `requirements.txt` from PR-2) |
 | `lock-agreement` | PR-2 Backend | `uv lock --check`, and the `uv export` output matches the committed `requirements.txt` |
 | `backend-smoke` | PR-2 Backend | Crew-style deps-only start of `backend.app:app`; `GET /health` returns 200 |
-| `cdk-synth` | PR-3 Preview infrastructure | Offline CDK synth and template assertions in `infra/` |
+| `cdk-synth` | PR-3 Preview infrastructure | In `infra/`: `npm ci`, `typecheck`, offline `synth`, and Vitest template assertions, with no AWS credentials |
 | `build` | PR-4 UI stub | The Vite library build writes `ui/dist/index.mjs` |
 | `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/` |
 | `e2e-smoke` | PR-4 UI stub | Playwright Chromium smoke against the built preview harness |
@@ -36,7 +36,7 @@ A PR with zero registered checks is not passing. The required-check list in `doc
 
 ## Ephemeral dev environment
 
-`deploy.devEnv` is the per-PR preview: S3 and CloudFront in a dedicated AWS account, deployed by `.github/workflows/preview.yml`. It arrives with PR-3 and goes live after Eric deploys the stack. Until then, a user-visible PR carries a documented human-approved exception instead of a URL.
+`deploy.devEnv` is the per-PR preview: S3 and CloudFront in AWS account `640822987719`, uploaded by `.github/workflows/preview.yml`, which posts the URL on the PR. It goes live once the owner deploys the `infra/` stack and sets the `preview` environment variables (`docs/ops/preview.md`). Until then the workflow prints `preview infrastructure not configured`, and a user-visible PR carries a documented human-approved exception instead of a URL.
 
 ## External tooling
 
