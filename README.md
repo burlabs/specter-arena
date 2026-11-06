@@ -5,7 +5,7 @@ A Kiro Crew app, built in the open for Kiroween 2026. This repository is at its 
 ## Prerequisites
 
 - Node 26 and npm 11 (`.nvmrc` pins the Node major)
-- Python 3.12 and uv 0.13, from the backend PR onward
+- Python 3.12 and uv 0.13 (`.python-version` pins 3.12, the version Crew bundles)
 
 ## Commands
 
@@ -21,11 +21,11 @@ npm run coverage
 
 | Command | What it does |
 |---|---|
-| `npm run lint` | ESLint over the repository |
-| `npm run typecheck` | `tsc --noEmit` with `checkJs` over `scripts/` |
-| `npm test` | Node's built-in test runner over `scripts/__tests__/` |
-| `npm run coverage` | Tests with coverage; fails under 90% lines on `scripts/*.mjs` |
-| `npm run check:lock` | Checks that every native package family in the lock has a linux-x64 glibc build |
+| `npm run lint` | ESLint, then `ruff check` and `ruff format --check` over `backend/` |
+| `npm run typecheck` | `tsc --noEmit` with `checkJs` over `scripts/`, then mypy strict over `backend/` |
+| `npm test` | Node's built-in test runner over `scripts/__tests__/`, then pytest over `backend/` |
+| `npm run coverage` | Tests with coverage; fails under 90% lines on `scripts/*.mjs` or on `backend/specter_arena` |
+| `npm run check:lock` | Checks that every native package family in the lock has a linux-x64 glibc build, and that `requirements.txt` matches `backend/uv.lock` |
 | `npm run check:provenance` | Checks for Dragonboat-only identifiers, a tracked `.kiro/`, and no tracked env files |
 | `npm run dev` | Local dev loop; prints a notice until the UI preview harness exists |
 

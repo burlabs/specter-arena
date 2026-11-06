@@ -18,14 +18,14 @@ The final set has 13 jobs. Each PR in the FP-00 sequence adds the jobs it can ma
 
 | Job | Added by | Checks |
 |---|---|---|
-| `lint` | PR-1 Foundation | ESLint (ruff joins with the backend PR) |
-| `typecheck` | PR-1 Foundation | `tsc --noEmit` with `checkJs` over `scripts/` (mypy joins with the backend PR) |
-| `test` | PR-1 Foundation | `node --test scripts/__tests__/` (pytest and Vitest join later) |
-| `coverage` | PR-1 Foundation | Node built-in coverage, ≥90% lines on `scripts/*.mjs` |
+| `lint` | PR-1 Foundation | ESLint; ruff check and format check (PR-2) |
+| `typecheck` | PR-1 Foundation | `tsc --noEmit` with `checkJs` over `scripts/`; mypy strict (PR-2) |
+| `test` | PR-1 Foundation | `node --test scripts/__tests__/`; pytest over `backend/` (PR-2); Vitest joins with the UI stub |
+| `coverage` | PR-1 Foundation | Node built-in coverage, ≥90% lines on `scripts/*.mjs`; pytest-cov ≥90% on `backend/specter_arena` (PR-2) |
 | `secret-scan` | PR-1 Foundation | Pinned, checksum-verified gitleaks over full history |
 | `provenance` | PR-1 Foundation | `npm run check:provenance`: no Dragonboat-only identifiers, `.kiro/` tracked, no env files |
-| `lockfile-linux` | PR-1 Foundation | `npm ci` on `ubuntu-latest` plus `npm run check:lock` |
-| `lock-agreement` | PR-2 Backend | `uv export` output matches the committed `requirements.txt` |
+| `lockfile-linux` | PR-1 Foundation | `npm ci` on `ubuntu-latest` plus `npm run check:lock` (which also checks `requirements.txt` from PR-2) |
+| `lock-agreement` | PR-2 Backend | `uv lock --check`, and the `uv export` output matches the committed `requirements.txt` |
 | `backend-smoke` | PR-2 Backend | Crew-style deps-only start of `backend.app:app`; `GET /health` returns 200 |
 | `cdk-synth` | PR-3 Preview infrastructure | Offline CDK synth and template assertions in `infra/` |
 | `build` | PR-4 UI stub | The Vite library build writes `ui/dist/index.mjs` |

@@ -1,0 +1,48 @@
+[project]
+name = "specter-arena-backend"
+version = "0.0.0"
+description = "Specter Arena backend"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "starlette",
+  "uvicorn",
+]
+
+[dependency-groups]
+# httpx2 backs starlette.testclient.TestClient.
+dev = ["pytest", "pytest-cov", "ruff", "mypy", "httpx2"]
+
+# No [build-system]: the project is never installed, matching how Crew runs it.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+explicit_package_bases = true
+# Paths are relative to the repo root, where `npm run typecheck` runs mypy.
+files = ["backend/app.py", "backend/specter_arena", "backend/tests"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+# The repo root is the import root, as it is under Crew.
+pythonpath = [".."]
+
+[tool.coverage.run]
+source = ["backend/specter_arena"]
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true

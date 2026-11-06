@@ -8,7 +8,7 @@ const nodeGlobals = {
 
 export default [
   {
-    ignores: ['node_modules/', 'coverage/', 'ui/dist/', 'ui/preview-dist/', 'infra/cdk.out/', '.deps/'],
+    ignores: ['node_modules/', '**/.venv/', 'coverage/', 'ui/dist/', 'ui/preview-dist/', 'infra/cdk.out/', '.deps/'],
   },
   js.configs.recommended,
   {
