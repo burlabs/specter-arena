@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -58,11 +59,72 @@ export function findMissingLinuxVariants(lock) {
 }
 
 /**
- * @param {{ files?: string[], readFile?: (path: string) => string, log?: (line: string) => void }} [options]
+ * @typedef {{ file: string, exportRequirements: () => string }} RequirementsCheck
+ */
+
+export const UV_EXPORT_ARGS = [
+  'export',
+  '--project',
+  'backend',
+  '--frozen',
+  '--no-dev',
+  '--no-emit-project',
+  '--no-header',
+  '--format',
+  'requirements-txt',
+];
+
+/** @returns {RequirementsCheck} */
+export function uvRequirementsCheck() {
+  return {
+    file: 'requirements.txt',
+    exportRequirements: () => execFileSync('uv', UV_EXPORT_ARGS, { encoding: 'utf8' }),
+  };
+}
+
+/**
+ * @param {RequirementsCheck} check
+ * @param {(path: string) => string} readFile
+ * @returns {string | null} problem description, or null when the committed file matches the lock
+ */
+export function findRequirementsDrift({ file, exportRequirements }, readFile) {
+  let committed;
+  let exported;
+  try {
+    committed = readFile(file);
+    exported = exportRequirements();
+  } catch (error) {
+    return `cannot compare ${file} with backend/uv.lock: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  return committed === exported ? null : `${file} does not match \`uv ${UV_EXPORT_ARGS.join(' ')}\``;
+}
+
+/**
+ * @param {{
+ *   files?: string[],
+ *   requirements?: RequirementsCheck | null,
+ *   readFile?: (path: string) => string,
+ *   log?: (line: string) => void,
+ * }} [options]
  * @returns {number} process exit code
  */
-export function run({ files = DEFAULT_LOCKFILES, readFile = (path) => readFileSync(path, 'utf8'), log = console.log } = {}) {
+export function run({
+  files = DEFAULT_LOCKFILES,
+  requirements = null,
+  readFile = (path) => readFileSync(path, 'utf8'),
+  log = console.log,
+} = {}) {
   let failures = 0;
+  if (requirements) {
+    const drift = findRequirementsDrift(requirements, readFile);
+    if (drift) {
+      log(`check:lock: ${drift}`);
+      log('check:lock: re-export requirements.txt as described in CONTRIBUTING.md');
+      failures += 1;
+    } else {
+      log(`check:lock: ${requirements.file} matches backend/uv.lock`);
+    }
+  }
   for (const file of files) {
     /** @type {Lockfile} */
     let lock;
@@ -86,5 +148,8 @@ export function run({ files = DEFAULT_LOCKFILES, readFile = (path) => readFileSy
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = run({ files: process.argv.length > 2 ? process.argv.slice(2) : DEFAULT_LOCKFILES });
+  process.exitCode = run({
+    files: process.argv.length > 2 ? process.argv.slice(2) : DEFAULT_LOCKFILES,
+    requirements: uvRequirementsCheck(),
+  });
 }

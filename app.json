@@ -1,0 +1,12 @@
+{
+  "name": "specter-arena",
+  "version": "0.0.0",
+  "displayName": "Specter Arena",
+  "description": "Specter Arena repository foundation. No product features yet.",
+  "backend": {
+    "entryPoint": "backend/app.py",
+    "type": "asgi",
+    "healthCheck": "/health",
+    "routes": "/api/apps/specter-arena"
+  }
+}

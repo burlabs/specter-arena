@@ -11,7 +11,29 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `eslint` | 10.14.0 | MIT | `npm run lint` |
 | `@eslint/js` | 10.0.1 | MIT | ESLint recommended rules |
 
-Later FP-00 PRs add Vite, Vitest, React Testing Library, React, and Playwright (UI stub PR), and Starlette, uvicorn, pytest, ruff, and mypy (backend PR), each with its license recorded here.
+The UI stub PR adds Vite, Vitest, React Testing Library, React, and Playwright, each with its license recorded here.
+
+## Backend runtime (`requirements.txt`, provisioned by Crew)
+
+| Package | Version | License | Used for |
+|---|---|---|---|
+| `starlette` | 1.10.0 | BSD-3-Clause | ASGI app and routing |
+| `uvicorn` | 0.54.0 | BSD-3-Clause | ASGI server Crew starts |
+| `anyio` | 4.16.0 | MIT | Starlette dependency |
+| `click` | 8.5.0 | BSD-3-Clause | uvicorn dependency |
+| `h11` | 0.16.0 | MIT | uvicorn dependency |
+| `idna` | 3.20 | BSD-3-Clause | anyio dependency |
+| `typing_extensions` | 4.16.0 | PSF-2.0 | Starlette dependency |
+
+## Backend development (`backend/pyproject.toml` dev group, never shipped)
+
+| Package | Version | License | Used for |
+|---|---|---|---|
+| `pytest` | 9.2.0 | MIT | Backend tests |
+| `pytest-cov` | 7.1.0 | MIT | Backend coverage |
+| `ruff` | 0.17.4 | MIT | Lint and format check |
+| `mypy` | 2.4.1 | MIT | Strict type check |
+| `httpx2` | 2.16.0 | BSD-3-Clause | Transport for `starlette.testclient` |
 
 ## Pinned CI tools
 
@@ -20,3 +42,5 @@ Later FP-00 PRs add Vite, Vitest, React Testing Library, React, and Playwright (
 | gitleaks CLI | 8.30.1 | MIT | `gitleaks_8.30.1_linux_x64.tar.gz` SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`, from the release's checksums file |
 | `actions/checkout` | v7.0.1 (`3d3c42e5aac5ba805825da76410c181273ba90b1`) | MIT | pinned by commit SHA |
 | `actions/setup-node` | v7.1.0 (`949feb2413d6458794dcd2491c4babbbce0c15c1`) | MIT | pinned by commit SHA |
+| `actions/setup-python` | v7.1.0 (`6d4fd22b20465ccc0f7354476588e8df7c9ca0e0`) | MIT | pinned by commit SHA |
+| `astral-sh/setup-uv` | v10.3.3 (`68559e99cc807c1eb7e9238fd43a15bba460eec2`), installing uv 0.13.7 | MIT OR Apache-2.0 | pinned by commit SHA |

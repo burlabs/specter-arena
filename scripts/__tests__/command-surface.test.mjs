@@ -32,7 +32,7 @@ const CI_CHECKS = [
   'e2e-smoke',
 ];
 
-const PR1_JOBS = CI_CHECKS.slice(0, 7);
+const CURRENT_JOBS = CI_CHECKS.slice(0, 9);
 
 /**
  * npm commands referenced in a markdown document, skipping any section whose
@@ -128,9 +128,14 @@ describe('ci.yml', () => {
   const jobsSection = ci.slice(ci.indexOf('\njobs:\n'));
   const jobs = [...jobsSection.matchAll(/^ {2}([\w-]+):\s*$/gm)].map((match) => match[1]);
 
-  it('defines exactly the PR-1 jobs, each with a timeout', () => {
-    assert.deepEqual(jobs, PR1_JOBS);
-    assert.equal(ci.match(/timeout-minutes:/g)?.length, PR1_JOBS.length);
+  it('defines exactly the jobs landed so far, each with a timeout', () => {
+    assert.deepEqual(jobs, CURRENT_JOBS);
+    assert.equal(ci.match(/timeout-minutes:/g)?.length, CURRENT_JOBS.length);
+  });
+
+  it('starts the backend smoke test the way Crew does', () => {
+    assert.match(ci, /pip install --require-hashes --target \.deps -r requirements\.txt/);
+    assert.match(ci, /PYTHONPATH=\.deps python -s -m uvicorn backend\.app:app --host 127\.0\.0\.1/);
   });
 
   it('verifies the gitleaks checksum before running it', () => {

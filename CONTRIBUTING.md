@@ -33,11 +33,11 @@ A lock generated on macOS can omit the Linux builds of native optional dependenc
 npm ci --os=linux --cpu=x64 --libc=glibc
 ```
 
-The Python lock (from the backend PR onward) is exported from `backend/uv.lock`:
+Crew provisions backend dependencies from the root `requirements.txt`, which is exported from `backend/uv.lock`. After changing `backend/pyproject.toml`:
 
 ```sh
 uv lock --project backend
-uv export --project backend --frozen --no-dev --no-emit-project -o requirements.txt
+uv export --project backend --frozen --no-dev --no-emit-project --no-header --format requirements-txt > requirements.txt
 ```
 
 ## Local checks

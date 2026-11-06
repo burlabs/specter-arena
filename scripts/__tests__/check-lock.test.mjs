@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { findMissingLinuxVariants, run } from '../check-lock.mjs';
+import { UV_EXPORT_ARGS, findMissingLinuxVariants, findRequirementsDrift, run, uvRequirementsCheck } from '../check-lock.mjs';
 
 const darwin = { os: ['darwin'], cpu: ['arm64'] };
 const linuxGlibc = { os: ['linux'], cpu: ['x64'], libc: ['glibc'] };
@@ -105,5 +106,54 @@ describe('check-lock run', () => {
 
   it('passes on the repository root lockfile', () => {
     assert.equal(run({ log: () => {} }), 0);
+  });
+});
+
+describe('requirements.txt agreement', () => {
+  const cleanLock = JSON.stringify({ packages: {} });
+
+  /**
+   * @param {string} committed
+   * @param {() => string} exportRequirements
+   */
+  function check(committed, exportRequirements) {
+    /** @type {string[]} */
+    const lines = [];
+    const files = /** @type {Record<string, string>} */ ({ 'package-lock.json': cleanLock, 'requirements.txt': committed });
+    const code = run({
+      requirements: { file: 'requirements.txt', exportRequirements },
+      readFile: (path) => /** @type {string} */ (files[path]),
+      log: (line) => lines.push(line),
+    });
+    return { code, lines };
+  }
+
+  it('passes when the committed file matches the export', () => {
+    const { code, lines } = check('a==1\n', () => 'a==1\n');
+    assert.equal(code, 0);
+    assert.equal(lines[0], 'check:lock: requirements.txt matches backend/uv.lock');
+  });
+
+  it('fails and names the export command on drift', () => {
+    const { code, lines } = check('a==1\n', () => 'a==2\n');
+    assert.equal(code, 1);
+    assert.equal(findRequirementsDrift({ file: 'requirements.txt', exportRequirements: () => 'b' }, () => 'a'), lines[0]?.replace('check:lock: ', ''));
+    assert.match(lines[0] ?? '', /uv export --project backend --frozen --no-dev --no-emit-project/);
+  });
+
+  it('fails when uv cannot export', () => {
+    const { code, lines } = check('a==1\n', () => {
+      throw new Error('uv: command not found');
+    });
+    assert.equal(code, 1);
+    assert.match(lines[0] ?? '', /cannot compare requirements\.txt with backend\/uv\.lock: uv: command not found/);
+  });
+
+  it('matches the committed requirements.txt with the real uv export', () => {
+    assert.equal(findRequirementsDrift(uvRequirementsCheck(), (path) => readFileSync(path, 'utf8')), null);
+  });
+
+  it('uses the same export arguments as the lock-agreement CI job', () => {
+    assert.ok(readFileSync('.github/workflows/ci.yml', 'utf8').includes(`uv ${UV_EXPORT_ARGS.join(' ')}`));
   });
 });
