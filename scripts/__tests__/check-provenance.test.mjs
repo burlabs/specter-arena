@@ -30,6 +30,21 @@ describe('findDenylisted', () => {
     assert.deepEqual(findDenylisted(apacheHeader), ['Apache-2.0 SPDX header']);
   });
 
+  it('flags AWS profiles other than specter-preview', () => {
+    const label = 'AWS CLI profile other than specter-preview';
+    assert.deepEqual(findDenylisted(`cdk deploy --${'profile'} cruisely-dev`), [label]);
+    assert.deepEqual(findDenylisted(`aws s3 ls --${'profile'}=default`), [label]);
+    assert.deepEqual(findDenylisted(`cdk deploy --${'profile'} specter-preview-old`), [label]);
+    assert.deepEqual(findDenylisted(`cdk deploy --${'profile'} specter-preview && echo ok`), []);
+    assert.deepEqual(findDenylisted(`aws sts get-caller-identity --${'profile'}=specter-preview`), []);
+  });
+
+  it('flags AWS access key IDs', () => {
+    assert.deepEqual(findDenylisted(`key = ${'AKIA'}${'Z'.repeat(16)}`), ['AWS access key ID']);
+    assert.deepEqual(findDenylisted(`key = ${'ASIA'}${'7'.repeat(16)}`), ['AWS access key ID']);
+    assert.deepEqual(findDenylisted(`${'AKIA'}SHORT`), []);
+  });
+
   it('allows naming the reference repository', () => {
     assert.deepEqual(findDenylisted('Pattern reference: burlabs/dragonboat-cms@8c63c62a'), []);
   });

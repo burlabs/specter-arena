@@ -24,8 +24,11 @@ Never edit a lockfile by hand.
 
 ```sh
 npm install --package-lock-only
+npm install --package-lock-only --prefix infra
 npm run check:lock
 ```
+
+`infra/` is a separate npm project with its own lock, never a workspace, so CDK never reaches a Crew install of this app.
 
 A lock generated on macOS can omit the Linux builds of native optional dependencies, and `npm ci` on a Linux runner then skips the binary without failing. If `npm run check:lock` names a package family, delete that family's platform entries from `package-lock.json`, run `npm install --package-lock-only --ignore-scripts` again, and confirm with:
 

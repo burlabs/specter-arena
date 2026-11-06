@@ -121,6 +121,7 @@ describe('requirements.txt agreement', () => {
     const lines = [];
     const files = /** @type {Record<string, string>} */ ({ 'package-lock.json': cleanLock, 'requirements.txt': committed });
     const code = run({
+      files: ['package-lock.json'],
       requirements: { file: 'requirements.txt', exportRequirements },
       readFile: (path) => /** @type {string} */ (files[path]),
       log: (line) => lines.push(line),

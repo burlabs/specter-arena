@@ -1,0 +1,7 @@
+{
+  "app": "node bin/app.ts",
+  "output": "cdk.out",
+  "watch": {
+    "include": ["bin/**", "lib/**"]
+  }
+}
