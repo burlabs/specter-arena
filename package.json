@@ -1,0 +1,26 @@
+{
+  "name": "specter-arena",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=26 <27"
+  },
+  "packageManager": "npm@11.20.0",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test scripts/__tests__/",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-include=scripts/*.mjs scripts/__tests__/",
+    "check:lock": "node scripts/check-lock.mjs",
+    "check:provenance": "node scripts/check-provenance.mjs",
+    "dev": "node scripts/dev.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.6",
+    "eslint": "10.14.0",
+    "typescript": "7.0.2"
+  }
+}

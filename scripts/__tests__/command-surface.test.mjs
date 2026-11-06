@@ -1,0 +1,143 @@
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { describe, it } from 'node:test';
+
+/** @type {{ engines: { node: string }, scripts: Record<string, string> }} */
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+const scripts = pkg.scripts;
+
+const ADAPTER_KEYS = [
+  'docs.specSource',
+  'docs.provider',
+  'tracker.provider',
+  'vcs.provider',
+  'build.command',
+  'ci.checks',
+  'ci.checks.coverage',
+];
+
+const CI_CHECKS = [
+  'lint',
+  'typecheck',
+  'test',
+  'coverage',
+  'secret-scan',
+  'provenance',
+  'lockfile-linux',
+  'lock-agreement',
+  'backend-smoke',
+  'cdk-synth',
+  'build',
+  'fixtures',
+  'e2e-smoke',
+];
+
+const PR1_JOBS = CI_CHECKS.slice(0, 7);
+
+/**
+ * npm commands referenced in a markdown document, skipping any section whose
+ * heading says "Planned": those name commands that later PRs add.
+ * @param {string} markdown
+ */
+function referencedCommands(markdown) {
+  /** @type {Set<string>} */
+  const commands = new Set();
+  let planned = false;
+  for (const line of markdown.split('\n')) {
+    const heading = /^#{1,6}\s+(.*)$/.exec(line);
+    if (heading) planned = /planned/i.test(heading[1] ?? '');
+    if (planned) continue;
+    for (const match of line.matchAll(/\bnpm (?:run ([\w:-]+)|(test))\b/g)) commands.add(match[1] ?? match[2] ?? '');
+  }
+  return commands;
+}
+
+/** @param {string} path */
+const read = (path) => readFileSync(path, 'utf8');
+
+describe('package.json command surface', () => {
+  it('points every node script at a file that exists', () => {
+    for (const [name, command] of Object.entries(scripts)) {
+      for (const match of command.matchAll(/\bnode (?:--[\w-]+(?:=\S+)? )*(scripts\/\S+)/g)) {
+        assert.ok(existsSync(match[1] ?? ''), `${name} runs missing ${match[1]}`);
+      }
+    }
+  });
+
+  it('declares the PR-1 commands and no build target yet', () => {
+    for (const name of ['lint', 'typecheck', 'test', 'coverage', 'check:lock', 'check:provenance', 'dev']) {
+      assert.ok(name in scripts, `missing script ${name}`);
+    }
+    assert.equal('build' in scripts, false, 'build arrives with the UI stub PR');
+  });
+
+  it('enforces 90% line coverage on scripts/', () => {
+    assert.match(scripts.coverage ?? '', /--test-coverage-lines=90\b/);
+    assert.match(scripts.coverage ?? '', /--test-coverage-include=scripts\/\*\.mjs/);
+  });
+
+  it('keeps .nvmrc and engines.node on the same major', () => {
+    const nvmrc = read('.nvmrc').trim();
+    const engineMajor = /(\d+)/.exec(pkg.engines.node)?.[1];
+    assert.equal(nvmrc, engineMajor);
+  });
+});
+
+describe('documentation references', () => {
+  for (const doc of ['README.md', 'AGENTS.md', 'CONTRIBUTING.md', 'docs/development/adapters.md']) {
+    it(`${doc} references only commands that exist`, () => {
+      for (const command of referencedCommands(read(doc))) {
+        assert.ok(command in scripts, `${doc} references npm ${command}, which package.json does not define`);
+      }
+    });
+  }
+
+  it('maps every adapter key and lists all 13 CI checks', () => {
+    const adapters = read('docs/development/adapters.md');
+    for (const key of ADAPTER_KEYS) assert.ok(adapters.includes(`| \`${key}\` |`), `adapters.md is missing ${key}`);
+    for (const job of CI_CHECKS) assert.ok(adapters.includes(`| \`${job}\` |`), `adapters.md is missing job ${job}`);
+  });
+
+  it('branch-protection step 2 names the same 13 checks', () => {
+    const protection = read('docs/ops/branch-protection.md');
+    for (const job of CI_CHECKS) assert.ok(protection.includes(`"${job}"`), `branch-protection.md is missing ${job}`);
+  });
+
+  it('links the adapter mapping from AGENTS.md', () => {
+    assert.ok(read('AGENTS.md').includes('docs/development/adapters.md'));
+  });
+});
+
+describe('PR template', () => {
+  const template = read('.github/pull_request_template.md');
+
+  it('has a home for every Required-Core section', () => {
+    for (const heading of ['Context', 'Summary', 'Acceptance Criteria', 'Risk', 'References', 'Testing', 'Revisions']) {
+      assert.match(template, new RegExp(`^## ${heading}$`, 'm'), `missing ## ${heading}`);
+    }
+  });
+
+  it('asks for the issue link and the ephemeral dev environment', () => {
+    assert.match(template, /^- Issue:/m);
+    assert.match(template, /^- Ephemeral dev environment:/m);
+  });
+});
+
+describe('ci.yml', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const jobsSection = ci.slice(ci.indexOf('\njobs:\n'));
+  const jobs = [...jobsSection.matchAll(/^ {2}([\w-]+):\s*$/gm)].map((match) => match[1]);
+
+  it('defines exactly the PR-1 jobs, each with a timeout', () => {
+    assert.deepEqual(jobs, PR1_JOBS);
+    assert.equal(ci.match(/timeout-minutes:/g)?.length, PR1_JOBS.length);
+  });
+
+  it('verifies the gitleaks checksum before running it', () => {
+    assert.ok(ci.indexOf('sha256sum -c') < ci.indexOf('./gitleaks git'));
+  });
+
+  it('never uses pull_request_target', () => {
+    assert.equal(ci.includes('pull_request_target'), false);
+  });
+});
