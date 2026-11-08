@@ -2,7 +2,14 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createPreviewApp, PREVIEW_STACK_NAME } from '../lib/preview-app.ts';
-import { CDK_QUALIFIER, GITHUB_OIDC_SUBJECT, PREVIEW_ACCOUNT, PREVIEW_PROFILE, PREVIEW_REGION } from '../lib/preview-config.ts';
+import {
+  CDK_QUALIFIER,
+  GITHUB_OIDC_SUBJECT,
+  PREVIEW_ACCOUNT,
+  PREVIEW_PROFILE,
+  PREVIEW_REGION,
+  TOOLKIT_STACK_NAME,
+} from '../lib/preview-config.ts';
 import type { PreviewStack } from '../lib/preview-stack.ts';
 
 type Statement = { Action: string | string[]; Resource: unknown; Effect: string };
@@ -57,6 +64,10 @@ describe('account separation', () => {
       expect(scripts[name]).toContain(['--profile', PREVIEW_PROFILE].join(' '));
     }
     expect(scripts.bootstrap).toContain(`--qualifier ${CDK_QUALIFIER}`);
+    for (const name of ['bootstrap', 'deploy']) {
+      expect(scripts[name]).toContain(`--toolkit-stack-name ${TOOLKIT_STACK_NAME}`);
+    }
+    expect(TOOLKIT_STACK_NAME).not.toBe('CDKToolkit');
   });
 });
 

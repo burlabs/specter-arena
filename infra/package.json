@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "synth": "cdk synth --quiet",
     "test": "vitest run --coverage",
-    "bootstrap": "node scripts/assert-aws-account.mjs && cdk bootstrap --qualifier specter --profile specter-preview",
-    "deploy": "node scripts/assert-aws-account.mjs && cdk deploy --profile specter-preview",
+    "bootstrap": "node scripts/assert-aws-account.mjs && cdk bootstrap --qualifier specter --toolkit-stack-name CDKToolkit-specter --profile specter-preview",
+    "deploy": "node scripts/assert-aws-account.mjs && cdk deploy --toolkit-stack-name CDKToolkit-specter --profile specter-preview",
     "destroy": "node scripts/assert-aws-account.mjs && cdk destroy --profile specter-preview"
   },
   "dependencies": {

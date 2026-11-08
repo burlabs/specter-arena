@@ -12,7 +12,7 @@ Per-PR previews are static uploads of the FIXTURE preview harness to `s3://spect
 | IAM OIDC provider | `token.actions.githubusercontent.com` | Audience `sts.amazonaws.com` |
 | IAM role | `specter-arena-preview-deploy` | Trusted only for `repo:burlabs@62413611/specter-arena@1446525806:environment:preview`; may list, put and delete `pr-*` keys and invalidate this one distribution |
 
-Everything is tagged `project=specter-arena`. The stack pins account `640822987719` and region `us-east-1` (`infra/lib/preview-config.ts`), and its bootstrap qualifier is `specter`, so its bootstrap resources never collide with other CDK use in the account.
+Everything is tagged `project=specter-arena`. The stack pins account `640822987719` and region `us-east-1` (`infra/lib/preview-config.ts`), and it bootstraps into its own toolkit stack, `CDKToolkit-specter`, with qualifier `specter`, so it never touches the account's default `CDKToolkit` stack or other CDK use in the account.
 
 An AWS account can hold only one IAM OIDC provider per URL. If `640822987719` already has a provider for `token.actions.githubusercontent.com`, the deploy fails on that resource; stop and decide whether to import the existing provider instead.
 
@@ -29,7 +29,7 @@ An AWS account can hold only one IAM OIDC provider per URL. If `640822987719` al
    npm run deploy
    ```
 
-   Both scripts first run `scripts/assert-aws-account.mjs`, which calls `aws sts get-caller-identity` with the `specter-preview` profile and refuses to continue unless the account is `640822987719`.
+   Both scripts pass `--toolkit-stack-name CDKToolkit-specter` and first run `scripts/assert-aws-account.mjs`, which calls `aws sts get-caller-identity` with the `specter-preview` profile and refuses to continue unless the account is `640822987719`.
 5. Copy the stack outputs into variables on the repository's `preview` environment (Settings → Environments → preview):
 
    | Variable | Stack output |
@@ -50,4 +50,4 @@ Until all five variables are set, `.github/workflows/preview.yml` prints `previe
 
 ## Tear down
 
-Empty the bucket first (`cdk destroy` refuses a non-empty bucket), then from `infra/` run `npm run destroy`. The CDK bootstrap stack `CDKToolkit-specter` is separate; delete it in CloudFormation if nothing else uses the `specter` qualifier.
+Empty the bucket first (`cdk destroy` refuses a non-empty bucket), then from `infra/` run `npm run destroy`. `cdk destroy` does not touch the bootstrap stack `CDKToolkit-specter`; delete it in CloudFormation if nothing else uses the `specter` qualifier.
