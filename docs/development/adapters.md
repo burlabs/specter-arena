@@ -8,7 +8,7 @@ The planner and implementer SOPs refer to provider keys instead of concrete tool
 | `docs.provider` | None. Design and planning artifacts are kept local to each planning session. |
 | `tracker.provider` | GitHub issues on `burlabs/specter-arena`. One draft PR per issue. |
 | `vcs.provider` | GitHub (`burlabs/specter-arena`) through the `gh` CLI. Draft PRs only; a human publishes and merges. |
-| `build.command` | `npm ci && npm run lint && npm run typecheck && npm test`. The UI stub PR adds the `build` script and appends it to this command. |
+| `build.command` | `npm ci && npm run build && npm run lint && npm run typecheck && npm test` |
 | `ci.checks` | The GitHub Actions jobs in `.github/workflows/ci.yml`, listed below. |
 | `ci.checks.coverage` | `npm run coverage`. Fails under 90% line coverage on each declared scope. |
 
@@ -20,8 +20,8 @@ The final set has 13 jobs. Each PR in the FP-00 sequence adds the jobs it can ma
 |---|---|---|
 | `lint` | PR-1 Foundation | ESLint; ruff check and format check (PR-2) |
 | `typecheck` | PR-1 Foundation | `tsc --noEmit` with `checkJs` over `scripts/`; mypy strict (PR-2) |
-| `test` | PR-1 Foundation | `node --test scripts/__tests__/`; pytest over `backend/` (PR-2); Vitest joins with the UI stub |
-| `coverage` | PR-1 Foundation | Node built-in coverage, ≥90% lines on `scripts/*.mjs`; pytest-cov ≥90% on `backend/specter_arena` (PR-2) |
+| `test` | PR-1 Foundation | `node --test scripts/__tests__/`; pytest over `backend/` (PR-2); Vitest over `ui/src/` (PR-4) |
+| `coverage` | PR-1 Foundation | Node built-in coverage, ≥90% lines on `scripts/*.mjs`; pytest-cov ≥90% on `backend/specter_arena` (PR-2); Vitest v8 ≥90% lines and branches on `ui/src/` (PR-4) |
 | `secret-scan` | PR-1 Foundation | Pinned, checksum-verified gitleaks over full history |
 | `provenance` | PR-1 Foundation | `npm run check:provenance`: no Dragonboat-only identifiers, `.kiro/` tracked, no env files |
 | `lockfile-linux` | PR-1 Foundation | `npm ci` on `ubuntu-latest` plus `npm run check:lock` (which also checks `requirements.txt` from PR-2) |
@@ -29,7 +29,7 @@ The final set has 13 jobs. Each PR in the FP-00 sequence adds the jobs it can ma
 | `backend-smoke` | PR-2 Backend | Crew-style deps-only start of `backend.app:app`; `GET /health` returns 200 |
 | `cdk-synth` | PR-3 Preview infrastructure | In `infra/`: `npm ci`, `typecheck`, offline `synth`, and Vitest template assertions, with no AWS credentials |
 | `build` | PR-4 UI stub | The Vite library build writes `ui/dist/index.mjs` |
-| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/` |
+| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/`; no tests or fixtures imports in the backend runtime |
 | `e2e-smoke` | PR-4 UI stub | Playwright Chromium smoke against the built preview harness |
 
 A PR with zero registered checks is not passing. The required-check list in `docs/ops/branch-protection.md` is applied only after all 13 jobs have run at least once.

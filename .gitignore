@@ -14,4 +14,6 @@ __pycache__/
 .env.*
 !.env.example
 .DS_Store
+playwright-report/
+test-results/
 # .kiro/ is tracked on purpose: it holds the project's steering and spec entry points.

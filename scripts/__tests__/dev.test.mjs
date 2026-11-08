@@ -1,19 +1,40 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { PREVIEW_CONFIG, run } from '../dev.mjs';
+import { DEV_COMMAND, PREVIEW_CONFIG, run } from '../dev.mjs';
 
 describe('dev run', () => {
-  it('explains that the harness is absent and exits 0', () => {
+  it('serves the preview harness with vite and returns its exit status', () => {
     /** @type {string[]} */
     const lines = [];
-    assert.equal(run({ exists: () => false, log: (line) => lines.push(line) }), 0);
-    assert.match(lines[0] ?? '', /not in this checkout yet/);
+    /** @type {[string, string[]][]} */
+    const calls = [];
+    const code = run({
+      exists: (path) => path === PREVIEW_CONFIG,
+      runner: (command, args) => {
+        calls.push([command, args]);
+        return { status: 0 };
+      },
+      log: (line) => lines.push(line),
+    });
+    assert.equal(code, 0);
+    assert.deepEqual(calls, [DEV_COMMAND]);
+    assert.match(lines[0] ?? '', /FIXTURE preview harness/);
   });
 
-  it('fails loudly once the harness exists but the script was not updated', () => {
+  it('reports a failed or killed dev server as a failure', () => {
+    const options = { exists: () => true, log: () => {} };
+    assert.equal(run({ ...options, runner: () => ({ status: 2 }) }), 2);
+    assert.equal(run({ ...options, runner: () => ({ status: null }) }), 1);
+  });
+
+  it('fails when the harness config is missing', () => {
     /** @type {string[]} */
     const lines = [];
-    assert.equal(run({ exists: (path) => path === PREVIEW_CONFIG, log: (line) => lines.push(line) }), 1);
-    assert.match(lines[0] ?? '', /update scripts\/dev\.mjs/);
+    assert.equal(run({ exists: () => false, runner: () => assert.fail('must not run'), log: (line) => lines.push(line) }), 1);
+    assert.match(lines[0] ?? '', /is missing; nothing to serve/);
+  });
+
+  it('points at a config that exists', () => {
+    assert.equal(run({ runner: () => ({ status: 0 }), log: () => {} }), 0);
   });
 });

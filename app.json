@@ -8,5 +8,15 @@
     "type": "asgi",
     "healthCheck": "/health",
     "routes": "/api/apps/specter-arena"
+  },
+  "ui": {
+    "entry": "dist/index.mjs",
+    "pages": [
+      {
+        "route": "/apps/specter-arena",
+        "label": "Specter Arena",
+        "icon": "Package"
+      }
+    ]
   }
 }

@@ -22,19 +22,18 @@ npm run coverage
 | Command | What it does |
 |---|---|
 | `npm run lint` | ESLint, then `ruff check` and `ruff format --check` over `backend/` |
-| `npm run typecheck` | `tsc --noEmit` with `checkJs` over `scripts/`, then mypy strict over `backend/` |
-| `npm test` | Node's built-in test runner over `scripts/__tests__/`, then pytest over `backend/` |
-| `npm run coverage` | Tests with coverage; fails under 90% lines on `scripts/*.mjs` or on `backend/specter_arena` |
+| `npm run typecheck` | `tsc --noEmit` over `scripts/` and `ui/`, then mypy strict over `backend/` |
+| `npm test` | Node's built-in test runner over `scripts/__tests__/`, Vitest over `ui/src/`, then pytest over `backend/` |
+| `npm run coverage` | Tests with coverage; fails under 90% lines on `scripts/*.mjs`, `ui/src/` or `backend/specter_arena` |
 | `npm run check:lock` | Checks that every native package family in the lock has a linux-x64 glibc build, and that `requirements.txt` matches `backend/uv.lock` |
 | `npm run check:provenance` | Checks for Dragonboat-only identifiers, a tracked `.kiro/`, and no tracked env files |
-| `npm run dev` | Local dev loop; prints a notice until the UI preview harness exists |
+| `npm run build` | Vite library build of the UI to `ui/dist/index.mjs`, with the host-provided modules left external |
+| `npm run build:preview` | Builds the FIXTURE preview harness to `ui/preview-dist/` |
+| `npm run test:e2e` | Builds the harness and runs the Playwright Chromium smoke test against it |
+| `npm run check:fixtures` | Fails if `ui/dist/` carries fixture code or the backend runtime imports tests or fixtures |
+| `npm run dev` | Serves the FIXTURE preview harness with Vite's dev server (no backend) |
 
-### Planned commands
-
-These arrive with later FP-00 PRs and are not runnable yet:
-
-- `npm run build` (UI stub PR): Vite library build to `ui/dist/index.mjs`. Run `npm ci && npm run build` before installing this repo into Crew from a local path, because a local-path install copies the folder without building it.
-- `npm run build:preview`, `npm run test:e2e`, `npm run check:fixtures` (UI stub PR).
+Run `npm ci && npm run build` before installing this repo into Crew from a local path: a local-path install copies the folder without building it, and Crew loads `ui/dist/index.mjs`.
 
 ## Documentation
 
