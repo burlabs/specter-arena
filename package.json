@@ -9,18 +9,34 @@
   },
   "packageManager": "npm@11.20.0",
   "scripts": {
+    "build": "vite build --config ui/vite.config.ts",
+    "build:preview": "vite build --config ui/vite.preview.config.ts",
     "lint": "eslint . && uv run --locked --project backend ruff check backend && uv run --locked --project backend ruff format --check backend",
-    "typecheck": "tsc --noEmit -p tsconfig.json && uv run --locked --project backend mypy --config-file backend/pyproject.toml",
-    "test": "node --test scripts/__tests__/ && uv run --locked --project backend pytest backend",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-include=scripts/*.mjs scripts/__tests__/ && uv run --locked --project backend pytest backend --cov=backend/specter_arena --cov-fail-under=90",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p ui/tsconfig.json && uv run --locked --project backend mypy --config-file backend/pyproject.toml",
+    "test": "node --test scripts/__tests__/ && vitest run --config ui/vite.config.ts && uv run --locked --project backend pytest backend",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-include=scripts/*.mjs scripts/__tests__/ && vitest run --config ui/vite.config.ts --coverage && uv run --locked --project backend pytest backend --cov=backend/specter_arena --cov-fail-under=90",
+    "test:e2e": "npm run build:preview && playwright test",
     "check:lock": "node scripts/check-lock.mjs",
+    "check:fixtures": "node scripts/check-fixtures.mjs",
     "check:provenance": "node scripts/check-provenance.mjs",
     "dev": "node scripts/dev.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.0",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
     "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "10.14.0",
-    "typescript": "7.0.2"
+    "jsdom": "31.0.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
   }
 }

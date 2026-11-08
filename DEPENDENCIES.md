@@ -10,8 +10,20 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `@types/node` | 26.6.6 | MIT | Node types for `checkJs` |
 | `eslint` | 10.14.0 | MIT | `npm run lint` |
 | `@eslint/js` | 10.0.1 | MIT | ESLint recommended rules |
+| `vite` | 8.3.6 | MIT | UI library build and preview harness build |
+| `@vitejs/plugin-react` | 6.2.1 | MIT | JSX transform |
+| `vitest` | 5.1.0 | MIT | UI unit tests |
+| `@vitest/coverage-v8` | 5.1.0 | MIT | UI coverage |
+| `jsdom` | 31.0.0 | MIT | DOM for UI unit tests |
+| `@testing-library/react` | 16.3.3 | MIT | React test utilities |
+| `@testing-library/dom` | 10.4.2 | MIT | Peer of `@testing-library/react` |
+| `react` | 19.3.1 | MIT | Types, tests and the preview harness; the production bundle uses the host's copy |
+| `react-dom` | 19.3.1 | MIT | Same as `react` |
+| `@types/react` | 19.3.0 | MIT | React types |
+| `@types/react-dom` | 19.3.0 | MIT | react-dom types |
+| `@playwright/test` | 1.65.0 | Apache-2.0 | Chromium smoke test of the preview harness |
 
-The UI stub PR adds Vite, Vitest, React Testing Library, React, and Playwright, each with its license recorded here.
+The host's React major is not readable from this repository; FP-01 checks it live. `ui/src/` uses only APIs present in React 18 and 19.
 
 ## Backend runtime (`requirements.txt`, provisioned by Crew)
 

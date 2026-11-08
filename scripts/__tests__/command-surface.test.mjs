@@ -32,7 +32,7 @@ const CI_CHECKS = [
   'e2e-smoke',
 ];
 
-const CURRENT_JOBS = CI_CHECKS.slice(0, 10);
+const CURRENT_JOBS = CI_CHECKS;
 
 /**
  * npm commands referenced in a markdown document, skipping any section whose
@@ -64,11 +64,11 @@ describe('package.json command surface', () => {
     }
   });
 
-  it('declares the PR-1 commands and no build target yet', () => {
-    for (const name of ['lint', 'typecheck', 'test', 'coverage', 'check:lock', 'check:provenance', 'dev']) {
+  it('declares the full FP-00 command surface', () => {
+    for (const name of ['build', 'build:preview', 'lint', 'typecheck', 'test', 'coverage', 'test:e2e', 'check:lock', 'check:fixtures', 'check:provenance', 'dev']) {
       assert.ok(name in scripts, `missing script ${name}`);
     }
-    assert.equal('build' in scripts, false, 'build arrives with the UI stub PR');
+    assert.match(scripts.build ?? '', /vite build --config ui\/vite\.config\.ts/);
   });
 
   it('enforces 90% line coverage on scripts/', () => {

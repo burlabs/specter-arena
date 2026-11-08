@@ -19,12 +19,16 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI
 |---|---|
 | `npm ci` | Install the locked root dependencies |
 | `npm run lint` | ESLint, ruff check, ruff format check |
-| `npm run typecheck` | `tsc --noEmit` with `checkJs` over `scripts/`; mypy strict with `--config-file backend/pyproject.toml` |
-| `npm test` | Node's built-in test runner over `scripts/__tests__/`; pytest over `backend/` |
-| `npm run coverage` | Coverage, failing under 90% lines on `scripts/*.mjs` or `backend/specter_arena` |
+| `npm run typecheck` | `tsc --noEmit` over `scripts/` and `ui/`; mypy strict with `--config-file backend/pyproject.toml` |
+| `npm test` | `node --test` over `scripts/__tests__/`; Vitest over `ui/src/`; pytest over `backend/` |
+| `npm run coverage` | Coverage, failing under 90% lines on `scripts/*.mjs`, `ui/src/` or `backend/specter_arena` |
 | `npm run check:lock` | Every native package family in the lock has a linux-x64 glibc build; `requirements.txt` matches `backend/uv.lock` |
 | `npm run check:provenance` | No Dragonboat-only identifiers, `.kiro/` tracked, no env files tracked |
-| `npm run dev` | Local dev loop; prints a notice until the UI preview harness exists |
+| `npm run build` | Vite library build to `ui/dist/index.mjs`; host modules stay external |
+| `npm run build:preview` | FIXTURE preview harness to `ui/preview-dist/` |
+| `npm run test:e2e` | Playwright Chromium smoke against the built harness |
+| `npm run check:fixtures` | No fixture code in `ui/dist/`; backend runtime imports no tests or fixtures |
+| `npm run dev` | Vite dev server for the FIXTURE preview harness |
 
 ## Rules
 
@@ -35,6 +39,7 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI
 - **Nothing copied from Dragonboat.** `burlabs/dragonboat-cms` is a read-only pattern reference. See `docs/provenance.md`.
 - **No root `pyproject.toml`.** Crew refuses one on the desktop interpreter. Python project config lives in `backend/pyproject.toml`.
 - **Backend imports are package-relative.** Crew runs `python -s -m uvicorn backend.app:app` from the repo root with only the `requirements.txt` deps installed; the repo is never pip-installed. `from .specter_arena.routes import health` works there; `import specter_arena` does not. `backend/tests/test_importable.py` and the `backend-smoke` CI job guard this.
+- **Fixtures stay out of production.** Files under `ui/fixtures/` and `ui/preview/` carry `SPECTER-FIXTURE-ONLY` and are never imported from `ui/src/`. The UI bundle leaves the host modules listed in `ui/host-modules.ts` external.
 - **Tests come with the code.** New handwritten code ships with tests at ≥90% line coverage on its declared scope.
 
 ## External tooling
