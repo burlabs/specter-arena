@@ -10,7 +10,6 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `@types/node` | 26.6.6 | MIT | Node types for `checkJs` |
 | `eslint` | 10.14.0 | MIT | `npm run lint` |
 | `@eslint/js` | 10.0.1 | MIT | ESLint recommended rules |
-
 | `vite` | 8.3.6 | MIT | UI library build and preview harness build |
 | `@vitejs/plugin-react` | 6.2.1 | MIT | JSX transform |
 | `vitest` | 5.1.0 | MIT | UI unit tests |
