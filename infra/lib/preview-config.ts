@@ -10,6 +10,12 @@ export const PREVIEW_PROFILE = 'specter-preview';
 /** Keeps this app's bootstrap resources apart from any other CDK use in the account. */
 export const CDK_QUALIFIER = 'specter';
 
+/**
+ * The qualifier does not rename the bootstrap stack, so without this name CDK would
+ * bootstrap into, and overwrite, the account's default `CDKToolkit` stack.
+ */
+export const TOOLKIT_STACK_NAME = 'CDKToolkit-specter';
+
 export const RESOURCE_PREFIX = 'specter-arena-preview';
 
 export const PROJECT_TAG = { key: 'project', value: 'specter-arena' } as const;

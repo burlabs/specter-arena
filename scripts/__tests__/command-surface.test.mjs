@@ -98,9 +98,29 @@ describe('documentation references', () => {
     for (const job of CI_CHECKS) assert.ok(adapters.includes(`| \`${job}\` |`), `adapters.md is missing job ${job}`);
   });
 
-  it('branch-protection step 2 names the same 13 checks', () => {
+  it('branch-protection step 2 re-PUTs step 1 plus exactly the 13 GitHub Actions checks', () => {
     const protection = read('docs/ops/branch-protection.md');
-    for (const job of CI_CHECKS) assert.ok(protection.includes(`"${job}"`), `branch-protection.md is missing ${job}`);
+    /** @param {string} heading */
+    const section = (heading) => {
+      const start = protection.indexOf(heading);
+      const next = protection.indexOf('\n## ', start + heading.length);
+      return protection.slice(start, next === -1 ? undefined : next);
+    };
+    /** @param {string} text */
+    const body = (text) => JSON.parse(/<<'JSON'\n([\s\S]*?)\nJSON/.exec(text)?.[1] ?? 'null');
+    const step1 = section('## Step 1');
+    const step2 = section('## Step 2');
+    assert.match(step2, /gh api -X PUT repos\/burlabs\/specter-arena\/branches\/main\/protection \\/);
+    const { required_status_checks: checks, ...rest } = body(step2);
+    const step1Body = body(step1);
+    assert.equal(step1Body.required_status_checks, null);
+    delete step1Body.required_status_checks;
+    assert.deepEqual(rest, step1Body);
+    assert.equal(checks.strict, true);
+    assert.deepEqual(
+      checks.checks,
+      CI_CHECKS.map((context) => ({ context, app_id: 15368 })),
+    );
   });
 
   it('links the adapter mapping from AGENTS.md', () => {
