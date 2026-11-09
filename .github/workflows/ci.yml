@@ -227,6 +227,12 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run check:fixtures
+      - name: The diagnostic build still carries its marker (positive control)
+        run: |
+          npm run build:diagnostic
+          npm run check:diagnostic
+      - name: Committed capability matrix and recorded payloads validate offline
+        run: npm run probe:check
 
   e2e-smoke:
     runs-on: ubuntu-latest

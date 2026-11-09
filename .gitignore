@@ -3,6 +3,10 @@ node_modules/
 .deps/
 ui/dist/
 ui/preview-dist/
+ui/diagnostic-dist/
+.probe-app/
+.probe-out/
+.probe-enabled
 infra/cdk.out/
 coverage/
 .coverage

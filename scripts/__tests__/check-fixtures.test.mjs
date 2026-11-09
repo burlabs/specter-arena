@@ -3,7 +3,19 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
-import { FIXTURE_MARKER, backendRuntimeFiles, findFixtureContent, importsTestCode, run, scanBackend, scanBundle } from '../check-fixtures.mjs';
+import {
+  DIAGNOSTIC_MARKER,
+  FIXTURE_MARKER,
+  backendRuntimeFiles,
+  findFixtureContent,
+  importsTestCode,
+  run,
+  runPositiveControl,
+  scanBackend,
+  scanBundle,
+  scanManifest,
+  scanReleaseTree,
+} from '../check-fixtures.mjs';
 
 const root = mkdtempSync(join(tmpdir(), 'check-fixtures-'));
 after(() => rmSync(root, { recursive: true, force: true }));
@@ -105,5 +117,153 @@ describe('backend runtime scan', () => {
 
   it('passes on the real backend', () => {
     assert.deepEqual(scanBackend('backend'), []);
+  });
+});
+
+/** @param {string} text */
+function manifestFile(text) {
+  const path = join(mkdtempSync(join(root, 'manifest-')), 'app.json');
+  writeFileSync(path, text);
+  return path;
+}
+
+describe('diagnostic marker', () => {
+  it('is flagged on its own', () => {
+    assert.deepEqual(findFixtureContent(`const label = "${DIAGNOSTIC_MARKER}";`), [`contains ${DIAGNOSTIC_MARKER}`]);
+  });
+
+  it('is reported after the fixture marker when both are present', () => {
+    assert.deepEqual(findFixtureContent(`"${DIAGNOSTIC_MARKER}" "${FIXTURE_MARKER}"`), [`contains ${FIXTURE_MARKER}`, `contains ${DIAGNOSTIC_MARKER}`]);
+  });
+
+  it('is reported for a nested chunk with its relative path', () => {
+    const dir = bundle({ 'index.mjs': 'export default 1;', 'chunks/a/diag.mjs': `"${DIAGNOSTIC_MARKER}"` });
+    assert.deepEqual(scanBundle(dir), [{ file: join('chunks', 'a', 'diag.mjs'), reason: `contains ${DIAGNOSTIC_MARKER}` }]);
+  });
+
+  it('turns a release bundle that imports diagnostic code red (deliberate violation)', () => {
+    /** @type {string[]} */
+    const lines = [];
+    const dir = bundle({ 'index.mjs': `export const leaked = "${DIAGNOSTIC_MARKER}";` });
+    const backendDir = bundle({ 'app.py': 'x = 1\n' });
+    const manifest = join(root, 'absent-app.json');
+    assert.equal(run({ dir, backendDir, manifest, releaseRoots: [], log: (line) => lines.push(line) }), 1);
+    assert.deepEqual(lines, [`check:fixtures: ${dir}/index.mjs contains ${DIAGNOSTIC_MARKER}`]);
+  });
+});
+
+describe('scanManifest', () => {
+  it('passes the real release manifest', () => {
+    assert.deepEqual(scanManifest('app.json'), []);
+  });
+
+  it('allows a release manifest with only dist/ references and minKiroCrewVersion', () => {
+    const path = manifestFile(JSON.stringify({ minKiroCrewVersion: '0.12.0', ui: { entry: 'dist/index.mjs', pages: [{ route: '/a', label: 'A' }] } }));
+    assert.deepEqual(scanManifest(path), []);
+  });
+
+  it('treats a missing manifest as clean', () => {
+    assert.deepEqual(scanManifest(join(root, 'no-app.json')), []);
+  });
+
+  it('flags permissions and backend.hooks', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [] }, backend: { hooks: {} }, ui: { entry: 'dist/index.mjs' } }));
+    assert.deepEqual(
+      scanManifest(path).map(({ reason }) => reason),
+      [
+        'release manifest declares permissions (probe permissions belong in probe/manifest-overlay.json)',
+        'release manifest declares backend.hooks',
+      ],
+    );
+  });
+
+  it('flags a ui.entry or page entryPoint outside dist/ or naming the diagnostic bundle', () => {
+    const path = manifestFile(
+      JSON.stringify({ ui: { entry: 'diagnostic-dist/x.mjs', pages: [{ entryPoint: '../ui/diagnostic-dist/x.mjs' }, { entryPoint: 'dist/diagnostic.mjs' }, { entryPoint: 'dist/ok.mjs' }, {}] } }),
+    );
+    assert.deepEqual(
+      scanManifest(path).map(({ reason }) => reason),
+      [
+        'ui reference diagnostic-dist/x.mjs is not a release dist/ path',
+        'ui reference ../ui/diagnostic-dist/x.mjs is not a release dist/ path',
+        'ui reference dist/diagnostic.mjs is not a release dist/ path',
+      ],
+    );
+  });
+
+  it('flags the marker text', () => {
+    const path = manifestFile(JSON.stringify({ description: DIAGNOSTIC_MARKER, ui: { entry: 'dist/index.mjs' } }));
+    assert.deepEqual(scanManifest(path), [{ file: path, reason: `contains ${DIAGNOSTIC_MARKER}` }]);
+  });
+
+  it('reports invalid JSON as a finding instead of throwing', () => {
+    const path = manifestFile('{ nope');
+    assert.deepEqual(scanManifest(path), [{ file: path, reason: 'is not valid JSON' }]);
+  });
+
+  it('tolerates a manifest without ui or with non-array pages', () => {
+    assert.deepEqual(scanManifest(manifestFile('{}')), []);
+    assert.deepEqual(scanManifest(manifestFile(JSON.stringify({ ui: { pages: 'x' } }))), []);
+  });
+});
+
+describe('scanReleaseTree', () => {
+  it('flags a probe switch file in any release root', () => {
+    const clean = mkdtempSync(join(root, 'tree-'));
+    const dirty = mkdtempSync(join(root, 'tree-'));
+    writeFileSync(join(dirty, '.probe-enabled'), '');
+    assert.deepEqual(scanReleaseTree([clean]), []);
+    assert.deepEqual(scanReleaseTree([clean, dirty]), [{ file: join(dirty, '.probe-enabled'), reason: 'probe switch file present in the release tree' }]);
+  });
+
+  it('passes the real repository tree', () => {
+    assert.deepEqual(scanReleaseTree(), []);
+  });
+
+  it('is part of run()', () => {
+    /** @type {string[]} */
+    const lines = [];
+    const dir = bundle({ 'index.mjs': 'export default 1;' });
+    const backendDir = bundle({ 'app.py': 'x = 1\n' });
+    const tree = mkdtempSync(join(root, 'tree-'));
+    writeFileSync(join(tree, '.probe-enabled'), '');
+    const manifest = join(root, 'absent-app.json');
+    assert.equal(run({ dir, backendDir, manifest, releaseRoots: [tree], log: (line) => lines.push(line) }), 1);
+    assert.deepEqual(lines, [`check:fixtures: ${join(tree, '.probe-enabled')} probe switch file present in the release tree`]);
+  });
+
+  it('run() also reports a bad release manifest', () => {
+    /** @type {string[]} */
+    const lines = [];
+    const dir = bundle({ 'index.mjs': 'export default 1;' });
+    const backendDir = bundle({ 'app.py': 'x = 1\n' });
+    const manifest = manifestFile(JSON.stringify({ permissions: {} }));
+    assert.equal(run({ dir, backendDir, manifest, releaseRoots: [], log: (line) => lines.push(line) }), 1);
+    assert.match(lines[0] ?? '', /release manifest declares permissions/);
+  });
+});
+
+describe('runPositiveControl', () => {
+  it('fails when the diagnostic bundle has not been built', () => {
+    /** @type {string[]} */
+    const lines = [];
+    assert.equal(runPositiveControl({ dir: join(root, 'absent-diag'), log: (line) => lines.push(line) }), 1);
+    assert.match(lines[0] ?? '', /not found; run npm run build:diagnostic first/);
+  });
+
+  it('fails when the bundle no longer carries the marker, so the exclusion scan would be vacuous', () => {
+    /** @type {string[]} */
+    const lines = [];
+    const dir = bundle({ 'index.mjs': 'export default 1;' });
+    assert.equal(runPositiveControl({ dir, log: (line) => lines.push(line) }), 1);
+    assert.match(lines[0] ?? '', /vacuous/);
+  });
+
+  it('passes and counts the files that carry the marker', () => {
+    /** @type {string[]} */
+    const lines = [];
+    const dir = bundle({ 'index.mjs': `"${DIAGNOSTIC_MARKER}"`, 'other.mjs': 'x', 'chunks/c.mjs': `// ${DIAGNOSTIC_MARKER}` });
+    assert.equal(runPositiveControl({ dir, log: (line) => lines.push(line) }), 0);
+    assert.deepEqual(lines, [`check:diagnostic: ${dir} carries ${DIAGNOSTIC_MARKER} in 2 file(s)`]);
   });
 });

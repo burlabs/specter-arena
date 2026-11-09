@@ -31,6 +31,10 @@ npm run coverage
 | `npm run build:preview` | Builds the FIXTURE preview harness to `ui/preview-dist/` |
 | `npm run test:e2e` | Builds the harness and runs the Playwright Chromium smoke test against it |
 | `npm run check:fixtures` | Fails if `ui/dist/` carries fixture code or the backend runtime imports tests or fixtures |
+| `npm run build:diagnostic` | Dev-only diagnostic bundle to `ui/diagnostic-dist/` (never shipped; carries `SPECTER-DIAGNOSTIC-ONLY`) |
+| `npm run check:diagnostic` | Positive control: the diagnostic bundle still carries its marker, so the `check:fixtures` exclusion scan is meaningful |
+| `npm run probe:check` | Offline validation of the committed capability matrix and recorded payloads; not a live probe |
+| `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2`) for the owner to install; prints the install command, never installs |
 | `npm run dev` | Serves the FIXTURE preview harness with Vite's dev server (no backend) |
 
 Run `npm ci && npm run build` before installing this repo into Crew from a local path: a local-path install copies the folder without building it, and Crew loads `ui/dist/index.mjs`.
@@ -43,6 +47,8 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 - `docs/development/adapters.md`: SOP provider keys and the CI check list
 - `docs/architecture/component-index.md`: component ownership
 - `docs/ops/preview.md`: the per-PR preview stack and how the owner deploys it
+- `docs/compatibility/`: the pinned Crew compatibility record, capability matrix and host facts
+- `docs/ops/crew-probe-runbook.md`: the live probe runbook
 - `docs/provenance.md` and `DEPENDENCIES.md`: where things come from
 
 ## License

@@ -45,7 +45,16 @@ Each row records the step, who ran it, the credential label, an ISO 8601 UTC tim
 
 ## Probe app
 
-The probe app is assembled from the release app plus a probe overlay by a staging command added in the diagnostic-seam slice. Commands in this section are Planned until that slice merges; none is runnable today. Eric installs the staged app and uninstalls it after the run, because the user-slots grant exposes every user-origin chat to the app. Tell Eric before installing the grant phase.
+The probe app is assembled from the release app plus `probe/manifest-overlay.json` by a staging command. Staging never installs; Eric installs the staged app himself and uninstalls it after the run, because the user-slots grant exposes every user-origin chat to the app. Tell Eric before installing the grant phase.
+
+```sh
+npm ci
+npm run build
+npm run build:diagnostic
+npm run probe:stage -- --phase v0
+```
+
+`probe:stage` writes the git-ignored `.probe-app/` (with a `.probe-enabled` switch file that exists nowhere else) and prints the install command as text. It refuses to stage a diagnostic bundle that lacks `SPECTER-DIAGNOSTIC-ONLY`. Phases: `v0` has no permissions (deny-by-default evidence), `v1` adds the probe grants, `v2` adds one more API entry to exercise the staged-approval path. The overlay never contains `backend.hooks`.
 
 ## Export step
 

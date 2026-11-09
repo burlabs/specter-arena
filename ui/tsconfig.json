@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*", "fixtures/**/*", "preview/**/*", "host-modules.ts", "vite.config.ts", "vite.preview.config.ts", "../playwright.config.ts", "../tests/e2e/**/*.ts"]
+  "include": ["src/**/*", "fixtures/**/*", "preview/**/*", "host-modules.ts", "vite.config.ts", "vite.preview.config.ts", "vite.diagnostic.config.ts", "../playwright.config.ts", "../tests/e2e/**/*.ts"]
 }
