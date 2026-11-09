@@ -5,7 +5,17 @@ import pytest
 
 PROBE_DIR = Path(__file__).resolve().parents[1] / "specter_arena" / "probe"
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
-MODULES = ["__init__", "questions", "sanitise", "frames", "matrix", "snapshot", "steps", "routes"]
+MODULES = [
+    "__init__",
+    "questions",
+    "sanitise",
+    "frames",
+    "matrix",
+    "snapshot",
+    "steps",
+    "routes",
+    "live",
+]
 FORBIDDEN = [".app_secret", "~/.kiro", "expanduser", "Path.home", "owner_token", "os.environ"]
 
 

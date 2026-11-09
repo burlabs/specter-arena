@@ -17,6 +17,7 @@ async function unwrap<T>(pending: Promise<unknown>): Promise<T> {
   const result = await pending;
   if (!isResponseLike(result)) return result as T;
   if (!result.ok) throw new Error(`Request failed with status ${result.status}`);
+  if (result.status === 204) return undefined as T;
   return (await result.json()) as T;
 }
 

@@ -40,6 +40,12 @@ describe('useHostApi', () => {
     expect(client.post).toHaveBeenCalledWith('/api/x', { a: 1 });
   });
 
+  it('resolves undefined for an empty 204 reply instead of parsing a body', async () => {
+    client.post.mockResolvedValue(new Response(null, { status: 204 }));
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.postJson('/api/probe/config', { probeSlug: 'x' })).resolves.toBeUndefined();
+  });
+
   it('propagates client rejections', async () => {
     client.get.mockRejectedValue(new Error('network down'));
     const { result } = renderHook(() => useHostApi());
