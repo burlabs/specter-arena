@@ -160,7 +160,9 @@ jobs:
       # Mirrors Crew: deps-only install from the hashed requirements.txt, the repo itself
       # never installed, `-s`, cwd = repo root, module backend.app:app.
       - name: Install deps the way Crew provisions them
-        run: python -m pip install --require-hashes --target .deps -r requirements.txt
+        run: |
+          python -m pip install --require-hashes --target .deps -r requirements.txt
+          PYTHONPATH=.deps python -s -c "import websockets; print('websockets', websockets.__version__)"
       - name: Start the backend and probe /health
         run: |
           PYTHONPATH=.deps python -s -m uvicorn backend.app:app --host 127.0.0.1 --port 9100 > uvicorn.log 2>&1 &

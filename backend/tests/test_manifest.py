@@ -4,9 +4,9 @@ from typing import Any
 
 MANIFEST_PATH = Path(__file__).resolve().parents[2] / "app.json"
 
-IDENTITY_FIELDS = {"name", "version", "displayName", "description"}
+IDENTITY_FIELDS = {"name", "version", "displayName", "description", "minKiroCrewVersion"}
 BACKEND_FIELDS = {"entryPoint", "type", "healthCheck", "routes"}
-FORBIDDEN_TOP_LEVEL = {"minKiroCrewVersion", "permissions", "crons", "agents", "signedPrincipal"}
+FORBIDDEN_TOP_LEVEL = {"permissions", "crons", "agents", "signedPrincipal"}
 
 
 def load_manifest() -> dict[str, Any]:
@@ -22,6 +22,10 @@ def test_manifest_identity() -> None:
     manifest = load_manifest()
     assert manifest["name"] == "specter-arena"
     assert manifest["version"] == "0.0.0"
+
+
+def test_manifest_pins_the_probed_crew_version() -> None:
+    assert load_manifest()["minKiroCrewVersion"] == "0.12.0"
 
 
 def test_backend_section_matches_the_crew_runtime_contract() -> None:

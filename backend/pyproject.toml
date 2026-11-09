@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "starlette",
   "uvicorn",
+  "websockets",
 ]
 
 [dependency-groups]
@@ -41,7 +42,9 @@ pythonpath = [".."]
 
 [tool.coverage.run]
 source = ["backend/specter_arena"]
-omit = ["*/tests/*"]
+# probe/live.py is the only I/O driver (token exchange, HTTP, WebSocket); the live run
+# exercises it, CI does not. Every other module stays in the coverage scope.
+omit = ["*/tests/*", "*/probe/live.py"]
 
 [tool.coverage.report]
 fail_under = 90

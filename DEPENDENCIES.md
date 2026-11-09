@@ -36,6 +36,7 @@ The host's React major is not readable from this repository; FP-01 checks it liv
 | `h11` | 0.16.0 | MIT | uvicorn dependency |
 | `idna` | 3.20 | BSD-3-Clause | anyio dependency |
 | `typing_extensions` | 4.16.0 | PSF-2.0 | Starlette dependency |
+| `websockets` | 17.4 | BSD-3-Clause | WebSocket client for the FP-01 diagnostic probe; nothing imports it yet |
 
 ## Backend development (`backend/pyproject.toml` dev group, never shipped)
 
