@@ -3,8 +3,12 @@ import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const FIXTURE_MARKER = 'SPECTER-FIXTURE-ONLY';
+export const DIAGNOSTIC_MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
 export const DEFAULT_BUNDLE_DIR = 'ui/dist';
+export const DEFAULT_DIAGNOSTIC_DIR = 'ui/diagnostic-dist';
 export const DEFAULT_BACKEND_DIR = 'backend';
+export const DEFAULT_MANIFEST = 'app.json';
+export const DEFAULT_RELEASE_ROOTS = ['.', 'ui', 'backend'];
 
 const HOST_MODULES_ASSIGNMENT = /__kirocrew_modules\s*(?:\.[\w$]+|\[[^\]]*\])?\s*=(?![=>])/;
 
@@ -27,6 +31,7 @@ export function findFixtureContent(text) {
   /** @type {string[]} */
   const reasons = [];
   if (text.includes(FIXTURE_MARKER)) reasons.push(`contains ${FIXTURE_MARKER}`);
+  if (text.includes(DIAGNOSTIC_MARKER)) reasons.push(`contains ${DIAGNOSTIC_MARKER}`);
   if (HOST_MODULES_ASSIGNMENT.test(text)) reasons.push('assigns __kirocrew_modules');
   return reasons;
 }
@@ -78,10 +83,78 @@ export function scanBackend(dir) {
 }
 
 /**
- * @param {{ dir?: string, backendDir?: string, log?: (line: string) => void }} [options]
+ * The release manifest may only point at the release bundle and declares no probe grants.
+ * @param {string} path app.json
+ * @returns {{ file: string, reason: string }[]}
+ */
+export function scanManifest(path) {
+  if (!existsSync(path)) return [];
+  const text = readFileSync(path, 'utf8');
+  /** @type {{ file: string, reason: string }[]} */
+  const findings = [];
+  if (text.includes(DIAGNOSTIC_MARKER)) findings.push({ file: path, reason: `contains ${DIAGNOSTIC_MARKER}` });
+  let manifest;
+  try {
+    manifest = JSON.parse(text);
+  } catch {
+    return [...findings, { file: path, reason: 'is not valid JSON' }];
+  }
+  if (manifest?.permissions !== undefined) {
+    findings.push({ file: path, reason: 'release manifest declares permissions (probe permissions belong in probe/manifest-overlay.json)' });
+  }
+  if (manifest?.backend?.hooks !== undefined) findings.push({ file: path, reason: 'release manifest declares backend.hooks' });
+  /** @type {unknown[]} */
+  const pages = Array.isArray(manifest?.ui?.pages) ? manifest.ui.pages : [];
+  const refs = [manifest?.ui?.entry, ...pages.map((page) => /** @type {{ entryPoint?: unknown }} */ (page)?.entryPoint)];
+  for (const ref of refs) {
+    if (typeof ref !== 'string') continue;
+    if (!ref.startsWith('dist/') || /diagnostic/i.test(ref)) findings.push({ file: path, reason: `ui reference ${ref} is not a release dist/ path` });
+  }
+  return findings;
+}
+
+/**
+ * The probe switch file is written only into .probe-app/ by probe:stage; it must never be in the release tree.
+ * @param {string[]} [roots]
+ * @returns {{ file: string, reason: string }[]}
+ */
+export function scanReleaseTree(roots = DEFAULT_RELEASE_ROOTS) {
+  return roots
+    .map((root) => join(root, '.probe-enabled'))
+    .filter((file) => existsSync(file))
+    .map((file) => ({ file, reason: 'probe switch file present in the release tree' }));
+}
+
+/**
+ * Positive control: the diagnostic build must still carry the marker, or the exclusion scan proves nothing.
+ * @param {{ dir?: string, log?: (line: string) => void }} [options]
  * @returns {number} process exit code
  */
-export function run({ dir = DEFAULT_BUNDLE_DIR, backendDir = DEFAULT_BACKEND_DIR, log = console.log } = {}) {
+export function runPositiveControl({ dir = DEFAULT_DIAGNOSTIC_DIR, log = console.log } = {}) {
+  if (!existsSync(dir)) {
+    log(`check:diagnostic: ${dir} not found; run npm run build:diagnostic first`);
+    return 1;
+  }
+  const carriers = listFiles(dir).filter((path) => readFileSync(path, 'utf8').includes(DIAGNOSTIC_MARKER));
+  if (carriers.length === 0) {
+    log(`check:diagnostic: ${dir} carries no ${DIAGNOSTIC_MARKER}; the exclusion check would be vacuous`);
+    return 1;
+  }
+  log(`check:diagnostic: ${dir} carries ${DIAGNOSTIC_MARKER} in ${carriers.length} file(s)`);
+  return 0;
+}
+
+/**
+ * @param {{ dir?: string, backendDir?: string, manifest?: string, releaseRoots?: string[], log?: (line: string) => void }} [options]
+ * @returns {number} process exit code
+ */
+export function run({
+  dir = DEFAULT_BUNDLE_DIR,
+  backendDir = DEFAULT_BACKEND_DIR,
+  manifest = DEFAULT_MANIFEST,
+  releaseRoots = DEFAULT_RELEASE_ROOTS,
+  log = console.log,
+} = {}) {
   if (!existsSync(dir)) {
     log(`check:fixtures: ${dir} not found; run the production build first`);
     return 1;
@@ -89,6 +162,8 @@ export function run({ dir = DEFAULT_BUNDLE_DIR, backendDir = DEFAULT_BACKEND_DIR
   const findings = [
     ...scanBundle(dir).map(({ file, reason }) => `${dir}/${file} ${reason}`),
     ...scanBackend(backendDir).map(({ file, reason }) => `${backendDir}/${file} ${reason}`),
+    ...scanManifest(manifest).map(({ file, reason }) => `${file} ${reason}`),
+    ...scanReleaseTree(releaseRoots).map(({ file, reason }) => `${file} ${reason}`),
   ];
   for (const finding of findings) log(`check:fixtures: ${finding}`);
   if (findings.length > 0) return 1;
@@ -97,5 +172,8 @@ export function run({ dir = DEFAULT_BUNDLE_DIR, backendDir = DEFAULT_BACKEND_DIR
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = run({ dir: process.argv[2] ?? DEFAULT_BUNDLE_DIR });
+  process.exitCode =
+    process.argv[2] === '--expect-diagnostic'
+      ? runPositiveControl({ dir: process.argv[3] ?? DEFAULT_DIAGNOSTIC_DIR })
+      : run({ dir: process.argv[2] ?? DEFAULT_BUNDLE_DIR });
 }

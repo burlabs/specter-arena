@@ -18,7 +18,11 @@
     "test:e2e": "npm run build:preview && playwright test",
     "check:lock": "node scripts/check-lock.mjs",
     "check:fixtures": "node scripts/check-fixtures.mjs",
+    "check:diagnostic": "node scripts/check-fixtures.mjs --expect-diagnostic ui/diagnostic-dist",
     "check:provenance": "node scripts/check-provenance.mjs",
+    "build:diagnostic": "vite build --config ui/vite.diagnostic.config.ts",
+    "probe:check": "node scripts/check-matrix.mjs && node scripts/check-recorded.mjs",
+    "probe:stage": "node scripts/stage-probe-app.mjs",
     "dev": "node scripts/dev.mjs"
   },
   "devDependencies": {

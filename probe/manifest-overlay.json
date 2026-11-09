@@ -1,0 +1,17 @@
+{
+  "version": "0.0.0-probe.1",
+  "permissions": {
+    "api": ["/api/agents", "/api/chat/slots", "/api/member-records/*"],
+    "events": ["slots:user"]
+  },
+  "ui": {
+    "pages": [
+      {
+        "route": "/apps/specter-arena/diagnostic",
+        "label": "Specter Diagnostic",
+        "icon": "Activity",
+        "entryPoint": "diagnostic-dist/index.mjs"
+      }
+    ]
+  }
+}

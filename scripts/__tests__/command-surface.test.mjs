@@ -71,6 +71,17 @@ describe('package.json command surface', () => {
     assert.match(scripts.build ?? '', /vite build --config ui\/vite\.config\.ts/);
   });
 
+  it('declares the FP-01 command surface without touching FP-00 names', () => {
+    for (const name of ['build:diagnostic', 'check:diagnostic', 'probe:check', 'probe:stage']) {
+      assert.ok(name in scripts, `missing script ${name}`);
+    }
+    assert.match(scripts['build:diagnostic'] ?? '', /vite build --config ui\/vite\.diagnostic\.config\.ts/);
+    assert.match(scripts['check:diagnostic'] ?? '', /--expect-diagnostic/);
+    assert.match(scripts['probe:check'] ?? '', /check-matrix\.mjs && node scripts\/check-recorded\.mjs/);
+    assert.match(scripts['probe:stage'] ?? '', /stage-probe-app\.mjs/);
+    assert.equal(scripts.build, 'vite build --config ui/vite.config.ts');
+  });
+
   it('enforces 90% line coverage on scripts/', () => {
     assert.match(scripts.coverage ?? '', /--test-coverage-lines=90\b/);
     assert.match(scripts.coverage ?? '', /--test-coverage-include=scripts\/\*\.mjs/);
@@ -156,6 +167,11 @@ describe('ci.yml', () => {
   it('starts the backend smoke test the way Crew does', () => {
     assert.match(ci, /pip install --require-hashes --target \.deps -r requirements\.txt/);
     assert.match(ci, /PYTHONPATH=\.deps python -s -m uvicorn backend\.app:app --host 127\.0\.0\.1/);
+  });
+
+  it('runs the diagnostic positive control and the evidence validators inside the fixtures job', () => {
+    const fixtures = jobsSection.slice(jobsSection.indexOf('\n  fixtures:'), jobsSection.indexOf('\n  e2e-smoke:'));
+    assert.match(fixtures, /npm run check:fixtures[\s\S]*npm run build:diagnostic[\s\S]*npm run check:diagnostic[\s\S]*npm run probe:check/);
   });
 
   it('verifies the gitleaks checksum before running it', () => {

@@ -28,6 +28,10 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI
 | `npm run build:preview` | FIXTURE preview harness to `ui/preview-dist/` |
 | `npm run test:e2e` | Playwright Chromium smoke against the built harness |
 | `npm run check:fixtures` | No fixture code in `ui/dist/`; backend runtime imports no tests or fixtures |
+| `npm run build:diagnostic` | Dev-only diagnostic bundle to `ui/diagnostic-dist/` (never shipped; carries `SPECTER-DIAGNOSTIC-ONLY`) |
+| `npm run check:diagnostic` | Positive control: the diagnostic bundle still carries its marker, so the `check:fixtures` exclusion scan is meaningful |
+| `npm run probe:check` | Offline validation of the committed capability matrix and recorded payloads; not a live probe |
+| `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2`) for the owner to install; prints the install command, never installs |
 | `npm run dev` | Vite dev server for the FIXTURE preview harness |
 
 ## Rules
@@ -39,7 +43,7 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI
 - **Nothing copied from Dragonboat.** `burlabs/dragonboat-cms` is a read-only pattern reference. See `docs/provenance.md`.
 - **No root `pyproject.toml`.** Crew refuses one on the desktop interpreter. Python project config lives in `backend/pyproject.toml`.
 - **Backend imports are package-relative.** Crew runs `python -s -m uvicorn backend.app:app` from the repo root with only the `requirements.txt` deps installed; the repo is never pip-installed. `from .specter_arena.routes import health` works there; `import specter_arena` does not. `backend/tests/test_importable.py` and the `backend-smoke` CI job guard this.
-- **Fixtures stay out of production.** Files under `ui/fixtures/` and `ui/preview/` carry `SPECTER-FIXTURE-ONLY` and are never imported from `ui/src/`. The UI bundle leaves the host modules listed in `ui/host-modules.ts` external.
+- **Fixtures stay out of production.** Files under `ui/fixtures/` and `ui/preview/` carry `SPECTER-FIXTURE-ONLY` and are never imported from `ui/src/`. The UI bundle leaves the host modules listed in `ui/host-modules.ts` external. Files under `ui/src/diagnostic/` carry `SPECTER-DIAGNOSTIC-ONLY` and are never imported from the release entry; `app.json` never references them. Recorded real captures live in `tests/recorded/` and are never imported by release code.
 - **Tests come with the code.** New handwritten code ships with tests at ≥90% line coverage on its declared scope.
 
 ## External tooling
