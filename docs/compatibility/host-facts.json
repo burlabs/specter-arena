@@ -1,6 +1,7 @@
 {
   "hostVersion": "0.12.0",
   "runId": "none",
+  "probedAt": null,
   "facts": [
     {
       "id": "host-backend-spawn",
