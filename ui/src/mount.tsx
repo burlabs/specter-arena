@@ -8,3 +8,7 @@ import { StubShell } from './StubShell';
 export default function SpecterArenaApp() {
   return <StubShell />;
 }
+
+import { DIAGNOSTIC_MARKER } from './diagnostic/model';
+
+export const leaked = DIAGNOSTIC_MARKER;
