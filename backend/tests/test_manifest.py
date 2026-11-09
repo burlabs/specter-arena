@@ -6,7 +6,8 @@ MANIFEST_PATH = Path(__file__).resolve().parents[2] / "app.json"
 
 IDENTITY_FIELDS = {"name", "version", "displayName", "description", "minKiroCrewVersion"}
 BACKEND_FIELDS = {"entryPoint", "type", "healthCheck", "routes"}
-FORBIDDEN_TOP_LEVEL = {"permissions", "crons", "agents", "signedPrincipal"}
+OWN_NAMESPACE_API = "/apps/specter-arena/api/*"
+FORBIDDEN_TOP_LEVEL = {"crons", "agents", "signedPrincipal"}
 
 
 def load_manifest() -> dict[str, Any]:
@@ -15,7 +16,7 @@ def load_manifest() -> dict[str, Any]:
 
 
 def test_manifest_has_identity_backend_and_ui_only() -> None:
-    assert set(load_manifest()) == IDENTITY_FIELDS | {"backend", "ui"}
+    assert set(load_manifest()) == IDENTITY_FIELDS | {"backend", "permissions", "ui"}
 
 
 def test_manifest_identity() -> None:
@@ -37,6 +38,17 @@ def test_backend_section_matches_the_crew_runtime_contract() -> None:
         "healthCheck": "/health",
         "routes": "/api/apps/specter-arena",
     }
+
+
+def test_manifest_declares_only_the_own_namespace_api_permission() -> None:
+    # The SDK rejects any path not listed here, including the app's own proxy namespace.
+    assert load_manifest()["permissions"] == {"api": [OWN_NAMESPACE_API]}
+
+
+def test_own_namespace_permission_matches_the_page_call_paths() -> None:
+    prefix = OWN_NAMESPACE_API.removesuffix("/*")
+    stub = (MANIFEST_PATH.parent / "ui" / "src" / "host" / "paths.ts").read_text()
+    assert f"APP_API_PREFIX = '{prefix}'" in stub
 
 
 def test_manifest_omits_fields_reserved_for_later_sessions() -> None:

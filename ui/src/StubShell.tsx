@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useHostApi } from './host';
+import { PING_PATH, useHostApi } from './host';
 
 type Check = { state: 'idle' } | { state: 'ok'; at: string } | { state: 'error'; message: string };
 
@@ -9,7 +9,7 @@ export function StubShell() {
 
   const runCheck = () => {
     api
-      .getJson<{ at: string }>('/api/ping')
+      .getJson<{ at: string }>(PING_PATH)
       .then((body) => setCheck({ state: 'ok', at: body.at }))
       .catch((error: unknown) =>
         setCheck({ state: 'error', message: error instanceof Error ? error.message : String(error) }),

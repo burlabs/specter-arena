@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import * as entry from './mount';
 import SpecterArenaApp from './mount';
 
@@ -29,7 +30,8 @@ describe('release entry', () => {
     render(<SpecterArenaApp />);
     fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
     expect((await screen.findByRole('status')).textContent).toBe('Backend reachable at 2000-01-01T00:00:00Z.');
-    expect(client.get).toHaveBeenCalledWith('/api/ping');
+    expect(client.get).toHaveBeenCalledWith('/apps/specter-arena/api/ping');
+    expect(isPathPermitted(DECLARED_API, '/apps/specter-arena/api/ping')).toBe(true);
   });
 
   it('shows the error text when the check fails', async () => {

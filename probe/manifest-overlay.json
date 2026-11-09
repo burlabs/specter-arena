@@ -1,7 +1,7 @@
 {
   "version": "0.0.0-probe.1",
   "permissions": {
-    "api": ["/api/agents", "/api/chat/slots", "/api/member-records/*"],
+    "api": ["/apps/specter-arena/api/*", "/api/agents", "/api/chat/slots", "/api/member-records/*"],
     "events": ["slots:user"]
   },
   "ui": {

@@ -1,13 +1,14 @@
 // SPECTER-DIAGNOSTIC-ONLY: dev-only diagnostic entry, built by ui/vite.diagnostic.config.ts
 // and reachable only through the staged probe app. The release entry never imports it.
 import { useCallback, useEffect, useId, useState } from 'react';
+import { appApiPath } from '../host/paths';
 import { useHostApi } from '../host/useHostApi';
 import { DiagnosticPage } from './components/DiagnosticPage';
 import type { DiagnosticSnapshot } from './model';
 
-const SNAPSHOT_PATH = '/api/probe/snapshot';
-const CONFIG_PATH = '/api/probe/config';
-const RUN_PATH = '/api/probe/run';
+const SNAPSHOT_PATH = appApiPath('/probe/snapshot');
+const CONFIG_PATH = appApiPath('/probe/config');
+const RUN_PATH = appApiPath('/probe/run');
 
 // The release backend has no probe routes, so a 404 means the dev switch is off.
 function describeLoadError(error: unknown): string {

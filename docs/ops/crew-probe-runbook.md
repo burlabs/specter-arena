@@ -54,7 +54,7 @@ npm run build:diagnostic
 npm run probe:stage -- --phase v0
 ```
 
-`probe:stage` writes the git-ignored `.probe-app/` (with a `.probe-enabled` switch file that exists nowhere else) and prints the install command as text. It refuses to stage a diagnostic bundle that lacks `SPECTER-DIAGNOSTIC-ONLY`. Phases: `v0` has no permissions (deny-by-default evidence), `v1` adds the probe grants, `v2` adds one more API entry to exercise the staged-approval path. The overlay never contains `backend.hooks`.
+`probe:stage` writes the git-ignored `.probe-app/` (with a `.probe-enabled` switch file that exists nowhere else) and prints the install command as text. It refuses to stage a diagnostic bundle that lacks `SPECTER-DIAGNOSTIC-ONLY`. Phases: `v0` declares only the app's own-namespace entry `/apps/specter-arena/api/*` (the browser SDK rejects the app's own proxy path otherwise; every phase keeps it), `v1` adds the probe grants, `v2` adds one more API entry to exercise the staged-approval path. The overlay never contains `backend.hooks`.
 
 ## Export step
 

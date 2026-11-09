@@ -14,7 +14,7 @@ import {
   parseArgs,
   stage,
 } from '../stage-probe-app.mjs';
-import { DIAGNOSTIC_MARKER } from '../check-fixtures.mjs';
+import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from '../check-fixtures.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'stage-probe-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -66,24 +66,24 @@ describe('the committed overlay', () => {
     assert.equal(realOverlay.ui.pages[0].entryPoint, 'diagnostic-dist/index.mjs');
   });
 
-  it('holds the v1 permissions: three api prefixes and slots:user', () => {
+  it('holds the v1 permissions: the own-namespace entry first, three probe api prefixes and slots:user', () => {
     assert.deepEqual(realOverlay.permissions, {
-      api: ['/api/agents', '/api/chat/slots', '/api/member-records/*'],
+      api: [OWN_API_ENTRY, '/api/agents', '/api/chat/slots', '/api/member-records/*'],
       events: ['slots:user'],
     });
   });
 
   it('is not reflected in the release manifest, which has no diagnostic reference or grants', () => {
     assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
-    assert.equal(realManifest.permissions, undefined);
+    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY] });
     assert.equal(realManifest.backend.hooks, undefined);
   });
 });
 
 describe('overlayForPhase', () => {
-  it('v0 omits permissions entirely', () => {
+  it('v0 keeps only the own-namespace api entry: no probe grants, no events', () => {
     const overlay = overlayForPhase(realOverlay, 'v0');
-    assert.equal('permissions' in overlay, false);
+    assert.deepEqual(overlay.permissions, { api: [OWN_API_ENTRY] });
     assert.deepEqual(overlay.ui, realOverlay.ui);
   });
 
@@ -95,6 +95,8 @@ describe('overlayForPhase', () => {
     const v1 = overlayForPhase(realOverlay, 'v1');
     const v2 = overlayForPhase(realOverlay, 'v2');
     assert.deepEqual(v2.permissions.api, [...v1.permissions.api, V2_EXTRA_API_ENTRY]);
+    assert.equal(v2.permissions.api[0], OWN_API_ENTRY);
+    assert.equal(v1.permissions.api[0], OWN_API_ENTRY);
     assert.deepEqual(v2.permissions.events, v1.permissions.events);
   });
 
@@ -105,12 +107,24 @@ describe('overlayForPhase', () => {
   });
 
   it('tolerates an overlay whose permissions are missing or malformed', () => {
-    assert.deepEqual(overlayForPhase({ version: 'x' }, 'v2').permissions, { api: [V2_EXTRA_API_ENTRY] });
-    assert.deepEqual(overlayForPhase({ permissions: 'nope' }, 'v1').permissions, { api: [] });
+    assert.deepEqual(overlayForPhase({ version: 'x' }, 'v2').permissions, { api: [OWN_API_ENTRY, V2_EXTRA_API_ENTRY] });
+    assert.deepEqual(overlayForPhase({ permissions: 'nope' }, 'v1').permissions, { api: [OWN_API_ENTRY] });
+    assert.deepEqual(overlayForPhase({}, 'v0').permissions, { api: [OWN_API_ENTRY] });
   });
 
   it('rejects an unknown phase', () => {
     assert.throws(() => overlayForPhase(realOverlay, 'v9'), /unknown phase v9/);
+  });
+
+  it('does not duplicate the own-namespace entry when the overlay already lists it', () => {
+    const overlay = { permissions: { api: [OWN_API_ENTRY, '/api/x', OWN_API_ENTRY] } };
+    assert.deepEqual(overlayForPhase(overlay, 'v1').permissions.api, [OWN_API_ENTRY, '/api/x']);
+  });
+
+  it('adds the own-namespace entry in every phase even when the overlay omits it', () => {
+    for (const phase of PHASES) {
+      assert.equal(overlayForPhase({ permissions: { api: ['/api/x'] } }, phase).permissions.api[0], OWN_API_ENTRY);
+    }
   });
 
   it('rejects an overlay that declares backend.hooks', () => {
@@ -128,8 +142,8 @@ describe('mergeManifest', () => {
     assert.deepEqual(merged.permissions, realOverlay.permissions);
   });
 
-  it('adds no permissions key for v0', () => {
-    assert.equal('permissions' in mergeManifest(realManifest, overlayForPhase(realOverlay, 'v0')), false);
+  it('merges only the own-namespace entry for v0', () => {
+    assert.deepEqual(mergeManifest(realManifest, overlayForPhase(realOverlay, 'v0')).permissions, { api: [OWN_API_ENTRY] });
   });
 
   it('keeps the base untouched when the overlay has no ui', () => {
@@ -152,9 +166,9 @@ describe('stage', () => {
     assert.equal(manifest().backend.hooks, undefined);
   });
 
-  it('writes no permissions for v0 and one extra api entry for v2', () => {
+  it('stages only the own-namespace entry for v0 and one extra api entry for v2', () => {
     const root = repo();
-    assert.equal(staged(root, 'v0').manifest().permissions, undefined);
+    assert.deepEqual(staged(root, 'v0').manifest().permissions, { api: [OWN_API_ENTRY] });
     const v2 = staged(root, 'v2').manifest();
     assert.equal(v2.permissions.api.length, realOverlay.permissions.api.length + 1);
   });

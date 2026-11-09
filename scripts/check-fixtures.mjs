@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 export const FIXTURE_MARKER = 'SPECTER-FIXTURE-ONLY';
 export const DIAGNOSTIC_MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
+export const OWN_API_ENTRY = '/apps/specter-arena/api/*';
 export const DEFAULT_BUNDLE_DIR = 'ui/dist';
 export const DEFAULT_DIAGNOSTIC_DIR = 'ui/diagnostic-dist';
 export const DEFAULT_BACKEND_DIR = 'backend';
@@ -83,7 +84,37 @@ export function scanBackend(dir) {
 }
 
 /**
- * The release manifest may only point at the release bundle and declares no probe grants.
+ * @param {string} file
+ * @param {unknown} permissions
+ * @returns {{ file: string, reason: string }[]}
+ */
+function scanPermissions(file, permissions) {
+  if (permissions === undefined) return [];
+  if (typeof permissions !== 'object' || permissions === null || Array.isArray(permissions)) {
+    return [{ file, reason: 'release manifest permissions is not an object' }];
+  }
+  const { api, ...others } = /** @type {Record<string, unknown>} */ (permissions);
+  /** @type {{ file: string, reason: string }[]} */
+  const findings = Object.keys(others).map((key) => ({
+    file,
+    reason: `release manifest declares permissions.${key} (probe permissions belong in probe/manifest-overlay.json)`,
+  }));
+  if (api === undefined) return findings;
+  if (!Array.isArray(api)) return [...findings, { file, reason: 'release manifest permissions.api is not an array' }];
+  api.forEach((entry, index) => {
+    if (entry !== OWN_API_ENTRY || api.indexOf(entry) !== index) {
+      findings.push({
+        file,
+        reason: `release manifest permissions.api entry ${JSON.stringify(entry)} is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
+      });
+    }
+  });
+  return findings;
+}
+
+/**
+ * The release manifest may only point at the release bundle and declares one permission:
+ * the app's own proxy namespace. Probe grants belong in probe/manifest-overlay.json.
  * @param {string} path app.json
  * @returns {{ file: string, reason: string }[]}
  */
@@ -99,9 +130,7 @@ export function scanManifest(path) {
   } catch {
     return [...findings, { file: path, reason: 'is not valid JSON' }];
   }
-  if (manifest?.permissions !== undefined) {
-    findings.push({ file: path, reason: 'release manifest declares permissions (probe permissions belong in probe/manifest-overlay.json)' });
-  }
+  findings.push(...scanPermissions(path, manifest?.permissions));
   if (manifest?.backend?.hooks !== undefined) findings.push({ file: path, reason: 'release manifest declares backend.hooks' });
   /** @type {unknown[]} */
   const pages = Array.isArray(manifest?.ui?.pages) ? manifest.ui.pages : [];

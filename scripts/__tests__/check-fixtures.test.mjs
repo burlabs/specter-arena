@@ -8,6 +8,7 @@ import {
   FIXTURE_MARKER,
   backendRuntimeFiles,
   findFixtureContent,
+  OWN_API_ENTRY,
   importsTestCode,
   run,
   runPositiveControl,
@@ -166,15 +167,59 @@ describe('scanManifest', () => {
     assert.deepEqual(scanManifest(join(root, 'no-app.json')), []);
   });
 
-  it('flags permissions and backend.hooks', () => {
-    const path = manifestFile(JSON.stringify({ permissions: { api: [] }, backend: { hooks: {} }, ui: { entry: 'dist/index.mjs' } }));
+  it('allows exactly the own-namespace api entry in release permissions', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY] }, ui: { entry: 'dist/index.mjs' } }));
+    assert.deepEqual(scanManifest(path), []);
+    assert.equal(OWN_API_ENTRY, '/apps/specter-arena/api/*');
+  });
+
+  it('allows a manifest with no permissions section', () => {
+    assert.deepEqual(scanManifest(manifestFile(JSON.stringify({ permissions: { api: [] } }))), []);
+  });
+
+  it('flags any other api entry, including probe grants, next to the allowed one', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY, '/api/agents', '/apps/specter-arena/api/probe'] } }));
     assert.deepEqual(
       scanManifest(path).map(({ reason }) => reason),
       [
-        'release manifest declares permissions (probe permissions belong in probe/manifest-overlay.json)',
-        'release manifest declares backend.hooks',
+        `release manifest permissions.api entry "/api/agents" is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
+        `release manifest permissions.api entry "/apps/specter-arena/api/probe" is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
       ],
     );
+  });
+
+  it('flags a duplicated allowed entry and a non-string entry', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY, OWN_API_ENTRY, 7] } }));
+    assert.equal(scanManifest(path).length, 2);
+  });
+
+  it('flags permissions.events and any other permission key', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY], events: ['slots:user'], fs: [] } }));
+    assert.deepEqual(
+      scanManifest(path).map(({ reason }) => reason),
+      [
+        'release manifest declares permissions.events (probe permissions belong in probe/manifest-overlay.json)',
+        'release manifest declares permissions.fs (probe permissions belong in probe/manifest-overlay.json)',
+      ],
+    );
+  });
+
+  it('flags malformed permissions shapes', () => {
+    for (const permissions of ['x', null, [], 3]) {
+      assert.deepEqual(
+        scanManifest(manifestFile(JSON.stringify({ permissions }))).map(({ reason }) => reason),
+        ['release manifest permissions is not an object'],
+      );
+    }
+    assert.deepEqual(
+      scanManifest(manifestFile(JSON.stringify({ permissions: { api: OWN_API_ENTRY } }))).map(({ reason }) => reason),
+      ['release manifest permissions.api is not an array'],
+    );
+  });
+
+  it('flags backend.hooks', () => {
+    const path = manifestFile(JSON.stringify({ backend: { hooks: {} }, ui: { entry: 'dist/index.mjs' } }));
+    assert.deepEqual(scanManifest(path).map(({ reason }) => reason), ['release manifest declares backend.hooks']);
   });
 
   it('flags a ui.entry or page entryPoint outside dist/ or naming the diagnostic bundle', () => {
@@ -237,9 +282,9 @@ describe('scanReleaseTree', () => {
     const lines = [];
     const dir = bundle({ 'index.mjs': 'export default 1;' });
     const backendDir = bundle({ 'app.py': 'x = 1\n' });
-    const manifest = manifestFile(JSON.stringify({ permissions: {} }));
+    const manifest = manifestFile(JSON.stringify({ permissions: { events: [] } }));
     assert.equal(run({ dir, backendDir, manifest, releaseRoots: [], log: (line) => lines.push(line) }), 1);
-    assert.match(lines[0] ?? '', /release manifest declares permissions/);
+    assert.match(lines[0] ?? '', /release manifest declares permissions\.events/);
   });
 });
 
