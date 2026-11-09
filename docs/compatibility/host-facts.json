@@ -1,0 +1,83 @@
+{
+  "hostVersion": "0.12.0",
+  "runId": "none",
+  "facts": [
+    {
+      "id": "host-backend-spawn",
+      "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-consent-screen",
+      "question": "What does install/enable consent show for api/events grants? (screenshot)",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-dev-diagnostic-only",
+      "question": "Does the diagnostic page render only from the staged app and 404 from a release-tree install?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-disable-reenable",
+      "question": "After disable the proxy returns 403 app_not_enabled; after re-enable it recovers?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-import-map-sdk",
+      "question": "Does @kirocrew/app-sdk (and /ui) resolve from the bundle?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-install-validates",
+      "question": "Does live app.json validation accept the manifest (incl. minKiroCrewVersion)?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-proxy-path",
+      "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-react-version",
+      "question": "What is React.version in the host?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-roundtrip-signed",
+      "question": "Does a signed GET /api/ping from the installed page succeed?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-ui-default-export-renders",
+      "question": "Does a default-export component render in the app page?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    },
+    {
+      "id": "host-ui-stub-failure",
+      "question": "What does the host show when the FP-00 stub (named mount only) is installed unchanged?",
+      "status": "UNTESTED",
+      "evidence": [],
+      "notes": "not yet probed"
+    }
+  ]
+}

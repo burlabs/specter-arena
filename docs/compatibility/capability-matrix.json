@@ -1,0 +1,467 @@
+{
+  "hostVersion": "0.12.0",
+  "runId": "none",
+  "probedAt": null,
+  "cells": [
+    {
+      "id": "app-owned-grant-staging",
+      "question": "Does an update that adds a permission stay denied until Eric approves?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "app-owned-slots-visible",
+      "question": "Does the app see its own slots with no event grant?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "app-owned-token-exchange",
+      "question": "Does POST {origin}/api/apps/specter-arena/token with X-App-Secret return a token?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "app-owned-token-lifetime",
+      "question": "Token lifetime and refresh behaviour on a long-lived WS",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "app-owned-unsigned-direct-rejected",
+      "question": "Does the backend reject a direct unsigned /api/ping with 401? (backend calls its own loopback port)",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "app-owned-ws-token-transport",
+      "question": "Which transport does /api/ws and HTTP accept (?token=, cookie, Bearer)?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-activity-read",
+      "question": "/api/members/<slug>/activity",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-attribution-survives-restart",
+      "question": "Do created_by/lineage_minted survive a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-dashboard-member-record",
+      "question": "Does POST /api/member-records/<slug> write and does a bound bot-dashboard page render it? (SC-10(1))",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-dashboard-record-ungranted",
+      "question": "Is the same POST refused without the grant?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-dashboard-webview-hook",
+      "question": "Can app HTML reach the Crew Webview drawer via an on_startup hook? (SC-10(2)) NOT PROBED (FD-6): needs backend.hooks (excluded by FP-00 C-2) and an execution trust grant. Committed as UNTESTED with that reason; mechanism documented from rfc-app-sdk-crew-webview.md for PA1-D5",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-delete-behaviour",
+      "question": "After deleting the probe bot, what happens to its slots/history in frames and /api/chat/slots?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-fresh-start",
+      "question": "What does fresh-start do to the slot key/history in frames?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-goals-read",
+      "question": "/api/members/<slug>/goals",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-id-observable",
+      "question": "Is a stable bot id (slug) derivable (member-<slug> DM slot key)",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-id-stable-across-rename",
+      "question": "Does the id/key stay the same after Eric renames the probe bot?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-key-results-read",
+      "question": "/api/members/<slug>/goals/key-results",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-ledger-read",
+      "question": "Can the app read the bot's work-ledger items (/api/members/<slug>/projections)?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-list-members-denied",
+      "question": "GET /api/members with app token",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-list-via-agents",
+      "question": "Do /api/agents rows include the probe bot, and which fields do they carry?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-name-avatar",
+      "question": "Are display name and avatar readable by the app?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-notes-memory-private",
+      "question": "Notes/memory/lessons are not requested; record route deny only, never read content",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-own-session-attribution",
+      "question": "Is the bot's own DM turn identifiable (member-<slug>, agent)",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-per-bot-opt-in",
+      "question": "Is there any per-bot grant or opt-in? (expected UNSUPPORTED: grants are app-wide)",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-reimport-kirobot",
+      "question": "After re-importing the bot's .kirobot file, does id/attribution return?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-scheduled-turn-origin",
+      "question": "What origin does a scheduled bot turn carry (cron hides from slots:user)?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "bot-worker-session-attribution",
+      "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "closed-tab-collection",
+      "question": "With the arena tab closed, does the backend keep receiving frames while a worker runs?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "external-cli-slot-appears",
+      "question": "Does a kiro-cli chat in a detached tmux session appear in the app's WS snapshot, /api/chat/slots, or the owner session list?",
+      "scope": "external-cli",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "gateway-restart-reconnect",
+      "question": "Does the backend WS resubscribe after a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "other-app-api-denied",
+      "question": "Is an ungranted /api/* path refused (app token not permitted)?",
+      "scope": "other-app",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "other-app-proxy-denied",
+      "question": "Is an app token for specter-arena refused on another app's proxy (/apps/<other>/api/..) with 403?",
+      "scope": "other-app",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "other-app-slots-absent",
+      "question": "Are another app's slots absent from the snapshot (no slots:app:* grant)?",
+      "scope": "other-app",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "reconnect-cursor-history",
+      "question": "Is there any cursor/since/sequence for missed events?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "reconnect-snapshot",
+      "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
+      "scope": "app-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-chat-slot-history",
+      "question": "Is GET /api/chat/slots/{slot} history readable for a worker slot?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-chat-slots-api",
+      "question": "Does GET /api/chat/slots return all rows (unfiltered) with the grant, and 403 without?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-outcome-evidence",
+      "question": "What outcome evidence exists beyond idle? (never recorded as \"accepted\")",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-signal-approval",
+      "question": "Is a pending approval observable (pending_approval, needs_input)?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-signal-progress",
+      "question": "Is progress observable (last_activity_ts, running)?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-signal-start",
+      "question": "Is a start signal observable (running false to true)?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-signal-terminal",
+      "question": "Is a terminal signal observable, and does it carry any outcome evidence?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-signal-tool-error",
+      "question": "Is a tool error observable in frames?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-slots-no-grant-denied",
+      "question": "With no slots:user grant, are user-origin slots absent from the WS snapshot?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-slots-visible",
+      "question": "With slots:user, does the app receive user-origin slot rows?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "user-source-links",
+      "question": "Are source_links present for a probe session that references a PR/URL?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    }
+  ]
+}

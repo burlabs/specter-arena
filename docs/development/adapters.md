@@ -36,7 +36,7 @@ A PR with zero registered checks is not passing. The required-check list in `doc
 
 ## Ephemeral dev environment
 
-`deploy.devEnv` is the per-PR preview: S3 and CloudFront in AWS account `640822987719`, uploaded by `.github/workflows/preview.yml`, which posts the URL on the PR. It goes live once the owner deploys the `infra/` stack and sets the `preview` environment variables (`docs/ops/preview.md`). Until then the workflow prints `preview infrastructure not configured`, and a user-visible PR carries a documented human-approved exception instead of a URL.
+`deploy.devEnv` is the per-PR preview: S3 and CloudFront in AWS account `640822987719`, uploaded by `.github/workflows/preview.yml`, which posts the URL on the PR. It goes live once the owner deploys the `infra/` stack and sets the `preview` environment variables (`docs/ops/preview.md`). Until then the workflow prints `preview infrastructure not configured`, and a user-visible PR carries a documented human-approved exception instead of a URL. A surface that can only be exercised against a live Crew uses the standing exception in `docs/ops/preview.md`.
 
 ## External tooling
 

@@ -1,0 +1,393 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "id": "app-owned-grant-staging",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Does an update that adds a permission stay denied until Eric approves?",
+      "priority": "must"
+    },
+    {
+      "id": "app-owned-slots-visible",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Does the app see its own slots with no event grant?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "app-owned-token-exchange",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Does POST {origin}/api/apps/specter-arena/token with X-App-Secret return a token?",
+      "priority": "must"
+    },
+    {
+      "id": "app-owned-token-lifetime",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Token lifetime and refresh behaviour on a long-lived WS",
+      "priority": "best-effort"
+    },
+    {
+      "id": "app-owned-unsigned-direct-rejected",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Does the backend reject a direct unsigned /api/ping with 401? (backend calls its own loopback port)",
+      "priority": "must"
+    },
+    {
+      "id": "app-owned-ws-token-transport",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Which transport does /api/ws and HTTP accept (?token=, cookie, Bearer)?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-activity-read",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "/api/members/<slug>/activity",
+      "priority": "must"
+    },
+    {
+      "id": "bot-attribution-survives-restart",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Do created_by/lineage_minted survive a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+      "priority": "best-effort"
+    },
+    {
+      "id": "bot-dashboard-member-record",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Does POST /api/member-records/<slug> write and does a bound bot-dashboard page render it? (SC-10(1))",
+      "priority": "must"
+    },
+    {
+      "id": "bot-dashboard-record-ungranted",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is the same POST refused without the grant?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-dashboard-webview-hook",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Can app HTML reach the Crew Webview drawer via an on_startup hook? (SC-10(2)) NOT PROBED (FD-6): needs backend.hooks (excluded by FP-00 C-2) and an execution trust grant. Committed as UNTESTED with that reason; mechanism documented from rfc-app-sdk-crew-webview.md for PA1-D5",
+      "priority": "deferred"
+    },
+    {
+      "id": "bot-delete-behaviour",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "After deleting the probe bot, what happens to its slots/history in frames and /api/chat/slots?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-fresh-start",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "What does fresh-start do to the slot key/history in frames?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "bot-goals-read",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "/api/members/<slug>/goals",
+      "priority": "must"
+    },
+    {
+      "id": "bot-id-observable",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is a stable bot id (slug) derivable (member-<slug> DM slot key)",
+      "priority": "must"
+    },
+    {
+      "id": "bot-id-stable-across-rename",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Does the id/key stay the same after Eric renames the probe bot?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-key-results-read",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "/api/members/<slug>/goals/key-results",
+      "priority": "must"
+    },
+    {
+      "id": "bot-ledger-read",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Can the app read the bot's work-ledger items (/api/members/<slug>/projections)?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-list-members-denied",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "GET /api/members with app token",
+      "priority": "must"
+    },
+    {
+      "id": "bot-list-via-agents",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Do /api/agents rows include the probe bot, and which fields do they carry?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-name-avatar",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Are display name and avatar readable by the app?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-notes-memory-private",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Notes/memory/lessons are not requested; record route deny only, never read content",
+      "priority": "best-effort"
+    },
+    {
+      "id": "bot-own-session-attribution",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is the bot's own DM turn identifiable (member-<slug>, agent)",
+      "priority": "must"
+    },
+    {
+      "id": "bot-per-bot-opt-in",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is there any per-bot grant or opt-in? (expected UNSUPPORTED: grants are app-wide)",
+      "priority": "must"
+    },
+    {
+      "id": "bot-reimport-kirobot",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "After re-importing the bot's .kirobot file, does id/attribution return?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "bot-scheduled-turn-origin",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "What origin does a scheduled bot turn carry (cron hides from slots:user)?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "bot-worker-session-attribution",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
+      "priority": "must"
+    },
+    {
+      "id": "closed-tab-collection",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "With the arena tab closed, does the backend keep receiving frames while a worker runs?",
+      "priority": "must"
+    },
+    {
+      "id": "external-cli-slot-appears",
+      "kind": "matrix",
+      "scope": "external-cli",
+      "question": "Does a kiro-cli chat in a detached tmux session appear in the app's WS snapshot, /api/chat/slots, or the owner session list?",
+      "priority": "must"
+    },
+    {
+      "id": "gateway-restart-reconnect",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Does the backend WS resubscribe after a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+      "priority": "best-effort"
+    },
+    {
+      "id": "host-backend-spawn",
+      "kind": "host-fact",
+      "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
+      "priority": "must"
+    },
+    {
+      "id": "host-consent-screen",
+      "kind": "host-fact",
+      "question": "What does install/enable consent show for api/events grants? (screenshot)",
+      "priority": "best-effort"
+    },
+    {
+      "id": "host-dev-diagnostic-only",
+      "kind": "host-fact",
+      "question": "Does the diagnostic page render only from the staged app and 404 from a release-tree install?",
+      "priority": "must"
+    },
+    {
+      "id": "host-disable-reenable",
+      "kind": "host-fact",
+      "question": "After disable the proxy returns 403 app_not_enabled; after re-enable it recovers?",
+      "priority": "must"
+    },
+    {
+      "id": "host-import-map-sdk",
+      "kind": "host-fact",
+      "question": "Does @kirocrew/app-sdk (and /ui) resolve from the bundle?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "host-install-validates",
+      "kind": "host-fact",
+      "question": "Does live app.json validation accept the manifest (incl. minKiroCrewVersion)?",
+      "priority": "must"
+    },
+    {
+      "id": "host-proxy-path",
+      "kind": "host-fact",
+      "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
+      "priority": "must"
+    },
+    {
+      "id": "host-react-version",
+      "kind": "host-fact",
+      "question": "What is React.version in the host?",
+      "priority": "must"
+    },
+    {
+      "id": "host-roundtrip-signed",
+      "kind": "host-fact",
+      "question": "Does a signed GET /api/ping from the installed page succeed?",
+      "priority": "must"
+    },
+    {
+      "id": "host-ui-default-export-renders",
+      "kind": "host-fact",
+      "question": "Does a default-export component render in the app page?",
+      "priority": "must"
+    },
+    {
+      "id": "host-ui-stub-failure",
+      "kind": "host-fact",
+      "question": "What does the host show when the FP-00 stub (named mount only) is installed unchanged?",
+      "priority": "must"
+    },
+    {
+      "id": "other-app-api-denied",
+      "kind": "matrix",
+      "scope": "other-app",
+      "question": "Is an ungranted /api/* path refused (app token not permitted)?",
+      "priority": "must"
+    },
+    {
+      "id": "other-app-proxy-denied",
+      "kind": "matrix",
+      "scope": "other-app",
+      "question": "Is an app token for specter-arena refused on another app's proxy (/apps/<other>/api/..) with 403?",
+      "priority": "must"
+    },
+    {
+      "id": "other-app-slots-absent",
+      "kind": "matrix",
+      "scope": "other-app",
+      "question": "Are another app's slots absent from the snapshot (no slots:app:* grant)?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "reconnect-cursor-history",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "Is there any cursor/since/sequence for missed events?",
+      "priority": "must"
+    },
+    {
+      "id": "reconnect-snapshot",
+      "kind": "matrix",
+      "scope": "app-owned",
+      "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
+      "priority": "must"
+    },
+    {
+      "id": "user-chat-slot-history",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is GET /api/chat/slots/{slot} history readable for a worker slot?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "user-chat-slots-api",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does GET /api/chat/slots return all rows (unfiltered) with the grant, and 403 without?",
+      "priority": "must"
+    },
+    {
+      "id": "user-outcome-evidence",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "What outcome evidence exists beyond idle? (never recorded as \"accepted\")",
+      "priority": "must"
+    },
+    {
+      "id": "user-signal-approval",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is a pending approval observable (pending_approval, needs_input)?",
+      "priority": "must"
+    },
+    {
+      "id": "user-signal-progress",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is progress observable (last_activity_ts, running)?",
+      "priority": "must"
+    },
+    {
+      "id": "user-signal-start",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is a start signal observable (running false to true)?",
+      "priority": "must"
+    },
+    {
+      "id": "user-signal-terminal",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is a terminal signal observable, and does it carry any outcome evidence?",
+      "priority": "must"
+    },
+    {
+      "id": "user-signal-tool-error",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Is a tool error observable in frames?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "user-slots-no-grant-denied",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "With no slots:user grant, are user-origin slots absent from the WS snapshot?",
+      "priority": "must"
+    },
+    {
+      "id": "user-slots-visible",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "With slots:user, does the app receive user-origin slot rows?",
+      "priority": "must"
+    },
+    {
+      "id": "user-source-links",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Are source_links present for a probe session that references a PR/URL?",
+      "priority": "best-effort"
+    }
+  ]
+}
