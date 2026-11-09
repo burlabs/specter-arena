@@ -1,4 +1,5 @@
 // SPECTER-FIXTURE-ONLY: installs the host module stand-in around every UI unit test.
+import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { installHostModules } from './host-modules.ts';
 
@@ -10,6 +11,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (typeof window !== 'undefined') cleanup();
   teardown?.();
   teardown = undefined;
 });
