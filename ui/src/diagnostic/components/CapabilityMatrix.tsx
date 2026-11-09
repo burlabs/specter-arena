@@ -1,6 +1,6 @@
 // SPECTER-DIAGNOSTIC-ONLY
 import { useId } from 'react';
-import type { CapabilityCell, Provenance } from '../model';
+import { DIAGNOSTIC_MARKER, type CapabilityCell, type Provenance } from '../model';
 import { CapabilityStateBadge } from './CapabilityStateBadge';
 import { CredentialLabel } from './CredentialLabel';
 import { EvidenceDetail } from './EvidenceDetail';
@@ -13,7 +13,7 @@ export function CapabilityMatrix({ provenance, cells }: { provenance: Provenance
   const counts = countByDisplayState(cells);
   const word = SOURCE_LABEL[provenance.source].word;
   return (
-    <section aria-labelledby={headingId} data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY" className="mb-4">
+    <section aria-labelledby={headingId} data-specter-diagnostic={DIAGNOSTIC_MARKER} className="mb-4">
       <h2 id={headingId} className="text-xl font-bold">
         Capability matrix: SOURCE: {word}
       </h2>

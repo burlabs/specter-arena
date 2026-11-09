@@ -1,4 +1,5 @@
 // SPECTER-DIAGNOSTIC-ONLY
+import { DIAGNOSTIC_MARKER } from '../model';
 import type { DisplayState } from './labels';
 
 const TONE: Record<DisplayState, string> = {
@@ -12,7 +13,7 @@ const TONE: Record<DisplayState, string> = {
 export function CapabilityStateBadge({ state }: { state: DisplayState }) {
   return (
     <span
-      data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY"
+      data-specter-diagnostic={DIAGNOSTIC_MARKER}
       data-state={state}
       className={`inline-block rounded-full border border-border px-2 py-1 text-xs font-semibold uppercase ${TONE[state]}`}
     >

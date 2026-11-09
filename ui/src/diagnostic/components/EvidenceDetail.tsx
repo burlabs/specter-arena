@@ -1,14 +1,14 @@
 // SPECTER-DIAGNOSTIC-ONLY
-import type { Evidence } from '../model';
+import { DIAGNOSTIC_MARKER, type Evidence } from '../model';
 import { CredentialLabel } from './CredentialLabel';
 import { truncate } from './labels';
 
 export function EvidenceDetail({ evidence }: { evidence: readonly Evidence[] }) {
   if (evidence.length === 0) {
-    return <span data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY">No evidence recorded</span>;
+    return <span data-specter-diagnostic={DIAGNOSTIC_MARKER}>No evidence recorded</span>;
   }
   return (
-    <details data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY" className="focus-ring">
+    <details data-specter-diagnostic={DIAGNOSTIC_MARKER} className="focus-ring">
       <summary className="underline">Evidence ({evidence.length})</summary>
       <ul className="list-none mt-2">
         {evidence.map((item, index) => {

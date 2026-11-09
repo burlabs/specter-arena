@@ -1,6 +1,6 @@
 // SPECTER-DIAGNOSTIC-ONLY
 import { useEffect, useId, useRef, useState } from 'react';
-import type { DiagnosticSnapshot } from '../model';
+import { DIAGNOSTIC_MARKER, type DiagnosticSnapshot } from '../model';
 import { CapabilityMatrix } from './CapabilityMatrix';
 import { HostFacts } from './HostFacts';
 import { ProbeAttemptTimeline } from './ProbeAttemptTimeline';
@@ -16,7 +16,7 @@ export function DiagnosticPage({ snapshot, loadError }: { snapshot: DiagnosticSn
     previous.current = snapshot;
   }, [snapshot]);
   return (
-    <section aria-labelledby={headingId} data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY">
+    <section aria-labelledby={headingId} data-specter-diagnostic={DIAGNOSTIC_MARKER}>
       <h1 id={headingId} className="text-2xl font-bold">
         Diagnostic: Crew capability probe
       </h1>

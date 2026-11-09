@@ -9,7 +9,7 @@ export function ProvenanceBanner({ provenance }: { provenance: Provenance | null
     <div
       role="status"
       aria-label="Data provenance"
-      data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY"
+      data-specter-diagnostic={DIAGNOSTIC_MARKER}
       className={`${border} border-border bg-card p-3 mb-4`}
     >
       <p className="font-bold">

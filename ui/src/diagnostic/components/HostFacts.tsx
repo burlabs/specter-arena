@@ -1,6 +1,6 @@
 // SPECTER-DIAGNOSTIC-ONLY
 import { useId } from 'react';
-import type { HostFact, Provenance } from '../model';
+import { DIAGNOSTIC_MARKER, type HostFact, type Provenance } from '../model';
 import { CredentialLabel } from './CredentialLabel';
 import { EvidenceDetail } from './EvidenceDetail';
 import { HOST_FACT_STATUS_LABEL, HOST_FACT_STATUS_ORDER, SOURCE_LABEL, countHostFacts, distinctCredentials } from './labels';
@@ -14,7 +14,7 @@ export function HostFacts({ provenance, facts }: { provenance: Provenance; facts
   return (
     <section
       aria-labelledby={headingId}
-      data-specter-diagnostic="SPECTER-DIAGNOSTIC-ONLY"
+      data-specter-diagnostic={DIAGNOSTIC_MARKER}
       className="mb-4 border-2 border-dashed border-border p-3"
     >
       <h2 id={headingId} className="text-xl font-bold">

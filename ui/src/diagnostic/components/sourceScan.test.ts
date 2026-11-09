@@ -3,9 +3,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { DIAGNOSTIC_MARKER } from '../model';
 
 const dir = fileURLToPath(new URL('.', import.meta.url));
-const MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
 const files = readdirSync(dir).filter((name) => /\.(ts|tsx)$/.test(name));
 const isTest = (name: string) => /\.test\.(ts|tsx)$/.test(name);
 const sources = files.filter((name) => !isTest(name));
@@ -40,8 +40,8 @@ describe('diagnostic components source scan', () => {
     expect(sources.length).toBeGreaterThanOrEqual(10);
   });
 
-  it.each(files)('%s carries the diagnostic marker', (name) => {
-    expect(read(name)).toContain(MARKER);
+  it.each(files)('%s carries the diagnostic marker in a comment', (name) => {
+    expect(read(name)).toContain(DIAGNOSTIC_MARKER);
   });
 
   it.each(sources)('%s uses none of the banned APIs', (name) => {
@@ -66,7 +66,7 @@ describe('diagnostic components source scan', () => {
 
   it('puts the marker attribute on the root element of every rendering component', () => {
     for (const name of sources.filter((file) => file.endsWith('.tsx'))) {
-      expect(read(name), `${name} lacks data-specter-diagnostic`).toContain(`data-specter-diagnostic="${MARKER}"`);
+      expect(read(name), `${name} lacks data-specter-diagnostic`).toContain('data-specter-diagnostic={DIAGNOSTIC_MARKER}');
     }
   });
 });
