@@ -12,7 +12,8 @@
   },
   "permissions": {
     "api": [
-      "/apps/specter-arena/api/*"
+      "/apps/specter-arena/api/*",
+      "/api/agents"
     ]
   },
   "ui": {
