@@ -163,6 +163,7 @@ jobs:
         run: |
           python -m pip install --require-hashes --target .deps -r requirements.txt
           PYTHONPATH=.deps python -s -c "import websockets; print('websockets', websockets.__version__)"
+          PYTHONPATH=.deps python -s -c "import backend.specter_arena.probe.live as live; print('probe live driver', live.LiveGateway.__name__)"
       - name: Start the backend and probe /health
         run: |
           PYTHONPATH=.deps python -s -m uvicorn backend.app:app --host 127.0.0.1 --port 9100 > uvicorn.log 2>&1 &

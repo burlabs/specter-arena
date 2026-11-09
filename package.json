@@ -14,7 +14,7 @@
     "lint": "eslint . && uv run --locked --project backend ruff check backend && uv run --locked --project backend ruff format --check backend",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p ui/tsconfig.json && uv run --locked --project backend mypy --config-file backend/pyproject.toml",
     "test": "node --test scripts/__tests__/ && vitest run --config ui/vite.config.ts && uv run --locked --project backend pytest backend",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-include=scripts/*.mjs scripts/__tests__/ && vitest run --config ui/vite.config.ts --coverage && uv run --locked --project backend pytest backend --cov=backend/specter_arena --cov-fail-under=90",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-include=scripts/*.mjs scripts/__tests__/ && vitest run --config ui/vite.config.ts --coverage && uv run --locked --project backend pytest backend --cov=backend/specter_arena --cov-config=backend/pyproject.toml --cov-fail-under=90",
     "test:e2e": "npm run build:preview && playwright test",
     "check:lock": "node scripts/check-lock.mjs",
     "check:fixtures": "node scripts/check-fixtures.mjs",
