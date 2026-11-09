@@ -17,39 +17,39 @@ describe('useHostApi', () => {
   it('parses a successful Response from get', async () => {
     client.get.mockResolvedValue(response({ ok: true }));
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.getJson('/api/ping')).resolves.toEqual({ ok: true });
-    expect(client.get).toHaveBeenCalledWith('/api/ping');
+    await expect(result.current.getJson('/apps/specter-arena/api/ping')).resolves.toEqual({ ok: true });
+    expect(client.get).toHaveBeenCalledWith('/apps/specter-arena/api/ping');
   });
 
   it('rejects on a non-2xx Response', async () => {
     client.get.mockResolvedValue(response({ error: 'nope' }, 403));
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.getJson('/api/ping')).rejects.toThrow('Request failed with status 403');
+    await expect(result.current.getJson('/apps/specter-arena/api/ping')).rejects.toThrow('Request failed with status 403');
   });
 
   it('returns already-parsed data unchanged', async () => {
     client.get.mockResolvedValue({ at: 'now' });
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.getJson('/api/ping')).resolves.toEqual({ at: 'now' });
+    await expect(result.current.getJson('/apps/specter-arena/api/ping')).resolves.toEqual({ at: 'now' });
   });
 
   it('posts a body and parses the reply', async () => {
     client.post.mockResolvedValue(response({ id: 1 }));
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.postJson('/api/x', { a: 1 })).resolves.toEqual({ id: 1 });
-    expect(client.post).toHaveBeenCalledWith('/api/x', { a: 1 });
+    await expect(result.current.postJson('/apps/specter-arena/api/x', { a: 1 })).resolves.toEqual({ id: 1 });
+    expect(client.post).toHaveBeenCalledWith('/apps/specter-arena/api/x', { a: 1 });
   });
 
   it('resolves undefined for an empty 204 reply instead of parsing a body', async () => {
     client.post.mockResolvedValue(new Response(null, { status: 204 }));
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.postJson('/api/probe/config', { probeSlug: 'x' })).resolves.toBeUndefined();
+    await expect(result.current.postJson('/apps/specter-arena/api/probe/config', { probeSlug: 'x' })).resolves.toBeUndefined();
   });
 
   it('propagates client rejections', async () => {
     client.get.mockRejectedValue(new Error('network down'));
     const { result } = renderHook(() => useHostApi());
-    await expect(result.current.getJson('/api/ping')).rejects.toThrow('network down');
+    await expect(result.current.getJson('/apps/specter-arena/api/ping')).rejects.toThrow('network down');
   });
 
   it('exposes only the two JSON methods, never the client', () => {

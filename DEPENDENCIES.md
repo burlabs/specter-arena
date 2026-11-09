@@ -17,13 +17,13 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `jsdom` | 31.0.0 | MIT | DOM for UI unit tests |
 | `@testing-library/react` | 16.3.3 | MIT | React test utilities |
 | `@testing-library/dom` | 10.4.2 | MIT | Peer of `@testing-library/react` |
-| `react` | 19.3.1 | MIT | Types, tests and the preview harness; the production bundle uses the host's copy |
-| `react-dom` | 19.3.1 | MIT | Same as `react` |
-| `@types/react` | 19.3.0 | MIT | React types |
-| `@types/react-dom` | 19.3.0 | MIT | react-dom types |
+| `react` | 18.3.1 | MIT | Types, tests and the preview harness; the production bundle uses the host's copy |
+| `react-dom` | 18.3.1 | MIT | Same as `react` |
+| `@types/react` | 18.3.1 | MIT | React types |
+| `@types/react-dom` | 18.3.1 | MIT | react-dom types |
 | `@playwright/test` | 1.65.0 | Apache-2.0 | Chromium smoke test of the preview harness |
 
-The host's React major is not readable from this repository; FP-01 checks it live. `ui/src/` uses only APIs present in React 18 and 19.
+React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Crew 0.12.0), so the unit tests and preview harness run the same major the production bundle meets. `ui/src/` uses only APIs present in React 18 and 19.
 
 ## Backend runtime (`requirements.txt`, provisioned by Crew)
 

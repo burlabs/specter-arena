@@ -1,6 +1,7 @@
 // SPECTER-DIAGNOSTIC-ONLY
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DECLARED_API, isPathPermitted } from '../../fixtures/api-allowlist';
 import { makeCell, makeSnapshot } from './components/testData';
 import DiagnosticEntry from './entry';
 import { DIAGNOSTIC_MARKER } from './model';
@@ -25,9 +26,19 @@ describe('DiagnosticEntry', () => {
   it('fetches the probe snapshot and hands it to the page', async () => {
     render(<DiagnosticEntry />);
     expect(await screen.findByText('Does the synthetic probe answer?')).toBeTruthy();
-    expect(client.get).toHaveBeenCalledWith('/api/probe/snapshot');
+    expect(client.get).toHaveBeenCalledWith('/apps/specter-arena/api/probe/snapshot');
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText('No snapshot loaded.')).toBeNull();
+  });
+
+  it('only calls paths the release manifest permits', async () => {
+    render(<DiagnosticEntry />);
+    await screen.findByText('Does the synthetic probe answer?');
+    fireEvent.click(screen.getByRole('button', { name: 'Run probe steps' }));
+    await waitFor(() => expect(client.post).toHaveBeenCalled());
+    for (const [path] of [...client.get.mock.calls, ...client.post.mock.calls]) {
+      expect(isPathPermitted(DECLARED_API, new URL(path, 'http://localhost').pathname)).toBe(true);
+    }
   });
 
   it('carries the diagnostic marker at runtime', async () => {
@@ -70,7 +81,7 @@ describe('DiagnosticEntry', () => {
     fireEvent.change(screen.getByLabelText('Probe bot slug'), { target: { value: 'probe-bot' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save probe config' }));
     await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
-    expect(client.post).toHaveBeenCalledWith('/api/probe/config', { probeSlug: 'probe-bot' });
+    expect(client.post).toHaveBeenCalledWith('/apps/specter-arena/api/probe/config', { probeSlug: 'probe-bot' });
   });
 
   it('runs the probe steps, then refreshes the snapshot', async () => {
@@ -78,7 +89,7 @@ describe('DiagnosticEntry', () => {
     await screen.findByText('Does the synthetic probe answer?');
     fireEvent.click(screen.getByRole('button', { name: 'Run probe steps' }));
     await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
-    expect(client.post).toHaveBeenCalledWith('/api/probe/run', {});
+    expect(client.post).toHaveBeenCalledWith('/apps/specter-arena/api/probe/run', {});
   });
 
   it('keeps the snapshot and reports a failed action through the page', async () => {

@@ -1,7 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DIAGNOSTIC_MARKER } from './check-fixtures.mjs';
+import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from './check-fixtures.mjs';
 
 export const OVERLAY_PATH = 'probe/manifest-overlay.json';
 export const DEFAULT_OUT_DIR = '.probe-app';
@@ -26,7 +26,9 @@ function isRecord(value) {
 }
 
 /**
- * The overlay holds the v1 shape. v0 drops the permissions, v2 adds one api entry.
+ * The overlay holds the v1 shape. Every phase keeps the app's own-namespace api entry
+ * (the browser SDK rejects the app's own proxy path otherwise). v0 adds nothing else,
+ * v1 adds the probe grants, v2 adds one more api entry.
  * @param {Record<string, unknown>} overlay
  * @param {string} phase
  * @returns {Record<string, any>}
@@ -35,10 +37,11 @@ export function overlayForPhase(overlay, phase) {
   if (!PHASES.includes(phase)) throw new Error(`unknown phase ${phase}; expected one of ${PHASES.join(', ')}`);
   if (isRecord(overlay.backend) && 'hooks' in overlay.backend) throw new Error('the overlay must not declare backend.hooks');
   const { permissions, ...rest } = overlay;
-  if (phase === 'v0') return rest;
+  if (phase === 'v0') return { ...rest, permissions: { api: [OWN_API_ENTRY] } };
   const granted = isRecord(permissions) ? permissions : {};
-  const api = Array.isArray(granted.api) ? [...granted.api] : [];
-  return { ...rest, permissions: { ...granted, api: phase === 'v2' ? [...api, V2_EXTRA_API_ENTRY] : api } };
+  const probeApi = (Array.isArray(granted.api) ? granted.api : []).filter((entry) => entry !== OWN_API_ENTRY);
+  const api = [OWN_API_ENTRY, ...probeApi, ...(phase === 'v2' ? [V2_EXTRA_API_ENTRY] : [])];
+  return { ...rest, permissions: { ...granted, api } };
 }
 
 /**
