@@ -1,8 +1,8 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { DIAGNOSTIC_MARKER } from './check-fixtures.mjs';
 
-export const DIAGNOSTIC_MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
 export const OVERLAY_PATH = 'probe/manifest-overlay.json';
 export const DEFAULT_OUT_DIR = '.probe-app';
 export const PHASES = ['v0', 'v1', 'v2'];

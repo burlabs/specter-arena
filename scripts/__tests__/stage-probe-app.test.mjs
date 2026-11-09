@@ -5,7 +5,6 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import {
   COPY_LIST,
-  DIAGNOSTIC_MARKER,
   INSTALL_COMMAND,
   OVERLAY_PATH,
   PHASES,
@@ -15,6 +14,7 @@ import {
   parseArgs,
   stage,
 } from '../stage-probe-app.mjs';
+import { DIAGNOSTIC_MARKER } from '../check-fixtures.mjs';
 
 const scratch = mkdtempSync(join(tmpdir(), 'stage-probe-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));

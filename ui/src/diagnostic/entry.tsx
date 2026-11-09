@@ -7,7 +7,7 @@ interface PlaceholderProps {
   loadError?: string;
 }
 
-// Stands in for the DiagnosticPage component, which lands in a later slice with the same props.
+// Minimal page body with the props the diagnostic page takes: a snapshot or a load error.
 function DiagnosticPlaceholder({ snapshot, loadError }: PlaceholderProps) {
   return (
     <section aria-labelledby="specter-diagnostic-title" data-marker={DIAGNOSTIC_MARKER} data-has-snapshot={String(snapshot !== null)}>
