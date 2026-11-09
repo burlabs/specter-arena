@@ -18,7 +18,7 @@
 - Conventions: <!-- AGENTS.md, CONTRIBUTING.md, docs/development/adapters.md -->
 
 ## Testing
-- Ephemeral dev environment: <!-- preview URL for user-visible changes, or the documented exception; delete for non-visual changes -->
+- Ephemeral dev environment: <!-- preview URL for user-visible changes; for a surface that only works against a live Crew, the standing exception in docs/ops/preview.md citing docs/compatibility/evidence/<runId>; delete for non-visual changes -->
 - Unit tests: <!-- what was added and the coverage on new code -->
 
 ## Revisions

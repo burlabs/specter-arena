@@ -6,7 +6,7 @@ inclusion: always
 
 | Area | Choice |
 |---|---|
-| Host | Kiro Crew v0.11.2 desktop |
+| Host | Kiro Crew 0.12.0 desktop (the version FP-01 probes; see `docs/compatibility/crew-0.12.0.md`) |
 | Node | 26 LTS (`.nvmrc`), npm 11, `package-lock.json`, `npm ci` in CI |
 | UI | React + TypeScript, Vite library build to `ui/dist/index.mjs` (built on demand, git-ignored) |
 | UI tests | Vitest + v8 coverage, React Testing Library, Playwright Chromium smoke |

@@ -48,6 +48,14 @@ Until all five variables are set, `.github/workflows/preview.yml` prints `previe
 - `preview-cleanup.yml` deletes `pr-<n>/` and invalidates it when the PR closes.
 - Both jobs run in the `preview` GitHub environment, which is what the role's trust condition names. GitHub creates that environment the first time a job references it.
 
+## Standing exception: surfaces that need a live Crew
+
+Some parts of FP-01 and later PRs only work against a real installed Crew: the installed-app round trip, bot telemetry, closed-tab collection. A preview cannot show them. Eric approved a standing exception for those parts on 2026-11-09.
+
+- It covers only the live-Crew parts. A change to the FIXTURE preview harness still carries a preview URL.
+- The PR cites the probe run evidence under `docs/compatibility/evidence/<runId>/` in place of a URL, with sanitised captures and real rendered screenshots. Vitest output and text snapshots are not screenshots.
+- The preview itself shows FIXTURE data only. It is not live proof.
+
 ## Tear down
 
 Empty the bucket first (`cdk destroy` refuses a non-empty bucket), then from `infra/` run `npm run destroy`. `cdk destroy` does not touch the bootstrap stack `CDKToolkit-specter`; delete it in CloudFormation if nothing else uses the `specter` qualifier.
