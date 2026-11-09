@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DECLARED_API, isPathPermitted } from '../../fixtures/api-allowlist';
-import { createFixtureClient, useAppApi } from '../../fixtures/app-sdk';
-import { APP_API_PREFIX, PING_PATH, appApiPath } from './paths';
+import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
+import { createFixtureClient, useAppApi } from './app-sdk.ts';
+import { APP_API_PREFIX, PING_PATH, appApiPath } from '../src/host/paths.ts';
 
 describe('fixture SDK allowlist (mirrors the host matcher)', () => {
   it('lets /x/* cover /x and /x/...', () => {

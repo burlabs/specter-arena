@@ -1,5 +1,5 @@
-// SPECTER-FIXTURE-ONLY: the host SDK's path allowlist, kept apart from the aliased SDK
-// module so tests that mock '@kirocrew/app-sdk' can still import it.
+// Test support, never imported by release code: the host SDK's path allowlist, kept apart
+// from the aliased SDK module so tests that mock '@kirocrew/app-sdk' can still import it.
 import manifest from '../../app.json';
 
 /** The host SDK's matcher: `/x/*` and `/x` cover `/x` and `/x/...`; a trailing `*` is a prefix. */

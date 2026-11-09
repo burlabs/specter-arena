@@ -1,7 +1,7 @@
 // SPECTER-FIXTURE-ONLY: stands in for '@kirocrew/app-sdk' in unit tests and the preview
 // harness through a bundler alias. The library build leaves the real module external, so
 // this file never reaches ui/dist.
-import { DECLARED_API, isPathPermitted } from './api-allowlist.ts';
+import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 
 export const FIXTURE_SDK_LABEL = 'SPECTER-FIXTURE-ONLY: fixture app-sdk, not the Crew host';
 

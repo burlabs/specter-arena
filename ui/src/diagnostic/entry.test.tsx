@@ -1,7 +1,7 @@
 // SPECTER-DIAGNOSTIC-ONLY
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DECLARED_API, isPathPermitted } from '../../fixtures/api-allowlist';
+import { DECLARED_API, isPathPermitted } from '../../test-support/api-allowlist.ts';
 import { makeCell, makeSnapshot } from './components/testData';
 import DiagnosticEntry from './entry';
 import { DIAGNOSTIC_MARKER } from './model';
