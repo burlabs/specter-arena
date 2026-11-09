@@ -10,6 +10,7 @@ export default defineConfig({
   root: fromUi('./preview'),
   base: './',
   plugins: [react()],
+  resolve: { alias: { '@kirocrew/app-sdk': fromUi('./fixtures/app-sdk.ts') } },
   build: {
     outDir: fromUi('./preview-dist'),
     emptyOutDir: true,

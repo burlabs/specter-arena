@@ -36,20 +36,28 @@ describe('library build', () => {
     expect(readdirSync(DIST)).toEqual(['index.mjs']);
   });
 
-  it('exports mount', () => {
-    expect(bundle).toMatch(/export\s*\{[^}]*\bmount\b[^}]*\}/);
+  it('default-exports the app component and exports nothing named mount', () => {
+    expect(bundle).toMatch(/export\s*\{[^}]*\bas\s+default\b[^}]*\}|export\s+default\b/);
+    expect(bundle).not.toMatch(/export\s*\{[^}]*\bmount\b[^}]*\}/);
+    expect(bundle).not.toMatch(/\bfunction\s+mount\b|\bmount\s*=/);
   });
 
   it('imports host modules as bare specifiers and nothing else', () => {
     const imports = importedSpecifiers();
-    expect(imports).toContain('react-dom/client');
+    expect(imports).toContain('@kirocrew/app-sdk');
     expect(imports).toContain('react/jsx-runtime');
+    expect(imports).not.toContain('react-dom/client');
     for (const specifier of imports) expect(HOST_EXTERNALS).toContain(specifier);
   });
 
   it('does not inline React or embed local paths', () => {
     expect(bundle).not.toMatch(/__CLIENT_INTERNALS|__SECRET_INTERNALS|react\.transitional\.element|jsxDEV/);
     expect(bundle).not.toContain(fileURLToPath(new URL('..', import.meta.url)));
-    expect(bundle.length).toBeLessThan(2_000);
+    expect(bundle.length).toBeLessThan(6_000);
+  });
+
+  it('carries no fixture or diagnostic marker', () => {
+    expect(bundle).not.toContain('SPECTER-FIXTURE-ONLY');
+    expect(bundle).not.toContain('SPECTER-DIAGNOSTIC-ONLY');
   });
 });

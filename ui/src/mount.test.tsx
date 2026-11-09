@@ -1,51 +1,50 @@
-import { act } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
-import { mount } from './mount';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as entry from './mount';
+import SpecterArenaApp from './mount';
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
-const containers: HTMLElement[] = [];
+vi.mock('@kirocrew/app-sdk', () => ({ useAppApi: () => client }));
 
-function newContainer() {
-  const container = document.createElement('div');
-  document.body.append(container);
-  containers.push(container);
-  return container;
-}
-
-afterEach(() => {
-  for (const container of containers.splice(0)) container.remove();
+beforeEach(() => {
+  client.get.mockReset();
 });
 
-describe('mount', () => {
-  it('renders the stub shell without a host context', () => {
-    const container = newContainer();
-    let cleanup: () => void = () => {};
-    act(() => {
-      cleanup = mount(container);
-    });
-    expect(container.querySelector('h1')?.textContent).toBe('Specter Arena');
-    expect(container.querySelector('[data-specter-stub="true"]')?.getAttribute('aria-label')).toBe('Specter Arena');
-    act(() => cleanup());
+describe('release entry', () => {
+  it('default-exports a component and no mount function', () => {
+    expect(typeof entry.default).toBe('function');
+    expect(Object.keys(entry)).toEqual(['default']);
   });
 
-  it('accepts and ignores a host context', () => {
-    const container = newContainer();
-    let cleanup: () => void = () => {};
-    act(() => {
-      cleanup = mount(container, { appName: 'specter-arena' });
-    });
-    expect(container.textContent).toContain('No product features yet.');
-    act(() => cleanup());
+  it('renders the stub shell before any check', () => {
+    render(<SpecterArenaApp />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Specter Arena' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Specter Arena' }).textContent).toContain('No product features yet.');
+    expect(screen.getByRole('status').textContent).toBe('Backend connection not checked.');
   });
 
-  it('returns a cleanup that empties the container', () => {
-    const container = newContainer();
-    let cleanup: () => void = () => {};
-    act(() => {
-      cleanup = mount(container);
-    });
-    act(() => cleanup());
-    expect(container.childNodes).toHaveLength(0);
+  it('shows the ping time when the backend answers', async () => {
+    client.get.mockResolvedValue({ ok: true, at: '2000-01-01T00:00:00Z' });
+    render(<SpecterArenaApp />);
+    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
+    expect((await screen.findByRole('status')).textContent).toBe('Backend reachable at 2000-01-01T00:00:00Z.');
+    expect(client.get).toHaveBeenCalledWith('/api/ping');
+  });
+
+  it('shows the error text when the check fails', async () => {
+    client.get.mockRejectedValue(new Error('app_not_enabled'));
+    render(<SpecterArenaApp />);
+    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
+    expect((await screen.findByText(/Backend check failed/)).textContent).toBe(
+      'Backend check failed: app_not_enabled',
+    );
+  });
+
+  it('stringifies a non-Error rejection', async () => {
+    client.get.mockRejectedValue('plain failure');
+    render(<SpecterArenaApp />);
+    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
+    expect((await screen.findByText(/Backend check failed/)).textContent).toBe('Backend check failed: plain failure');
   });
 });
