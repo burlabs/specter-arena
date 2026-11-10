@@ -327,3 +327,80 @@ def test_error_bodies_are_json(make_client: MakeClient) -> None:
     response = call(client, "POST", "/api/probe/run", {"steps": ["nope"]})
     assert response.json() == {"error": "unknown step nope"}
     assert error_body("x")
+
+
+def manifest_with(tmp_path: Path, permissions: dict[str, object]) -> Path:
+    path = tmp_path / "app.json"
+    path.write_text(json.dumps({"permissions": permissions}))
+    return path
+
+
+V0_PERMISSIONS: dict[str, object] = {"api": ["/apps/specter-arena/api/*"]}
+V1_PERMISSIONS: dict[str, object] = {
+    "api": ["/apps/specter-arena/api/*", "/api/agents", "/api/chat/slots"],
+    "events": ["slots:user"],
+}
+
+
+def test_config_without_grants_declared_reads_the_installed_manifest(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    v0 = make_client(service(manifest_path=manifest_with(tmp_path, V0_PERMISSIONS)))
+    assert call(v0, "POST", "/api/probe/config", {"probeSlug": "p"}).status_code == 204
+    state = call(v0, "GET", "/api/probe/state").json()
+    assert (state["grantsDeclared"], state["grantsBasis"]) == (False, "manifest")
+
+    v1 = make_client(service(manifest_path=manifest_with(tmp_path, V1_PERMISSIONS)))
+    call(v1, "POST", "/api/probe/config", {"probeSlug": "p"})
+    state = call(v1, "GET", "/api/probe/state").json()
+    assert (state["grantsDeclared"], state["grantsBasis"]) == (True, "manifest")
+
+
+def test_an_explicit_grants_declared_overrides_the_manifest(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    client = make_client(service(manifest_path=manifest_with(tmp_path, V0_PERMISSIONS)))
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p", "grantsDeclared": True})
+    state = call(client, "GET", "/api/probe/state").json()
+    assert (state["grantsDeclared"], state["grantsBasis"]) == (True, "request")
+
+
+def test_an_unreadable_manifest_keeps_grants_declared_and_records_why(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    client = make_client(service(manifest_path=tmp_path / "absent.json"))
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p"})
+    state = call(client, "GET", "/api/probe/state").json()
+    assert state["grantsDeclared"] is True
+    assert state["grantsBasis"] == "manifest-unreadable: FileNotFoundError"
+
+
+def test_the_manifest_is_read_once_per_run_and_a_run_without_config_still_reads_it(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    path = manifest_with(tmp_path, V0_PERMISSIONS)
+    svc = service(manifest_path=path)
+    assert svc.state()["grantsBasis"] == "default"
+    client = make_client(svc)
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p"})
+    path.write_text(json.dumps({"permissions": V1_PERMISSIONS}))
+    call(client, "POST", "/api/probe/run", {"steps": ["token-exchange"]})
+    state = wait_until_done(client)
+    assert (state["grantsDeclared"], state["grantsBasis"]) == (False, "manifest")
+
+    call(client, "POST", "/api/probe/run", {"steps": ["token-exchange"]})
+    state = wait_until_done(client)
+    assert (state["grantsDeclared"], state["grantsBasis"]) == (True, "manifest")
+
+
+def test_a_v0_manifest_lets_the_deny_by_default_cell_be_decided(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    port = FakePort(frames=[slots_frame()])
+    svc = service(port, manifest_path=manifest_with(tmp_path, V0_PERMISSIONS))
+    client = make_client(svc)
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p"})
+    call(client, "POST", "/api/probe/run", {"steps": ["ws-capture"]})
+    wait_until_done(client)
+    assert svc.run.cells["user-slots-no-grant-denied"].state == "DENIED"
+    assert svc.run.grants_basis == "manifest"

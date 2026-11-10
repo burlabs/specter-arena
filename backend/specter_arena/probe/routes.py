@@ -15,7 +15,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
-from ..config import gateway_env
+from ..config import APP_ROOT, detect_grants, gateway_env
 from ..proxy_auth import Handler, signed
 from .matrix import (
     CREDENTIALS,
@@ -40,6 +40,7 @@ MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 MAX_BODY_BYTES = 64 * 1024
 SLUG_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[3] / ".probe-out"
+DEFAULT_MANIFEST_PATH = APP_ROOT / "app.json"
 
 PortFactory = Callable[[], GatewayPort]
 
@@ -85,11 +86,14 @@ class ProbeService:
         out_dir: Path | None = DEFAULT_OUT_DIR,
         gateway_available: Callable[[], bool] | None = None,
         capture_seconds: float = 30.0,
+        manifest_path: Path = DEFAULT_MANIFEST_PATH,
     ) -> None:
         self._port_factory = port_factory
         self._out_dir = out_dir
         self._gateway_available = gateway_available or (lambda: bool(gateway_env().origin))
         self._capture_seconds = capture_seconds
+        self._manifest_path = manifest_path
+        self._grants_resolved = False
         self._task: asyncio.Task[None] | None = None
         self._write_denied = False
         self.status = "idle"
@@ -98,6 +102,14 @@ class ProbeService:
         self.cli_slot_key = ""
         self.grants_declared = True
         self.run = self._fresh_run()
+        self.run.grants_basis = "default"
+
+    def _resolve_grants(self, explicit: bool | None) -> None:
+        if explicit is None:
+            self.grants_declared, self.run.grants_basis = detect_grants(self._manifest_path)
+        else:
+            self.grants_declared, self.run.grants_basis = explicit, "request"
+        self._grants_resolved = True
 
     def _fresh_run(self, probe_slug: str = "") -> Run:
         run = _new_run(probe_slug)
@@ -126,6 +138,7 @@ class ProbeService:
             "error": self.error,
             "probeSlug": self.run.probe_slug,
             "grantsDeclared": self.grants_declared,
+            "grantsBasis": self.run.grants_basis,
             "decidedCells": len(self.run.cells),
             "droppedFrames": self.run.stats.dropped,
             "bufferedFrames": len(self.run.frames),
@@ -152,13 +165,16 @@ class ProbeService:
         self.run.probe_slug = slug
         self.other_app = other_app or self.other_app
         self.cli_slot_key = cast(str, body.get("cliSlotKey", self.cli_slot_key))
-        self.grants_declared = cast(bool, body.get("grantsDeclared", self.grants_declared))
+        self._resolve_grants(cast("bool | None", body.get("grantsDeclared")))
 
     def start(self, step_ids: list[str] | None) -> str:
         if self.running:
             raise RunInProgress
         select_steps(step_ids)
         port = self._port_factory()
+        if not self._grants_resolved:
+            self._resolve_grants(None)
+        self._grants_resolved = False
         ctx = StepContext(
             run=self.run,
             now=_now,

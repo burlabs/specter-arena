@@ -10,7 +10,7 @@ The FIXTURE, RECORDED and INVALID-EVIDENCE view states are proven by jsdom tests
 
 ## Roles and credential labels
 
-- `OWNER-SESSION`: Eric's dashboard session, driven by the agent through the browser tool. It can establish host facts and denials.
+- `OWNER-SESSION`: Eric's dashboard session. It can establish host facts and denials. Eric performs these steps himself: agents cannot install apps or open the dashboard in Crew 0.12.0.
 - `APP-TOKEN`: requests made by the installed backend with the credentials Crew gives it. Only APP-TOKEN results may mark a matrix cell ALLOWED.
 
 Every evidence item carries one label and an ISO 8601 UTC timestamp.
@@ -45,7 +45,7 @@ Each row records the step, who ran it, the credential label, an ISO 8601 UTC tim
 
 ## Probe app
 
-The probe app is assembled from the release app plus `probe/manifest-overlay.json` by a staging command. Staging never installs; Eric installs the staged app himself and uninstalls it after the run, because the user-slots grant exposes every user-origin chat to the app. Tell Eric before installing the grant phase.
+The probe app is assembled from the release app plus `probe/manifest-overlay.json` by a staging command. Staging never installs; Eric installs the staged app himself and uninstalls it after the run, because the user-slots grant exposes every user-origin chat to the app. Tell Eric before installing the grant phase. Installing, enabling and opening the app are owner steps: agents cannot install apps or open the dashboard.
 
 ```sh
 npm ci
@@ -55,6 +55,22 @@ npm run probe:stage -- --phase v0
 ```
 
 `probe:stage` writes the git-ignored `.probe-app/` (with a `.probe-enabled` switch file that exists nowhere else) and prints the install command as text. It refuses to stage a diagnostic bundle that lacks `SPECTER-DIAGNOSTIC-ONLY`. Phases: `v0` declares only the app's own-namespace entry `/apps/specter-arena/api/*` (the browser SDK rejects the app's own proxy path otherwise; every phase keeps it), `v1` adds the probe grants, `v2` adds one more API entry to exercise the staged-approval path. The overlay never contains `backend.hooks`.
+
+### One page, one route
+
+The Crew 0.12.0 dashboard router gives a third-party app exactly one route, `/apps/:name`; there is no `/apps/:name/*`. A second page such as `/apps/specter-arena/diagnostic` redirects to the Crew home. Every staged phase therefore sets `ui.entry` to `diagnostic-dist/index.mjs` and declares a single page, `/apps/specter-arena`, labelled "Specter Diagnostic". The staged app replaces the release page; the release `app.json` and `ui/dist` are unchanged. The probe page is `/apps/specter-arena`.
+
+### Enable the staged app (owner steps)
+
+1. Eric runs the printed install command for `.probe-app`.
+2. In the dashboard, open Apps, then Library (the app is not under Discover), and enable "Specter Arena". Crew shows a per-app trust prompt for third-party apps; Eric approves it.
+3. Open `/apps/specter-arena`. The page title is "Specter Diagnostic". If the page reads "Enable this app from Apps to use it.", the app is not enabled yet.
+4. For `v1` and `v2`, Eric approves each `permissions.api` grant the dashboard shows.
+5. To move to the next phase, uninstall the app, stage the next phase, install it again and enable it from the Library.
+
+### Phase detection
+
+The backend works out whether grants are declared from its own installed `app.json`, read once per run: grants are declared when `permissions.api` holds any entry other than `/apps/specter-arena/api/*`, or `permissions.events` is not empty. A `v0` install therefore records the deny-by-default cells (`user-slots-no-grant-denied`, `bot-dashboard-record-ungranted`) instead of leaving them UNTESTED. An explicit `grantsDeclared` in `POST /api/probe/config` overrides the detection. If the file cannot be read, grants are treated as declared and the reason is recorded: `GET /api/probe/state` reports `grantsBasis` as `manifest`, `request`, `default` or `manifest-unreadable: <error>`.
 
 ## Export step
 
