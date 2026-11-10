@@ -62,8 +62,12 @@ describe('the committed overlay', () => {
     assert.equal(JSON.stringify(realOverlay).includes(DIAGNOSTIC_MARKER), false);
   });
 
-  it('points its page at the diagnostic bundle relative to the staged ui/', () => {
-    assert.equal(realOverlay.ui.pages[0].entryPoint, 'diagnostic-dist/index.mjs');
+  it('points ui.entry at the diagnostic bundle relative to the staged ui/', () => {
+    assert.equal(realOverlay.ui.entry, 'diagnostic-dist/index.mjs');
+  });
+
+  it('declares exactly one page, on the only route the host gives a third-party app', () => {
+    assert.deepEqual(realOverlay.ui.pages, [{ route: '/apps/specter-arena', label: 'Specter Diagnostic', icon: 'Activity' }]);
   });
 
   it('holds the v1 permissions: the own-namespace entry first, three probe api prefixes and slots:user', () => {
@@ -133,12 +137,12 @@ describe('overlayForPhase', () => {
 });
 
 describe('mergeManifest', () => {
-  it('replaces scalars, appends pages and adds permissions', () => {
+  it('replaces scalars, ui entry and pages, and adds permissions', () => {
     const merged = mergeManifest(realManifest, overlayForPhase(realOverlay, 'v1'));
     assert.equal(merged.version, '0.0.0-probe.1');
     assert.equal(merged.minKiroCrewVersion, realManifest.minKiroCrewVersion);
-    assert.equal(merged.ui.entry, realManifest.ui.entry);
-    assert.deepEqual(merged.ui.pages, [...realManifest.ui.pages, ...realOverlay.ui.pages]);
+    assert.equal(merged.ui.entry, 'diagnostic-dist/index.mjs');
+    assert.deepEqual(merged.ui.pages, realOverlay.ui.pages);
     assert.deepEqual(merged.permissions, realOverlay.permissions);
   });
 
@@ -146,13 +150,45 @@ describe('mergeManifest', () => {
     assert.deepEqual(mergeManifest(realManifest, overlayForPhase(realOverlay, 'v0')).permissions, { api: [OWN_API_ENTRY] });
   });
 
-  it('keeps the base untouched when the overlay has no ui', () => {
-    const merged = mergeManifest({ ui: { entry: 'dist/index.mjs' } }, { version: '1' });
-    assert.deepEqual(merged.ui, { entry: 'dist/index.mjs', pages: [] });
+  it('keeps the base ui untouched when the overlay has no ui', () => {
+    const base = { ui: { entry: 'dist/index.mjs', pages: [{ route: '/a' }] } };
+    assert.deepEqual(mergeManifest(base, { version: '1' }).ui, base.ui);
   });
 
   it('tolerates a base without a ui section', () => {
     assert.deepEqual(mergeManifest({ name: 'x' }, { ui: { pages: [{ route: '/a' }] } }).ui, { pages: [{ route: '/a' }] });
+  });
+
+  it('does not mutate the base manifest', () => {
+    const before = JSON.stringify(realManifest);
+    mergeManifest(realManifest, overlayForPhase(realOverlay, 'v2'));
+    assert.equal(JSON.stringify(realManifest), before);
+  });
+});
+
+describe('every staged phase', () => {
+  /** @type {Record<string, unknown>} */
+  const expectedPermissions = {
+    v0: { api: [OWN_API_ENTRY] },
+    v1: realOverlay.permissions,
+    v2: { ...realOverlay.permissions, api: [...realOverlay.permissions.api, V2_EXTRA_API_ENTRY] },
+  };
+
+  for (const phase of PHASES) {
+    it(`${phase} has exactly one page at /apps/specter-arena and the diagnostic ui.entry`, () => {
+      const manifest = staged(repo(), phase).manifest();
+      assert.equal(manifest.ui.entry, 'diagnostic-dist/index.mjs');
+      assert.deepEqual(manifest.ui.pages, [{ route: '/apps/specter-arena', label: 'Specter Diagnostic', icon: 'Activity' }]);
+      assert.deepEqual(manifest.permissions, expectedPermissions[phase]);
+    });
+  }
+
+  it('leaves the release app.json and ui/dist as they were', () => {
+    const root = repo();
+    const before = readFileSync(join(root, 'app.json'), 'utf8');
+    staged(root, 'v1');
+    assert.equal(readFileSync(join(root, 'app.json'), 'utf8'), before);
+    assert.equal(readFileSync(join(root, 'ui/dist/index.mjs'), 'utf8'), 'export default 1;');
   });
 });
 

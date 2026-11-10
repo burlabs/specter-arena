@@ -45,7 +45,9 @@ export function overlayForPhase(overlay, phase) {
 }
 
 /**
- * Scalar overlay keys replace, `ui.pages` are appended, `permissions` are added.
+ * Scalar overlay keys replace, `ui` keys replace (the 0.12.0 dashboard router gives a third-party
+ * app the single route `/apps/:name`, so the probe page takes over the release page's route),
+ * `permissions` are added.
  * @param {Record<string, unknown>} base release app.json
  * @param {Record<string, unknown>} overlay
  * @returns {Record<string, any>}
@@ -53,13 +55,11 @@ export function overlayForPhase(overlay, phase) {
 export function mergeManifest(base, overlay) {
   const { ui: overlayUi, permissions, ...scalars } = overlay;
   const baseUi = isRecord(base.ui) ? base.ui : {};
-  const basePages = Array.isArray(baseUi.pages) ? baseUi.pages : [];
-  const overlayPages = isRecord(overlayUi) && Array.isArray(overlayUi.pages) ? overlayUi.pages : [];
   return {
     ...base,
     ...scalars,
     ...(permissions === undefined ? {} : { permissions }),
-    ui: { ...baseUi, pages: [...basePages, ...overlayPages] },
+    ui: { ...baseUi, ...(isRecord(overlayUi) ? overlayUi : {}) },
   };
 }
 

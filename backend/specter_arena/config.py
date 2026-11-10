@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -40,3 +41,26 @@ def probe_enabled(environ: Mapping[str, str] | None = None, root: Path | None = 
     if env.get("SPECTER_PROBE") == "1":
         return True
     return ((APP_ROOT if root is None else root) / PROBE_SWITCH_FILE).is_file()
+
+
+MANIFEST_FILE = "app.json"
+OWN_API_ENTRY = "/apps/specter-arena/api/*"
+
+
+def detect_grants(manifest_path: Path | None = None) -> tuple[bool, str]:
+    """Whether the installed app.json declares anything beyond the app's own api entry.
+
+    Returns the answer and the basis it rests on. A manifest that cannot be read or does not have
+    the expected shape fails closed to "declared" so the grant-dependent cells are never skipped.
+    """
+    path = APP_ROOT / MANIFEST_FILE if manifest_path is None else manifest_path
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        permissions = manifest.get("permissions", {})
+        api = permissions.get("api", [])
+        events = permissions.get("events", [])
+        if not (isinstance(api, list) and isinstance(events, list)):
+            raise TypeError
+    except (OSError, ValueError, AttributeError, TypeError) as error:
+        return True, f"manifest-unreadable: {type(error).__name__}"
+    return any(entry != OWN_API_ENTRY for entry in api) or bool(events), "manifest"

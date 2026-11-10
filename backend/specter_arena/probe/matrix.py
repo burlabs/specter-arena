@@ -204,6 +204,7 @@ class Run:
     run_id: str
     started_at: str
     probe_slug: str = ""
+    grants_basis: str = ""
     host_version: str = HOST_VERSION
     cells: dict[str, Cell] = field(default_factory=dict)
     host_facts: dict[str, HostFact] = field(default_factory=dict)

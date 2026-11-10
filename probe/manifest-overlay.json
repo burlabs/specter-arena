@@ -5,12 +5,12 @@
     "events": ["slots:user"]
   },
   "ui": {
+    "entry": "diagnostic-dist/index.mjs",
     "pages": [
       {
-        "route": "/apps/specter-arena/diagnostic",
+        "route": "/apps/specter-arena",
         "label": "Specter Diagnostic",
-        "icon": "Activity",
-        "entryPoint": "diagnostic-dist/index.mjs"
+        "icon": "Activity"
       }
     ]
   }
