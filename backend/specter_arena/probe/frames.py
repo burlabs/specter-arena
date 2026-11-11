@@ -9,6 +9,8 @@ MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
 MAX_LINEAGE_DEPTH = 8
 MAX_EVIDENCE_CHARS = 500
+DM_KEY_PREFIX = "member-"
+MEMORY_STORE_SUFFIX = ".memory-"
 
 SignalKind = Literal["start", "progress", "terminal", "approval", "needs-input", "removed"]
 SlotRole = Literal["bot-dm", "worker", "other"]
@@ -53,20 +55,34 @@ def _text(row: Row, name: str) -> str:
     return value if isinstance(value, str) else ""
 
 
+def is_bot_dm_key(key: str, probe_slug: str) -> bool:
+    """A member DM slot key: `member-<slug>`, or `member-<slug>.memory-<store>` for a bot that
+    has its own memory store. Nothing looser: `member-<slug>x` belongs to another bot."""
+    if not probe_slug:
+        return False
+    dm_key = f"{DM_KEY_PREFIX}{probe_slug}"
+    return key == dm_key or key.startswith(f"{dm_key}{MEMORY_STORE_SUFFIX}")
+
+
 def probe_keys(rows: list[Row], probe_slug: str) -> set[str]:
     """The probe bot's DM slot plus every slot whose `created_by` chain reaches it.
 
-    Walks at most MAX_LINEAGE_DEPTH levels. Growth is monotonic, so a cycle in `created_by`
-    ends the walk instead of looping.
+    A worker counts when its `created_by` names either DM key form, whether or not that DM row
+    is in the snapshot. Walks at most MAX_LINEAGE_DEPTH levels. Growth is monotonic, so a cycle
+    in `created_by` ends the walk instead of looping.
     """
     if not probe_slug:
         return set()
-    keys = {f"member-{probe_slug}"} & {_text(row, "key") for row in rows}
+    keys = {key for row in rows if is_bot_dm_key(key := _text(row, "key"), probe_slug)}
     for _ in range(MAX_LINEAGE_DEPTH):
         grown = {
             _text(row, "key")
             for row in rows
-            if _text(row, "key") and _text(row, "created_by") in keys
+            if _text(row, "key")
+            and (
+                _text(row, "created_by") in keys
+                or is_bot_dm_key(_text(row, "created_by"), probe_slug)
+            )
         }
         if grown <= keys:
             break
@@ -75,7 +91,7 @@ def probe_keys(rows: list[Row], probe_slug: str) -> set[str]:
 
 
 def slot_role(row: Row, probe_slug: str) -> SlotRole:
-    if probe_slug and _text(row, "key") == f"member-{probe_slug}":
+    if is_bot_dm_key(_text(row, "key"), probe_slug):
         return "bot-dm"
     return "worker" if _text(row, "created_by") else "other"
 

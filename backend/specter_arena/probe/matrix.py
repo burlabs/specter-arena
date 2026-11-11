@@ -228,8 +228,11 @@ def apply_observation(run: Run, observation: Observation) -> Cell:
     question = question_by_id(observation.cell_id)
     state = classify(observation)
     if state == "UNTESTED":
-        reason = observation.untested_reason or (
-            f"response not decisive (status {observation.status})"
+        reason = (
+            observation.untested_reason
+            or redact_text(
+                f"response not decisive (status {observation.status}); {observation.excerpt}"
+            )[:MAX_EXCERPT_CHARS]
         )
         cell = to_cell(question, "UNTESTED", notes=reason)
     else:

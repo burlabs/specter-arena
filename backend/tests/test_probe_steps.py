@@ -10,6 +10,7 @@ from backend.specter_arena.probe.steps import (
     StepContext,
     UnknownStep,
     execute_step,
+    refusal_reasons,
     run_steps,
     select_steps,
 )
@@ -192,7 +193,7 @@ def test_agents_roster_variants() -> None:
 def test_agents_roster_without_a_slug_is_untested() -> None:
     ctx = make_ctx(slug="")
     run_one("agents-roster", FakePort({("GET", "/api/agents"): roster({"slug": "p"})}), ctx)
-    assert note(ctx, "bot-list-via-agents") == "probe slug not set"
+    assert note(ctx, "bot-list-via-agents").startswith("probe slug not set; GET /api/agents")
 
 
 def test_chat_slots_without_a_known_worker_leaves_history_untested() -> None:
@@ -454,3 +455,137 @@ def test_scenario_yields_one_allowed_one_denied_and_one_untested_cell(
     print([(a.id, [s.kind for s in a.signals]) for a in ctx.run.attempts.values()])
     assert capsys.readouterr().out
     assert len(to_host_facts_json(ctx.run)["facts"]) == 11  # type: ignore[arg-type]
+
+
+def test_refusals_record_the_hosts_code_and_error_strings() -> None:
+    body = json_body({"code": "grant_missing", "error": "not permitted", "detail": "secret-ish"})
+    ctx = make_ctx()
+    run_one("chat-slots", FakePort({("GET", "/api/chat/slots"): (403, body)}), ctx)
+    excerpt = ctx.run.cells["user-chat-slots-api"].evidence[0].excerpt
+    assert 'code="grant_missing"' in excerpt
+    assert 'error="not permitted"' in excerpt
+    assert "secret-ish" not in excerpt
+    assert "object with fields code, detail, error" in excerpt
+
+
+def test_refusal_reasons_are_redacted_then_capped_at_200_chars() -> None:
+    long_error = "x" * 500
+    reasons = refusal_reasons(403, {"code": "c", "error": long_error})
+    assert reasons == f'; code="c"; error="{"x" * 200}"'
+    leaked = refusal_reasons(401, {"error": "bad Bearer abcdefgh12345678 token"})
+    assert "abcdefgh12345678" not in leaked
+    assert "[redacted]" in leaked
+    hex_run = "a" * 190 + "b" * 40
+    assert hex_run[:200] not in refusal_reasons(500, {"error": hex_run})
+
+
+def test_only_refusals_with_string_values_carry_reasons() -> None:
+    body = {"code": "ok_code", "error": "fine"}
+    assert refusal_reasons(200, body) == ""
+    assert refusal_reasons(399, body) == ""
+    assert refusal_reasons(403, ["code"]) == ""
+    assert refusal_reasons(403, {"code": 7, "error": None}) == ""
+    assert refusal_reasons(500, {"error": "boom"}) == '; error="boom"'
+
+
+def test_success_bodies_stay_shape_only() -> None:
+    body = json_body({"code": "visible?", "error": "no", "title": "private"})
+    ctx = make_ctx()
+    run_one("chat-slots", FakePort({("GET", "/api/chat/slots"): (200, body)}), ctx)
+    excerpt = ctx.run.cells["user-chat-slots-api"].evidence[0].excerpt
+    assert "visible?" not in excerpt
+    assert "private" not in excerpt
+    assert "object with fields code, error, title" in excerpt
+
+
+def test_an_undecided_refusal_keeps_its_status_shape_and_reason_in_the_note() -> None:
+    body = json_body({"code": "grant_pending", "error": "wait", "rows": [1, 2]})
+    ctx = make_ctx()
+    run_one("chat-slots", FakePort({("GET", "/api/chat/slots"): (409, body)}), ctx)
+    cell_note = note(ctx, "user-chat-slots-api")
+    assert cell_note.startswith("response not decisive (status 409)")
+    assert 'code="grant_pending"' in cell_note
+    assert len(cell_note) <= 500
+
+
+def test_a_denial_without_a_reason_field_is_still_recorded() -> None:
+    ctx = make_ctx()
+    run_one("chat-slots", FakePort({("GET", "/api/chat/slots"): (403, json_body({"x": 1}))}), ctx)
+    assert "answered 403; object with fields x" in note(ctx, "user-chat-slots-api")
+
+
+def test_agents_roster_records_status_and_shape_on_every_outcome() -> None:
+    cases = {
+        "refused": (DENY, "DENIED"),
+        "server error": ((500, b"boom"), "UNTESTED"),
+        "malformed": ((200, b"{nope"), "UNTESTED"),
+        "scalar": ((200, json_body("text")), "UNTESTED"),
+        "empty": ((204, b""), "UNTESTED"),
+    }
+    for label, (answer, expected) in cases.items():
+        ctx = make_ctx()
+        run_one("agents-roster", FakePort({("GET", "/api/agents"): answer}), ctx)
+        for cell in ("bot-list-via-agents", "bot-name-avatar"):
+            assert state(ctx, cell) == expected, label
+            recorded = (
+                ctx.run.cells[cell].evidence[0].excerpt if expected == "DENIED" else note(ctx, cell)
+            )
+            assert "/api/agents answered" in recorded, label
+    ctx = make_ctx()
+    run_one("agents-roster", FakePort({("GET", "/api/agents"): (500, b"boom")}), ctx)
+    assert "malformed JSON" in note(ctx, "bot-list-via-agents")
+
+
+def test_agents_roster_without_the_probe_row_names_status_shape_and_row_count_only() -> None:
+    other = {"slug": "other", "display_name": "Someone Else", "avatar_url": "https://x/o.png"}
+    ctx = make_ctx()
+    run_one("agents-roster", FakePort({("GET", "/api/agents"): roster(other, other)}), ctx)
+    for cell in ("bot-list-via-agents", "bot-name-avatar"):
+        recorded = note(ctx, cell)
+        assert recorded.startswith("probe bot not found in the roster rows; GET /api/agents")
+        assert "answered 200; object with fields agents; roster rows: 2" in recorded
+        assert "Someone Else" not in recorded
+        assert "o.png" not in recorded
+
+
+def test_agents_roster_probe_row_lists_fields_never_values_or_other_rows() -> None:
+    row = {"slug": "probe", "display_name": "Probe Name", "avatar_url": "https://x/p.png"}
+    other = {"slug": "other", "private_field": "Other Value"}
+    ctx = make_ctx()
+    run_one("agents-roster", FakePort({("GET", "/api/agents"): roster(row, other)}), ctx)
+    for cell in ("bot-list-via-agents", "bot-name-avatar"):
+        excerpt = ctx.run.cells[cell].evidence[0].excerpt
+        assert "avatar_url" in excerpt
+        for hidden in ("Probe Name", "p.png", "private_field", "Other Value"):
+            assert hidden not in excerpt
+
+
+def test_ws_capture_attributes_a_suffixed_dm_slot_and_its_workers() -> None:
+    dm = "member-probe.memory-store1"
+    frames = [
+        slots_frame(slot_row(dm), slot_row("w1", created_by=dm), slot_row("chat-7", title="x")),
+        slots_frame(
+            slot_row(dm, running=True),
+            slot_row("w1", created_by=dm, running=True),
+            slot_row("chat-7", title="x"),
+        ),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert ctx.run.attempts[dm].kind == "bot-turn"
+    assert ctx.run.attempts[dm].bot_ref == "probe"
+    assert ctx.run.attempts["w1"].kind == "worker-session"
+    assert "chat-7" not in ctx.run.attempts
+    assert state(ctx, "bot-id-observable") == "ALLOWED"
+    assert state(ctx, "bot-own-session-attribution") == "ALLOWED"
+    assert state(ctx, "bot-worker-session-attribution") == "ALLOWED"
+    assert "chat-7" not in str(list(ctx.run.frames))
+
+
+def test_ws_capture_does_not_attribute_a_longer_slug_to_the_probe_bot() -> None:
+    frames = [slots_frame(slot_row("member-probex.memory-s", title="other bot"))]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert ctx.run.attempts == {}
+    assert state(ctx, "bot-id-observable") == "UNTESTED"
+    assert "other bot" not in str(list(ctx.run.frames))
