@@ -237,6 +237,24 @@ def test_probe_slot_keeps_values_and_other_slots_keep_shape_in_one_frame() -> No
     assert stats.dropped == 0
 
 
+def test_a_suffixed_dm_slot_and_its_workers_keep_values_but_a_longer_slug_does_not() -> None:
+    stats = SanitiseStats()
+    frame = slots_frame(
+        slot_row("member-probe.memory-s1", title="Probe DM"),
+        slot_row("w1", title="Probe worker", created_by="member-probe.memory-s1"),
+        slot_row("member-probex", title="Another bot"),
+    )
+    out = sanitise_frame(frame, "probe", SALT, stats)
+    assert out is not None
+    rows = out["data"]
+    assert isinstance(rows, list)
+    dm, worker, other = rows
+    assert dm["title"] == "Probe DM"
+    assert worker["title"] == "Probe worker"
+    assert other["title"] == "<redacted type=str len=11>"
+    assert other["key"] == digest(SALT, "member-probex")
+
+
 def test_a_failing_row_drops_the_whole_frame_and_counts_it() -> None:
     stats = SanitiseStats()
     frame = slots_frame(slot_row("chat-1", blob=b"bytes"))

@@ -3,6 +3,7 @@ import random
 from backend.specter_arena.probe.frames import (
     MAX_EVIDENCE_CHARS,
     diff_slots,
+    is_bot_dm_key,
     outcome_evidence,
     probe_keys,
     slot_role,
@@ -69,6 +70,47 @@ def test_slot_role() -> None:
     assert slot_role(slot_row("w1", created_by="member-probe"), "probe") == "worker"
     assert slot_role(slot_row("chat-1"), "probe") == "other"
     assert slot_role(slot_row("member-probe"), "") == "other"
+
+
+SUFFIXED = "member-probe.memory-store1"
+
+
+def test_is_bot_dm_key_accepts_exact_and_memory_store_forms_only() -> None:
+    assert is_bot_dm_key("member-probe", "probe")
+    assert is_bot_dm_key(SUFFIXED, "probe")
+    for other in ("member-probex", "member-probe.memory", "member-probe.other-x", "member-", ""):
+        assert not is_bot_dm_key(other, "probe"), other
+    assert not is_bot_dm_key("member-other.memory-store1", "probe")
+    assert not is_bot_dm_key("member-probe", "")
+
+
+def test_a_suffixed_dm_key_is_the_bot_dm_and_a_longer_slug_is_not() -> None:
+    assert slot_role(slot_row(SUFFIXED), "probe") == "bot-dm"
+    assert slot_role(slot_row("member-probex"), "probe") == "other"
+    assert slot_role(slot_row("member-probex.memory-s"), "probe") == "other"
+
+
+def test_probe_keys_recognise_a_suffixed_dm_and_workers_created_by_it() -> None:
+    rows = [
+        slot_row(SUFFIXED),
+        slot_row("w1", created_by=SUFFIXED),
+        slot_row("w2", created_by="w1"),
+        slot_row("member-probex", created_by="elsewhere"),
+        slot_row("x1", created_by="member-probex"),
+    ]
+    assert probe_keys(rows, "probe") == {SUFFIXED, "w1", "w2"}
+    assert slot_role(rows[1], "probe") == "worker"
+
+
+def test_workers_naming_either_dm_form_count_even_when_the_dm_row_is_absent() -> None:
+    rows = [
+        slot_row(SUFFIXED),
+        slot_row("w1", created_by="member-probe"),
+        slot_row("w2", created_by="member-probe.memory-other"),
+        slot_row("w3", created_by="member-probex"),
+    ]
+    assert probe_keys(rows, "probe") == {SUFFIXED, "w1", "w2"}
+    assert probe_keys(rows[1:], "probe") == {"w1", "w2"}
 
 
 def kinds(prev: Rows, curr: Rows) -> list[str]:

@@ -17,7 +17,7 @@ from .matrix import (
     Run,
     apply_observation,
 )
-from .sanitise import digest, sanitise_frame
+from .sanitise import digest, redact_text, sanitise_frame
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
@@ -25,6 +25,8 @@ MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 UNGRANTED_PATH = "/api/config"
 ERROR_KEYS = ("error", "detail", "message", "reason")
 MAX_LISTED_KEYS = 20
+REASON_KEYS = ("code", "error")
+MAX_REASON_CHARS = 200
 
 
 class PortError(Exception):
@@ -129,6 +131,28 @@ def describe(parsed: object) -> str:
     return type(parsed).__name__
 
 
+def refusal_reasons(status: int, parsed: object) -> str:
+    """The host's own `code` and `error` strings from a refusal (status >= 400), else empty.
+
+    Each value is redacted, then cut to MAX_REASON_CHARS. Every other field stays shape-only,
+    and a success body never reaches this function's output.
+    """
+    if status < 400 or not isinstance(parsed, dict):
+        return ""
+    reasons = [
+        f"{name}={json.dumps(redact_text(value)[:MAX_REASON_CHARS])}"
+        for name in REASON_KEYS
+        if isinstance(value := parsed.get(name), str)
+    ]
+    return f"; {'; '.join(reasons)}" if reasons else ""
+
+
+def _answered(method: str, path: str, status: int, body: bytes) -> str:
+    parsed = _parse(body)
+    shape = describe(parsed) if body else "empty body"
+    return f"{method} {path} answered {status}; {shape}{refusal_reasons(status, parsed)}"
+
+
 def _ref(ctx: StepContext, step_id: str) -> str:
     return f"run/{ctx.run.run_id}/{step_id}"
 
@@ -155,7 +179,7 @@ def _http_observation(
         "APP-TOKEN",
         ctx.now(),
         _ref(ctx, step_id),
-        f"{method} {path} answered {status}; {describe(parsed) if body else 'empty body'}",
+        _answered(method, path, status, body),
         status=status,
         body_shape=shape,
     )
@@ -275,9 +299,11 @@ async def _agents_roster(port: GatewayPort, ctx: StepContext) -> list[Observatio
     if listed.body_shape != "expected":
         return [listed, named]
     slug = ctx.run.probe_slug
-    row = next((r for r in _roster_rows(parsed) if slug and _is_probe_row(r, slug)), None)
+    rows = _roster_rows(parsed)
+    row = next((r for r in rows if slug and _is_probe_row(r, slug)), None)
     if row is None:
-        reason = "probe slug not set" if not slug else "probe bot not found in the roster rows"
+        why = "probe slug not set" if not slug else "probe bot not found in the roster rows"
+        reason = f"{why}; {_answered('GET', path, status, body)}; roster rows: {len(rows)}"
         return [_untested(ctx, listed.cell_id, reason), _untested(ctx, named.cell_id, reason)]
     fields = sorted(str(key) for key in row)
     listing = Observation(
