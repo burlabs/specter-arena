@@ -13,7 +13,7 @@ Approved on:
 - `docs/compatibility/host-facts.json` and `crew-0.12.0.md`: how the host behaves (not permissions).
 - `docs/compatibility/evidence/<runId>/`: the run evidence the cells cite.
 
-Both stay all-UNTESTED until the live probe run (`docs/ops/crew-probe-runbook.md`).
+The live probe run is closed (A7 timebox, 2026-11-12). The matrix records 7 ALLOWED, 10 DENIED and 29 UNTESTED cells; the decision below is still open (issue #21).
 
 ## Decision to make with Eric after the live run
 

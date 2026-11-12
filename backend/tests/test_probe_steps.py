@@ -454,7 +454,7 @@ def test_scenario_yields_one_allowed_one_denied_and_one_untested_cell(
     print({k: v for k, v in states.items() if v != "UNTESTED"})
     print([(a.id, [s.kind for s in a.signals]) for a in ctx.run.attempts.values()])
     assert capsys.readouterr().out
-    assert len(to_host_facts_json(ctx.run)["facts"]) == 11  # type: ignore[arg-type]
+    assert len(to_host_facts_json(ctx.run)["facts"]) == 16  # type: ignore[arg-type]
 
 
 def test_refusals_record_the_hosts_code_and_error_strings() -> None:

@@ -1,84 +1,229 @@
 {
   "hostVersion": "0.12.0",
-  "runId": "none",
-  "probedAt": null,
+  "runId": "20261111T230641Z-4f743d",
+  "probedAt": "2026-11-11T23:08:07.227362+00:00",
   "facts": [
+    {
+      "id": "host-agent-owner-steps-refused",
+      "question": "Can an agent perform owner steps (browser tool on the dashboard port, kirocrew app install from an agent shell)?",
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09",
+          "ref": "docs/compatibility/evidence/SUMMARY.md#host-agent-owner-steps-refused",
+          "excerpt": "Agent sessions: the browser tool refuses the dashboard port; kirocrew app install from an agent shell is refused as not verifiable as the local owner"
+        }
+      ],
+      "notes": "Observed by agent sessions during FP-01 and reported by the coordinator; the run logs hold no row for it. Owner steps are therefore Eric's."
+    },
     {
       "id": "host-backend-spawn",
       "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10T00:59:29Z",
+          "ref": "docs/compatibility/evidence/L2/run-log.md#re-run-after-pr-30-main-ec3aeb7-2026-11-10",
+          "excerpt": "Backend started under Crew from requirements.txt (incl. websockets) and served /api/ping"
+        }
+      ],
+      "notes": "Provisioning duration was not measured, and /health was not observed directly; the proof is that the backend served requests."
     },
     {
       "id": "host-consent-screen",
       "question": "What does install/enable consent show for api/events grants? (screenshot)",
       "status": "UNTESTED",
       "evidence": [],
-      "notes": "not yet probed"
+      "notes": "No consent-screen screenshot was provided. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "host-dev-diagnostic-only",
       "question": "Does the diagnostic page render only from the staged app and 404 from a release-tree install?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10",
+          "ref": "docs/compatibility/evidence/L3-v0/run-log.md",
+          "excerpt": "Staged probe app renders the diagnostic page"
+        },
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10",
+          "ref": "docs/compatibility/evidence/L2/run-log.md",
+          "excerpt": "Release-tree install renders the stub page, not the diagnostic"
+        }
+      ],
+      "notes": "The absence of a diagnostic entry from the release tree is proven by CI (PR #25), not by a Crew install."
     },
     {
       "id": "host-disable-reenable",
       "question": "After disable the proxy returns 403 app_not_enabled; after re-enable it recovers?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10T01:01:21Z",
+          "ref": "docs/compatibility/evidence/L2/run-log.md#re-run-after-pr-30-main-ec3aeb7-2026-11-10",
+          "excerpt": "Disabled: host shows \"Enable this app from Apps to use it.\" and the page does not mount; re-enabled: backend reachable again"
+        }
+      ],
+      "notes": "The 403 app_not_enabled proxy path is not reachable from the page, so it was not observed."
     },
     {
       "id": "host-import-map-sdk",
       "question": "Does @kirocrew/app-sdk (and /ui) resolve from the bundle?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10T00:59:29Z",
+          "ref": "docs/compatibility/evidence/L2/run-log.md",
+          "excerpt": "@kirocrew/app-sdk resolves and its client issues the signed request"
+        }
+      ],
+      "notes": "The /ui sub-path of the SDK was not checked separately."
     },
     {
       "id": "host-install-validates",
       "question": "Does live app.json validation accept the manifest (incl. minKiroCrewVersion)?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09T12:41:19Z",
+          "ref": "docs/compatibility/evidence/L1/run-log.md",
+          "excerpt": "Stub manifest accepted by live validation"
+        },
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10",
+          "ref": "docs/compatibility/evidence/L2/run-log.md",
+          "excerpt": "Release manifest with minKiroCrewVersion 0.12.0 and the own-namespace permission accepted"
+        }
+      ]
+    },
+    {
+      "id": "host-library-not-discover",
+      "question": "Where does a locally installed third-party app appear in the App Store (Library or Discover)?",
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09T15:04:00Z",
+          "ref": "docs/compatibility/evidence/L1/run-log.md",
+          "excerpt": "Locally installed app is enabled from App Store Library (/apps/library), not Discover (time approximate)"
+        }
+      ]
     },
     {
       "id": "host-proxy-path",
       "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10T00:59:29Z",
+          "ref": "docs/compatibility/evidence/L2/run-log.md#re-run-after-pr-30-main-ec3aeb7-2026-11-10",
+          "excerpt": "/apps/specter-arena/api/ping reaches backend /api/ping; backend.routes played no part"
+        }
+      ]
     },
     {
       "id": "host-react-version",
       "question": "What is React.version in the host?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09T12:49:00Z",
+          "ref": "docs/compatibility/evidence/L1/run-log.md",
+          "excerpt": "window.__kirocrew_modules.react.version is 18.3.1 (time approximate)"
+        }
+      ]
     },
     {
       "id": "host-roundtrip-signed",
       "question": "Does a signed GET /api/ping from the installed page succeed?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10T00:59:29Z",
+          "ref": "docs/compatibility/evidence/L2/run-log.md#re-run-after-pr-30-main-ec3aeb7-2026-11-10",
+          "excerpt": "Backend reachable at 2026-11-10T00:59:29Z; the backend answers 200 only to a valid signature"
+        }
+      ]
+    },
+    {
+      "id": "host-sdk-own-namespace-not-implicit",
+      "question": "Does the browser SDK allow the app's own backend path without a permissions.api entry?",
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09",
+          "ref": "docs/compatibility/evidence/L2/run-log.md",
+          "excerpt": "Browser SDK refused /api/ping with Declared: []; the own backend path must be listed in permissions.api (FD-27)"
+        }
+      ],
+      "notes": "Cause was read from the installed host bundle, read-only."
+    },
+    {
+      "id": "host-single-page-route",
+      "question": "Does a second ui.pages route (for example /apps/specter-arena/diagnostic) resolve for a third-party app?",
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-10",
+          "ref": "docs/compatibility/evidence/L2/run-log.md#l3-start-finding-2026-11-10",
+          "excerpt": "/apps/specter-arena/diagnostic redirected to the Crew home; the router has one route, /apps/:name"
+        }
+      ],
+      "notes": "Workaround: the staged probe app is a single page at /apps/specter-arena."
+    },
+    {
+      "id": "host-third-party-trust-gate",
+      "question": "Does enabling a third-party app need a per-app trust decision from the dashboard?",
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09T12:41:00Z",
+          "ref": "docs/compatibility/evidence/L1/run-log.md",
+          "excerpt": "CLI enable refused: third-party app execution is disabled; enabling needs the dashboard per-app trust prompt (time approximate)"
+        }
+      ]
     },
     {
       "id": "host-ui-default-export-renders",
       "question": "Does a default-export component render in the app page?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09",
+          "ref": "docs/compatibility/evidence/L2/run-log.md",
+          "excerpt": "Release page renders from a default-export entry"
+        }
+      ]
     },
     {
       "id": "host-ui-stub-failure",
       "question": "What does the host show when the FP-00 stub (named mount only) is installed unchanged?",
-      "status": "UNTESTED",
-      "evidence": [],
-      "notes": "not yet probed"
+      "status": "OBSERVED",
+      "evidence": [
+        {
+          "credential": "OWNER-SESSION",
+          "at": "2026-11-09T15:04:00Z",
+          "ref": "docs/compatibility/evidence/L1/run-log.md",
+          "excerpt": "FP-00 stub (named mount only) shows \"App crashed\" with React error #306 (time approximate)"
+        }
+      ],
+      "notes": "The pasted screenshot is not committed; see docs/ops/preview.md."
     }
   ]
 }

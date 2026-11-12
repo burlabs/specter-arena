@@ -1,7 +1,7 @@
 {
   "hostVersion": "0.12.0",
-  "runId": "none",
-  "probedAt": null,
+  "runId": "20261111T230641Z-4f743d",
+  "probedAt": "2026-11-11T23:08:07.227362+00:00",
   "cells": [
     {
       "id": "app-owned-grant-staging",
@@ -11,7 +11,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Phase v2 (staged-approval check) was never run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "app-owned-slots-visible",
@@ -21,17 +21,17 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Needs the no-grant phase v0 to conclude it; the L3-v0 run did not. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "app-owned-token-exchange",
       "question": "Does POST {origin}/api/apps/specter-arena/token with X-App-Secret return a token?",
       "scope": "app-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-token-exchange",
+      "probedAt": "2026-11-11T23:07:37.187739+00:00",
+      "notes": "token received (258 characters, value not recorded) (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "app-owned-token-lifetime",
@@ -41,37 +41,37 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No long-lived WS observed across a token expiry. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "app-owned-unsigned-direct-rejected",
       "question": "Does the backend reject a direct unsigned /api/ping with 401? (backend calls its own loopback port)",
       "scope": "app-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-unsigned-direct-rejected",
+      "probedAt": "2026-11-11T23:07:37.189180+00:00",
+      "notes": "GET /api/ping (unsigned, backend loopback) answered 401; object with fields error; error=\"unauthorized\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "app-owned-ws-token-transport",
       "question": "Which transport does /api/ws and HTTP accept (?token=, cookie, Bearer)?",
       "scope": "app-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-ws-token-transport",
+      "probedAt": "2026-11-11T23:08:07.219061+00:00",
+      "notes": "feed opened with token via query; 16 frames (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-activity-read",
       "question": "/api/members/<slug>/activity",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-activity-read",
+      "probedAt": "2026-11-11T23:07:37.203939+00:00",
+      "notes": "GET /api/members/specter-probe-bot/activity answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-attribution-survives-restart",
@@ -81,7 +81,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Needs a gateway restart, which needs Eric's go-ahead at run time (FD-21); not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-dashboard-member-record",
@@ -91,7 +91,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "The one attempt (L3-v1b) was not decisive: POST /api/member-records/<bot> answered 400 code=\"bad_record_type\" (the record type did not meet the host's name rules), a probe request defect, not a host answer. Not retried. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-dashboard-record-ungranted",
@@ -101,7 +101,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "The refusal is probed in phase v0, and the L3-v0 run did not conclude it. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-dashboard-webview-hook",
@@ -111,7 +111,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not probed by design (FD-6): the Webview drawer hook is out of scope for FP-01."
     },
     {
       "id": "bot-delete-behaviour",
@@ -121,7 +121,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Probe bot was not deleted during the run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-fresh-start",
@@ -131,27 +131,27 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-goals-read",
       "question": "/api/members/<slug>/goals",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-goals-read",
+      "probedAt": "2026-11-11T23:07:37.200760+00:00",
+      "notes": "GET /api/members/specter-probe-bot/goals answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-id-observable",
       "question": "Is a stable bot id (slug) derivable (member-<slug> DM slot key)",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-id-observable",
+      "probedAt": "2026-11-11T23:08:07.219121+00:00",
+      "notes": "DM slot key member-specter-probe-bot present (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-id-stable-across-rename",
@@ -161,77 +161,77 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Probe bot was not renamed during the run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-key-results-read",
       "question": "/api/members/<slug>/goals/key-results",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-key-results-read",
+      "probedAt": "2026-11-11T23:07:37.202450+00:00",
+      "notes": "GET /api/members/specter-probe-bot/goals/key-results answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-ledger-read",
       "question": "Can the app read the bot's work-ledger items (/api/members/<slug>/projections)?",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-ledger-read",
+      "probedAt": "2026-11-11T23:07:37.198994+00:00",
+      "notes": "GET /api/members/specter-probe-bot/projections answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-list-members-denied",
       "question": "GET /api/members with app token",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-list-members-denied",
+      "probedAt": "2026-11-11T23:07:37.197336+00:00",
+      "notes": "GET /api/members answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-list-via-agents",
       "question": "Do /api/agents rows include the probe bot, and which fields do they carry?",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-list-via-agents",
+      "probedAt": "2026-11-11T23:07:37.213893+00:00",
+      "notes": "/api/agents answered 200; probe bot row fields avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-name-avatar",
       "question": "Are display name and avatar readable by the app?",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-name-avatar",
+      "probedAt": "2026-11-11T23:07:37.213940+00:00",
+      "notes": "probe bot row has name-like and avatar-like fields: avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-notes-memory-private",
       "question": "Notes/memory/lessons are not requested; record route deny only, never read content",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-notes-memory-private",
+      "probedAt": "2026-11-11T23:07:37.205463+00:00",
+      "notes": "GET /api/members/specter-probe-bot/notes answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-own-session-attribution",
       "question": "Is the bot's own DM turn identifiable (member-<slug>, agent)",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-own-session-attribution",
+      "probedAt": "2026-11-11T23:08:07.219125+00:00",
+      "notes": "DM slot carries key and agent fields (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "bot-per-bot-opt-in",
@@ -241,7 +241,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not probed. Source reading expects UNSUPPORTED, but no evidence file backs that, so the cell stays UNTESTED. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-reimport-kirobot",
@@ -251,7 +251,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-scheduled-turn-origin",
@@ -261,7 +261,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No scheduled bot turn was triggered. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "bot-worker-session-attribution",
@@ -271,7 +271,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No worker slot row was observed, and it is unknown whether the probe bot dispatched a worker. The targeted rerun with explicit delegation (L3-v1c) was skipped. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "closed-tab-collection",
@@ -281,7 +281,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "external-cli-slot-appears",
@@ -291,7 +291,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No external CLI session was started and no slot key was supplied. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "gateway-restart-reconnect",
@@ -301,17 +301,17 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Needs a gateway restart, which needs Eric's go-ahead at run time (FD-21); not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "other-app-api-denied",
       "question": "Is an ungranted /api/* path refused (app token not permitted)?",
       "scope": "other-app",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#other-app-api-denied",
+      "probedAt": "2026-11-11T23:07:37.195925+00:00",
+      "notes": "GET /api/config answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "other-app-proxy-denied",
@@ -321,7 +321,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "The one attempt (L3-v1b) was not decisive: GET /apps/specter-other/api/ping answered 403 with a body that was not valid JSON. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "other-app-slots-absent",
@@ -331,7 +331,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No second app was installed to compare slots. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "reconnect-cursor-history",
@@ -341,7 +341,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "reconnect-snapshot",
@@ -351,7 +351,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-chat-slot-history",
@@ -361,17 +361,17 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No worker slot was observed, so there was no history to fetch. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-chat-slots-api",
       "question": "Does GET /api/chat/slots return all rows (unfiltered) with the grant, and 403 without?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#user-chat-slots-api",
+      "probedAt": "2026-11-11T23:07:37.215210+00:00",
+      "notes": "GET /api/chat/slots answered 403; object with fields code, error; code=\"forbidden\"; error=\"Forbidden\" (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "user-outcome-evidence",
@@ -381,7 +381,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No terminal signal in the capture window. The bot DM row produced only \"removed\" signals (4 in L3-v1b); the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-signal-approval",
@@ -391,7 +391,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Signal not observed in the capture window (L3-v1b); no approval was requested of the probe bot. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-signal-progress",
@@ -401,7 +401,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-signal-start",
@@ -411,7 +411,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-signal-terminal",
@@ -421,7 +421,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-signal-tool-error",
@@ -431,27 +431,27 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No tool error was provoked. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
       "id": "user-slots-no-grant-denied",
       "question": "With no slots:user grant, are user-origin slots absent from the WS snapshot?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "DENIED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v0/run-log.md",
+      "probedAt": "2026-11-10",
+      "notes": "Phase v0 (no slots:user grant): 0 user-origin rows delivered. Evidence is the diagnostic-page summary Eric pasted into the L3-v0 run log; the raw export was not saved and the time of day is not recorded."
     },
     {
       "id": "user-slots-visible",
       "question": "With slots:user, does the app receive user-origin slot rows?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#user-slots-visible",
+      "probedAt": "2026-11-11T23:08:07.219091+00:00",
+      "notes": "snapshots held up to 34 rows (export.json run 20261111T230641Z-4f743d)"
     },
     {
       "id": "user-source-links",
@@ -461,7 +461,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "No probe slot carried source_links in the capture (L3-v1b). A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     }
   ]
 }

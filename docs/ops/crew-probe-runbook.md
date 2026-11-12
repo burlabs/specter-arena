@@ -1,6 +1,6 @@
 # Crew probe runbook
 
-How FP-01 produces committed, reproducible evidence about what an installed Specter Arena app can see in Kiro Crew 0.12.0. This is a skeleton: later slices fill in the run table and export commands as the code they use merges.
+How FP-01 produces committed, reproducible evidence about what an installed Specter Arena app can see in Kiro Crew 0.12.0. The FP-01 run is finished and its evidence is committed under `docs/compatibility/evidence/`; this runbook is the procedure for a re-probe.
 
 ## Purpose and limits
 
@@ -10,7 +10,8 @@ The FIXTURE, RECORDED and INVALID-EVIDENCE view states are proven by jsdom tests
 
 ## Roles and credential labels
 
-- `OWNER-SESSION`: Eric's dashboard session. It can establish host facts and denials. Eric performs these steps himself: agents cannot install apps or open the dashboard in Crew 0.12.0.
+- `OWNER-SESSION`: Eric's own terminal and dashboard session. It can establish host facts and denials. Eric performs every owner step himself, in his terminal and browser: in Crew 0.12.0 the agent browser tool refuses the gateway's own dashboard port, and `kirocrew app install` from an agent shell is refused because the process cannot be verified as the local owner (`host-agent-owner-steps-refused`). Agents never install, enable, disable or uninstall the app and never open the dashboard.
+- Agents write code, stage the probe app (`probe:stage`, which only prints the install command), read pasted output and assemble evidence. Eric reports what he saw (pasted text or images), and the agent records it in the run log with the credential label.
 - `APP-TOKEN`: requests made by the installed backend with the credentials Crew gives it. Only APP-TOKEN results may mark a matrix cell ALLOWED.
 
 Every evidence item carries one label and an ISO 8601 UTC timestamp.
@@ -18,9 +19,10 @@ Every evidence item carries one label and an ISO 8601 UTC timestamp.
 ## Rules
 
 - Eric presses every `permissions.api` grant approval and every tool-approval card.
-- The agent never reads files under `~/.kiro/crew/`.
-- No literal secret, app-secret value, proxy header value or key block is ever written in this repository. Describe formats in prose.
-- No gateway call is made outside the browser-driven dashboard and the installed backend.
+- The agent never reads Crew's private stores or tokens under `~/.kiro/crew/`.
+- No literal secret, app-secret value, proxy header value, dashboard token link or key block is ever written in this repository. Describe formats in prose.
+- Agents make no gateway call. The only APP-TOKEN requests come from the installed backend, which Eric starts by enabling the app.
+- Screenshots Eric pastes into chat are not files. Save one into the evidence directory only if Eric hands over the file; otherwise state in the run log that none was saved.
 - A gateway restart is probed only with Eric's explicit go-ahead at run time (FD-21). Without it, the restart cells are recorded UNTESTED with that reason.
 
 ## Timebox
@@ -31,17 +33,23 @@ Two working days from plan approval (A7). Record the start time in the run log a
 
 Each row records the step, who ran it, the credential label, an ISO 8601 UTC timestamp, the result, and the evidence file.
 
+Closed on 2026-11-12 under the A7 timebox. Steps without a result were not run, and the cells they would decide are UNTESTED.
+
 | Step | Who | Credential | Timestamp | Result | Evidence |
 |---|---|---|---|---|---|
-| Install the FP-00 stub unchanged and record the failure card | owner | OWNER-SESSION | | | |
-| Install the fixed build, approve grants | owner | OWNER-SESSION | | | |
-| Create the throwaway probe bot | owner | OWNER-SESSION | | | |
-| Run one harmless attempt with one worker and one approval | owner | OWNER-SESSION | | | |
-| Close the tab, run a second attempt, reopen | owner | APP-TOKEN | | | |
-| Drop and reconnect the socket | app | APP-TOKEN | | | |
-| External CLI check in a detached tmux session | owner | APP-TOKEN and OWNER-SESSION | | | |
-| Bot dashboard member-record probe | app | APP-TOKEN | | | |
-| Delete the probe bot, optionally re-import and fresh start | owner | APP-TOKEN | | | |
+| Install the FP-00 stub unchanged and record the failure card | Eric | OWNER-SESSION | 2026-11-09 | Done: "App crashed", React error #306 | `evidence/L1/run-log.md` |
+| Install the release build, enable from Library, round trip, disable and re-enable | Eric | OWNER-SESSION | 2026-11-10 | Done after PR #30 | `evidence/L2/run-log.md` |
+| Install the probe app with no grants (`v0`) | Eric | APP-TOKEN | 2026-11-10 | Done; export not saved | `evidence/L3-v0/run-log.md` |
+| Install the probe app with grants (`v1`), approve each grant | Eric | APP-TOKEN | 2026-11-10 | Done; superseded by the rerun | `evidence/L3-v1/` |
+| Create the throwaway probe bot | Eric | OWNER-SESSION | 2026-11-10 | Done (bot named `specter-probe-bot`) | `evidence/L3-v1b/run-log.md` |
+| Rerun `v1` after PR #34 and export | Eric | APP-TOKEN | 2026-11-11 | Done: 7 ALLOWED, 9 DENIED, 30 UNTESTED | `evidence/L3-v1b/export.json` |
+| Staged-approval check (`v2`) | Eric | OWNER-SESSION | | Not run | none |
+| Run one attempt with one worker and one approval | Eric | OWNER-SESSION | | Not run as designed; one bot turn captured, no worker seen | `evidence/L3-v1b/run-log.md` |
+| Close the tab, run a second attempt, reopen | Eric | APP-TOKEN | | Not run | none |
+| Drop and reconnect the socket | app | APP-TOKEN | | Not run | none |
+| External CLI check in a detached tmux session | Eric | APP-TOKEN and OWNER-SESSION | | Not run | none |
+| Bot dashboard member-record probe | app | APP-TOKEN | 2026-11-11 | Not decisive: 400 `bad_record_type` | `evidence/L3-v1b/export.json` |
+| Delete the probe bot, optionally re-import and fresh start | Eric | APP-TOKEN | | Not run | none |
 
 ## Probe app
 
@@ -74,11 +82,13 @@ The backend works out whether grants are declared from its own installed `app.js
 
 ## Export step
 
-Planned: the backend writes the sanitised run output to a git-ignored `.probe-out/<runId>/` directory, with a download fallback (FD-18). The operator copies it to `docs/compatibility/evidence/<runId>/` and `tests/recorded/crew-0.12.0/`, reads the diff for non-probe names, then runs `node scripts/check-matrix.mjs` and `node scripts/check-recorded.mjs`.
+The export is a download that Eric makes in his signed-in browser at `/apps/specter-arena/api/probe/export` (the gateway proxies it to the app backend and signs the request). It returns one sanitised JSON document with the snapshot, the matrix and the host facts. Eric saves it, and the agent copies it to `docs/compatibility/evidence/<run step>/export.json` next to a run log written from Eric's report. Agents cannot fetch this URL themselves.
 
-## Browser fallback
+Before committing, read the diff for non-probe names, titles and ids, and for anything shaped like a credential. Then run `npm run probe:check`, which runs `node scripts/check-matrix.mjs` and `node scripts/check-recorded.mjs`. A payload goes under `tests/recorded/crew-0.12.0/` only if it is in the `_meta` plus `rows` shape and passes `check-recorded`; otherwise it stays in the evidence directory and the PR says so.
 
-If the browser tool fails, the fallback is a timestamped runbook file that Eric follows and fills in: `docs/compatibility/evidence/<runId>/runbook-fallback.md`.
+## When Eric cannot run a step
+
+Eric follows a timestamped file that he fills in: `docs/compatibility/evidence/<run step>/runbook-fallback.md`. A step with no reported result keeps its cells UNTESTED with the reason.
 
 ## Monitoring-scope gate
 

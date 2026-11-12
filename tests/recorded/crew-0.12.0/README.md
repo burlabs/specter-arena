@@ -1,6 +1,6 @@
 # Recorded Crew 0.12.0 payloads
 
-This directory holds real payloads observed from an installed Kiro Crew 0.12.0 during the FP-01 live probe run. It is empty until that run. These are recorded captures, not the synthetic stand-ins under `ui/fixtures/`; the FP-01 intake word "fixtures" means this directory.
+This directory holds real payloads observed from an installed Kiro Crew 0.12.0 during the FP-01 live probe run. No capture is committed here yet: the FP-01 exports are kept as evidence under `docs/compatibility/evidence/` because they are not in the file shape below. These are recorded captures, not the synthetic stand-ins under `ui/fixtures/`; the FP-01 intake word "fixtures" means this directory.
 
 Rules:
 
