@@ -441,7 +441,7 @@
       "credential": "APP-TOKEN",
       "evidenceRef": "docs/compatibility/evidence/L3-v0/run-log.md",
       "probedAt": "2026-11-10",
-      "notes": "Phase v0 (no slots:user grant): 0 user-origin rows delivered. Evidence is the diagnostic-page summary Eric pasted into the L3-v0 run log; the raw export was not saved and the time of day is not recorded."
+      "notes": "Phase v0 (no slots:user grant): evidence/SUMMARY.md records 0 user-origin rows delivered. The cited L3-v0 run log is the diagnostic-page summary Eric pasted; the raw export was not saved and the time of day is not recorded."
     },
     {
       "id": "user-slots-visible",

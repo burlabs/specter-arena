@@ -111,7 +111,7 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `user-signal-start` | Signal not observed in the capture window (L3-v1b). The bot DM row produced only "removed" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `user-signal-terminal` | Signal not observed in the capture window (L3-v1b). The bot DM row produced only "removed" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `user-signal-tool-error` | No tool error was provoked. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
-| `user-slots-no-grant-denied` | Phase v0 (no slots:user grant): 0 user-origin rows delivered. Evidence is the diagnostic-page summary Eric pasted into the L3-v0 run log; the raw export was not saved and the time of day is not recorded. |
+| `user-slots-no-grant-denied` | Phase v0 (no slots:user grant): evidence/SUMMARY.md records 0 user-origin rows delivered. The cited L3-v0 run log is the diagnostic-page summary Eric pasted; the raw export was not saved and the time of day is not recorded. |
 | `user-slots-visible` | snapshots held up to 34 rows (export.json run 20261111T230641Z-4f743d) |
 | `user-source-links` | No probe slot carried source_links in the capture (L3-v1b). A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 

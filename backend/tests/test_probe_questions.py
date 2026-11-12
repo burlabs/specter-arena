@@ -114,7 +114,8 @@ def test_committed_matrix_has_one_cell_per_matrix_question_in_order() -> None:
     assert [cell["id"] for cell in cells] == [question.id for question in expected]
     assert [cell["question"] for cell in cells] == [question.question for question in expected]
     assert [cell["scope"] for cell in cells] == [question.scope for question in expected]
-    assert (COMPAT / "capability-matrix.json").read_text().endswith("}\n")
+    text = (COMPAT / "capability-matrix.json").read_text()
+    assert questions.canonical_json(json.loads(text)) == text
 
 
 def test_committed_host_facts_have_one_fact_per_host_fact_question_in_order() -> None:
@@ -122,4 +123,5 @@ def test_committed_host_facts_have_one_fact_per_host_fact_question_in_order() ->
     expected = questions.host_fact_questions()
     assert [fact["id"] for fact in facts] == [question.id for question in expected]
     assert [fact["question"] for fact in facts] == [question.question for question in expected]
-    assert (COMPAT / "host-facts.json").read_text().endswith("}\n")
+    text = (COMPAT / "host-facts.json").read_text()
+    assert questions.canonical_json(json.loads(text)) == text

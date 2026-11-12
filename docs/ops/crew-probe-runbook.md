@@ -42,7 +42,7 @@ Closed on 2026-11-12 under the A7 timebox. Steps without a result were not run, 
 | Install the probe app with no grants (`v0`) | Eric | APP-TOKEN | 2026-11-10 | Done; export not saved | `evidence/L3-v0/run-log.md` |
 | Install the probe app with grants (`v1`), approve each grant | Eric | APP-TOKEN | 2026-11-10 | Done; superseded by the rerun | `evidence/L3-v1/` |
 | Create the throwaway probe bot | Eric | OWNER-SESSION | 2026-11-10 | Done (bot named `specter-probe-bot`) | `evidence/L3-v1b/run-log.md` |
-| Rerun `v1` after PR #34 and export | Eric | APP-TOKEN | 2026-11-11 | Done: 7 ALLOWED, 9 DENIED, 30 UNTESTED | `evidence/L3-v1b/export.json` |
+| Rerun `v1` after PR #34 and export | Eric | APP-TOKEN | 2026-11-11 | Done: export alone shows 7 ALLOWED, 9 DENIED, 30 UNTESTED; the final matrix adds `user-slots-no-grant-denied` from L3-v0 (10 DENIED, 29 UNTESTED) | `evidence/L3-v1b/export.json` |
 | Staged-approval check (`v2`) | Eric | OWNER-SESSION | | Not run | none |
 | Run one attempt with one worker and one approval | Eric | OWNER-SESSION | | Not run as designed; one bot turn captured, no worker seen | `evidence/L3-v1b/run-log.md` |
 | Close the tab, run a second attempt, reopen | Eric | APP-TOKEN | | Not run | none |

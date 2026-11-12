@@ -306,7 +306,7 @@ describe('run', () => {
     assert.equal(new Set(matrix.cells.map((/** @type {{ id: string }} */ cell) => cell.id)).size, 46);
   });
 
-  it('commits one fact per host-fact question, with no host fact claimed beyond the evidence', () => {
+  it('commits 15 OBSERVED host facts and 1 UNTESTED', () => {
     const facts = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'host-facts.json'), 'utf8'));
     const statuses = /** @type {Record<string, number>} */ ({});
     for (const fact of facts.facts) statuses[fact.status] = (statuses[fact.status] ?? 0) + 1;

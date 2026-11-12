@@ -87,7 +87,7 @@ def test_no_allowed_cell_lacks_app_token_evidence() -> None:
             assert cell["evidence"] == []
 
 
-def test_host_facts_are_a_separate_list_of_eleven() -> None:
+def test_host_facts_are_a_separate_list_of_every_host_fact_question() -> None:
     facts = build_snapshot(populated_run(), captured_at=NOW)["hostFacts"]
     assert isinstance(facts, list)
     assert len(facts) == 16
