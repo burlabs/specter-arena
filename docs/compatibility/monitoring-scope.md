@@ -5,7 +5,7 @@ Status: APPROVED
 Approved by: Eric
 Approved on: 2026-11-13
 
-FP-03 monitoring work was blocked until the status line above read `Status: APPROVED` with an `Approved by:` line and an `Approved on:` line. `node scripts/check-matrix.mjs` enforces the format. FP-03 is unblocked within the scope below only; anything outside it needs a new scope decision.
+FP-03 monitoring work starts only when the status line reads `Status: APPROVED` with `Approved by:` and `Approved on:` lines; `node scripts/check-matrix.mjs` enforces the format. FP-03 is unblocked within the scope below only; anything outside it needs a new scope decision.
 
 ## Inputs
 
@@ -13,7 +13,7 @@ FP-03 monitoring work was blocked until the status line above read `Status: APPR
 - `docs/compatibility/host-facts.json` and `crew-0.12.0.md`: how the host behaves (not permissions).
 - `docs/compatibility/evidence/<runId>/`: the run evidence the cells cite.
 
-The live probe run is closed (A7 timebox, 2026-11-12). The matrix records 7 ALLOWED, 10 DENIED and 29 UNTESTED cells. Every id below is a cell id in `capability-matrix.json`. This decision rests on those cells and cites no other evidence.
+The live probe run is closed (A7 timebox, 2026-11-12). The matrix records 7 ALLOWED, 10 DENIED and 29 UNTESTED cells. Every id below is a cell id in `capability-matrix.json`. This decision rests on those cells, except the token-endpoint findings from FD-28, which are marked as design findings and are not matrix evidence.
 
 ## Decisions
 
@@ -45,7 +45,7 @@ Not proven (UNTESTED). Nothing in the product may rely on these until a probe se
 - `user-signal-start`, `user-signal-progress`, `user-signal-terminal`, `user-signal-approval`, `user-signal-tool-error`: no lifecycle signal was observed. The bot thread produced only `removed` signals.
 - `user-outcome-evidence`, `user-source-links`, `user-chat-slot-history`: not probed.
 
-Token usage is unproven and likely unavailable to apps. No matrix cell covers a per-bot token path. The design findings behind this (FD-28) are that `/api/usage/turns` returns only rows stamped with the calling app, and `/api/usage/series` refuses app callers. Token data is therefore an operational stat only, shown if and only if a supported path is proven (see decision 2).
+Token usage is unproven and likely unavailable to apps. No matrix cell covers a per-bot token path. The unproven design findings behind this (FD-28, no matrix cell) are that `/api/usage/turns` returns only rows stamped with the calling app, and `/api/usage/series` refuses app callers. Token data is therefore an operational stat only, shown if and only if a supported path is proven (see decision 2).
 
 Required first step for FP-03: open with a focused probe before building on worker, spawn or token data. The probe must:
 
