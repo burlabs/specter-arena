@@ -372,7 +372,7 @@ describe('run', () => {
   it('fails when the monitoring scope has no status', () => {
     const root = copyRoot();
     mkdirSync(dirname(join(root, COMPATIBILITY_DIR, 'monitoring-scope.md')), { recursive: true });
-    edit(root, 'monitoring-scope.md', (text) => text.replace('Status: NOT APPROVED', ''));
+    edit(root, 'monitoring-scope.md', (text) => text.replace(/^Status:.*$/m, ''));
     assert.equal(runLogged(root).code, 1);
   });
 });
