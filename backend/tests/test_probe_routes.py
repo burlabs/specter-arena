@@ -134,7 +134,7 @@ def test_signed_run_returns_202_and_the_snapshot_is_live(make_client: MakeClient
     states = {cell["key"]: cell["state"] for cell in snapshot["cells"]}
     assert states["app-owned-token-exchange"] == "ALLOWED"
     assert states["bot-id-observable"] == "ALLOWED"
-    assert len(snapshot["hostFacts"]) == 11
+    assert len(snapshot["hostFacts"]) == 16
 
 
 def test_a_run_with_no_body_runs_every_step(make_client: MakeClient) -> None:

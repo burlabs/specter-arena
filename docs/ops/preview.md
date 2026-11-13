@@ -54,6 +54,7 @@ Some parts of FP-01 and later PRs only work against a real installed Crew: the i
 
 - It covers only the live-Crew parts. A change to the FIXTURE preview harness still carries a preview URL.
 - The PR cites the probe run evidence under `docs/compatibility/evidence/<runId>/` in place of a URL, with sanitised captures and real rendered screenshots. Vitest output and text snapshots are not screenshots.
+- FP-01 S4 (issue #20) cites `docs/compatibility/evidence/` (`L1/`, `L2/`, `L3-v0/`, `L3-v1/`, `L3-v1b/`, `SUMMARY.md`). Eric reported the live page results as pasted text and images in chat; no screenshot was saved as a file, so none is committed. The run logs and sanitised exports are the committed evidence, and the live pages' visual state is not evidenced by image files.
 - The preview itself shows FIXTURE data only. It is not live proof.
 
 ## Tear down

@@ -272,7 +272,7 @@ def test_host_facts_json_shape() -> None:
     document = to_host_facts_json(run)
     assert list(document) == ["hostVersion", "runId", "probedAt", "facts"]
     facts = {fact["id"]: fact for fact in document["facts"]}  # type: ignore[attr-defined]
-    assert len(facts) == 11
+    assert len(facts) == 16
     assert facts["host-react-version"]["status"] == "OBSERVED"
     assert facts["host-react-version"]["evidence"][0]["credential"] == "OWNER-SESSION"
     assert facts["host-backend-spawn"]["status"] == "UNTESTED"

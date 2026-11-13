@@ -291,18 +291,26 @@ describe('run', () => {
     assert.deepEqual(lines, ['check:matrix: capability matrix, host facts and monitoring scope ok']);
   });
 
-  it('commits exactly the 57 questions: 46 matrix cells and 11 host facts', () => {
+  it('commits exactly the 62 questions: 46 matrix cells and 16 host facts', () => {
     const doc = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'capability-questions.json'), 'utf8'));
-    assert.equal(doc.questions.length, 57);
+    assert.equal(doc.questions.length, 62);
     assert.equal(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'matrix').length, 46);
-    assert.equal(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'host-fact').length, 11);
+    assert.equal(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'host-fact').length, 16);
   });
 
-  it('commits every cell and fact as UNTESTED until the live run', () => {
+  it('commits the closed live run: 7 ALLOWED, 10 DENIED and 29 UNTESTED cells, every cell id once', () => {
     const matrix = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'capability-matrix.json'), 'utf8'));
+    const states = /** @type {Record<string, number>} */ ({});
+    for (const cell of matrix.cells) states[cell.state] = (states[cell.state] ?? 0) + 1;
+    assert.deepEqual(states, { ALLOWED: 7, DENIED: 10, UNTESTED: 29 });
+    assert.equal(new Set(matrix.cells.map((/** @type {{ id: string }} */ cell) => cell.id)).size, 46);
+  });
+
+  it('commits 15 OBSERVED host facts and 1 UNTESTED', () => {
     const facts = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'host-facts.json'), 'utf8'));
-    assert.ok(matrix.cells.every((/** @type {{ state: string }} */ cell) => cell.state === 'UNTESTED'));
-    assert.ok(facts.facts.every((/** @type {{ status: string }} */ fact) => fact.status === 'UNTESTED'));
+    const statuses = /** @type {Record<string, number>} */ ({});
+    for (const fact of facts.facts) statuses[fact.status] = (statuses[fact.status] ?? 0) + 1;
+    assert.deepEqual(statuses, { OBSERVED: 15, UNTESTED: 1 });
   });
 
   it('fails when a file is missing', () => {

@@ -212,6 +212,12 @@
       "priority": "best-effort"
     },
     {
+      "id": "host-agent-owner-steps-refused",
+      "kind": "host-fact",
+      "question": "Can an agent perform owner steps (browser tool on the dashboard port, kirocrew app install from an agent shell)?",
+      "priority": "best-effort"
+    },
+    {
       "id": "host-backend-spawn",
       "kind": "host-fact",
       "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
@@ -248,6 +254,12 @@
       "priority": "must"
     },
     {
+      "id": "host-library-not-discover",
+      "kind": "host-fact",
+      "question": "Where does a locally installed third-party app appear in the App Store (Library or Discover)?",
+      "priority": "best-effort"
+    },
+    {
       "id": "host-proxy-path",
       "kind": "host-fact",
       "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
@@ -263,6 +275,24 @@
       "id": "host-roundtrip-signed",
       "kind": "host-fact",
       "question": "Does a signed GET /api/ping from the installed page succeed?",
+      "priority": "must"
+    },
+    {
+      "id": "host-sdk-own-namespace-not-implicit",
+      "kind": "host-fact",
+      "question": "Does the browser SDK allow the app's own backend path without a permissions.api entry?",
+      "priority": "must"
+    },
+    {
+      "id": "host-single-page-route",
+      "kind": "host-fact",
+      "question": "Does a second ui.pages route (for example /apps/specter-arena/diagnostic) resolve for a third-party app?",
+      "priority": "must"
+    },
+    {
+      "id": "host-third-party-trust-gate",
+      "kind": "host-fact",
+      "question": "Does enabling a third-party app need a per-app trust decision from the dashboard?",
       "priority": "must"
     },
     {
