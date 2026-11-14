@@ -30,8 +30,11 @@ def resolve_data_dir(environ: Mapping[str, str]) -> Path | None:
     home_path = Path(home)
     if not home_path.is_absolute():
         return None
-    apps = (home_path / "apps").resolve()
-    data = (apps / name / "data").resolve()
+    try:
+        apps = (home_path / "apps").resolve()
+        data = (apps / name / "data").resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
     if data.parent.parent != apps:
         return None
     return data

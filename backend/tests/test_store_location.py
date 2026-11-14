@@ -90,6 +90,14 @@ def test_a_data_dir_symlinked_outside_the_apps_dir_gives_none(tmp_path: Path) ->
     assert resolve_data_dir(env(tmp_path / "home")) is None
 
 
+def test_a_home_that_cannot_be_resolved_gives_none(tmp_path: Path) -> None:
+    assert resolve_data_dir(env("/abs/ho\0me")) is None
+    loop = tmp_path / "home"
+    loop.mkdir()
+    (loop / "apps").symlink_to(loop / "apps", target_is_directory=True)
+    assert resolve_data_dir(env(loop)) is None
+
+
 def test_a_symlinked_home_resolves_to_the_same_data_dir(tmp_path: Path) -> None:
     real = tmp_path / "real-home"
     real.mkdir()

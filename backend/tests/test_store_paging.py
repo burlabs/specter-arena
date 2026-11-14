@@ -195,7 +195,9 @@ def test_keyset_paging_visits_each_row_once_across_duplicate_timestamps_and_inse
         conn.close()
 
 
-@pytest.mark.skipif(not PAGE_SCHEMA.is_file(), reason="page.v1 schema lands with D-3 (WL-6)")
+@pytest.mark.skipif(
+    not PAGE_SCHEMA.is_file(), reason="page.v1 schema lands with D-3; enabled by #49"
+)
 def test_the_page_constants_match_the_page_v1_schema() -> None:
     schema = json.loads(PAGE_SCHEMA.read_text(encoding="utf-8"))
     properties = schema["properties"]
