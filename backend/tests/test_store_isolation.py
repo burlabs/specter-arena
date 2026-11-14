@@ -247,6 +247,8 @@ def test_the_runtime_check_catches_a_probe_that_opens_the_store(
 ) -> None:
     routes = app_copy / "backend" / "specter_arena" / "probe" / "routes.py"
     # Appended, not prepended: the module starts with `from __future__ import annotations`.
-    routes.write_text(routes.read_text() + "\nfrom ..store import open_store  # noqa: F401,E402\n")
+    # The suppression rides along because the late, unused import is the violation under test.
+    injected = "\nfrom ..store import open_store  # noqa: F401,E402\n"
+    routes.write_text(routes.read_text() + injected)
     out = run_python(LIFESPAN, app_copy, SPECTER_PROBE="1", **crew_env(tmp_path / "crew-home"))
     assert out["sqlite3"] is True
