@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .backup import backup, restore
 from .errors import (
     BackupError,
     ChecksumMismatch,
@@ -26,6 +27,7 @@ from .status import (
     status_for_error,
     unconfigured_status,
 )
+from .store import Store, open_store
 
 __all__ = [
     "BackupError",
@@ -37,6 +39,7 @@ __all__ = [
     "RestoreError",
     "SchemaNewer",
     "SqliteTooOld",
+    "Store",
     "StoreClosed",
     "StoreError",
     "StoreState",
@@ -44,6 +47,7 @@ __all__ = [
     "StoreUnavailable",
     "StoreUnconfigured",
     "StoreUsageError",
+    "backup",
     "build_page",
     "clamp_limit",
     "decode_cursor",
@@ -51,7 +55,9 @@ __all__ = [
     "encode_cursor",
     "latest_version",
     "migrating_status",
+    "open_store",
     "resolve_data_dir",
+    "restore",
     "status_for_error",
     "unconfigured_status",
 ]
