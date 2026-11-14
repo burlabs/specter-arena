@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -8,13 +8,24 @@ export const SCOPES = ['app-owned', 'user-owned', 'other-app', 'bot', 'external-
 export const FACT_STATUSES = ['OBSERVED', 'NOT-OBSERVED', 'UNTESTED'];
 export const KINDS = ['matrix', 'host-fact'];
 export const PRIORITIES = ['must', 'best-effort', 'deferred'];
-export const HOST_VERSION = '0.12.0';
+/** FP-01 evidence was captured on this host; an entry without `hostVersion` is read as this version. */
+export const LEGACY_HOST_VERSION = '0.12.0';
 export const COMPATIBILITY_DIR = 'docs/compatibility';
 export const EVIDENCE_ROOT = `${COMPATIBILITY_DIR}/evidence`;
+/** First path segment under the evidence root of every FP-01 run; new runs are not on this list. */
+export const LEGACY_EVIDENCE = ['L1', 'L2', 'L3-v0', 'L3-v1', 'L3-v1b', 'README.md', 'SUMMARY.md'];
+const RECORD_FILE = /^crew-(\d+\.\d+\.\d+)\.md$/;
 
 /**
  * @typedef {Record<string, unknown>} Json
- * @typedef {{ evidenceExists: (file: string) => boolean, markdown: string }} Context
+ * @typedef {{
+ *   evidenceExists: (file: string) => boolean,
+ *   markdown: string,
+ *   knownVersions?: string[],
+ *   recordTexts?: Record<string, string>,
+ * }} Context
+ * `knownVersions` lists the hosts that have a docs/compatibility/crew-<version>.md record; `recordTexts` maps
+ * each version to the text of that record. Both default to the FP-01 host alone.
  */
 
 /**
@@ -42,6 +53,53 @@ export function evidencePath(ref) {
   if (typeof ref !== 'string') return null;
   const file = posix.normalize(ref.split('#')[0] ?? '');
   return file.startsWith(`${EVIDENCE_ROOT}/`) && !file.includes('..') ? file : null;
+}
+
+/**
+ * @param {unknown} ref
+ * @returns {boolean} true when the reference points into an FP-01 (host 0.12.0) evidence run
+ */
+function isLegacyEvidence(ref) {
+  const file = evidencePath(ref);
+  return file !== null && LEGACY_EVIDENCE.includes(file.slice(EVIDENCE_ROOT.length + 1).split('/')[0] ?? '');
+}
+
+/**
+ * @param {string} left dotted version
+ * @param {string} right dotted version
+ * @returns {number} negative, zero or positive
+ */
+export function compareVersions(left, right) {
+  const a = left.split('.').map(Number);
+  const b = right.split('.').map(Number);
+  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+    const difference = (a[index] ?? 0) - (b[index] ?? 0);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+}
+
+/**
+ * The host an entry was observed on. An entry that declares none is FP-01 evidence, and the
+ * evidence refs prove it; anything newer must say which host it ran on.
+ * @param {string} id
+ * @param {Json} entry cell or fact
+ * @param {unknown[]} refs evidence refs of the entry
+ * @param {string[]} knownVersions
+ * @param {string[]} problems
+ * @returns {string} the effective host version
+ */
+function entryVersion(id, entry, refs, knownVersions, problems) {
+  const declared = entry.hostVersion;
+  if (declared === undefined) {
+    if (!refs.every(isLegacyEvidence)) problems.push(`${id}: hostVersion is required unless all evidence is FP-01 evidence (${LEGACY_HOST_VERSION})`);
+    return LEGACY_HOST_VERSION;
+  }
+  if (typeof declared !== 'string' || !knownVersions.includes(declared)) {
+    problems.push(`${id}: hostVersion ${String(declared)} has no ${COMPATIBILITY_DIR}/crew-<version>.md record`);
+    return LEGACY_HOST_VERSION;
+  }
+  return declared;
 }
 
 /**
@@ -97,10 +155,11 @@ function idsOfKind(questions, kind) {
  * @param {Context} context
  * @returns {string[]} problems; empty means valid
  */
-export function validateMatrix(matrix, questions, { evidenceExists, markdown }) {
+export function validateMatrix(matrix, questions, { evidenceExists, markdown, knownVersions = [LEGACY_HOST_VERSION] }) {
   /** @type {string[]} */
   const problems = [];
-  if (matrix.hostVersion !== HOST_VERSION) problems.push(`hostVersion must be ${HOST_VERSION}, got ${String(matrix.hostVersion)}`);
+  const latest = String(matrix.hostVersion);
+  if (!knownVersions.includes(latest)) problems.push(`hostVersion must be ${knownVersions.join(' or ')}, got ${latest}`);
   const wanted = idsOfKind(questions, 'matrix');
   /** @type {Map<string, Json>} */
   const byId = new Map();
@@ -111,12 +170,15 @@ export function validateMatrix(matrix, questions, { evidenceExists, markdown }) 
     if (!STATES.includes(String(cell.state))) problems.push(`${id}: invalid state ${String(cell.state)}`);
     if (!SCOPES.includes(String(cell.scope))) problems.push(`${id}: invalid scope ${String(cell.scope)}`);
     if (cell.state === 'UNTESTED') {
+      if (cell.hostVersion !== undefined) problems.push(`${id}: UNTESTED must not declare hostVersion`);
       if (!cell.notes) problems.push(`${id}: UNTESTED needs notes saying why`);
       if (cell.credential !== null || cell.evidenceRef !== null || cell.probedAt !== null) {
         problems.push(`${id}: UNTESTED must have null credential, evidenceRef and probedAt`);
       }
       continue;
     }
+    const version = entryVersion(id, cell, [cell.evidenceRef], knownVersions, problems);
+    if (compareVersions(version, latest) > 0) problems.push(`${id}: hostVersion ${version} is newer than the matrix hostVersion ${latest}`);
     if (!CREDENTIALS.includes(String(cell.credential))) problems.push(`${id}: ${String(cell.state)} needs a credential label`);
     if (cell.state === 'ALLOWED' && cell.credential !== 'APP-TOKEN') problems.push(`${id}: ALLOWED requires APP-TOKEN evidence`);
     if (typeof cell.probedAt !== 'string' || cell.probedAt === '') problems.push(`${id}: ${String(cell.state)} needs probedAt`);
@@ -137,10 +199,11 @@ export function validateMatrix(matrix, questions, { evidenceExists, markdown }) 
  * @param {Context} context
  * @returns {string[]} problems; empty means valid
  */
-export function validateHostFacts(doc, questions, { evidenceExists, markdown }) {
+export function validateHostFacts(doc, questions, { evidenceExists, markdown, knownVersions = [LEGACY_HOST_VERSION], recordTexts = { [LEGACY_HOST_VERSION]: markdown } }) {
   /** @type {string[]} */
   const problems = [];
-  if (doc.hostVersion !== HOST_VERSION) problems.push(`host-facts hostVersion must be ${HOST_VERSION}, got ${String(doc.hostVersion)}`);
+  const latest = String(doc.hostVersion);
+  if (!knownVersions.includes(latest)) problems.push(`host-facts hostVersion must be ${knownVersions.join(' or ')}, got ${latest}`);
   const wanted = idsOfKind(questions, 'host-fact');
   /** @type {Map<string, Json>} */
   const byId = new Map();
@@ -150,6 +213,8 @@ export function validateHostFacts(doc, questions, { evidenceExists, markdown }) 
     byId.set(id, fact);
     if (!FACT_STATUSES.includes(String(fact.status))) problems.push(`${id}: invalid status ${String(fact.status)}`);
     const items = records(fact.evidence);
+    const version = entryVersion(id, fact, fact.status === 'UNTESTED' ? [] : items.map((item) => item.ref), knownVersions, problems);
+    if (compareVersions(version, latest) > 0) problems.push(`${id}: hostVersion ${version} is newer than the host-facts hostVersion ${latest}`);
     if (fact.status === 'UNTESTED') {
       if (!fact.notes) problems.push(`${id}: UNTESTED needs notes saying why`);
     } else {
@@ -159,7 +224,7 @@ export function validateHostFacts(doc, questions, { evidenceExists, markdown }) 
         if (evidenceProblem(item.ref, evidenceExists)) problems.push(`${id}: evidence ref missing or not under ${EVIDENCE_ROOT}`);
       }
     }
-    if (!markdown.includes(`| \`${id}\` | ${String(fact.status)} |`)) problems.push(`crew-0.12.0.md disagrees for ${id}`);
+    if (!(recordTexts[version] ?? '').includes(`| \`${id}\` | ${String(fact.status)} |`)) problems.push(`crew-${version}.md disagrees for ${id}`);
   }
   for (const id of wanted) if (!byId.has(id)) problems.push(`host fact ${id} missing`);
   for (const id of byId.keys()) if (!wanted.includes(id)) problems.push(`fact ${id} is not a host-fact question in capability-questions.json`);
@@ -189,6 +254,15 @@ function readJson(path) {
 }
 
 /**
+ * A host version is known when `dir` holds its `crew-<version>.md` compatibility record.
+ * @param {string} dir compatibility directory
+ * @returns {string[]} known host versions; empty when the directory is absent
+ */
+export function knownHostVersions(dir) {
+  return existsSync(dir) ? readdirSync(dir).flatMap((name) => RECORD_FILE.exec(name)?.[1] ?? []) : [];
+}
+
+/**
  * @param {{ root?: string, log?: (line: string) => void }} [options]
  * @returns {number} process exit code
  */
@@ -199,7 +273,7 @@ export function run({ root = '.', log = console.log } = {}) {
     matrix: join(dir, 'capability-matrix.json'),
     matrixMarkdown: join(dir, 'capability-matrix.md'),
     facts: join(dir, 'host-facts.json'),
-    record: join(dir, 'crew-0.12.0.md'),
+    record: join(dir, `crew-${LEGACY_HOST_VERSION}.md`),
     scope: join(dir, 'monitoring-scope.md'),
   };
   const missing = Object.values(files).filter((file) => !existsSync(file));
@@ -208,6 +282,8 @@ export function run({ root = '.', log = console.log } = {}) {
     return 1;
   }
   const evidenceExists = (/** @type {string} */ file) => existsSync(join(root, file));
+  const knownVersions = knownHostVersions(dir);
+  const recordTexts = Object.fromEntries(knownVersions.map((version) => [version, readFileSync(join(dir, `crew-${version}.md`), 'utf8')]));
   const questionsDoc = readJson(files.questions);
   const matrix = readJson(files.matrix);
   const facts = readJson(files.facts);
@@ -215,8 +291,8 @@ export function run({ root = '.', log = console.log } = {}) {
   if (problems.length === 0 && isRecord(questionsDoc) && isRecord(matrix) && isRecord(facts)) {
     const questions = records(questionsDoc.questions);
     problems.push(
-      ...validateMatrix(matrix, questions, { evidenceExists, markdown: readFileSync(files.matrixMarkdown, 'utf8') }),
-      ...validateHostFacts(facts, questions, { evidenceExists, markdown: readFileSync(files.record, 'utf8') }),
+      ...validateMatrix(matrix, questions, { evidenceExists, markdown: readFileSync(files.matrixMarkdown, 'utf8'), knownVersions }),
+      ...validateHostFacts(facts, questions, { evidenceExists, markdown: recordTexts[LEGACY_HOST_VERSION] ?? '', knownVersions, recordTexts }),
       ...validateMonitoringScope(readFileSync(files.scope, 'utf8')),
     );
   } else if (problems.length === 0) {
