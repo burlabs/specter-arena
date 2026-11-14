@@ -254,6 +254,15 @@ function readJson(path) {
 }
 
 /**
+ * A host version is known when `dir` holds its `crew-<version>.md` compatibility record.
+ * @param {string} dir compatibility directory
+ * @returns {string[]} known host versions; empty when the directory is absent
+ */
+export function knownHostVersions(dir) {
+  return existsSync(dir) ? readdirSync(dir).flatMap((name) => RECORD_FILE.exec(name)?.[1] ?? []) : [];
+}
+
+/**
  * @param {{ root?: string, log?: (line: string) => void }} [options]
  * @returns {number} process exit code
  */
@@ -273,13 +282,8 @@ export function run({ root = '.', log = console.log } = {}) {
     return 1;
   }
   const evidenceExists = (/** @type {string} */ file) => existsSync(join(root, file));
-  /** @type {Record<string, string>} */
-  const recordTexts = {};
-  for (const name of readdirSync(dir)) {
-    const version = RECORD_FILE.exec(name)?.[1];
-    if (version !== undefined) recordTexts[version] = readFileSync(join(dir, name), 'utf8');
-  }
-  const knownVersions = Object.keys(recordTexts);
+  const knownVersions = knownHostVersions(dir);
+  const recordTexts = Object.fromEntries(knownVersions.map((version) => [version, readFileSync(join(dir, `crew-${version}.md`), 'utf8')]));
   const questionsDoc = readJson(files.questions);
   const matrix = readJson(files.matrix);
   const facts = readJson(files.facts);

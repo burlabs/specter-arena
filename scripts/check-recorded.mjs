@@ -1,10 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { COMPATIBILITY_DIR, LEGACY_HOST_VERSION, knownHostVersions } from './check-matrix.mjs';
 
 export const RECORDED_ROOT = 'tests/recorded';
-export const RECORDED_DIR = `${RECORDED_ROOT}/crew-0.12.0`;
-export const COMPATIBILITY_DIR = 'docs/compatibility';
 export const EVENT_TYPES_FILE = `${COMPATIBILITY_DIR}/event-vocabulary.json`;
 export const CAPTURES = ['event-frames'];
 export const HASHED_ID = /^sha256:[0-9a-f]{12}$/;
@@ -115,7 +114,7 @@ export function acceptedOutcomeProblems(value, path = '$') {
  *   the directory, which the file must match; `eventTypes` is the controlled vocabulary for event-frame files.
  * @returns {string[]} problems; empty means valid
  */
-export function validateRecordedFile(name, json, { knownVersions = ['0.12.0'], expectedVersion, eventTypes = [] } = {}) {
+export function validateRecordedFile(name, json, { knownVersions = [LEGACY_HOST_VERSION], expectedVersion, eventTypes = [] } = {}) {
   if (!isRecord(json)) return [`${name}: must be an object with _meta and rows`];
   /** @type {string[]} */
   const problems = [];
@@ -205,9 +204,7 @@ export function run({
   runtimeDirs = ['ui/src', 'backend/app.py', 'backend/specter_arena'],
   log = console.log,
 } = {}) {
-  const knownVersions = existsSync(compatibilityDir)
-    ? readdirSync(compatibilityDir).flatMap((name) => /^crew-(\d+\.\d+\.\d+)\.md$/.exec(name)?.[1] ?? [])
-    : [];
+  const knownVersions = knownHostVersions(compatibilityDir);
   /** @type {string[]} */
   const problems = [];
   let eventTypes = /** @type {string[]} */ ([]);
@@ -220,6 +217,7 @@ export function run({
       problems.push(`${eventTypesFile}: not valid JSON`);
     }
   }
+  const fileOptions = { knownVersions: knownVersions.length > 0 ? knownVersions : [LEGACY_HOST_VERSION], eventTypes };
   const dirs = dir === undefined ? recordedDirs(root) : [dir];
   let count = 0;
   for (const directory of dirs) {
@@ -229,7 +227,8 @@ export function run({
     count += names.length;
     for (const name of names) {
       try {
-        problems.push(...validateRecordedFile(name, JSON.parse(readFileSync(join(directory, name), 'utf8')), { knownVersions: knownVersions.length > 0 ? knownVersions : ['0.12.0'], expectedVersion: version, eventTypes }));
+        const json = JSON.parse(readFileSync(join(directory, name), 'utf8'));
+        problems.push(...validateRecordedFile(name, json, { ...fileOptions, expectedVersion: version }));
       } catch {
         problems.push(`${name}: not valid JSON`);
       }

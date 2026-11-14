@@ -11,6 +11,7 @@ import {
   SCOPES,
   compareVersions,
   evidencePath,
+  knownHostVersions,
   run,
   validateHostFacts,
   validateMatrix,
@@ -394,6 +395,11 @@ describe('host-version policy', () => {
     const matrix = { hostVersion: top, cells: [{ id: 'app-owned-a', scope: 'app-owned', ...cell }] };
     return validateMatrix(matrix, questions, { evidenceExists: existsNew, markdown: '| `app-owned-a` | ALLOWED |', knownVersions: known });
   }
+
+  it('knows a host version only when its crew-<version>.md record exists', () => {
+    assert.ok(knownHostVersions(COMPATIBILITY_DIR).includes(LEGACY_HOST_VERSION));
+    assert.deepEqual(knownHostVersions(join(tmp, 'absent')), []);
+  });
 
   it('orders dotted versions numerically', () => {
     assert.ok(compareVersions('0.12.2', '0.12.0') > 0);
