@@ -95,10 +95,6 @@ class StepContext:
     capture_seconds: float = 30.0
     max_frames: int = 200
 
-    @property
-    def grants_declared(self) -> bool:
-        return self.grants.beyond_own_entry
-
 
 StepRunner = Callable[[GatewayPort, StepContext], Awaitable[list[Observation]]]
 

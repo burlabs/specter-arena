@@ -8,7 +8,6 @@ from backend.specter_arena.config import (
     OWN_API_ENTRY,
     GatewayEnv,
     Grants,
-    detect_grants,
     gateway_env,
     probe_enabled,
     read_grants,
@@ -74,6 +73,11 @@ PHASE_PERMISSIONS = {
 }
 
 
+def declared(path: Path) -> tuple[bool, str]:
+    grants = read_grants(path)
+    return grants.beyond_own_entry, grants.basis
+
+
 def write_manifest(tmp_path: Path, manifest: object) -> Path:
     path = tmp_path / "app.json"
     path.write_text(json.dumps(manifest))
@@ -83,38 +87,39 @@ def write_manifest(tmp_path: Path, manifest: object) -> Path:
 @pytest.mark.parametrize(
     ("phase", "declared"), [("v0", False), ("v1", True), ("v2", True)], ids=["v0", "v1", "v2"]
 )
-def test_detect_grants_follows_the_staged_phase_manifest(
+def test_read_grants_follows_the_staged_phase_manifest(
     tmp_path: Path, phase: str, declared: bool
 ) -> None:
-    path = write_manifest(tmp_path, {"permissions": PHASE_PERMISSIONS[phase]})
-    assert detect_grants(path) == (declared, "manifest")
+    grants = read_grants(write_manifest(tmp_path, {"permissions": PHASE_PERMISSIONS[phase]}))
+    assert (grants.beyond_own_entry, grants.basis) == (declared, "manifest")
 
 
-def test_detect_grants_reads_the_release_manifest_as_no_grants() -> None:
-    assert detect_grants() == (False, "manifest")
+def test_read_grants_reads_the_release_manifest_as_no_grants() -> None:
+    grants = read_grants()
+    assert (grants.beyond_own_entry, grants.basis) == (False, "manifest")
 
 
-def test_detect_grants_treats_missing_permission_keys_as_none_declared(tmp_path: Path) -> None:
-    assert detect_grants(write_manifest(tmp_path, {})) == (False, "manifest")
-    assert detect_grants(write_manifest(tmp_path, {"permissions": {}})) == (False, "manifest")
+def test_read_grants_treats_missing_permission_keys_as_none_declared(tmp_path: Path) -> None:
+    assert declared(write_manifest(tmp_path, {})) == (False, "manifest")
+    assert declared(write_manifest(tmp_path, {"permissions": {}})) == (False, "manifest")
 
 
-def test_detect_grants_counts_an_event_alone_and_an_extra_api_entry_alone(tmp_path: Path) -> None:
+def test_read_grants_counts_an_event_alone_and_an_extra_api_entry_alone(tmp_path: Path) -> None:
     events_only = {"api": [OWN_API_ENTRY], "events": ["slots:user"]}
-    assert detect_grants(write_manifest(tmp_path, {"permissions": events_only}))[0] is True
+    assert declared(write_manifest(tmp_path, {"permissions": events_only}))[0] is True
     other_api = {"api": [OWN_API_ENTRY, "/api/agents"], "events": []}
-    assert detect_grants(write_manifest(tmp_path, {"permissions": other_api}))[0] is True
-    assert detect_grants(write_manifest(tmp_path, {"permissions": {"api": []}}))[0] is False
+    assert declared(write_manifest(tmp_path, {"permissions": other_api}))[0] is True
+    assert declared(write_manifest(tmp_path, {"permissions": {"api": []}}))[0] is False
 
 
-def test_detect_grants_fails_closed_when_the_file_is_missing_or_not_json(tmp_path: Path) -> None:
-    assert detect_grants(tmp_path / "absent.json") == (
+def test_read_grants_fails_closed_when_the_file_is_missing_or_not_json(tmp_path: Path) -> None:
+    assert declared(tmp_path / "absent.json") == (
         True,
         "manifest-unreadable: FileNotFoundError",
     )
     broken = tmp_path / "app.json"
     broken.write_text("{")
-    assert detect_grants(broken) == (True, "manifest-unreadable: JSONDecodeError")
+    assert declared(broken) == (True, "manifest-unreadable: JSONDecodeError")
 
 
 @pytest.mark.parametrize(
@@ -122,11 +127,9 @@ def test_detect_grants_fails_closed_when_the_file_is_missing_or_not_json(tmp_pat
     [[], {"permissions": []}, {"permissions": {"api": "x"}}, {"permissions": {"events": {}}}],
     ids=["not-object", "permissions-list", "api-string", "events-object"],
 )
-def test_detect_grants_fails_closed_on_an_unexpected_shape(
-    tmp_path: Path, manifest: object
-) -> None:
-    declared, basis = detect_grants(write_manifest(tmp_path, manifest))
-    assert declared is True
+def test_read_grants_fails_closed_on_an_unexpected_shape(tmp_path: Path, manifest: object) -> None:
+    beyond, basis = declared(write_manifest(tmp_path, manifest))
+    assert beyond is True
     assert basis.startswith("manifest-unreadable: ")
 
 

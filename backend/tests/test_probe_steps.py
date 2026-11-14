@@ -723,5 +723,3 @@ def test_d_p1_grants_decide_the_slots_cells_from_the_slots_event() -> None:
     run_one("ws-capture", FakePort(frames=[slots_frame(slot_row("member-probe"))]), ctx)
     assert "slots grant is declared" in note(ctx, "user-slots-no-grant-denied")
     assert state(ctx, "user-slots-visible") == "ALLOWED"
-    assert ctx.grants_declared is True
-    assert make_ctx(grants=Grants.none()).grants_declared is False

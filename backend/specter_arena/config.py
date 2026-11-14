@@ -45,7 +45,6 @@ def probe_enabled(environ: Mapping[str, str] | None = None, root: Path | None = 
 
 MANIFEST_FILE = "app.json"
 OWN_API_ENTRY = "/apps/specter-arena/api/*"
-RUN_OPTIONS_FILE = ".probe-run.json"
 _CHILDREN_SUFFIX = "/*"
 
 
@@ -111,10 +110,3 @@ def read_grants(manifest_path: Path | None = None) -> Grants:
     except (OSError, ValueError, AttributeError, TypeError) as error:
         return Grants.assumed(f"manifest-unreadable: {type(error).__name__}")
     return Grants(frozenset(api), frozenset(events), "manifest")
-
-
-def detect_grants(manifest_path: Path | None = None) -> tuple[bool, str]:
-    """Whether the installed app.json declares anything beyond the app's own api entry, and the
-    basis that answer rests on."""
-    grants = read_grants(manifest_path)
-    return grants.beyond_own_entry, grants.basis

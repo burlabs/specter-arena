@@ -13,25 +13,7 @@ MAX_EVIDENCE_CHARS = 500
 DM_KEY_PREFIX = "member-"
 MEMORY_STORE_SUFFIX = ".memory-"
 
-SignalKind = Literal[
-    "start",
-    "progress",
-    "terminal",
-    "approval",
-    "needs-input",
-    "removed",
-    "chat-status",
-    "chat-done",
-    "tool-call",
-    "tool-result",
-    "context-usage",
-    "approval-resolved",
-    "subagent-spawn",
-    "subagent-status",
-    "subagent-done",
-    "reconnect",
-    "resync",
-]
+SignalKind = Literal["start", "progress", "terminal", "approval", "needs-input", "removed"]
 SlotRole = Literal["bot-dm", "worker", "other"]
 AttemptKind = Literal["bot-turn", "worker-session", "external-cli", "app-session"]
 
