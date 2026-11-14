@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .connection import quick_check
+from .connection import BUSY_TIMEOUT_S, quick_check
 from .errors import BackupError, RestoreError, SchemaNewer, StoreError
 from .location import (
     BACKUPS_DIRNAME,
@@ -41,7 +41,7 @@ def _utc_stamp() -> str:
 
 def _open_read_only(path: Path) -> sqlite3.Connection:
     # A read-only URI connection takes no part in the Store's own locks and cannot write.
-    return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True, timeout=5.0)
+    return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True, timeout=BUSY_TIMEOUT_S)
 
 
 def copy_database(source: Path, dest_dir: Path, name: str) -> Path:
