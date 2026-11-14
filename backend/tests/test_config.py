@@ -7,9 +7,11 @@ from backend.specter_arena.config import (
     APP_ROOT,
     OWN_API_ENTRY,
     GatewayEnv,
+    Grants,
     detect_grants,
     gateway_env,
     probe_enabled,
+    read_grants,
 )
 
 
@@ -126,3 +128,60 @@ def test_detect_grants_fails_closed_on_an_unexpected_shape(
     declared, basis = detect_grants(write_manifest(tmp_path, manifest))
     assert declared is True
     assert basis.startswith("manifest-unreadable: ")
+
+
+def test_a_bare_api_entry_matches_itself_and_its_children_only() -> None:
+    grants = Grants(frozenset({"/api/agents"}), frozenset(), "manifest")
+    assert grants.has_api("/api/agents")
+    assert grants.has_api("/api/agents/probe")
+    assert not grants.has_api("/api/agentsx")
+    assert not grants.has_api("/api/usage")
+
+
+def test_a_wildcard_api_entry_matches_children_but_not_the_prefix() -> None:
+    grants = Grants(frozenset({"/api/member-records/*"}), frozenset(), "manifest")
+    assert grants.has_api("/api/member-records/probe")
+    assert not grants.has_api("/api/member-records")
+    assert not grants.has_api("/api/members/probe")
+
+
+def test_events_match_exactly_and_unknown_grants_answer_yes() -> None:
+    grants = Grants(frozenset(), frozenset({"slots:user"}), "manifest")
+    assert grants.has_event("slots:user")
+    assert not grants.has_event("subagent:user")
+    assumed = Grants.assumed("manifest-unreadable: OSError")
+    assert assumed.has_event("subagent:user")
+    assert assumed.has_api("/api/anything")
+    assert assumed.beyond_own_entry
+    assert not Grants.none().beyond_own_entry
+    assert not Grants.none().has_api("/api/agents")
+
+
+def test_read_grants_with_the_d_p1_manifest_grants_exactly_its_entries(tmp_path: Path) -> None:
+    permissions = {
+        "api": [OWN_API_ENTRY, "/api/agents", "/api/usage", "/api/sessions/usage"],
+        "events": ["slots:user", "subagent:user"],
+    }
+    grants = read_grants(write_manifest(tmp_path, {"permissions": permissions}))
+    assert grants.basis == "manifest"
+    assert grants.has_api("/api/agents")
+    assert grants.has_api("/api/usage") and grants.has_api("/api/sessions/usage")
+    assert not grants.has_api("/api/member-records/probe")
+    assert not grants.has_api("/api/chat/slots")
+    assert grants.has_api("/apps/specter-arena/api/ping")
+    assert grants.has_event("subagent:user")
+
+
+@pytest.mark.parametrize(
+    "manifest",
+    [{"permissions": {"api": "nope"}}, {"permissions": {"api": [5]}}, "not an object"],
+    ids=["api-not-list", "entry-not-string", "not-object"],
+)
+def test_a_malformed_manifest_fails_closed_to_assumed(tmp_path: Path, manifest: object) -> None:
+    grants = read_grants(write_manifest(tmp_path, manifest))
+    assert grants.unknown
+    assert grants.basis.startswith("manifest-unreadable: ")
+
+
+def test_a_missing_manifest_names_the_error(tmp_path: Path) -> None:
+    assert read_grants(tmp_path / "absent.json").basis == "manifest-unreadable: FileNotFoundError"

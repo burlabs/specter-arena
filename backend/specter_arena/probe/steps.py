@@ -8,7 +8,17 @@ from dataclasses import dataclass, field
 from typing import Protocol
 from urllib.parse import quote
 
-from .frames import Attempt, AttemptKind, Row, diff_slots, outcome_evidence, probe_keys, slot_role
+from ..config import Grants
+from .frames import (
+    Attempt,
+    AttemptKind,
+    Row,
+    diff_slots,
+    json_type_name,
+    outcome_evidence,
+    probe_keys,
+    slot_role,
+)
 from .frames import slot_rows as frame_rows
 from .matrix import (
     DENIAL_STATUSES,
@@ -27,6 +37,8 @@ ERROR_KEYS = ("error", "detail", "message", "reason")
 MAX_LISTED_KEYS = 20
 REASON_KEYS = ("code", "error")
 MAX_REASON_CHARS = 200
+SLOTS_EVENT = "slots:user"
+CHAT_SLOTS_PATH = "/api/chat/slots"
 
 
 class PortError(Exception):
@@ -76,12 +88,16 @@ class GatewayPort(Protocol):
 class StepContext:
     run: Run
     now: Callable[[], str]
-    grants_declared: bool = True
+    grants: Grants = field(default_factory=lambda: Grants.assumed("default"))
     gateway_available: bool = True
     other_app: str = "specter-other"
     cli_slot_key: str = ""
     capture_seconds: float = 30.0
     max_frames: int = 200
+
+    @property
+    def grants_declared(self) -> bool:
+        return self.grants.beyond_own_entry
 
 
 StepRunner = Callable[[GatewayPort, StepContext], Awaitable[list[Observation]]]
@@ -340,7 +356,13 @@ def _worker_slot_key(run: Run) -> str:
 
 
 async def _chat_slots(port: GatewayPort, ctx: StepContext) -> list[Observation]:
-    path = "/api/chat/slots"
+    path = CHAT_SLOTS_PATH
+    if not ctx.grants.has_api(path):
+        reason = f"no {path} grant declared"
+        return [
+            _untested(ctx, "user-chat-slots-api", reason),
+            _untested(ctx, "user-chat-slot-history", reason),
+        ]
     status, body = await port.http("GET", path)
     observations = [
         _http_observation(ctx, "chat-slots", "user-chat-slots-api", "GET", path, status, body)
@@ -387,20 +409,33 @@ def _attempt_for(run: Run, key: str, row: Row) -> Attempt:
     return run.attempts[key]
 
 
-def _absorb_frame(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
+def _keyed(rows: list[Row]) -> list[Row]:
+    return [row for row in rows if isinstance(row.get("key"), str)]
+
+
+def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
+    """A `slots` frame: the only frame that moves the diff baseline (`run.last_rows`).
+
+    The baseline holds sanitised probe rows. Outcome text is read from the raw row of the frame
+    that ends a turn, masked, and kept on the attempt only; the raw row is not held.
+    """
     run = ctx.run
     clean = sanitise_frame(frame, run.probe_slug, run.salt, run.stats)
     if clean is None:
         return
     run.record_frame(clean)
-    rows = [row for row in frame_rows(clean) if isinstance(row.get("key"), str)]
-    if clean.get("type") == "slots":
-        tally.slot_frames += 1
-        tally.most_rows = max(tally.most_rows, len(rows))
-        if tally.first_slot_rows is None:
-            tally.first_slot_rows = len(rows)
+    rows = _keyed(frame_rows(clean))
+    tally.slot_frames += 1
+    tally.most_rows = max(tally.most_rows, len(rows))
+    if tally.first_slot_rows is None:
+        tally.first_slot_rows = len(rows)
     probes = probe_keys(rows, run.probe_slug)
+    run.probe_slots = frozenset(probes)
     current = {str(row["key"]): row for row in rows if row["key"] in probes}
+    raw = {str(row["key"]): row for row in _keyed(frame_rows(frame)) if row["key"] in probes}
+    for row in current.values():
+        if "last_activity_ts" in row:
+            run.field_types["last_activity_ts"] = json_type_name(row["last_activity_ts"])
     at = ctx.now()
     for signal in diff_slots(run.last_rows, current, at=at):
         attempt = _attempt_for(run, signal.slot_key, current.get(signal.slot_key, {}))
@@ -408,7 +443,7 @@ def _absorb_frame(frame: dict[str, object], ctx: StepContext, tally: _FeedTally)
         tally.signal_kinds.add(signal.kind)
         if signal.kind == "terminal":
             tally.terminal_seen = True
-            text = outcome_evidence(current.get(signal.slot_key, {}))
+            text = outcome_evidence(raw.get(signal.slot_key, {}))
             attempt.outcome_evidence = text
             tally.terminal_outcome = tally.terminal_outcome or text
     run.last_rows = current
@@ -423,12 +458,21 @@ def _absorb_frame(frame: dict[str, object], ctx: StepContext, tally: _FeedTally)
             tally.source_links = True
 
 
+def absorb_event(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
+    """Any frame other than `slots`: recorded in sanitised form; never touches the baseline."""
+    run = ctx.run
+    clean = sanitise_frame(frame, run.probe_slug, run.salt, run.stats, run.probe_slots)
+    if clean is not None:
+        run.record_frame(clean)
+
+
 async def _drain_feed(port: GatewayPort, ctx: StepContext, tally: _FeedTally) -> None:
     feed = port.open_feed()
     try:
         async for frame in feed:
             tally.frames += 1
-            _absorb_frame(frame, ctx, tally)
+            absorb = absorb_slots if frame.get("type") == "slots" else absorb_event
+            absorb(frame, ctx, tally)
             if tally.frames >= ctx.max_frames:
                 break
     finally:
@@ -475,9 +519,10 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
         out.append(_untested(ctx, WS_CELLS[0], "no frame received or transport not reported"))
 
     first = tally.first_slot_rows
-    if ctx.grants_declared:
+    slots_granted = ctx.grants.has_event(SLOTS_EVENT)
+    if slots_granted:
         out.append(
-            _untested(ctx, "user-slots-no-grant-denied", "a grant is declared; run phase v0")
+            _untested(ctx, "user-slots-no-grant-denied", "a slots grant is declared; run phase v0")
         )
     elif first is None:
         out.append(_untested(ctx, "user-slots-no-grant-denied", window))
@@ -497,13 +542,14 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
             _seen(ctx, "user-slots-no-grant-denied", f"{first} rows visible without a slots grant")
         )
 
-    if not ctx.grants_declared:
+    if not slots_granted:
         out.append(_untested(ctx, "user-slots-visible", "no slots grant declared"))
     elif tally.most_rows:
         out.append(_seen(ctx, "user-slots-visible", f"snapshots held up to {tally.most_rows} rows"))
     else:
         out.append(_untested(ctx, "user-slots-visible", window))
 
+    stamp_type = ctx.run.field_types.get("last_activity_ts")
     for cell_id, wanted in (
         ("user-signal-start", {"start"}),
         ("user-signal-progress", {"progress"}),
@@ -511,8 +557,11 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
         ("user-signal-approval", {"approval", "needs-input"}),
     ):
         hit = sorted(kinds & wanted)
+        excerpt = f"signal observed on a probe slot: {', '.join(hit)}"
+        if cell_id == "user-signal-progress" and stamp_type:
+            excerpt += f"; last_activity_ts is JSON {stamp_type}"
         out.append(
-            _seen(ctx, cell_id, f"signal observed on a probe slot: {', '.join(hit)}")
+            _seen(ctx, cell_id, excerpt)
             if hit
             else _untested(ctx, cell_id, "signal not observed in the capture window")
         )
@@ -588,9 +637,9 @@ async def _member_record_write(port: GatewayPort, ctx: StepContext) -> list[Obse
     slug = ctx.run.probe_slug
     if not slug:
         return [_untested(ctx, cell, "probe slug not set")]
-    if not ctx.grants_declared:
-        return [_untested(ctx, cell, "no member-records grant declared; see phase v1")]
     path = _member_record_path(slug)
+    if not ctx.grants.has_api(path):
+        return [_untested(ctx, cell, "no member-records grant declared; see phase v1")]
     payload = json.dumps({"source": "specter-probe", "at": ctx.now()}).encode()
     status, body = await port.http("POST", path, payload)
     observation = _http_observation(
@@ -604,9 +653,11 @@ async def _member_record_ungranted(port: GatewayPort, ctx: StepContext) -> list[
     slug = ctx.run.probe_slug
     if not slug:
         return [_untested(ctx, cell, "probe slug not set")]
-    if ctx.grants_declared:
-        return [_untested(ctx, cell, "a grant is declared; the refusal is probed in phase v0")]
     path = _member_record_path(slug)
+    if ctx.grants.has_api(path):
+        return [
+            _untested(ctx, cell, "a member-records grant is declared; the refusal is probed in v0")
+        ]
     payload = json.dumps({"source": "specter-probe", "at": ctx.now()}).encode()
     status, body = await port.http("POST", path, payload)
     return [_http_observation(ctx, "member-record-ungranted", cell, "POST", path, status, body)]
@@ -625,11 +676,16 @@ async def _cli_compare(port: GatewayPort, ctx: StepContext) -> list[Observation]
     found = []
     if any(row.get("key") == hidden for frame in ctx.run.frames for row in frame_rows(frame)):
         found.append("the feed snapshot")
-    _, body = await port.http("GET", "/api/chat/slots")
-    if cli_key in _slot_keys(_parse(body)):
-        found.append("GET /api/chat/slots")
+    api_granted = ctx.grants.has_api(CHAT_SLOTS_PATH)
+    if api_granted:
+        _, body = await port.http("GET", CHAT_SLOTS_PATH)
+        if cli_key in _slot_keys(_parse(body)):
+            found.append(f"GET {CHAT_SLOTS_PATH}")
     if not found:
-        return [_untested(ctx, cell, "the external CLI slot was not seen in the feed or the API")]
+        where = (
+            "the feed or the API" if api_granted else f"the feed ({CHAT_SLOTS_PATH} not granted)"
+        )
+        return [_untested(ctx, cell, f"the external CLI slot was not seen in {where}")]
     return [_seen(ctx, cell, f"external CLI slot present in {' and '.join(found)}")]
 
 

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Literal
+from datetime import datetime
+from typing import Literal, TypeGuard
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
@@ -12,7 +13,25 @@ MAX_EVIDENCE_CHARS = 500
 DM_KEY_PREFIX = "member-"
 MEMORY_STORE_SUFFIX = ".memory-"
 
-SignalKind = Literal["start", "progress", "terminal", "approval", "needs-input", "removed"]
+SignalKind = Literal[
+    "start",
+    "progress",
+    "terminal",
+    "approval",
+    "needs-input",
+    "removed",
+    "chat-status",
+    "chat-done",
+    "tool-call",
+    "tool-result",
+    "context-usage",
+    "approval-resolved",
+    "subagent-spawn",
+    "subagent-status",
+    "subagent-done",
+    "reconnect",
+    "resync",
+]
 SlotRole = Literal["bot-dm", "worker", "other"]
 AttemptKind = Literal["bot-turn", "worker-session", "external-cli", "app-session"]
 
@@ -96,14 +115,53 @@ def slot_role(row: Row, probe_slug: str) -> SlotRole:
     return "worker" if _text(row, "created_by") else "other"
 
 
-def _number(value: object) -> float | None:
-    return float(value) if isinstance(value, int | float) and not isinstance(value, bool) else None
+def _instant(value: str | int | float) -> tuple[float, bool] | None:
+    """(epoch seconds, timezone-aware?) for a stamp, or None for text that is not ISO-8601.
+    A bare number is an epoch value, so it compares with aware stamps."""
+    if not isinstance(value, str):
+        return float(value), True
+    try:
+        parsed = datetime.fromisoformat(value.strip())
+    except ValueError:
+        return None
+    return parsed.timestamp(), parsed.tzinfo is not None
+
+
+def _is_stamp(value: object) -> TypeGuard[str | int | float]:
+    if isinstance(value, str):
+        return bool(value.strip())
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _moved(then: object, now: object) -> bool:
+    """Whether an activity stamp advanced. Stamps of the same kind compare by instant; otherwise
+    any change between two present stamps counts, because the host mixes naive and offset-aware
+    text in one field."""
+    if then == now or not (_is_stamp(then) and _is_stamp(now)):
+        return False
+    a, b = _instant(then), _instant(now)
+    if a is not None and b is not None and a[1] == b[1]:
+        return b[0] > a[0]
+    return True
+
+
+def json_type_name(value: object) -> str:
+    """The JSON type name of a value: str, number, bool, null, list or object."""
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, int | float):
+        return "number"
+    if isinstance(value, str):
+        return "str"
+    return "list" if isinstance(value, list | tuple) else "object"
 
 
 def diff_slots(prev: dict[str, Row], curr: dict[str, Row], *, at: str) -> list[Signal]:
     """Signals between two snapshots of the probe rows, from confirmed projection fields only.
 
-    start: `running` false to true. progress: still `running` and `last_activity_ts` advanced.
+    start: `running` false to true. progress: still `running` and `last_activity_ts` moved.
     terminal: `running` true to false. approval: `pending_approval` turned truthy.
     needs-input: `needs_input` turned truthy. removed: the slot left the snapshot.
     """
@@ -116,11 +174,7 @@ def diff_slots(prev: dict[str, Row], curr: dict[str, Row], *, at: str) -> list[S
         if is_running and not was_running:
             signals.append(Signal("start", key, at))
         elif is_running:
-            then, now = (
-                _number(before.get("last_activity_ts")),
-                _number(row.get("last_activity_ts")),
-            )
-            if then is not None and now is not None and now > then:
+            if _moved(before.get("last_activity_ts"), row.get("last_activity_ts")):
                 signals.append(Signal("progress", key, at))
         elif was_running:
             signals.append(Signal("terminal", key, at))

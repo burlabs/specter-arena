@@ -45,13 +45,58 @@ def probe_enabled(environ: Mapping[str, str] | None = None, root: Path | None = 
 
 MANIFEST_FILE = "app.json"
 OWN_API_ENTRY = "/apps/specter-arena/api/*"
+RUN_OPTIONS_FILE = ".probe-run.json"
+_CHILDREN_SUFFIX = "/*"
 
 
-def detect_grants(manifest_path: Path | None = None) -> tuple[bool, str]:
-    """Whether the installed app.json declares anything beyond the app's own api entry.
+@dataclass(frozen=True)
+class Grants:
+    """The api and event entries an installed app.json declares.
 
-    Returns the answer and the basis it rests on. A manifest that cannot be read or does not have
-    the expected shape fails closed to "declared" so the grant-dependent cells are never skipped.
+    `unknown` is set when the grants could not be read (or a caller asserted them wholesale):
+    every `has_*` then answers True, so a grant-dependent step runs and its cell names the basis
+    instead of being skipped on a guess.
+    """
+
+    api: frozenset[str]
+    events: frozenset[str]
+    basis: str
+    unknown: bool = False
+
+    @classmethod
+    def none(cls, basis: str = "none") -> Grants:
+        return cls(frozenset(), frozenset(), basis)
+
+    @classmethod
+    def assumed(cls, basis: str) -> Grants:
+        return cls(frozenset(), frozenset(), basis, unknown=True)
+
+    @property
+    def beyond_own_entry(self) -> bool:
+        return self.unknown or any(e != OWN_API_ENTRY for e in self.api) or bool(self.events)
+
+    def has_event(self, name: str) -> bool:
+        return self.unknown or name in self.events
+
+    def has_api(self, path: str) -> bool:
+        """The host's matching rule: a bare entry matches the path and any child path;
+        `<prefix>/*` matches children of the prefix only."""
+        if self.unknown:
+            return True
+        for entry in self.api:
+            if entry.endswith(_CHILDREN_SUFFIX):
+                if path.startswith(entry[:-1]):
+                    return True
+            elif path == entry or path.startswith(f"{entry}/"):
+                return True
+        return False
+
+
+def read_grants(manifest_path: Path | None = None) -> Grants:
+    """The grants the installed app.json declares, entry by entry.
+
+    A manifest that cannot be read or does not have the expected shape fails closed to
+    `Grants.assumed`, with the exception type recorded as the basis.
     """
     path = APP_ROOT / MANIFEST_FILE if manifest_path is None else manifest_path
     try:
@@ -61,6 +106,15 @@ def detect_grants(manifest_path: Path | None = None) -> tuple[bool, str]:
         events = permissions.get("events", [])
         if not (isinstance(api, list) and isinstance(events, list)):
             raise TypeError
+        if not all(isinstance(entry, str) for entry in [*api, *events]):
+            raise TypeError
     except (OSError, ValueError, AttributeError, TypeError) as error:
-        return True, f"manifest-unreadable: {type(error).__name__}"
-    return any(entry != OWN_API_ENTRY for entry in api) or bool(events), "manifest"
+        return Grants.assumed(f"manifest-unreadable: {type(error).__name__}")
+    return Grants(frozenset(api), frozenset(events), "manifest")
+
+
+def detect_grants(manifest_path: Path | None = None) -> tuple[bool, str]:
+    """Whether the installed app.json declares anything beyond the app's own api entry, and the
+    basis that answer rests on."""
+    grants = read_grants(manifest_path)
+    return grants.beyond_own_entry, grants.basis

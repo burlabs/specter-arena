@@ -48,6 +48,25 @@ def slots_frame(*rows: dict[str, object]) -> dict[str, object]:
     return {"type": "slots", "data": list(rows)}
 
 
+def prose_row(key: str, text: str, **overrides: object) -> dict[str, object]:
+    """A slot row whose prose-bearing fields all hold `text`."""
+    return slot_row(
+        key,
+        messages=[{"role": "user", "content": text}],
+        last_message=text,
+        prompt_preview=text,
+        welcome_message=text,
+        options=[text],
+        wait_state="waiting",
+        source_links=[{"url": "u"}],
+        **overrides,
+    )
+
+
+def event_frame(event_type: str, **data: object) -> dict[str, object]:
+    return {"type": event_type, "data": data}
+
+
 class FakePort:
     """A scripted `GatewayPort`: canned HTTP answers and a canned feed."""
 
