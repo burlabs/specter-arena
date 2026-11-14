@@ -208,3 +208,137 @@ describe('run', () => {
     assert.equal(run({ log: (line) => lines.push(line) }), 0, lines.join('\n'));
   });
 });
+
+describe('event-frame captures', () => {
+  const frames = { sanitisation: 'frames: counts and enums only', hostVersion: '0.12.2', capture: 'event-frames' };
+  const options = { knownVersions: ['0.12.0', '0.12.2'], eventTypes: ['chat_status', 'chat_done'] };
+  /** @param {Record<string, unknown>[]} rows @param {Record<string, unknown>} [metaChange] */
+  const check = (rows, metaChange = {}) => validateRecordedFile('f.json', { _meta: { ...frames, ...metaChange }, rows }, options);
+
+  it('accepts repeated id, key and attemptId because frameSeq is the identity', () => {
+    const rows = [
+      { rowKind: 'non-probe', frameSeq: 0, receivedAtMs: 1731474000000, eventType: 'chat_status', id: 7, key: 1, attemptId: 1 },
+      { rowKind: 'non-probe', frameSeq: 1, receivedAtMs: 1731474000000, eventType: 'chat_done', id: 7, key: 1, attemptId: 1 },
+    ];
+    assert.deepEqual(check(rows), []);
+  });
+
+  it('rejects a duplicate, missing, negative or fractional frameSeq (deliberate violation)', () => {
+    const base = { rowKind: 'non-probe', eventType: 'chat_status', receivedAtMs: 1731474000000 };
+    assert.deepEqual(check([{ ...base, frameSeq: 3 }, { ...base, frameSeq: 3 }]), ['f.json: rows[1]: duplicate frameSeq 3']);
+    for (const extra of [{}, { frameSeq: -1 }, { frameSeq: 1.5 }]) {
+      assert.deepEqual(check([{ ...base, ...extra }]), ['f.json: rows[0]: frameSeq must be a non-negative integer']);
+    }
+  });
+
+  it('requires receivedAtMs as integer epoch milliseconds on every row, probe rows included (deliberate violation)', () => {
+    const message = 'f.json: rows[0]: receivedAtMs must be a non-negative integer (epoch milliseconds)';
+    for (const rowKind of ['non-probe', 'probe']) {
+      for (const receivedAtMs of [undefined, -1, 1731474000000.5, true, '1731474000000']) {
+        const problems = check([{ rowKind, frameSeq: 0, eventType: 'chat_status', receivedAtMs }]);
+        assert.ok(problems.includes(message), `${rowKind} ${String(receivedAtMs)}: ${problems.join('; ')}`);
+      }
+    }
+  });
+
+  it('rejects an eventType outside the vocabulary, or missing', () => {
+    assert.deepEqual(check([{ rowKind: 'non-probe', frameSeq: 0, receivedAtMs: 1731474000000, eventType: 'made_up' }]), ['f.json: rows[0]: eventType made_up is not in docs/compatibility/event-vocabulary.json']);
+    assert.deepEqual(check([{ rowKind: 'non-probe', frameSeq: 0, receivedAtMs: 1731474000000 }]), ['f.json: rows[0]: eventType undefined is not in docs/compatibility/event-vocabulary.json']);
+  });
+
+  it('still applies the sanitised grammar to every other string, including a nested eventType', () => {
+    const rows = [{ rowKind: 'non-probe', frameSeq: 0, receivedAtMs: 1731474000000, eventType: 'chat_status', title: 'Quarterly plan', nested: { eventType: 'chat_done' } }];
+    assert.deepEqual(check(rows), ['f.json: rows[0].title: string is not in the sanitised grammar', 'f.json: rows[0].nested.eventType: string is not in the sanitised grammar']);
+  });
+
+  it('does not exempt eventType outside an event-frame file', () => {
+    const rows = [{ rowKind: 'non-probe', eventType: 'chat_status', n: 1 }];
+    assert.deepEqual(validateRecordedFile('f.json', { _meta: { sanitisation: 's', hostVersion: '0.12.0' }, rows }), ['f.json: rows[0].eventType: string is not in the sanitised grammar']);
+  });
+
+  it('rejects an unknown capture kind and a host version that is not known or not the directory version', () => {
+    assert.deepEqual(check([], { capture: 'screenshots' }), ['f.json: _meta.capture must be event-frames when present']);
+    assert.deepEqual(check([], { hostVersion: '0.13.0' }), ['f.json: _meta.hostVersion must be 0.12.0 or 0.12.2']);
+    const mismatch = validateRecordedFile('f.json', { _meta: frames, rows: [] }, { ...options, expectedVersion: '0.12.0' });
+    assert.deepEqual(mismatch, ['f.json: _meta.hostVersion must be 0.12.0']);
+  });
+
+  it('keeps the credential and acceptance rules for probe frame rows', () => {
+    const rows = [{ rowKind: 'probe', frameSeq: 0, receivedAtMs: 1731474000000, eventType: 'chat_done', header: 'Bearer abcdefghijklmnop', outcomeEvidence: 'work accepted' }];
+    assert.deepEqual(check(rows), ['f.json: rows[0].header: looks like a bearer credential', 'f.json: rows[0].outcomeEvidence: outcomeEvidence must not claim acceptance']);
+  });
+});
+
+describe('contracts/cases in release code', () => {
+  it('flags release sources but lets test files read the cases', () => {
+    const dir = tree({
+      'ui/src/a.ts': "import cases from '../../contracts/cases/ready/v1/cases.json';",
+      'ui/src/contracts/contracts.test.ts': "const dir = '../../../contracts/cases/';",
+      'ui/src/__tests__/b.ts': "const dir = 'contracts/cases';",
+      'backend/specter_arena/c.py': 'p = "contracts/cases"',
+      'backend/tests/test_contracts.py': 'p = "contracts" / "cases"',
+      'backend/specter_arena/ok.py': 'p = "contracts/schemas"',
+    });
+    const found = scanImports([join(dir, 'ui/src'), join(dir, 'backend/specter_arena'), join(dir, 'backend/tests')]);
+    assert.deepEqual(found.map(({ file }) => file.slice(dir.length + 1)).sort(), ['backend/specter_arena/c.py', 'ui/src/a.ts']);
+    assert.ok(found.every(({ reason }) => reason === 'references contracts/cases from release code'));
+  });
+
+  it('still forbids tests/recorded in test files', () => {
+    const dir = tree({ 'ui/src/a.test.ts': "import x from '../../tests/recorded/x.json';" });
+    assert.equal(scanImports([join(dir, 'ui/src')]).length, 1);
+  });
+});
+
+describe('run across host versions', () => {
+  const frameFile = (/** @type {string} */ version, /** @type {string} */ type) => JSON.stringify({ _meta: { sanitisation: 's', hostVersion: version, capture: 'event-frames' }, rows: [{ rowKind: 'non-probe', frameSeq: 0, receivedAtMs: 1731474000000, eventType: type }] });
+
+  /**
+   * @param {Record<string, string>} files
+   * @param {string[]} versions hosts that have a compatibility record
+   */
+  function runTree(files, versions = ['0.12.0', '0.12.2']) {
+    const dir = tree({
+      ...files,
+      ...Object.fromEntries(versions.map((version) => [`compat/crew-${version}.md`, '# record'])),
+      'compat/notes.md': 'not a record',
+    });
+    /** @type {string[]} */
+    const lines = [];
+    const code = run({ root: join(dir, 'recorded'), compatibilityDir: join(dir, 'compat'), eventTypesFile: join(dir, 'compat/event-vocabulary.json'), runtimeDirs: [], log: (line) => lines.push(line) });
+    return { code, lines };
+  }
+
+  const vocabulary = JSON.stringify({ version: 1, eventTypes: ['chat_status'] });
+
+  it('validates every crew-<version> directory against its own version, including nested uniqueness rules', () => {
+    const result = runTree({ 'compat/event-vocabulary.json': vocabulary, 'recorded/crew-0.12.2/frames.json': frameFile('0.12.2', 'chat_status'), 'recorded/crew-0.12.0/a.json': JSON.stringify({ _meta: { sanitisation: 's', hostVersion: '0.12.0' }, rows: [] }) });
+    assert.deepEqual(result, { code: 0, lines: ['check:recorded: 2 recorded file(s) ok'] });
+  });
+
+  it('fails a file whose hostVersion differs from its directory (deliberate violation)', () => {
+    const result = runTree({ 'compat/event-vocabulary.json': vocabulary, 'recorded/crew-0.12.2/frames.json': frameFile('0.12.0', 'chat_status') });
+    assert.deepEqual(result, { code: 1, lines: ['check:recorded: frames.json: _meta.hostVersion must be 0.12.2'] });
+  });
+
+  it('fails a directory for a host with no compatibility record', () => {
+    const result = runTree({ 'compat/event-vocabulary.json': vocabulary, 'recorded/crew-0.13.0/frames.json': frameFile('0.13.0', 'chat_status') }, ['0.12.0']);
+    assert.equal(result.code, 1);
+    assert.match(result.lines[0] ?? '', /crew-0\.13\.0: no .*crew-0\.13\.0\.md record$/);
+  });
+
+  it('fails an event type that is not in the vocabulary file', () => {
+    const result = runTree({ 'compat/event-vocabulary.json': vocabulary, 'recorded/crew-0.12.2/frames.json': frameFile('0.12.2', 'chat_done') });
+    assert.equal(result.code, 1);
+    assert.ok(result.lines[0]?.includes('eventType chat_done is not in'));
+  });
+
+  it('fails an empty or unparseable vocabulary file', () => {
+    assert.ok(runTree({ 'compat/event-vocabulary.json': JSON.stringify({ version: 1, eventTypes: [] }) }).lines[0]?.endsWith('eventTypes must be a non-empty list'));
+    assert.ok(runTree({ 'compat/event-vocabulary.json': '{' }).lines[0]?.endsWith('not valid JSON'));
+  });
+
+  it('ignores directories that are not crew-<version>', () => {
+    assert.deepEqual(runTree({ 'recorded/scratch/x.json': '{', 'recorded/README.md': 'x' }), { code: 0, lines: ['check:recorded: 0 recorded file(s) ok'] });
+  });
+});
