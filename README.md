@@ -49,6 +49,7 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 - `docs/ops/preview.md`: the per-PR preview stack and how the owner deploys it
 - `docs/compatibility/`: the pinned Crew compatibility record, capability matrix and host facts
 - `docs/ops/crew-probe-runbook.md`: the live probe runbook
+- `docs/development/probe-slice1-runbook.md`: the FP-02+03 slice-1 owner sitting
 - `docs/provenance.md` and `DEPENDENCIES.md`: where things come from
 
 ## License

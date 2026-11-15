@@ -1,8 +1,8 @@
 {
-  "version": "0.0.0-probe.1",
+  "version": "0.0.0-probe.2",
   "permissions": {
-    "api": ["/apps/specter-arena/api/*", "/api/agents", "/api/chat/slots", "/api/member-records/*"],
-    "events": ["slots:user"]
+    "api": ["/apps/specter-arena/api/*", "/api/agents", "/api/usage", "/api/sessions/usage"],
+    "events": ["slots:user", "subagent:user"]
   },
   "ui": {
     "entry": "diagnostic-dist/index.mjs",

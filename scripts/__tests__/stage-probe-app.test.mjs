@@ -5,13 +5,16 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import {
   COPY_LIST,
+  EXCLUDED_PATHS,
   INSTALL_COMMAND,
   OVERLAY_PATH,
   PHASES,
   V2_EXTRA_API_ENTRY,
   mergeManifest,
   overlayForPhase,
+  RUN_OPTIONS_FILE,
   parseArgs,
+  runOptions,
   stage,
 } from '../stage-probe-app.mjs';
 import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from '../check-fixtures.mjs';
@@ -48,11 +51,13 @@ function repo({ marker = true, diagnostic = true, release = true, overlay = real
   return root;
 }
 
-/** @param {string} root @param {string} phase */
-function staged(root, phase) {
+const HOST = { '--host-version': '0.12.2' };
+
+/** @param {string} root @param {string} phase @param {Record<string, string | undefined>} [flags] */
+function staged(root, phase, flags = phase === 'v0' ? {} : HOST) {
   /** @type {string[]} */
   const lines = [];
-  const code = stage({ phase, root, log: (line) => lines.push(line) });
+  const code = stage({ phase, flags, root, log: (line) => lines.push(line) });
   return { code, lines, manifest: () => JSON.parse(readFileSync(join(root, '.probe-app', 'app.json'), 'utf8')) };
 }
 
@@ -70,11 +75,12 @@ describe('the committed overlay', () => {
     assert.deepEqual(realOverlay.ui.pages, [{ route: '/apps/specter-arena', label: 'Specter Diagnostic', icon: 'Activity' }]);
   });
 
-  it('holds the v1 permissions: the own-namespace entry first, three probe api prefixes and slots:user', () => {
+  it('holds exactly the D-P1 grants: the own-namespace entry first, three probe api paths and two events', () => {
     assert.deepEqual(realOverlay.permissions, {
-      api: [OWN_API_ENTRY, '/api/agents', '/api/chat/slots', '/api/member-records/*'],
-      events: ['slots:user'],
+      api: [OWN_API_ENTRY, '/api/agents', '/api/usage', '/api/sessions/usage'],
+      events: ['slots:user', 'subagent:user'],
     });
+    assert.equal(realOverlay.version, '0.0.0-probe.2');
   });
 
   it('is not reflected in the release manifest, which has no diagnostic reference or grants', () => {
@@ -139,7 +145,7 @@ describe('overlayForPhase', () => {
 describe('mergeManifest', () => {
   it('replaces scalars, ui entry and pages, and adds permissions', () => {
     const merged = mergeManifest(realManifest, overlayForPhase(realOverlay, 'v1'));
-    assert.equal(merged.version, '0.0.0-probe.1');
+    assert.equal(merged.version, '0.0.0-probe.2');
     assert.equal(merged.minKiroCrewVersion, realManifest.minKiroCrewVersion);
     assert.equal(merged.ui.entry, 'diagnostic-dist/index.mjs');
     assert.deepEqual(merged.ui.pages, realOverlay.ui.pages);
@@ -273,9 +279,82 @@ describe('stage', () => {
   });
 });
 
+describe('the staged run options', () => {
+  const sharedFixture = JSON.parse(readFileSync('backend/tests/probe_run_options_valid.json', 'utf8'));
+
+  it('writes .probe-run.json that matches the fixture the backend validates', () => {
+    const root = repo();
+    const flags = { '--host-version': '0.12.2', '--capture-seconds': '900', '--reconnect-after-start': '5' };
+    assert.equal(staged(root, 'v1', flags).code, 0);
+    const written = JSON.parse(readFileSync(join(root, '.probe-app', RUN_OPTIONS_FILE), 'utf8'));
+    assert.deepEqual(written, sharedFixture);
+  });
+
+  it('refuses v1 and v2 without a host version and stages nothing', () => {
+    for (const phase of ['v1', 'v2']) {
+      const root = repo();
+      const { code, lines } = staged(root, phase, { '--capture-seconds': '900' });
+      assert.equal(code, 1);
+      assert.match(lines.join('\n'), new RegExp(`phase ${phase} needs --host-version`));
+      assert.equal(existsSync(join(root, '.probe-app')), false);
+    }
+  });
+
+  it('lets v0 omit every option and then writes no options file', () => {
+    const root = repo();
+    assert.equal(staged(root, 'v0', {}).code, 0);
+    assert.equal(existsSync(join(root, '.probe-app', RUN_OPTIONS_FILE)), false);
+    assert.throws(() => runOptions('v0', { '--capture-seconds': '30' }), /needs --host-version/);
+    assert.deepEqual(runOptions('v0', HOST), { hostVersion: '0.12.2' });
+  });
+
+  it('validates each flag against the backend ranges', () => {
+    const bad = [
+      { '--host-version': '0.12' },
+      { '--host-version': 'latest' },
+      { ...HOST, '--capture-seconds': '0' },
+      { ...HOST, '--capture-seconds': '901' },
+      { ...HOST, '--capture-seconds': 'abc' },
+      { ...HOST, '--capture-seconds': '' },
+      { ...HOST, '--reconnect-after-start': '121' },
+      { ...HOST, '--reconnect-after-start': '0' },
+    ];
+    for (const flags of bad) assert.throws(() => runOptions('v1', flags), /must/, JSON.stringify(flags));
+    assert.deepEqual(runOptions('v1', { ...HOST, '--capture-seconds': '1', '--reconnect-after-start': '120' }), {
+      hostVersion: '0.12.2',
+      captureSeconds: 1,
+      reconnectAfterStartSeconds: 120,
+    });
+  });
+});
+
+describe('the store exclusion', () => {
+  it('leaves the product store out of the staged app and keeps the rest of the backend', () => {
+    const root = repo();
+    put(root, 'backend/specter_arena/store/__init__.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/store/migrations/0001_baseline.sql', 'create table t (x);\n');
+    put(root, 'backend/specter_arena/store_runtime.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/proxy_auth.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/probe/steps.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/storefront.py', 'x = 1\n');
+    assert.equal(staged(root, 'v1').code, 0);
+    const out = join(root, '.probe-app');
+    for (const path of EXCLUDED_PATHS) assert.equal(existsSync(join(out, path)), false, path);
+    for (const path of ['proxy_auth.py', 'probe/steps.py', 'storefront.py', 'routes.py']) {
+      assert.equal(existsSync(join(out, 'backend/specter_arena', path)), true, path);
+    }
+  });
+});
+
 describe('parseArgs', () => {
   it('defaults to v0', () => {
     assert.equal(parseArgs([]).phase, 'v0');
+  });
+
+  it('reads the run-option flags as raw strings', () => {
+    const { flags } = parseArgs(['--phase', 'v1', '--host-version', '0.12.2', '--capture-seconds', '900', '--reconnect-after-start']);
+    assert.deepEqual(flags, { '--host-version': '0.12.2', '--capture-seconds': '900', '--reconnect-after-start': '' });
+    assert.deepEqual(parseArgs([]).flags, { '--host-version': undefined, '--capture-seconds': undefined, '--reconnect-after-start': undefined });
   });
 
   it('reads --phase', () => {
