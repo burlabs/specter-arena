@@ -8,6 +8,15 @@ export const DEFAULT_OUT_DIR = '.probe-app';
 export const PHASES = ['v0', 'v1', 'v2'];
 export const V2_EXTRA_API_ENTRY = '/api/version';
 export const INSTALL_COMMAND = 'kirocrew app install';
+export const RUN_OPTIONS_FILE = '.probe-run.json';
+/** Never staged: the probe app must not carry the product store (RS-12, V2.1-8). */
+export const EXCLUDED_PATHS = ['backend/specter_arena/store', 'backend/specter_arena/store_runtime.py'];
+const HOST_VERSION = /^\d+\.\d+\.\d+$/;
+/** Flag, run-option key and inclusive range; the backend's probe/options.py applies the same ranges. */
+const NUMBER_FLAGS = [
+  { flag: '--capture-seconds', key: 'captureSeconds', low: 1, high: 900 },
+  { flag: '--reconnect-after-start', key: 'reconnectAfterStartSeconds', low: 1, high: 120 },
+];
 
 const DIAGNOSTIC_ENTRY = 'ui/diagnostic-dist/index.mjs';
 const RELEASE_ENTRY = 'ui/dist/index.mjs';
@@ -64,6 +73,35 @@ export function mergeManifest(base, overlay) {
 }
 
 /**
+ * The staged `.probe-run.json` content from the stage flags, or null when the phase needs none.
+ * v1 and v2 need a host version; v0 may omit it only when it sets no other option.
+ * @param {string} phase
+ * @param {Record<string, string | undefined>} flags raw flag values by flag name
+ * @returns {Record<string, string | number> | null}
+ */
+export function runOptions(phase, flags) {
+  /** @type {Record<string, string | number>} */
+  const options = {};
+  const version = flags['--host-version'];
+  if (version !== undefined) {
+    if (!HOST_VERSION.test(version)) throw new Error(`--host-version must look like 0.12.2, got ${version}`);
+    options.hostVersion = version;
+  }
+  for (const { flag, key, low, high } of NUMBER_FLAGS) {
+    const raw = flags[flag];
+    if (raw === undefined) continue;
+    const value = Number(raw);
+    if (raw.trim() === '' || !Number.isFinite(value) || value < low || value > high) {
+      throw new Error(`${flag} must be a number from ${low} to ${high}, got ${raw}`);
+    }
+    options[key] = value;
+  }
+  if (Object.keys(options).length === 0 && phase === 'v0') return null;
+  if (version === undefined) throw new Error(`phase ${phase} needs --host-version (read it with kirocrew --version)`);
+  return options;
+}
+
+/**
  * @param {string} path
  * @returns {Record<string, unknown>}
  */
@@ -74,10 +112,10 @@ function readJson(path) {
 }
 
 /**
- * @param {{ phase: string, root?: string, outDir?: string, log?: (line: string) => void }} options
+ * @param {{ phase: string, flags?: Record<string, string | undefined>, root?: string, outDir?: string, log?: (line: string) => void }} options
  * @returns {number} process exit code
  */
-export function stage({ phase, root = '.', outDir = DEFAULT_OUT_DIR, log = console.log }) {
+export function stage({ phase, flags = {}, root = '.', outDir = DEFAULT_OUT_DIR, log = console.log }) {
   const repo = resolve(root);
   const out = resolve(repo, outDir);
   const outside = relative(repo, out);
@@ -99,8 +137,10 @@ export function stage({ phase, root = '.', outDir = DEFAULT_OUT_DIR, log = conso
     return 1;
   }
   let manifest;
+  let options;
   try {
     manifest = mergeManifest(readJson(join(repo, 'app.json')), overlayForPhase(readJson(join(repo, OVERLAY_PATH)), phase));
+    options = runOptions(phase, flags);
   } catch (error) {
     log(`probe:stage: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
@@ -111,11 +151,16 @@ export function stage({ phase, root = '.', outDir = DEFAULT_OUT_DIR, log = conso
     mkdirSync(join(out, path, '..'), { recursive: true });
     cpSync(join(repo, path), join(out, path), {
       recursive: true,
-      filter: (source) => !SKIPPED_NAMES.has(source.split(/[\\/]/).pop() ?? '') && !source.endsWith('.pyc'),
+      filter: (source) => {
+        const name = source.split(/[\\/]/).pop() ?? '';
+        const path = relative(repo, source).split(/[\\/]/).join('/');
+        return !SKIPPED_NAMES.has(name) && !source.endsWith('.pyc') && !EXCLUDED_PATHS.includes(path);
+      },
     });
   }
   writeFileSync(join(out, 'app.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   writeFileSync(join(out, '.probe-enabled'), '');
+  if (options !== null) writeFileSync(join(out, RUN_OPTIONS_FILE), `${JSON.stringify(options, null, 2)}\n`);
   log(`probe:stage: staged phase ${phase} in ${outDir}`);
   log(`probe:stage: install it yourself with: ${INSTALL_COMMAND} ${outDir}`);
   return 0;
@@ -123,12 +168,16 @@ export function stage({ phase, root = '.', outDir = DEFAULT_OUT_DIR, log = conso
 
 /**
  * @param {string[]} args
- * @returns {{ phase: string, outDir: string }}
+ * @returns {{ phase: string, flags: Record<string, string | undefined>, outDir: string }}
  */
 export function parseArgs(args) {
-  const flag = args.indexOf('--phase');
-  const phase = flag === -1 ? 'v0' : (args[flag + 1] ?? '');
-  return { phase, outDir: DEFAULT_OUT_DIR };
+  /** @param {string} name */
+  const value = (name) => {
+    const index = args.indexOf(name);
+    return index === -1 ? undefined : (args[index + 1] ?? '');
+  };
+  const flags = Object.fromEntries(['--host-version', ...NUMBER_FLAGS.map(({ flag }) => flag)].map((name) => [name, value(name)]));
+  return { phase: value('--phase') ?? 'v0', flags, outDir: DEFAULT_OUT_DIR };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
