@@ -1,0 +1,3422 @@
+{
+  "snapshot": {
+    "provenance": {
+      "source": "live",
+      "runId": "20261115T211724Z-47f73a",
+      "capturedAt": "2026-11-15T21:33:01.124954+00:00",
+      "hostVersion": "0.12.2",
+      "sanitisation": "SPECTER-DIAGNOSTIC-ONLY; non-probe values reduced to sha256:<12 hex> digests (salted per run, salt never stored) or <redacted type=... len=n> placeholders; probe rows keep values after secret redaction minus their prose fields; event frames keep allow-listed fields only, with no free text for any slot; frames that fail sanitising are dropped and counted; dropped frames: 0"
+    },
+    "cells": [
+      {
+        "key": "app-owned-grant-staging",
+        "question": "Does an update that adds a permission stay denied until Eric approves?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "app-owned-slots-visible",
+        "question": "Does the app see its own slots with no event grant?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "app-owned-token-exchange",
+        "question": "Does POST {origin}/api/apps/specter-arena/token with X-App-Secret return a token?",
+        "scope": "app-owned",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.021085+00:00",
+            "ref": "run/20261115T211724Z-47f73a/token-exchange",
+            "excerpt": "token received (258 characters, value not recorded)"
+          }
+        ]
+      },
+      {
+        "key": "app-owned-token-lifetime",
+        "question": "Token lifetime and refresh behaviour on a long-lived WS",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "app-owned-unsigned-direct-rejected",
+        "question": "Does the backend reject a direct unsigned /api/ping with 401? (backend calls its own loopback port)",
+        "scope": "app-owned",
+        "state": "DENIED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.022965+00:00",
+            "ref": "run/20261115T211724Z-47f73a/own-proxy-unauth",
+            "excerpt": "GET /api/ping (unsigned, backend loopback) answered 401; object with fields error; error=\"unauthorized\"",
+            "status": 401
+          }
+        ]
+      },
+      {
+        "key": "app-owned-ws-token-transport",
+        "question": "Which transport does /api/ws and HTTP accept (?token=, cookie, Bearer)?",
+        "scope": "app-owned",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:33:01.124354+00:00",
+            "ref": "run/20261115T211724Z-47f73a/ws-capture",
+            "excerpt": "feed opened with token via query; 5493 frames"
+          }
+        ]
+      },
+      {
+        "key": "bot-activity-read",
+        "question": "/api/members/<slug>/activity",
+        "scope": "bot",
+        "state": "DENIED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.042141+00:00",
+            "ref": "run/20261115T211724Z-47f73a/deny-matrix",
+            "excerpt": "GET /api/members/specter-probe-bot/activity answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\"",
+            "status": 404
+          }
+        ]
+      },
+      {
+        "key": "bot-attribution-survives-restart",
+        "question": "Do created_by/lineage_minted survive a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-dashboard-member-record",
+        "question": "Does POST /api/member-records/<slug> write and does a bound bot-dashboard page render it? (SC-10(1))",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-dashboard-record-ungranted",
+        "question": "Is the same POST refused without the grant?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-dashboard-webview-hook",
+        "question": "Can app HTML reach the Crew Webview drawer via an on_startup hook? (SC-10(2)) NOT PROBED (FD-6): needs backend.hooks (excluded by FP-00 C-2) and an execution trust grant. Committed as UNTESTED with that reason; mechanism documented from rfc-app-sdk-crew-webview.md for PA1-D5",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-delete-behaviour",
+        "question": "After deleting the probe bot, what happens to its slots/history in frames and /api/chat/slots?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-fresh-start",
+        "question": "What does fresh-start do to the slot key/history in frames?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-goals-read",
+        "question": "/api/members/<slug>/goals",
+        "scope": "bot",
+        "state": "DENIED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.037484+00:00",
+            "ref": "run/20261115T211724Z-47f73a/deny-matrix",
+            "excerpt": "GET /api/members/specter-probe-bot/goals answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\"",
+            "status": 404
+          }
+        ]
+      },
+      {
+        "key": "bot-id-observable",
+        "question": "Is a stable bot id (slug) derivable (member-<slug> DM slot key)",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:33:01.124385+00:00",
+            "ref": "run/20261115T211724Z-47f73a/ws-capture",
+            "excerpt": "DM slot key member-specter-probe-bot present"
+          }
+        ]
+      },
+      {
+        "key": "bot-id-stable-across-rename",
+        "question": "Does the id/key stay the same after Eric renames the probe bot?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-key-results-read",
+        "question": "/api/members/<slug>/goals/key-results",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-ledger-read",
+        "question": "Can the app read the bot's work-ledger items (/api/members/<slug>/projections)?",
+        "scope": "bot",
+        "state": "DENIED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.034928+00:00",
+            "ref": "run/20261115T211724Z-47f73a/deny-matrix",
+            "excerpt": "GET /api/members/specter-probe-bot/projections answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\"",
+            "status": 404
+          }
+        ]
+      },
+      {
+        "key": "bot-list-members-denied",
+        "question": "GET /api/members with app token",
+        "scope": "bot",
+        "state": "DENIED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.032624+00:00",
+            "ref": "run/20261115T211724Z-47f73a/deny-matrix",
+            "excerpt": "GET /api/members answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\"",
+            "status": 404
+          }
+        ]
+      },
+      {
+        "key": "bot-list-via-agents",
+        "question": "Do /api/agents rows include the probe bot, and which fields do they carry?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.050177+00:00",
+            "ref": "run/20261115T211724Z-47f73a/agents-roster",
+            "excerpt": "/api/agents answered 200; probe bot row fields avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace"
+          }
+        ]
+      },
+      {
+        "key": "bot-name-avatar",
+        "question": "Are display name and avatar readable by the app?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.050209+00:00",
+            "ref": "run/20261115T211724Z-47f73a/agents-roster",
+            "excerpt": "probe bot row has name-like and avatar-like fields: avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace"
+          }
+        ]
+      },
+      {
+        "key": "bot-notes-memory-private",
+        "question": "Notes/memory/lessons are not requested; record route deny only, never read content",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-own-session-attribution",
+        "question": "Is the bot's own DM turn identifiable (member-<slug>, agent)",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:33:01.124387+00:00",
+            "ref": "run/20261115T211724Z-47f73a/ws-capture",
+            "excerpt": "DM slot carries key and agent fields"
+          }
+        ]
+      },
+      {
+        "key": "bot-per-bot-opt-in",
+        "question": "Is there any per-bot grant or opt-in? (expected UNSUPPORTED: grants are app-wide)",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-reimport-kirobot",
+        "question": "After re-importing the bot's .kirobot file, does id/attribution return?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-scheduled-turn-origin",
+        "question": "What origin does a scheduled bot turn carry (cron hides from slots:user)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-token-usage-per-bot",
+        "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.109707+00:00",
+            "ref": "run/20261115T211724Z-47f73a/usage-endpoints",
+            "excerpt": "/api/usage, /api/sessions/usage: per-slot or per-bot field names present (session); what the figures mean is not concluded here; capture so far: context_usage rows 0, subagent_done rows 0"
+          }
+        ]
+      },
+      {
+        "key": "bot-worker-session-attribution",
+        "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "bot-worker-session-attribution-subagent",
+        "question": "Is a spawn_run subagent frame attributable to the probe bot's DM slot (slot field, subagent_spawn/subagent_done)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "closed-tab-collection",
+        "question": "With the arena tab closed, does the backend keep receiving frames while a worker runs?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "external-cli-slot-appears",
+        "question": "Does a kiro-cli chat in a detached tmux session appear in the app's WS snapshot, /api/chat/slots, or the owner session list?",
+        "scope": "external-cli",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "gateway-restart-reconnect",
+        "question": "Does the backend WS resubscribe after a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "other-app-api-denied",
+        "question": "Is an ungranted /api/* path refused (app token not permitted)?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "other-app-proxy-denied",
+        "question": "Is an app token for specter-arena refused on another app's proxy (/apps/<other>/api/..) with 403?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "other-app-slots-absent",
+        "question": "Are another app's slots absent from the snapshot (no slots:app:* grant)?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "reconnect-cursor-history",
+        "question": "Is there any cursor/since/sequence for missed events?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "reconnect-snapshot",
+        "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "sessions-usage-api-app-token",
+        "question": "Does GET /api/sessions/usage answer an app token granted that path (status and field names only)?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.109632+00:00",
+            "ref": "run/20261115T211724Z-47f73a/usage-endpoints",
+            "excerpt": "GET /api/sessions/usage answered 200; object with fields usage",
+            "status": 200
+          }
+        ]
+      },
+      {
+        "key": "subagent-events-visible",
+        "question": "Does the subagent:user grant deliver subagent_* frames rooted at the probe bot's slot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "usage-api-app-token",
+        "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:18:01.102957+00:00",
+            "ref": "run/20261115T211724Z-47f73a/usage-endpoints",
+            "excerpt": "GET /api/usage answered 200; object with fields billing, refreshing, sessions, username",
+            "status": 200
+          }
+        ]
+      },
+      {
+        "key": "user-chat-slot-history",
+        "question": "Is GET /api/chat/slots/{slot} history readable for a worker slot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-chat-slots-api",
+        "question": "Does GET /api/chat/slots return all rows (unfiltered) with the grant, and 403 without?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-outcome-evidence",
+        "question": "What outcome evidence exists beyond idle? (never recorded as \"accepted\")",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-signal-approval",
+        "question": "Is a pending approval observable (pending_approval, needs_input)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-signal-progress",
+        "question": "Is progress observable (last_activity_ts, running)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-signal-start",
+        "question": "Is a start signal observable (running false to true)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-signal-terminal",
+        "question": "Is a terminal signal observable, and does it carry any outcome evidence?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-signal-tool-error",
+        "question": "Is a tool error observable in frames?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-slots-no-grant-denied",
+        "question": "With no slots:user grant, are user-origin slots absent from the WS snapshot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      },
+      {
+        "key": "user-slots-visible",
+        "question": "With slots:user, does the app receive user-origin slot rows?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "evidence": [
+          {
+            "credential": "APP-TOKEN",
+            "at": "2026-11-15T21:33:01.124367+00:00",
+            "ref": "run/20261115T211724Z-47f73a/ws-capture",
+            "excerpt": "snapshots held up to 42 rows"
+          }
+        ]
+      },
+      {
+        "key": "user-source-links",
+        "question": "Are source_links present for a probe session that references a PR/URL?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "evidence": []
+      }
+    ],
+    "hostFacts": [
+      {
+        "id": "host-agent-owner-steps-refused",
+        "question": "Can an agent perform owner steps (browser tool on the dashboard port, kirocrew app install from an agent shell)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-backend-spawn",
+        "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-consent-screen",
+        "question": "What does install/enable consent show for api/events grants? (screenshot)",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-dev-diagnostic-only",
+        "question": "Does the diagnostic page render only from the staged app and 404 from a release-tree install?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-disable-reenable",
+        "question": "After disable the proxy returns 403 app_not_enabled; after re-enable it recovers?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-import-map-sdk",
+        "question": "Does @kirocrew/app-sdk (and /ui) resolve from the bundle?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-install-validates",
+        "question": "Does live app.json validation accept the manifest (incl. minKiroCrewVersion)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-library-not-discover",
+        "question": "Where does a locally installed third-party app appear in the App Store (Library or Discover)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-proxy-path",
+        "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-react-version",
+        "question": "What is React.version in the host?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-roundtrip-signed",
+        "question": "Does a signed GET /api/ping from the installed page succeed?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-sdk-own-namespace-not-implicit",
+        "question": "Does the browser SDK allow the app's own backend path without a permissions.api entry?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-single-page-route",
+        "question": "Does a second ui.pages route (for example /apps/specter-arena/diagnostic) resolve for a third-party app?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-third-party-trust-gate",
+        "question": "Does enabling a third-party app need a per-app trust decision from the dashboard?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-ui-default-export-renders",
+        "question": "Does a default-export component render in the app page?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-ui-stub-failure",
+        "question": "What does the host show when the FP-00 stub (named mount only) is installed unchanged?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      }
+    ],
+    "attempts": [
+      {
+        "id": "member-specter-probe-bot.memory-member-specter-probe-bot-[redacted]",
+        "kind": "bot-turn",
+        "signals": [],
+        "outcomeEvidence": null,
+        "botRef": "specter-probe-bot"
+      }
+    ]
+  },
+  "matrix": {
+    "hostVersion": "0.12.2",
+    "runId": "20261115T211724Z-47f73a",
+    "probedAt": "2026-11-15T21:33:01.124406+00:00",
+    "cells": [
+      {
+        "id": "app-owned-grant-staging",
+        "question": "Does an update that adds a permission stay denied until Eric approves?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "app-owned-slots-visible",
+        "question": "Does the app see its own slots with no event grant?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "app-owned-token-exchange",
+        "question": "Does POST {origin}/api/apps/specter-arena/token with X-App-Secret return a token?",
+        "scope": "app-owned",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/token-exchange",
+        "probedAt": "2026-11-15T21:18:01.021085+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "app-owned-token-lifetime",
+        "question": "Token lifetime and refresh behaviour on a long-lived WS",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "app-owned-unsigned-direct-rejected",
+        "question": "Does the backend reject a direct unsigned /api/ping with 401? (backend calls its own loopback port)",
+        "scope": "app-owned",
+        "state": "DENIED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/own-proxy-unauth",
+        "probedAt": "2026-11-15T21:18:01.022965+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "app-owned-ws-token-transport",
+        "question": "Which transport does /api/ws and HTTP accept (?token=, cookie, Bearer)?",
+        "scope": "app-owned",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/ws-capture",
+        "probedAt": "2026-11-15T21:33:01.124354+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-activity-read",
+        "question": "/api/members/<slug>/activity",
+        "scope": "bot",
+        "state": "DENIED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/deny-matrix",
+        "probedAt": "2026-11-15T21:18:01.042141+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-attribution-survives-restart",
+        "question": "Do created_by/lineage_minted survive a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-dashboard-member-record",
+        "question": "Does POST /api/member-records/<slug> write and does a bound bot-dashboard page render it? (SC-10(1))",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-dashboard-record-ungranted",
+        "question": "Is the same POST refused without the grant?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-dashboard-webview-hook",
+        "question": "Can app HTML reach the Crew Webview drawer via an on_startup hook? (SC-10(2)) NOT PROBED (FD-6): needs backend.hooks (excluded by FP-00 C-2) and an execution trust grant. Committed as UNTESTED with that reason; mechanism documented from rfc-app-sdk-crew-webview.md for PA1-D5",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-delete-behaviour",
+        "question": "After deleting the probe bot, what happens to its slots/history in frames and /api/chat/slots?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-fresh-start",
+        "question": "What does fresh-start do to the slot key/history in frames?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-goals-read",
+        "question": "/api/members/<slug>/goals",
+        "scope": "bot",
+        "state": "DENIED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/deny-matrix",
+        "probedAt": "2026-11-15T21:18:01.037484+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-id-observable",
+        "question": "Is a stable bot id (slug) derivable (member-<slug> DM slot key)",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/ws-capture",
+        "probedAt": "2026-11-15T21:33:01.124385+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-id-stable-across-rename",
+        "question": "Does the id/key stay the same after Eric renames the probe bot?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "display_name did not change across 20 reads"
+      },
+      {
+        "id": "bot-key-results-read",
+        "question": "/api/members/<slug>/goals/key-results",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "response not decisive (status 405); GET /api/members/specter-probe-bot/goals/key-results answered 405; malformed JSON"
+      },
+      {
+        "id": "bot-ledger-read",
+        "question": "Can the app read the bot's work-ledger items (/api/members/<slug>/projections)?",
+        "scope": "bot",
+        "state": "DENIED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/deny-matrix",
+        "probedAt": "2026-11-15T21:18:01.034928+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-list-members-denied",
+        "question": "GET /api/members with app token",
+        "scope": "bot",
+        "state": "DENIED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/deny-matrix",
+        "probedAt": "2026-11-15T21:18:01.032624+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-list-via-agents",
+        "question": "Do /api/agents rows include the probe bot, and which fields do they carry?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/agents-roster",
+        "probedAt": "2026-11-15T21:18:01.050177+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-name-avatar",
+        "question": "Are display name and avatar readable by the app?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/agents-roster",
+        "probedAt": "2026-11-15T21:18:01.050209+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-notes-memory-private",
+        "question": "Notes/memory/lessons are not requested; record route deny only, never read content",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "response not decisive (status 404); GET /api/members/specter-probe-bot/notes answered 404; malformed JSON"
+      },
+      {
+        "id": "bot-own-session-attribution",
+        "question": "Is the bot's own DM turn identifiable (member-<slug>, agent)",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/ws-capture",
+        "probedAt": "2026-11-15T21:33:01.124387+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-per-bot-opt-in",
+        "question": "Is there any per-bot grant or opt-in? (expected UNSUPPORTED: grants are app-wide)",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-reimport-kirobot",
+        "question": "After re-importing the bot's .kirobot file, does id/attribution return?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-scheduled-turn-origin",
+        "question": "What origin does a scheduled bot turn carry (cron hides from slots:user)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "bot-token-usage-per-bot",
+        "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
+        "scope": "bot",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/usage-endpoints",
+        "probedAt": "2026-11-15T21:18:01.109707+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "bot-worker-session-attribution",
+        "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no probe worker slot observed"
+      },
+      {
+        "id": "bot-worker-session-attribution-subagent",
+        "question": "Is a spawn_run subagent frame attributable to the probe bot's DM slot (slot field, subagent_spawn/subagent_done)?",
+        "scope": "bot",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no subagent_spawn or subagent_done carried the probe DM slot"
+      },
+      {
+        "id": "closed-tab-collection",
+        "question": "With the arena tab closed, does the backend keep receiving frames while a worker runs?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no probe-slot progress or terminal"
+      },
+      {
+        "id": "external-cli-slot-appears",
+        "question": "Does a kiro-cli chat in a detached tmux session appear in the app's WS snapshot, /api/chat/slots, or the owner session list?",
+        "scope": "external-cli",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "gateway-restart-reconnect",
+        "question": "Does the backend WS resubscribe after a gateway restart? (only with Eric's explicit go-ahead, FD-21)",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "other-app-api-denied",
+        "question": "Is an ungranted /api/* path refused (app token not permitted)?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "response not decisive (status 404); GET /api/config answered 404; malformed JSON"
+      },
+      {
+        "id": "other-app-proxy-denied",
+        "question": "Is an app token for specter-arena refused on another app's proxy (/apps/<other>/api/..) with 403?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "response not decisive (status 403); GET /apps/specter-other/api/ping answered 403; malformed JSON"
+      },
+      {
+        "id": "other-app-slots-absent",
+        "question": "Are another app's slots absent from the snapshot (no slots:app:* grant)?",
+        "scope": "other-app",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "reconnect-cursor-history",
+        "question": "Is there any cursor/since/sequence for missed events?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no reconnect happened in the window"
+      },
+      {
+        "id": "reconnect-snapshot",
+        "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
+        "scope": "app-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no reconnect happened in the window"
+      },
+      {
+        "id": "sessions-usage-api-app-token",
+        "question": "Does GET /api/sessions/usage answer an app token granted that path (status and field names only)?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/usage-endpoints",
+        "probedAt": "2026-11-15T21:18:01.109632+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "subagent-events-visible",
+        "question": "Does the subagent:user grant deliver subagent_* frames rooted at the probe bot's slot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no subagent frame rooted at the probe bot's slot; a quiet bot and a denial look the same"
+      },
+      {
+        "id": "usage-api-app-token",
+        "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/usage-endpoints",
+        "probedAt": "2026-11-15T21:18:01.102957+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "user-chat-slot-history",
+        "question": "Is GET /api/chat/slots/{slot} history readable for a worker slot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "user-chat-slots-api",
+        "question": "Does GET /api/chat/slots return all rows (unfiltered) with the grant, and 403 without?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "not yet probed"
+      },
+      {
+        "id": "user-outcome-evidence",
+        "question": "What outcome evidence exists beyond idle? (never recorded as \"accepted\")",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no terminal signal in the window"
+      },
+      {
+        "id": "user-signal-approval",
+        "question": "Is a pending approval observable (pending_approval, needs_input)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "signal not observed in the capture window; question_card frames: 0"
+      },
+      {
+        "id": "user-signal-progress",
+        "question": "Is progress observable (last_activity_ts, running)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "signal not observed in the capture window"
+      },
+      {
+        "id": "user-signal-start",
+        "question": "Is a start signal observable (running false to true)?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "signal not observed in the capture window"
+      },
+      {
+        "id": "user-signal-terminal",
+        "question": "Is a terminal signal observable, and does it carry any outcome evidence?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "signal not observed in the capture window"
+      },
+      {
+        "id": "user-signal-tool-error",
+        "question": "Is a tool error observable in frames?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no tool_result on a probe slot in the window"
+      },
+      {
+        "id": "user-slots-no-grant-denied",
+        "question": "With no slots:user grant, are user-origin slots absent from the WS snapshot?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "a slots grant is declared; run phase v0"
+      },
+      {
+        "id": "user-slots-visible",
+        "question": "With slots:user, does the app receive user-origin slot rows?",
+        "scope": "user-owned",
+        "state": "ALLOWED",
+        "credential": "APP-TOKEN",
+        "evidenceRef": "run/20261115T211724Z-47f73a/ws-capture",
+        "probedAt": "2026-11-15T21:33:01.124367+00:00",
+        "hostVersion": "0.12.2"
+      },
+      {
+        "id": "user-source-links",
+        "question": "Are source_links present for a probe session that references a PR/URL?",
+        "scope": "user-owned",
+        "state": "UNTESTED",
+        "credential": null,
+        "evidenceRef": null,
+        "probedAt": null,
+        "notes": "no probe slot carried source_links"
+      }
+    ]
+  },
+  "hostFacts": {
+    "hostVersion": "0.12.2",
+    "runId": "20261115T211724Z-47f73a",
+    "probedAt": "2026-11-15T21:33:01.124406+00:00",
+    "facts": [
+      {
+        "id": "host-agent-owner-steps-refused",
+        "question": "Can an agent perform owner steps (browser tool on the dashboard port, kirocrew app install from an agent shell)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-backend-spawn",
+        "question": "Does the backend start under the sandbox, pip --target provision, and pass /health? (duration recorded)",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-consent-screen",
+        "question": "What does install/enable consent show for api/events grants? (screenshot)",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-dev-diagnostic-only",
+        "question": "Does the diagnostic page render only from the staged app and 404 from a release-tree install?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-disable-reenable",
+        "question": "After disable the proxy returns 403 app_not_enabled; after re-enable it recovers?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-import-map-sdk",
+        "question": "Does @kirocrew/app-sdk (and /ui) resolve from the bundle?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-install-validates",
+        "question": "Does live app.json validation accept the manifest (incl. minKiroCrewVersion)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-library-not-discover",
+        "question": "Where does a locally installed third-party app appear in the App Store (Library or Discover)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-proxy-path",
+        "question": "Which backend path does the gateway proxy (/apps/specter-arena/api/ping vs declared backend.routes)?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-react-version",
+        "question": "What is React.version in the host?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-roundtrip-signed",
+        "question": "Does a signed GET /api/ping from the installed page succeed?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-sdk-own-namespace-not-implicit",
+        "question": "Does the browser SDK allow the app's own backend path without a permissions.api entry?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-single-page-route",
+        "question": "Does a second ui.pages route (for example /apps/specter-arena/diagnostic) resolve for a third-party app?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-third-party-trust-gate",
+        "question": "Does enabling a third-party app need a per-app trust decision from the dashboard?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-ui-default-export-renders",
+        "question": "Does a default-export component render in the app page?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      },
+      {
+        "id": "host-ui-stub-failure",
+        "question": "What does the host show when the FP-00 stub (named mount only) is installed unchanged?",
+        "status": "UNTESTED",
+        "evidence": [],
+        "notes": "not yet probed"
+      }
+    ]
+  },
+  "eventCapture": {
+    "_meta": {
+      "capture": "event-frames",
+      "sanitisation": "SPECTER-DIAGNOSTIC-ONLY; non-probe values reduced to sha256:<12 hex> digests (salted per run, salt never stored) or <redacted type=... len=n> placeholders; probe rows keep values after secret redaction minus their prose fields; event frames keep allow-listed fields only, with no free text for any slot; frames that fail sanitising are dropped and counted",
+      "hostVersion": "0.12.2",
+      "runId": "20261115T211724Z-47f73a",
+      "capturedAt": "2026-11-15T21:33:01.124455+00:00",
+      "framesSeen": {
+        "chat_chunk": 207,
+        "chat_done": 5,
+        "chat_status": 5,
+        "chat_thinking": 3678,
+        "context_usage": 19,
+        "dashboard": 180,
+        "other": 374,
+        "refresh": 6,
+        "slots": 23,
+        "subagent_chunk": 846,
+        "subagent_done": 2,
+        "tool_call": 131,
+        "tool_result": 17
+      },
+      "rowsKept": {
+        "chat_done": 5,
+        "chat_status": 5,
+        "context_usage": 19,
+        "subagent_done": 2,
+        "tool_call": 131,
+        "tool_result": 17
+      },
+      "rowsDroppedByCap": 0,
+      "measurement": {
+        "chat_chunk": {
+          "count": 207,
+          "bytesP50": 143,
+          "bytesP95": 229,
+          "bytesMax": 248,
+          "burstMaxPerSecond": 47
+        },
+        "chat_done": {
+          "count": 5,
+          "bytesP50": 235,
+          "bytesP95": 236,
+          "bytesMax": 236,
+          "burstMaxPerSecond": 1
+        },
+        "chat_status": {
+          "count": 5,
+          "bytesP50": 188,
+          "bytesP95": 188,
+          "bytesMax": 188,
+          "burstMaxPerSecond": 1
+        },
+        "chat_thinking": {
+          "count": 3678,
+          "bytesP50": 92,
+          "bytesP95": 109,
+          "bytesMax": 209,
+          "burstMaxPerSecond": 67
+        },
+        "context_usage": {
+          "count": 19,
+          "bytesP50": 222,
+          "bytesP95": 222,
+          "bytesMax": 222,
+          "burstMaxPerSecond": 2
+        },
+        "dashboard": {
+          "count": 180,
+          "bytesP50": 1667,
+          "bytesP95": 1668,
+          "bytesMax": 1668,
+          "burstMaxPerSecond": 1
+        },
+        "other": {
+          "count": 374,
+          "bytesP50": 70,
+          "bytesP95": 1817,
+          "bytesMax": 150140,
+          "burstMaxPerSecond": 8
+        },
+        "refresh": {
+          "count": 6,
+          "bytesP50": 52,
+          "bytesP95": 52,
+          "bytesMax": 52,
+          "burstMaxPerSecond": 1
+        },
+        "slots": {
+          "count": 23,
+          "bytesP50": 126439,
+          "bytesP95": 127306,
+          "bytesMax": 127306,
+          "burstMaxPerSecond": 2
+        },
+        "subagent_chunk": {
+          "count": 846,
+          "bytesP50": 144,
+          "bytesP95": 158,
+          "bytesMax": 165,
+          "burstMaxPerSecond": 220
+        },
+        "subagent_done": {
+          "count": 2,
+          "bytesP50": 4107,
+          "bytesP95": 7553,
+          "bytesMax": 7553,
+          "burstMaxPerSecond": 1
+        },
+        "tool_call": {
+          "count": 131,
+          "bytesP50": 846,
+          "bytesP95": 16046,
+          "bytesMax": 25388,
+          "burstMaxPerSecond": 7
+        },
+        "tool_result": {
+          "count": 17,
+          "bytesP50": 408,
+          "bytesP95": 6196,
+          "bytesMax": 6196,
+          "burstMaxPerSecond": 3
+        }
+      },
+      "keysSeen": {
+        "chat_done": [
+          "continuing",
+          "needs_input",
+          "slot",
+          "turn",
+          "turn_gen"
+        ],
+        "chat_status": [
+          "slot"
+        ],
+        "context_usage": [
+          "pct",
+          "slot",
+          "used_tokens",
+          "window_tokens"
+        ],
+        "subagent_done": [
+          "elapsed",
+          "error",
+          "id",
+          "slot"
+        ],
+        "tool_call": [
+          "is_shell",
+          "kind",
+          "slot",
+          "tool_call_id"
+        ],
+        "tool_result": [
+          "slot",
+          "tool_call_id"
+        ]
+      }
+    },
+    "rows": [
+      {
+        "frameSeq": 24,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777482549,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:427e04c4387d"
+        }
+      },
+      {
+        "frameSeq": 26,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777485719,
+        "data": {
+          "kind": "<redacted type=str len=4>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:8495175a8de6"
+        }
+      },
+      {
+        "frameSeq": 46,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777487763,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:606c6b87ddbc"
+        }
+      },
+      {
+        "frameSeq": 67,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777494775,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:c5bf8c4cc0f8"
+        }
+      },
+      {
+        "frameSeq": 70,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777497003,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:49b91e5eb443"
+        }
+      },
+      {
+        "frameSeq": 73,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777497719,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a0e069d451ef"
+        }
+      },
+      {
+        "frameSeq": 457,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777516805,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:e1ebd28c20b6"
+        }
+      },
+      {
+        "frameSeq": 693,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777531706,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:0c4af4899ceb"
+        }
+      },
+      {
+        "frameSeq": 696,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777534015,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:5d6954e1f70c"
+        }
+      },
+      {
+        "frameSeq": 710,
+        "rowKind": "non-probe",
+        "eventType": "chat_status",
+        "receivedAtMs": 1794777540387,
+        "data": {
+          "slot": "sha256:0340d4e37d6b"
+        }
+      },
+      {
+        "frameSeq": 725,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777541299,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:4cfffb70141d"
+        }
+      },
+      {
+        "frameSeq": 769,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777545786,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:1dbbc9c61686"
+        }
+      },
+      {
+        "frameSeq": 773,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777547865,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:043ca78c2eb5"
+        }
+      },
+      {
+        "frameSeq": 832,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777553699,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:319772899d12"
+        }
+      },
+      {
+        "frameSeq": 868,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777558910,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:603fbc257e87"
+        }
+      },
+      {
+        "frameSeq": 887,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777559023,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:fa0dae6538a5"
+        }
+      },
+      {
+        "frameSeq": 891,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777562506,
+        "data": {
+          "pct": 55.6,
+          "slot": "sha256:0340d4e37d6b",
+          "used_tokens": 556030,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 935,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777563398,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:557e7c4c1fbb"
+        }
+      },
+      {
+        "frameSeq": 1012,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777565958,
+        "data": {
+          "pct": 55.7,
+          "slot": "sha256:0340d4e37d6b",
+          "used_tokens": 557345,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 1014,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777565978,
+        "data": {
+          "pct": 55.7,
+          "slot": "sha256:0340d4e37d6b",
+          "used_tokens": 557345,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 1017,
+        "rowKind": "non-probe",
+        "eventType": "chat_done",
+        "receivedAtMs": 1794777566006,
+        "data": {
+          "continuing": false,
+          "needs_input": false,
+          "slot": "sha256:0340d4e37d6b",
+          "turn": 13,
+          "turn_gen": "<redacted type=str len=8>"
+        }
+      },
+      {
+        "frameSeq": 1043,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777571290,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:f5abddc23a96"
+        }
+      },
+      {
+        "frameSeq": 1047,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777574665,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:8dcd22284700"
+        }
+      },
+      {
+        "frameSeq": 1049,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777574763,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:462d06872dc2"
+        }
+      },
+      {
+        "frameSeq": 1054,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777581399,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:fe5dc4a18b92"
+        }
+      },
+      {
+        "frameSeq": 1092,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777586831,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:52858e8a1fa0"
+        }
+      },
+      {
+        "frameSeq": 1112,
+        "rowKind": "non-probe",
+        "eventType": "chat_status",
+        "receivedAtMs": 1794777589189,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2"
+        }
+      },
+      {
+        "frameSeq": 1150,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777591865,
+        "data": {
+          "pct": 4.9,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 48836,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 1162,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777591882,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=7>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1164,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777592004,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1166,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777592009,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1168,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777592010,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1247,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777596724,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a154dea400d6"
+        }
+      },
+      {
+        "frameSeq": 1288,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777599601,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a96d5d536dd5"
+        }
+      },
+      {
+        "frameSeq": 1401,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777606060,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:6674835e2307"
+        }
+      },
+      {
+        "frameSeq": 1570,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777618292,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:b2e1c9d4990c"
+        }
+      },
+      {
+        "frameSeq": 1572,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777620407,
+        "data": {
+          "kind": "<redacted type=str len=4>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a499a612f440"
+        }
+      },
+      {
+        "frameSeq": 1593,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777622538,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:c5e5e610f7f7"
+        }
+      },
+      {
+        "frameSeq": 1742,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777631866,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:816c825e9aae"
+        }
+      },
+      {
+        "frameSeq": 1766,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777632284,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:146e830f05e3"
+        }
+      },
+      {
+        "frameSeq": 1792,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777637032,
+        "data": {
+          "pct": 5.5,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 54553,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 1793,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777637032,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1794,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777637212,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:e3b938033f53"
+        }
+      },
+      {
+        "frameSeq": 1800,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777638725,
+        "data": {
+          "pct": 5.5,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 54576,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 1804,
+        "rowKind": "non-probe",
+        "eventType": "chat_done",
+        "receivedAtMs": 1794777638760,
+        "data": {
+          "continuing": false,
+          "needs_input": false,
+          "slot": "sha256:2d10b1abcdb2",
+          "turn": 2,
+          "turn_gen": "<redacted type=str len=8>"
+        }
+      },
+      {
+        "frameSeq": 1864,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777641361,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:cf2f4880cbe7"
+        }
+      },
+      {
+        "frameSeq": 1922,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777644511,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:ed2ad6a66ad4"
+        }
+      },
+      {
+        "frameSeq": 2072,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777652893,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:3366ddb83b96"
+        }
+      },
+      {
+        "frameSeq": 2141,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777654299,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:5839b3639321"
+        }
+      },
+      {
+        "frameSeq": 2154,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777656410,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:3ad47daa10de"
+        }
+      },
+      {
+        "frameSeq": 2173,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777660324,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a9c2bc9ef9d3"
+        }
+      },
+      {
+        "frameSeq": 2182,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777663956,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:4f37a00265a5"
+        }
+      },
+      {
+        "frameSeq": 2185,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777666480,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:458ded3908fd"
+        }
+      },
+      {
+        "frameSeq": 2462,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777683809,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:c5f0cb1bf111"
+        }
+      },
+      {
+        "frameSeq": 2465,
+        "rowKind": "non-probe",
+        "eventType": "subagent_done",
+        "receivedAtMs": 1794777686359,
+        "data": {
+          "elapsed": 694.2410550117493,
+          "error": null,
+          "id": "sha256:a79ef8f19ed9",
+          "slot": "sha256:3527e152ede4"
+        }
+      },
+      {
+        "frameSeq": 2518,
+        "rowKind": "non-probe",
+        "eventType": "chat_status",
+        "receivedAtMs": 1794777691433,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2"
+        }
+      },
+      {
+        "frameSeq": 2521,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777695152,
+        "data": {
+          "pct": 5.5,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 54576,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2542,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695195,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:69fb49564de2"
+        }
+      },
+      {
+        "frameSeq": 2544,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777695199,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:69fb49564de2"
+        }
+      },
+      {
+        "frameSeq": 2545,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695200,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:69fb49564de2"
+        }
+      },
+      {
+        "frameSeq": 2547,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695214,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:73bbe04b03da"
+        }
+      },
+      {
+        "frameSeq": 2549,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777695220,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:73bbe04b03da"
+        }
+      },
+      {
+        "frameSeq": 2550,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695222,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:73bbe04b03da"
+        }
+      },
+      {
+        "frameSeq": 2552,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695236,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:2112096d0bed"
+        }
+      },
+      {
+        "frameSeq": 2554,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777695238,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:2112096d0bed"
+        }
+      },
+      {
+        "frameSeq": 2555,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777695239,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:2112096d0bed"
+        }
+      },
+      {
+        "frameSeq": 2559,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777698294,
+        "data": {
+          "pct": 5.6,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 56219,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2575,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777698336,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:d136412df467"
+        }
+      },
+      {
+        "frameSeq": 2577,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777698341,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:d136412df467"
+        }
+      },
+      {
+        "frameSeq": 2579,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777698394,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:d136412df467"
+        }
+      },
+      {
+        "frameSeq": 2580,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777698395,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:d136412df467"
+        }
+      },
+      {
+        "frameSeq": 2582,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777699907,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:4fe42151e074"
+        }
+      },
+      {
+        "frameSeq": 2584,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777699910,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:4fe42151e074"
+        }
+      },
+      {
+        "frameSeq": 2586,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777699959,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:4fe42151e074"
+        }
+      },
+      {
+        "frameSeq": 2587,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777699959,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:4fe42151e074"
+        }
+      },
+      {
+        "frameSeq": 2589,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777701279,
+        "data": {
+          "pct": 6.1,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 60700,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2590,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777701280,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:86015048e667"
+        }
+      },
+      {
+        "frameSeq": 2592,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777701282,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:86015048e667"
+        }
+      },
+      {
+        "frameSeq": 2597,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777701734,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:86015048e667"
+        }
+      },
+      {
+        "frameSeq": 2598,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777701736,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:86015048e667"
+        }
+      },
+      {
+        "frameSeq": 2603,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777703053,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:6379f03a2adf"
+        }
+      },
+      {
+        "frameSeq": 2605,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777703057,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:6379f03a2adf"
+        }
+      },
+      {
+        "frameSeq": 2607,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777703108,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:6379f03a2adf"
+        }
+      },
+      {
+        "frameSeq": 2608,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777703109,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:6379f03a2adf"
+        }
+      },
+      {
+        "frameSeq": 2611,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777706387,
+        "data": {
+          "pct": 6.1,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 61034,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2612,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777706387,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:ffa24d5ad97b"
+        }
+      },
+      {
+        "frameSeq": 2614,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777706390,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:ffa24d5ad97b"
+        }
+      },
+      {
+        "frameSeq": 2617,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777706449,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:ffa24d5ad97b"
+        }
+      },
+      {
+        "frameSeq": 2619,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777706453,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:ffa24d5ad97b"
+        }
+      },
+      {
+        "frameSeq": 2643,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777707864,
+        "data": {
+          "pct": 6.1,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 61386,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2646,
+        "rowKind": "non-probe",
+        "eventType": "chat_done",
+        "receivedAtMs": 1794777707895,
+        "data": {
+          "continuing": true,
+          "needs_input": false,
+          "slot": "sha256:2d10b1abcdb2",
+          "turn": 3,
+          "turn_gen": "<redacted type=str len=8>"
+        }
+      },
+      {
+        "frameSeq": 2649,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777709032,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:1894244bcf89"
+        }
+      },
+      {
+        "frameSeq": 2680,
+        "rowKind": "non-probe",
+        "eventType": "chat_status",
+        "receivedAtMs": 1794777713616,
+        "data": {
+          "slot": "sha256:a9285bd745b5"
+        }
+      },
+      {
+        "frameSeq": 2682,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777715627,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:7b35ff48a861"
+        }
+      },
+      {
+        "frameSeq": 2684,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777715629,
+        "data": {
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:7b35ff48a861"
+        }
+      },
+      {
+        "frameSeq": 2685,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777715629,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:7b35ff48a861"
+        }
+      },
+      {
+        "frameSeq": 2687,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777715647,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:c531b1593e0f"
+        }
+      },
+      {
+        "frameSeq": 2689,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777715650,
+        "data": {
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:c531b1593e0f"
+        }
+      },
+      {
+        "frameSeq": 2690,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777715651,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:c531b1593e0f"
+        }
+      },
+      {
+        "frameSeq": 2712,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777717028,
+        "data": {
+          "pct": 4.0,
+          "slot": "sha256:a9285bd745b5",
+          "used_tokens": 40482,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2713,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717029,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:378195d3e86f"
+        }
+      },
+      {
+        "frameSeq": 2715,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717043,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=7>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2723,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777717087,
+        "data": {
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:378195d3e86f"
+        }
+      },
+      {
+        "frameSeq": 2724,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717087,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:378195d3e86f"
+        }
+      },
+      {
+        "frameSeq": 2726,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717115,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2728,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717119,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2730,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717120,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2732,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777717127,
+        "data": {
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2733,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777717269,
+        "data": {
+          "is_shell": true,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:6032d38f2393"
+        }
+      },
+      {
+        "frameSeq": 2752,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777718485,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:d30a7b01e6cf"
+        }
+      },
+      {
+        "frameSeq": 2754,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777718487,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:d30a7b01e6cf"
+        }
+      },
+      {
+        "frameSeq": 2756,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777718530,
+        "data": {
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:d30a7b01e6cf"
+        }
+      },
+      {
+        "frameSeq": 2757,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777718531,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:a9285bd745b5",
+          "tool_call_id": "sha256:d30a7b01e6cf"
+        }
+      },
+      {
+        "frameSeq": 2764,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777720139,
+        "data": {
+          "pct": 4.3,
+          "slot": "sha256:a9285bd745b5",
+          "used_tokens": 42714,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2795,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777720248,
+        "data": {
+          "pct": 4.3,
+          "slot": "sha256:a9285bd745b5",
+          "used_tokens": 42885,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2798,
+        "rowKind": "non-probe",
+        "eventType": "chat_done",
+        "receivedAtMs": 1794777720268,
+        "data": {
+          "continuing": false,
+          "needs_input": false,
+          "slot": "sha256:a9285bd745b5",
+          "turn": 1,
+          "turn_gen": "<redacted type=str len=8>"
+        }
+      },
+      {
+        "frameSeq": 2803,
+        "rowKind": "non-probe",
+        "eventType": "chat_status",
+        "receivedAtMs": 1794777720700,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2"
+        }
+      },
+      {
+        "frameSeq": 2808,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777723983,
+        "data": {
+          "pct": 6.1,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 61386,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2824,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777724013,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:b3de13f50ce8"
+        }
+      },
+      {
+        "frameSeq": 2826,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777724017,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:b3de13f50ce8"
+        }
+      },
+      {
+        "frameSeq": 2827,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777724018,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:b3de13f50ce8"
+        }
+      },
+      {
+        "frameSeq": 2829,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777725438,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:64db2e3e72e4"
+        }
+      },
+      {
+        "frameSeq": 2831,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777725441,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:64db2e3e72e4"
+        }
+      },
+      {
+        "frameSeq": 2833,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777725493,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:64db2e3e72e4"
+        }
+      },
+      {
+        "frameSeq": 2834,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777725494,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:64db2e3e72e4"
+        }
+      },
+      {
+        "frameSeq": 2841,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777728543,
+        "data": {
+          "pct": 6.4,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 64408,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2899,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777733426,
+        "data": {
+          "pct": 6.6,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 65793,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2929,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777733481,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=5>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:a9ba671814f1"
+        }
+      },
+      {
+        "frameSeq": 2931,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777733489,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:075ebddab1b1"
+        }
+      },
+      {
+        "frameSeq": 2933,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777733492,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:a9ba671814f1"
+        }
+      },
+      {
+        "frameSeq": 2935,
+        "rowKind": "non-probe",
+        "eventType": "tool_result",
+        "receivedAtMs": 1794777733535,
+        "data": {
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:a9ba671814f1"
+        }
+      },
+      {
+        "frameSeq": 2936,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777733535,
+        "data": {
+          "is_shell": false,
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:2d10b1abcdb2",
+          "tool_call_id": "sha256:a9ba671814f1"
+        }
+      },
+      {
+        "frameSeq": 2938,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777735393,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:1e70d2df2f70"
+        }
+      },
+      {
+        "frameSeq": 2947,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777739198,
+        "data": {
+          "pct": 6.6,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 66290,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 2996,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777739407,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:8728d8b95d6b"
+        }
+      },
+      {
+        "frameSeq": 2999,
+        "rowKind": "non-probe",
+        "eventType": "context_usage",
+        "receivedAtMs": 1794777739481,
+        "data": {
+          "pct": 6.7,
+          "slot": "sha256:2d10b1abcdb2",
+          "used_tokens": 67133,
+          "window_tokens": 1000000
+        }
+      },
+      {
+        "frameSeq": 3003,
+        "rowKind": "non-probe",
+        "eventType": "chat_done",
+        "receivedAtMs": 1794777739513,
+        "data": {
+          "continuing": true,
+          "needs_input": false,
+          "slot": "sha256:2d10b1abcdb2",
+          "turn": 4,
+          "turn_gen": "<redacted type=str len=8>"
+        }
+      },
+      {
+        "frameSeq": 3251,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777783753,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:9e9cbcca0904"
+        }
+      },
+      {
+        "frameSeq": 3273,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777792372,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:c79d16940818"
+        }
+      },
+      {
+        "frameSeq": 4020,
+        "rowKind": "non-probe",
+        "eventType": "subagent_done",
+        "receivedAtMs": 1794777812463,
+        "data": {
+          "elapsed": 831.2816050052643,
+          "error": null,
+          "id": "sha256:f1c972205b81",
+          "slot": "sha256:3527e152ede4"
+        }
+      },
+      {
+        "frameSeq": 4072,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777814524,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:8113412d3c33"
+        }
+      },
+      {
+        "frameSeq": 4119,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777823389,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:5f3d1f11f9e6"
+        }
+      },
+      {
+        "frameSeq": 4170,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777850280,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:268349358bc0"
+        }
+      },
+      {
+        "frameSeq": 4190,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777862693,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:f85899466439"
+        }
+      },
+      {
+        "frameSeq": 4219,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777871717,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:e73f153130aa"
+        }
+      },
+      {
+        "frameSeq": 4295,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777882581,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a716e876d12f"
+        }
+      },
+      {
+        "frameSeq": 4321,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777890902,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:516fdf0de7c9"
+        }
+      },
+      {
+        "frameSeq": 4344,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777898265,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:89acdc9dfd42"
+        }
+      },
+      {
+        "frameSeq": 4348,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777903484,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:b67c5e84816b"
+        }
+      },
+      {
+        "frameSeq": 4352,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777910311,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:10857a9b32fc"
+        }
+      },
+      {
+        "frameSeq": 4377,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777917990,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:c2b7dd8251d6"
+        }
+      },
+      {
+        "frameSeq": 4379,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777920765,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:a1b7f3196ebc"
+        }
+      },
+      {
+        "frameSeq": 4399,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777932548,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:f89ec244d4f5"
+        }
+      },
+      {
+        "frameSeq": 4441,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777948707,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:2da80dfe4d60"
+        }
+      },
+      {
+        "frameSeq": 4448,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777959746,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:80a3bc53b394"
+        }
+      },
+      {
+        "frameSeq": 4452,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777963271,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:b5cd44cbcff0"
+        }
+      },
+      {
+        "frameSeq": 4483,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777969578,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:731c207bf863"
+        }
+      },
+      {
+        "frameSeq": 4542,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777980422,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:ec20587dd42c"
+        }
+      },
+      {
+        "frameSeq": 4615,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794777996393,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:acd4ae377386"
+        }
+      },
+      {
+        "frameSeq": 4630,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778006880,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:5a8bda23f591"
+        }
+      },
+      {
+        "frameSeq": 4657,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778023787,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:7e9e29c4d922"
+        }
+      },
+      {
+        "frameSeq": 4716,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778039527,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:ba9cd989055b"
+        }
+      },
+      {
+        "frameSeq": 4724,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778052772,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:57900f690d42"
+        }
+      },
+      {
+        "frameSeq": 4750,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778058690,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:b92ff6eeb2c8"
+        }
+      },
+      {
+        "frameSeq": 4812,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778083132,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:33edf682b93b"
+        }
+      },
+      {
+        "frameSeq": 4858,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778095087,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:6b3f31ad49e5"
+        }
+      },
+      {
+        "frameSeq": 4920,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778105560,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:e90c3bddb71b"
+        }
+      },
+      {
+        "frameSeq": 4990,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778208357,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:991c040517e9"
+        }
+      },
+      {
+        "frameSeq": 5059,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778236125,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:baeee9f17034"
+        }
+      },
+      {
+        "frameSeq": 5063,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778238080,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:50cad2a8c69e"
+        }
+      },
+      {
+        "frameSeq": 5085,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778256981,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:dda6fff87ba3"
+        }
+      },
+      {
+        "frameSeq": 5140,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778265763,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:39dd00185f46"
+        }
+      },
+      {
+        "frameSeq": 5170,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778270883,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:03f252322ee1"
+        }
+      },
+      {
+        "frameSeq": 5336,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778302978,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:e07a846c7712"
+        }
+      },
+      {
+        "frameSeq": 5358,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778315894,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:7a5f644c2661"
+        }
+      },
+      {
+        "frameSeq": 5438,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778349925,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:5f10072c3c5d"
+        }
+      },
+      {
+        "frameSeq": 5443,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778356851,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:7190083135f0"
+        }
+      },
+      {
+        "frameSeq": 5463,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778361754,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:e98402dea29f"
+        }
+      },
+      {
+        "frameSeq": 5488,
+        "rowKind": "non-probe",
+        "eventType": "tool_call",
+        "receivedAtMs": 1794778371567,
+        "data": {
+          "kind": "<redacted type=str len=0>",
+          "slot": "sha256:3527e152ede4",
+          "tool_call_id": "sha256:468e775a59e4"
+        }
+      }
+    ]
+  }
+}

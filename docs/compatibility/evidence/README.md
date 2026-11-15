@@ -13,6 +13,16 @@ Each live probe run commits its evidence under `docs/compatibility/evidence/<run
 | `L3-v1b/` | Probe app with grants, after PR #34 | `run-log.md`, `export.json` (run `20261111T230641Z-4f743d`); authoritative for the grant-phase cells |
 | `SUMMARY.md` | All runs | Closing summary: host facts, ALLOWED and DENIED cells, and the UNTESTED list |
 
+## What is here (FP-02+03 slice 1, Crew 0.12.2)
+
+| Directory | Run | Contents |
+|---|---|---|
+| `S1-v0/` | Probe app, phase v0 (own api entry only) | `run-log.md`, `export.json` (run `20261115T205118Z-a923f2`) |
+| `S1-v1a/` | Probe app, Eric's broad grant, before #60 | `run-log.md`, `export.json` (run `20261115T211724Z-47f73a`); superseded |
+| `S1-v1/` | Probe app, Eric's broad grant, after #60 | `run-log.md`, `export.json` (run `20261115T215658Z-8625d7`); authoritative for the 0.12.2 grant-phase cells |
+
+Slice-1 event-frame captures are in `tests/recorded/crew-0.12.2/`. The grant set and the stop-trigger reading are in `../crew-0.12.2.md`.
+
 Inside an export, `ref` values such as `run/<runId>/deny-matrix` name probe steps of that run. Matrix and host-fact refs in the JSON files point at the committed files here, with the cell or fact id after `#`.
 
 ## Not here

@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "capture": "event-frames",
+    "sanitisation": "SPECTER-DIAGNOSTIC-ONLY; non-probe values reduced to sha256:<12 hex> digests (salted per run, salt never stored) or <redacted type=... len=n> placeholders; probe rows keep values after secret redaction minus their prose fields; event frames keep allow-listed fields only, with no free text for any slot; frames that fail sanitising are dropped and counted",
+    "hostVersion": "0.12.2",
+    "runId": "20261115T205118Z-a923f2",
+    "capturedAt": "2026-11-15T21:02:48.686104+00:00",
+    "framesSeen": {
+      "dashboard": 18,
+      "slots": 5
+    },
+    "rowsKept": {},
+    "rowsDroppedByCap": 0,
+    "measurement": {
+      "dashboard": {
+        "count": 18,
+        "bytesP50": 1667,
+        "bytesP95": 1667,
+        "bytesMax": 1667,
+        "burstMaxPerSecond": 1
+      },
+      "slots": {
+        "count": 5,
+        "bytesP50": 107,
+        "bytesP95": 107,
+        "bytesMax": 107,
+        "burstMaxPerSecond": 1
+      }
+    },
+    "keysSeen": {}
+  },
+  "rows": []
+}
