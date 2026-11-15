@@ -13,7 +13,14 @@ from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import InvalidStatus, WebSocketException
 
 from ..config import GatewayEnv
-from .steps import FeedRejected, PortError, TokenExchangeError
+from .steps import (
+    RECONNECT_MARKER,
+    FeedRejected,
+    PortError,
+    TokenExchangeError,
+    is_allowed_client_text,
+    is_reserved_frame_type,
+)
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
@@ -57,6 +64,10 @@ class LiveGateway:
         self._token, self._token_at = "", 0.0
         self._transport: str | None = None
         self._http_transport: str | None = None
+        self._connection: ClientConnection | None = None
+        self._queued: list[str] = []
+        self._generation = 0
+        self._closing: asyncio.Task[None] | None = None
 
     @property
     def token_transport(self) -> str | None:
@@ -128,6 +139,17 @@ class LiveGateway:
             return connection
         raise FeedRejected(NOT_AUTHENTICATED)
 
+    async def send_text(self, text: str) -> None:
+        if not is_allowed_client_text(text):
+            raise PortError("client message not allowed")
+        self._queued.append(text)
+        if self._connection is not None:
+            await self._connection.send(text)
+
+    def drop_feed(self) -> None:
+        if self._connection is not None:
+            self._closing = asyncio.get_running_loop().create_task(self._connection.close())
+
     async def open_feed(self) -> AsyncIterator[dict[str, object]]:
         failures = 0
         while True:
@@ -135,6 +157,12 @@ class LiveGateway:
                 connection = await self._dial(await self.exchange_token())
                 failures = 0
                 async with connection:
+                    self._connection = connection
+                    self._generation += 1
+                    for text in self._queued:
+                        await connection.send(text)
+                    if self._generation > 1:
+                        yield {"type": RECONNECT_MARKER, "data": {"generation": self._generation}}
                     renew_at = time.monotonic() + TOKEN_LIFETIME_SECONDS
                     while (left := renew_at - time.monotonic()) > 0:
                         raw = await asyncio.wait_for(connection.recv(), left)
@@ -142,8 +170,12 @@ class LiveGateway:
                             frame = json.loads(raw) if isinstance(raw, str) else None
                         except ValueError:
                             frame = None
-                        if isinstance(frame, dict):
+                        if isinstance(frame, dict) and not is_reserved_frame_type(
+                            frame.get("type")
+                        ):
                             yield frame
+                self._connection = None
             except (TimeoutError, OSError, WebSocketException):
+                self._connection = None
                 await asyncio.sleep(BACKOFF_SECONDS[min(failures, len(BACKOFF_SECONDS) - 1)])
                 failures += 1

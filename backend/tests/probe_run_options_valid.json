@@ -1,0 +1,5 @@
+{
+  "hostVersion": "0.12.2",
+  "captureSeconds": 900,
+  "reconnectAfterStartSeconds": 5
+}

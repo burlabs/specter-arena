@@ -12,7 +12,8 @@ MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 SANITISATION = (
     f"{MARKER}; non-probe values reduced to sha256:<12 hex> digests (salted per run, salt never "
     "stored) or <redacted type=... len=n> placeholders; probe rows keep values after secret "
-    "redaction; frames that fail sanitising are dropped and counted"
+    "redaction minus their prose fields; event frames keep allow-listed fields only, with no "
+    "free text for any slot; frames that fail sanitising are dropped and counted"
 )
 
 

@@ -13,7 +13,25 @@ MAX_EVIDENCE_CHARS = 500
 DM_KEY_PREFIX = "member-"
 MEMORY_STORE_SUFFIX = ".memory-"
 
-SignalKind = Literal["start", "progress", "terminal", "approval", "needs-input", "removed"]
+SignalKind = Literal[
+    "start",
+    "progress",
+    "terminal",
+    "approval",
+    "needs-input",
+    "removed",
+    "chat-status",
+    "chat-done",
+    "tool-call",
+    "tool-result",
+    "context-usage",
+    "approval-resolved",
+    "subagent-spawn",
+    "subagent-status",
+    "subagent-done",
+    "reconnect",
+    "resync",
+]
 SlotRole = Literal["bot-dm", "worker", "other"]
 AttemptKind = Literal["bot-turn", "worker-session", "external-cli", "app-session"]
 
@@ -166,6 +184,31 @@ def diff_slots(prev: dict[str, Row], curr: dict[str, Row], *, at: str) -> list[S
             signals.append(Signal("needs-input", key, at))
     signals.extend(Signal("removed", key, at) for key in sorted(set(prev) - set(curr)))
     return signals
+
+
+_EVENT_SIGNALS: dict[str, SignalKind] = {
+    "chat_status": "chat-status",
+    "chat_done": "chat-done",
+    "tool_call": "tool-call",
+    "tool_result": "tool-result",
+    "context_usage": "context-usage",
+    "approval": "approval",
+    "approval_resolved": "approval-resolved",
+    "subagent_spawn": "subagent-spawn",
+    "subagent_done": "subagent-done",
+}
+_SUBAGENT_PREFIX = "subagent_"
+_SUBAGENT_CONTENT = frozenset({"subagent_chunk", "subagent_tool", "subagent_batch_chunks"})
+
+
+def event_signal_kind(event_type: str) -> SignalKind | None:
+    """The signal an event type stands for, or None for a type that signals nothing.
+    `chat_done` and `subagent_done` end a turn or a run; neither says the work was taken."""
+    if event_type in _EVENT_SIGNALS:
+        return _EVENT_SIGNALS[event_type]
+    if event_type.startswith(_SUBAGENT_PREFIX) and event_type not in _SUBAGENT_CONTENT:
+        return "subagent-status"
+    return None
 
 
 def outcome_evidence(row: Row) -> str | None:

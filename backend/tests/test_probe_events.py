@@ -5,10 +5,11 @@ from backend.specter_arena.probe.events import (
     ENUM_FIELDS,
     EVENT_FIELDS,
     EVENT_VOCABULARY,
+    MAX_SIZE_SAMPLES,
     EventLog,
     PendingEvent,
     PendingEvents,
-    burst_max_per_second,
+    event_label,
     percentile,
 )
 from backend.specter_arena.probe.questions import canonical_json
@@ -44,9 +45,47 @@ def test_percentile_is_nearest_rank() -> None:
 
 
 def test_burst_counts_frames_per_wall_clock_second() -> None:
-    assert burst_max_per_second([]) == 0
-    stamps = [1000, 1100, 1999, 2000, 2500, 5000]
-    assert burst_max_per_second(stamps) == 3
+    log = EventLog()
+    for stamp in (1000, 1100, 1999, 2000, 2500, 5000):
+        log.seen("chat_done", 10, stamp)
+    assert log.measurement()["chat_done"]["burstMaxPerSecond"] == 3
+
+
+def test_size_samples_and_burst_buckets_are_bounded_but_counts_are_exact() -> None:
+    log = EventLog()
+    for n in range(MAX_SIZE_SAMPLES + 10):
+        log.seen("refresh", 1 if n < MAX_SIZE_SAMPLES else 1000, n * 1000)
+    measured = log.measurement()["refresh"]
+    assert measured["count"] == MAX_SIZE_SAMPLES + 10
+    assert measured["bytesMax"] == 1
+    assert measured["burstMaxPerSecond"] == 1
+
+
+def test_types_outside_the_vocabulary_are_counted_as_other() -> None:
+    assert event_label("chat_done") == "chat_done"
+    assert event_label("log_replay") == "other"
+    assert event_label(None) == "other"
+
+
+def test_the_capture_lists_meta_and_rows_in_frame_order() -> None:
+    log = EventLog()
+    first, second = log.seen("chat_done", 10, 1_000), log.seen("tool_call", 12, 1_001)
+    log.keep(second, "tool_call", "probe", 1_001, {"slot": "member-probe", "kind": "execute"})
+    log.keep(first, "chat_done", "non-probe", 1_000, {"slot": "sha256:000000000000"})
+    capture = log.to_capture(
+        run_id="r1",
+        host_version="0.12.2",
+        captured_at="2026-11-14T00:00:00+00:00",
+        sanitisation="s",
+    )
+    meta = capture["_meta"]
+    assert isinstance(meta, dict)
+    assert (meta["capture"], meta["hostVersion"], meta["runId"]) == ("event-frames", "0.12.2", "r1")
+    assert meta["framesSeen"] == {"chat_done": 1, "tool_call": 1}
+    assert meta["keysSeen"] == {"chat_done": ["slot"], "tool_call": ["kind", "slot"]}
+    rows = capture["rows"]
+    assert isinstance(rows, list)
+    assert [row["frameSeq"] for row in rows] == [1, 2]
 
 
 def test_the_log_counts_every_frame_and_numbers_them_in_order() -> None:
@@ -98,7 +137,9 @@ def test_kept_rows_carry_the_capture_fields_and_the_cap_counts_drops() -> None:
 
 
 def pending(slot: str, at: float) -> PendingEvent:
-    return PendingEvent(slot, at, {"slot": slot}, {"slot": "sha256:000000000000"})
+    return PendingEvent(
+        slot, at, {"slot": slot}, {"slot": "sha256:000000000000"}, 1, "chat_done", 0
+    )
 
 
 def test_pending_events_are_promoted_or_released_at_the_next_slots_frame() -> None:
