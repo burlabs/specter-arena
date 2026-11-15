@@ -439,6 +439,7 @@ class _FeedTally:
     most_rows: int = 0
     signal_kinds: set[str] = field(default_factory=set)
     dm_row: Row | None = None
+    bot_forms: set[str] = field(default_factory=set)
     worker_row: Row | None = None
     source_links: bool = False
     terminal_outcome: str | None = None
@@ -543,6 +544,11 @@ def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) 
         _attempt_for(run, key, row)
         if role == "bot-dm":
             tally.dm_row = row
+            tally.bot_forms.add(
+                f"DM slot key member-{run.probe_slug}"
+                if is_bot_dm_key(key, run.probe_slug)
+                else "a slot whose agent field is the probe slug"
+            )
         elif role == "worker":
             tally.worker_row = row
         if isinstance(row.get("source_links"), list) and row["source_links"]:
@@ -947,12 +953,8 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
         else _untested(ctx, "user-source-links", "no probe slot carried source_links")
     )
     if tally.dm_row is not None:
-        form = (
-            f"DM slot key member-{slug}"
-            if is_bot_dm_key(str(tally.dm_row.get("key", "")), slug)
-            else "a slot whose agent field is the probe slug"
-        )
-        out.append(_seen(ctx, "bot-id-observable", f"probe bot slot present: {form}"))
+        forms = "; ".join(sorted(tally.bot_forms))
+        out.append(_seen(ctx, "bot-id-observable", f"probe bot slot present: {forms}"))
         has_agent = "agent" in tally.dm_row
         out.append(
             _seen(ctx, "bot-own-session-attribution", "DM slot carries key and agent fields")

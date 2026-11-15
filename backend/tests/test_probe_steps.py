@@ -1147,7 +1147,13 @@ def test_a_bot_turn_in_a_slot_named_by_its_agent_field_is_attributed() -> None:
         assert state(ctx, cell) == "ALLOWED", cell
     assert ctx.run.attempts[live].kind == "bot-turn"
     assert ctx.run.attempts[worker].kind == "worker-session"
+    subagent = ctx.run.attempts[f"subagent:{digest(ctx.run.salt, 'sa-1')}"]
+    assert (subagent.kind, subagent.bot_ref) == ("worker-session", "probe")
     assert {row["rowKind"] for row in ctx.run.events.rows} == {"probe"}
+    assert ctx.run.cells["bot-id-observable"].evidence[0].excerpt == (
+        "probe bot slot present: DM slot key member-probe; a slot whose agent field is the "
+        "probe slug"
+    )
 
 
 def test_an_agent_field_for_another_bot_or_a_longer_slug_is_not_attributed() -> None:
