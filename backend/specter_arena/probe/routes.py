@@ -6,6 +6,7 @@ import importlib
 import json
 import re
 import secrets
+from collections import deque
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,7 +16,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
-from ..config import APP_ROOT, Grants, gateway_env, read_grants
+from ..config import APP_ROOT, Grants, gateway_env, read_grants, read_run_options_file
 from ..proxy_auth import Handler, signed
 from .matrix import (
     CREDENTIALS,
@@ -25,8 +26,9 @@ from .matrix import (
     to_host_facts_json,
     to_matrix_json,
 )
+from .options import OptionsError, load_run_options
 from .questions import question_ids
-from .snapshot import build_snapshot
+from .snapshot import SANITISATION, build_snapshot
 from .steps import (
     GatewayPort,
     StepContext,
@@ -41,6 +43,7 @@ MAX_BODY_BYTES = 64 * 1024
 SLUG_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[3] / ".probe-out"
 DEFAULT_MANIFEST_PATH = APP_ROOT / "app.json"
+MAX_PAGE_REQUESTS = 500
 
 PortFactory = Callable[[], GatewayPort]
 
@@ -51,6 +54,10 @@ class LiveDriverUnavailable(RuntimeError):
 
 class RunInProgress(RuntimeError):
     pass
+
+
+class HostVersionUnset(RuntimeError):
+    """No host version in the request or the staged options file; evidence would be unlabelled."""
 
 
 class BadRequest(ValueError):
@@ -87,12 +94,15 @@ class ProbeService:
         gateway_available: Callable[[], bool] | None = None,
         capture_seconds: float = 30.0,
         manifest_path: Path = DEFAULT_MANIFEST_PATH,
+        options_path: Path | None = None,
     ) -> None:
         self._port_factory = port_factory
         self._out_dir = out_dir
         self._gateway_available = gateway_available or (lambda: bool(gateway_env().origin))
         self._capture_seconds = capture_seconds
         self._manifest_path = manifest_path
+        self._options_path = options_path
+        self._page_requests: deque[str] = deque(maxlen=MAX_PAGE_REQUESTS)
         self._grants_resolved = False
         self._task: asyncio.Task[None] | None = None
         self._write_denied = False
@@ -129,6 +139,29 @@ class ProbeService:
                 handle.write(json.dumps(frame) + "\n")
         except OSError:
             self._write_denied = True
+
+    def _write_json(self, name: str, document: object) -> None:
+        """Write one export file whole: a reader sees the old file or the new one, never part."""
+        if self._out_dir is None or self._write_denied:
+            return
+        folder = self._out_dir / self.run.run_id
+        temporary = folder / f".{name}.tmp"
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            with temporary.open("w", encoding="utf-8") as handle:
+                json.dump(document, handle, indent=2)
+            temporary.replace(folder / name)
+        except OSError:
+            self._write_denied = True
+
+    def _write_exports(self) -> None:
+        export = self.export()
+        self._write_json("export.json", export)
+        self._write_json("event-capture.json", export["eventCapture"])
+
+    def page_request(self) -> None:
+        """Record when a signed page request arrived; only the time is kept."""
+        self._page_requests.append(_now())
 
     @property
     def running(self) -> bool:
@@ -172,10 +205,20 @@ class ProbeService:
         self.cli_slot_key = cast(str, body.get("cliSlotKey", self.cli_slot_key))
         self._resolve_grants(cast("bool | None", body.get("grantsDeclared")))
 
-    def start(self, step_ids: list[str] | None) -> str:
+    def start(self, step_ids: list[str] | None, options_body: dict[str, object]) -> str:
         if self.running:
             raise RunInProgress
         select_steps(step_ids)
+        try:
+            staged = read_run_options_file(self._options_path)
+            options = load_run_options(
+                options_body, staged, default_capture_seconds=self._capture_seconds
+            )
+        except (OptionsError, ValueError, OSError) as error:
+            reason = str(error) if isinstance(error, OptionsError) else "run options file invalid"
+            raise BadRequest(reason) from error
+        if options.host_version is None:
+            raise HostVersionUnset
         port = self._port_factory()
         if not self._grants_resolved:
             self._resolve_grants(None)
@@ -187,8 +230,12 @@ class ProbeService:
             gateway_available=self._gateway_available(),
             other_app=self.other_app,
             cli_slot_key=self.cli_slot_key,
-            capture_seconds=self._capture_seconds,
+            capture_seconds=options.capture_seconds,
+            reconnect_after_start=options.reconnect_after_start,
+            agents_poll_seconds=options.agents_poll_seconds,
+            page_requests=lambda: list(self._page_requests),
         )
+        self.run.host_version = options.host_version
         self.status = "running"
         self.error = None
         self._task = asyncio.get_running_loop().create_task(self._execute(port, ctx, step_ids))
@@ -203,6 +250,8 @@ class ProbeService:
         except Exception as error:
             self.status = "failed"
             self.error = type(error).__name__
+        finally:
+            self._write_exports()
 
     async def wait(self) -> None:
         if self._task is not None:
@@ -225,15 +274,24 @@ class ProbeService:
             annotate(self.run, cell_id, state, note, credential, at=_now())
         except InvalidEvidence as error:
             raise BadRequest(str(error)) from error
+        self._write_exports()
 
     def snapshot(self) -> dict[str, object]:
         return build_snapshot(self.run)
 
     def export(self) -> dict[str, object]:
+        run = self.run
+        capture = run.events.to_capture(
+            run_id=run.run_id,
+            host_version=run.host_version,
+            captured_at=_now(),
+            sanitisation=SANITISATION,
+        )
         return {
             "snapshot": self.snapshot(),
-            "matrix": to_matrix_json(self.run),
-            "hostFacts": to_host_facts_json(self.run),
+            "matrix": to_matrix_json(run),
+            "hostFacts": to_host_facts_json(run),
+            "eventCapture": capture,
         }
 
 
@@ -300,13 +358,16 @@ def probe_routes(service: ProbeService | None = None) -> list[BaseRoute]:
                 isinstance(steps, list) and all(isinstance(item, str) for item in steps)
             ):
                 raise BadRequest("steps must be a list of step ids")
-            run_id = svc.start(cast("list[str] | None", steps))
+            options = {key: value for key, value in body.items() if key != "steps"}
+            run_id = svc.start(cast("list[str] | None", steps), options)
         except BadRequest as error:
             return _error(error)
         except UnknownStep as error:
             return JSONResponse({"error": f"unknown step {error.args[0]}"}, status_code=422)
         except RunInProgress:
             return JSONResponse({"error": "run_in_progress"}, status_code=409)
+        except HostVersionUnset:
+            return JSONResponse({"error": "host_version_unset"}, status_code=409)
         except LiveDriverUnavailable:
             return JSONResponse({"error": "live_driver_unavailable"}, status_code=503)
         return JSONResponse({"runId": run_id}, status_code=202)
@@ -324,8 +385,15 @@ def probe_routes(service: ProbeService | None = None) -> list[BaseRoute]:
     async def export(_request: Request) -> Response:
         return JSONResponse(svc.export())
 
+    def recorded(handler: Handler) -> Handler:
+        async def wrapper(request: Request) -> Response:
+            svc.page_request()
+            return await handler(request)
+
+        return wrapper
+
     def guarded(handler: Handler) -> Handler:
-        return capped(signed(handler))
+        return capped(signed(recorded(handler)))
 
     return [
         Route("/api/probe/state", guarded(state), methods=["GET"]),

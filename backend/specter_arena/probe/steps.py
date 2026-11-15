@@ -3,17 +3,22 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 from urllib.parse import quote
 
 from ..config import Grants
+from .events import MAX_KEPT_ROWS, PendingEvent, PendingEvents, event_label
 from .frames import (
     Attempt,
     AttemptKind,
     Row,
+    Signal,
     diff_slots,
+    event_signal_kind,
+    is_bot_dm_key,
     json_type_name,
     outcome_evidence,
     probe_keys,
@@ -27,6 +32,8 @@ from .matrix import (
     Run,
     apply_observation,
 )
+from .observers import RenameObserver, closed_tab_verdict, resync_summary
+from .options import DEFAULT_AGENTS_POLL_SECONDS
 from .sanitise import digest, redact_text, sanitise_frame
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
@@ -38,7 +45,18 @@ MAX_LISTED_KEYS = 20
 REASON_KEYS = ("code", "error")
 MAX_REASON_CHARS = 200
 SLOTS_EVENT = "slots:user"
+SUBAGENT_EVENT = "subagent:user"
 CHAT_SLOTS_PATH = "/api/chat/slots"
+AGENTS_PATH = "/api/agents"
+USAGE_PATH = "/api/usage"
+SESSIONS_USAGE_PATH = "/api/sessions/usage"
+# Produced only by live.py after it re-dials; any other frame type starting with "_" is dropped.
+RECONNECT_MARKER = "_probe_reconnect"
+SUBSCRIBE_SUBAGENTS = '{"type":"subscribe_subagents"}'
+ALLOWED_CLIENT_TEXT = (SUBSCRIBE_SUBAGENTS,)
+REPLAY_SECONDS = 10.0
+PER_BOT_KEYS = frozenset({"slot", "session", "member", "bot", "agent"})
+MAX_USAGE_KEY_DEPTH = 3
 
 
 class PortError(Exception):
@@ -83,6 +101,27 @@ class GatewayPort(Protocol):
 
     def open_feed(self) -> AsyncIterator[dict[str, object]]: ...
 
+    async def send_text(self, text: str) -> None:
+        """Send one client message on the feed, now and after every reconnect."""
+        ...
+
+    def drop_feed(self) -> None:
+        """Close the feed's current connection so it reconnects; a no-op when not connected."""
+        ...
+
+
+def is_allowed_client_text(text: str) -> bool:
+    """The only client message the probe may send on the feed."""
+    return text in ALLOWED_CLIENT_TEXT
+
+
+def _epoch_ms() -> int:
+    return time.time_ns() // 1_000_000
+
+
+def _no_requests() -> list[str]:
+    return []
+
 
 @dataclass
 class StepContext:
@@ -93,7 +132,13 @@ class StepContext:
     other_app: str = "specter-other"
     cli_slot_key: str = ""
     capture_seconds: float = 30.0
-    max_frames: int = 200
+    max_kept_rows: int = MAX_KEPT_ROWS
+    reconnect_after_start: float | None = None
+    agents_poll_seconds: float = DEFAULT_AGENTS_POLL_SECONDS
+    # ISO receive times of signed page requests; the closed-tab cell looks for gaps in them.
+    page_requests: Callable[[], list[str]] = _no_requests
+    clock_ms: Callable[[], int] = _epoch_ms
+    monotonic: Callable[[], float] = time.monotonic
 
 
 StepRunner = Callable[[GatewayPort, StepContext], Awaitable[list[Observation]]]
@@ -391,6 +436,25 @@ class _FeedTally:
     source_links: bool = False
     terminal_outcome: str | None = None
     terminal_seen: bool = False
+    window_start: str = ""
+    probe_signals: list[Signal] = field(default_factory=list)
+    started: asyncio.Event = field(default_factory=asyncio.Event)
+    pending: PendingEvents = field(default_factory=PendingEvents)
+    rename: RenameObserver = field(default_factory=RenameObserver)
+    tool_results: int = 0
+    tool_error_seen: bool = False
+    question_cards: int = 0
+    subagent_frames: int = 0
+    subagent_attributed: int = 0
+    batch_id_seen: bool = False
+    reconnects: int = 0
+    pre_drop_rows: dict[str, Row] = field(default_factory=dict)
+    marker_at: float | None = None
+    resync_text: str | None = None
+    replayed: dict[str, int] = field(default_factory=dict)
+    turns_before: dict[str, int] = field(default_factory=dict)
+    seen_turns: set[tuple[str, int]] = field(default_factory=set)
+    refilled: int = 0
 
 
 def _attempt_for(run: Run, key: str, row: Row) -> Attempt:
@@ -409,11 +473,29 @@ def _keyed(rows: list[Row]) -> list[Row]:
     return [row for row in rows if isinstance(row.get("key"), str)]
 
 
+START_KINDS = frozenset({"start", "chat-status"})
+PROGRESS_KINDS = frozenset(
+    {"progress", "tool-call", "tool-result", "context-usage", "subagent-status"}
+)
+TERMINAL_KINDS = frozenset({"terminal", "chat-done"})
+APPROVAL_KINDS = frozenset({"approval", "needs-input"})
+
+
+def _note_signal(attempt: Attempt, signal: Signal, tally: _FeedTally) -> None:
+    attempt.signals.append(signal)
+    tally.signal_kinds.add(signal.kind)
+    tally.probe_signals.append(signal)
+    if signal.kind in START_KINDS:
+        tally.started.set()
+
+
 def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
     """A `slots` frame: the only frame that moves the diff baseline (`run.last_rows`).
 
     The baseline holds sanitised probe rows. Outcome text is read from the raw row of the frame
-    that ends a turn, masked, and kept on the attempt only; the raw row is not held.
+    that ends a turn, masked, and kept on the attempt only; the raw row is not held. The first
+    `slots` frame after a deliberate reconnect re-baselines without diffing, so a reconnect
+    never reads as a start or a removal.
     """
     run = ctx.run
     clean = sanitise_frame(frame, run.probe_slug, run.salt, run.stats)
@@ -433,15 +515,20 @@ def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) 
         if "last_activity_ts" in row:
             run.field_types["last_activity_ts"] = json_type_name(row["last_activity_ts"])
     at = ctx.now()
-    for signal in diff_slots(run.last_rows, current, at=at):
-        attempt = _attempt_for(run, signal.slot_key, current.get(signal.slot_key, {}))
-        attempt.signals.append(signal)
-        tally.signal_kinds.add(signal.kind)
-        if signal.kind == "terminal":
-            tally.terminal_seen = True
-            text = outcome_evidence(raw.get(signal.slot_key, {}))
-            attempt.outcome_evidence = text
-            tally.terminal_outcome = tally.terminal_outcome or text
+    if run.resync_pending:
+        run.resync_pending = False
+        tally.resync_text = resync_summary(tally.pre_drop_rows, current)
+        for key, row in current.items():
+            _note_signal(_attempt_for(run, key, row), Signal("resync", key, at), tally)
+    else:
+        for signal in diff_slots(run.last_rows, current, at=at):
+            attempt = _attempt_for(run, signal.slot_key, current.get(signal.slot_key, {}))
+            _note_signal(attempt, signal, tally)
+            if signal.kind == "terminal":
+                tally.terminal_seen = True
+                text = outcome_evidence(raw.get(signal.slot_key, {}))
+                attempt.outcome_evidence = text
+                tally.terminal_outcome = tally.terminal_outcome or text
     run.last_rows = current
     for key, row in current.items():
         role = slot_role(row, run.probe_slug)
@@ -452,26 +539,196 @@ def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) 
             tally.worker_row = row
         if isinstance(row.get("source_links"), list) and row["source_links"]:
             tally.source_links = True
+    promoted, unresolved = tally.pending.resolve(run.probe_slots)
+    for event in promoted:
+        _keep_event(ctx, tally, event, "probe")
+    for event in unresolved:
+        _keep_event(ctx, tally, event, "non-probe")
 
 
-def absorb_event(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
-    """Any frame other than `slots`: recorded in sanitised form; never touches the baseline."""
+def _event_attempt(run: Run, event_type: str, slot: str, data: dict[str, object]) -> Attempt:
+    """A subagent frame belongs to a worker attempt named by its (digested) id; every other
+    event belongs to its slot's attempt."""
+    worker_id = data.get("id")
+    if event_type.startswith("subagent_") and isinstance(worker_id, str):
+        key = f"subagent:{worker_id}"
+        if key not in run.attempts:
+            bot_ref = run.probe_slug if is_bot_dm_key(slot, run.probe_slug) else None
+            run.attempts[key] = Attempt(key, "worker-session", bot_ref=bot_ref)
+        return run.attempts[key]
+    return _attempt_for(run, slot, run.last_rows.get(slot, {"key": slot}))
+
+
+def _probe_event(
+    ctx: StepContext, tally: _FeedTally, event_type: str, data: dict[str, object]
+) -> None:
+    """Signals and tallies from one sanitised event on a probe slot."""
+    run = ctx.run
+    slot = str(data.get("slot"))
+    kind = event_signal_kind(event_type)
+    if kind is not None:
+        attempt = _event_attempt(run, event_type, slot, data)
+        _note_signal(attempt, Signal(kind, slot, ctx.now()), tally)
+    if event_type == "tool_result":
+        tally.tool_results += 1
+        tally.tool_error_seen = tally.tool_error_seen or isinstance(data.get("is_error"), bool)
+    elif event_type == "question_card":
+        tally.question_cards += 1
+    elif event_type.startswith("subagent_"):
+        tally.subagent_frames += 1
+        rooted = is_bot_dm_key(slot, run.probe_slug)
+        if event_type in ("subagent_spawn", "subagent_done") and rooted:
+            tally.subagent_attributed += 1
+            tally.batch_id_seen = tally.batch_id_seen or "batch_id" in data
+    elif event_type == "chat_done" and isinstance(turn := data.get("turn"), int):
+        _note_turn(tally, slot, turn)
+
+
+def _note_turn(tally: _FeedTally, slot: str, turn: int) -> None:
+    """Before a reconnect, remember the latest turn per slot; after it, a turn that is not newer
+    than that and was never seen is history the host refilled."""
+    if tally.reconnects == 0:
+        tally.turns_before[slot] = max(turn, tally.turns_before.get(slot, turn))
+    elif (slot, turn) not in tally.seen_turns and turn <= tally.turns_before.get(slot, -1):
+        tally.refilled += 1
+    tally.seen_turns.add((slot, turn))
+
+
+def _keep_event(ctx: StepContext, tally: _FeedTally, event: PendingEvent, row_kind: str) -> None:
+    data = event.probe_form if row_kind == "probe" else event.plain_form
+    ctx.run.events.keep(event.frame_seq, event.event_type, row_kind, event.received_at_ms, data)
+    if row_kind == "probe":
+        _probe_event(ctx, tally, event.event_type, data)
+
+
+def _reduced(
+    frame: dict[str, object], ctx: StepContext, probe_slots: frozenset[str]
+) -> dict[str, object] | None:
+    run = ctx.run
+    clean = sanitise_frame(frame, run.probe_slug, run.salt, run.stats, probe_slots)
+    data = clean.get("data") if clean is not None else None
+    return data if isinstance(data, dict) else None
+
+
+def absorb_event(
+    frame: dict[str, object], ctx: StepContext, tally: _FeedTally, seq: int, received_ms: int
+) -> None:
+    """Any frame other than `slots`: kept in allow-listed form; never touches the baseline.
+
+    An event whose slot is not yet a probe slot waits in the pending buffer (the host may send
+    it before the slot row) and is written in non-probe form unless the next `slots` frame
+    makes its slot a probe slot.
+    """
     run = ctx.run
     clean = sanitise_frame(frame, run.probe_slug, run.salt, run.stats, run.probe_slots)
-    if clean is not None:
-        run.record_frame(clean)
+    if clean is None:
+        return
+    run.record_frame(clean)
+    data = clean.get("data")
+    event_type = str(clean["type"])
+    if not isinstance(data, dict):
+        return
+    now = ctx.monotonic()
+    for expired in tally.pending.expire(now):
+        _keep_event(ctx, tally, expired, "non-probe")
+    raw = frame.get("data")
+    slot = raw.get("slot") if isinstance(raw, dict) else None
+    if isinstance(slot, str) and slot in run.probe_slots:
+        event = PendingEvent(slot, now, data, {}, seq, event_type, received_ms)
+        _keep_event(ctx, tally, event, "probe")
+    elif isinstance(slot, str) and (held := _reduced(frame, ctx, frozenset({slot}))) is not None:
+        event = PendingEvent(slot, now, held, data, seq, event_type, received_ms)
+        evicted = tally.pending.hold(event)
+        if evicted is not None:
+            _keep_event(ctx, tally, evicted, "non-probe")
+    else:
+        event = PendingEvent("", now, {}, data, seq, event_type, received_ms)
+        _keep_event(ctx, tally, event, "non-probe")
+    replaying = tally.marker_at is not None and now - tally.marker_at <= REPLAY_SECONDS
+    if replaying and event_type in ("subagent_snapshot", "subagent_done"):
+        tally.replayed[event_type] = tally.replayed.get(event_type, 0) + 1
+
+
+def _absorb_marker(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) -> None:
+    """The reconnect marker from live.py: the next `slots` frame re-baselines."""
+    data = frame.get("data")
+    generation = data.get("generation") if isinstance(data, dict) else None
+    if isinstance(generation, bool) or not isinstance(generation, int) or generation < 2:
+        return
+    run = ctx.run
+    tally.reconnects += 1
+    tally.marker_at = ctx.monotonic()
+    tally.pre_drop_rows = dict(run.last_rows)
+    run.resync_pending = True
+    at = ctx.now()
+    for key, row in run.last_rows.items():
+        _note_signal(_attempt_for(run, key, row), Signal("reconnect", key, at), tally)
+
+
+def _frame_size(frame: dict[str, object]) -> int:
+    return len(json.dumps(frame, default=str))
+
+
+async def _poll_agents(port: GatewayPort, ctx: StepContext, tally: _FeedTally) -> None:
+    """Reads the roster on a timer for the rename cell; keeps a digest of the display name."""
+    run = ctx.run
+    while True:
+        try:
+            status, body = await port.http("GET", AGENTS_PATH)
+        except (PortError, TimeoutError):
+            status, body = 0, b""
+        if 200 <= status < 300:
+            rows = _roster_rows(_parse(body))
+            row = next((r for r in rows if _is_probe_row(r, run.probe_slug)), None)
+            name = row.get("display_name") if row is not None else None
+            if isinstance(name, str):
+                dm_keys = frozenset(k for k in run.last_rows if is_bot_dm_key(k, run.probe_slug))
+                tally.rename.record(digest(run.salt, name), dm_keys)
+        await asyncio.sleep(ctx.agents_poll_seconds)
+
+
+async def _reconnect_after_start(
+    port: GatewayPort, ctx: StepContext, tally: _FeedTally, delay: float
+) -> None:
+    """One deliberate reconnect per window, landing inside the first probe turn."""
+    await tally.started.wait()
+    await asyncio.sleep(delay)
+    port.drop_feed()
 
 
 async def _drain_feed(port: GatewayPort, ctx: StepContext, tally: _FeedTally) -> None:
+    run = ctx.run
+    run.events.max_rows = ctx.max_kept_rows
+    if ctx.grants.has_event(SUBAGENT_EVENT):
+        await port.send_text(SUBSCRIBE_SUBAGENTS)
+    helpers: list[asyncio.Task[None]] = []
+    if run.probe_slug and ctx.grants.has_api(AGENTS_PATH):
+        helpers.append(asyncio.create_task(_poll_agents(port, ctx, tally)))
+    if ctx.reconnect_after_start is not None:
+        delay = ctx.reconnect_after_start
+        helpers.append(asyncio.create_task(_reconnect_after_start(port, ctx, tally, delay)))
     feed = port.open_feed()
     try:
         async for frame in feed:
             tally.frames += 1
-            absorb = absorb_slots if frame.get("type") == "slots" else absorb_event
-            absorb(frame, ctx, tally)
-            if tally.frames >= ctx.max_frames:
-                break
+            frame_type = frame.get("type")
+            if frame_type == RECONNECT_MARKER:
+                _absorb_marker(frame, ctx, tally)
+                continue
+            if isinstance(frame_type, str) and frame_type.startswith("_"):
+                continue
+            received_ms = ctx.clock_ms()
+            seq = run.events.seen(event_label(frame_type), _frame_size(frame), received_ms)
+            if frame_type == "slots":
+                absorb_slots(frame, ctx, tally)
+            else:
+                absorb_event(frame, ctx, tally, seq, received_ms)
     finally:
+        for task in helpers:
+            task.cancel()
+        await asyncio.gather(*helpers, return_exceptions=True)
+        for event in tally.pending.resolve(frozenset())[1]:
+            _keep_event(ctx, tally, event, "non-probe")
         close = getattr(feed, "aclose", None)
         if close is not None:
             await close()
@@ -490,6 +747,13 @@ WS_CELLS = (
     "bot-id-observable",
     "bot-own-session-attribution",
     "bot-worker-session-attribution",
+    "user-signal-tool-error",
+    "closed-tab-collection",
+    "reconnect-snapshot",
+    "reconnect-cursor-history",
+    "bot-id-stable-across-rename",
+    "subagent-events-visible",
+    "bot-worker-session-attribution-subagent",
 )
 
 
@@ -499,9 +763,120 @@ def _seen(ctx: StepContext, cell_id: str, excerpt: str) -> Observation:
     )
 
 
+def _decided(ctx: StepContext, cell_id: str, decided: bool, text: str) -> Observation:
+    return _seen(ctx, cell_id, text) if decided else _untested(ctx, cell_id, text)
+
+
+def _signal_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
+    stamp_type = ctx.run.field_types.get("last_activity_ts")
+    out: list[Observation] = []
+    for cell_id, wanted in (
+        ("user-signal-start", START_KINDS),
+        ("user-signal-progress", PROGRESS_KINDS),
+        ("user-signal-terminal", TERMINAL_KINDS),
+        ("user-signal-approval", APPROVAL_KINDS),
+    ):
+        hit = sorted(tally.signal_kinds & wanted)
+        excerpt = f"signal observed on a probe slot: {', '.join(hit)}"
+        reason = "signal not observed in the capture window"
+        if cell_id == "user-signal-progress" and stamp_type:
+            excerpt += f"; last_activity_ts is JSON {stamp_type}"
+        if cell_id == "user-signal-terminal":
+            excerpt += "; a turn boundary, not an outcome"
+        if cell_id == "user-signal-approval":
+            cards = f"; question_card frames: {tally.question_cards}"
+            excerpt, reason = excerpt + cards, reason + cards
+        out.append(_seen(ctx, cell_id, excerpt) if hit else _untested(ctx, cell_id, reason))
+    return out
+
+
+def _reconnect_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
+    if not tally.reconnects:
+        reason = "no reconnect happened in the window"
+        if ctx.reconnect_after_start is None:
+            reason += "; no deliberate reconnect was configured"
+        return [
+            _untested(ctx, "reconnect-snapshot", reason),
+            _untested(ctx, "reconnect-cursor-history", reason),
+        ]
+    replay = ", ".join(f"{name} {count}" for name, count in sorted(tally.replayed.items()))
+    snapshot = (
+        f"{tally.reconnects} reconnect(s); {tally.resync_text}; replayed within "
+        f"{REPLAY_SECONDS:g} s: {replay or 'none'}"
+        if tally.resync_text
+        else "reconnected but no slots frame followed"
+    )
+    history = (
+        f"{tally.refilled} earlier-turn chat_done frame(s) arrived after the reconnect"
+        if tally.refilled
+        else "no history frames after reconnect"
+    )
+    return [
+        _decided(ctx, "reconnect-snapshot", tally.resync_text is not None, snapshot),
+        _decided(ctx, "reconnect-cursor-history", tally.refilled > 0, history),
+    ]
+
+
+def _window_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
+    """The cells only the long capture window decides: tool error, closed tab, reconnect,
+    rename and the two subagent cells."""
+    out: list[Observation] = []
+    if tally.tool_error_seen:
+        tool = (True, "tool_result on a probe slot carried a boolean is_error field")
+    elif tally.tool_results:
+        tool = (False, f"{tally.tool_results} tool_result frame(s) carried no error indicator")
+    else:
+        tool = (False, "no tool_result on a probe slot in the window")
+    out.append(_decided(ctx, "user-signal-tool-error", *tool))
+
+    timed = [s.at for s in tally.probe_signals if s.kind in PROGRESS_KINDS | TERMINAL_KINDS]
+    if timed:
+        verdict = closed_tab_verdict(timed, ctx.page_requests(), (tally.window_start, ctx.now()))
+        out.append(_decided(ctx, "closed-tab-collection", verdict.decided, verdict.text))
+    else:
+        out.append(_untested(ctx, "closed-tab-collection", "no probe-slot progress or terminal"))
+
+    out.extend(_reconnect_cells(ctx, tally))
+
+    rename_cell = "bot-id-stable-across-rename"
+    if not ctx.run.probe_slug:
+        out.append(_untested(ctx, rename_cell, "probe slug not set"))
+    elif not ctx.grants.has_api(AGENTS_PATH):
+        out.append(_untested(ctx, rename_cell, f"no {AGENTS_PATH} grant declared"))
+    else:
+        rename = tally.rename.verdict()
+        out.append(_decided(ctx, rename_cell, rename.decided, rename.text))
+
+    if not ctx.grants.has_event(SUBAGENT_EVENT):
+        out.append(_untested(ctx, "subagent-events-visible", "no subagent grant declared"))
+    else:
+        visible = (
+            f"{tally.subagent_frames} subagent frame(s) carried a probe slot"
+            if tally.subagent_frames
+            else "no subagent frame rooted at the probe bot's slot; a quiet bot and a denial "
+            "look the same"
+        )
+        out.append(_decided(ctx, "subagent-events-visible", tally.subagent_frames > 0, visible))
+    batch = "yes" if tally.batch_id_seen else "no"
+    attributed = (
+        f"{tally.subagent_attributed} subagent_spawn/subagent_done frame(s) carried the probe DM "
+        f"slot; batch_id present: {batch}; nesting depth unknown (frames carry the root slot only)"
+        if tally.subagent_attributed
+        else "no subagent_spawn or subagent_done carried the probe DM slot"
+    )
+    out.append(
+        _decided(
+            ctx,
+            "bot-worker-session-attribution-subagent",
+            tally.subagent_attributed > 0,
+            attributed,
+        )
+    )
+    return out
+
+
 def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -> list[Observation]:
     slug = ctx.run.probe_slug
-    kinds = tally.signal_kinds
     window = f"no matching frame in the {ctx.capture_seconds:g} s window"
     out: list[Observation] = []
     transport = port.token_transport
@@ -545,22 +920,7 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
     else:
         out.append(_untested(ctx, "user-slots-visible", window))
 
-    stamp_type = ctx.run.field_types.get("last_activity_ts")
-    for cell_id, wanted in (
-        ("user-signal-start", {"start"}),
-        ("user-signal-progress", {"progress"}),
-        ("user-signal-terminal", {"terminal"}),
-        ("user-signal-approval", {"approval", "needs-input"}),
-    ):
-        hit = sorted(kinds & wanted)
-        excerpt = f"signal observed on a probe slot: {', '.join(hit)}"
-        if cell_id == "user-signal-progress" and stamp_type:
-            excerpt += f"; last_activity_ts is JSON {stamp_type}"
-        out.append(
-            _seen(ctx, cell_id, excerpt)
-            if hit
-            else _untested(ctx, cell_id, "signal not observed in the capture window")
-        )
+    out.extend(_signal_cells(ctx, tally))
 
     if tally.terminal_outcome:
         out.append(_seen(ctx, "user-outcome-evidence", f"outcome text: {tally.terminal_outcome}"))
@@ -599,11 +959,12 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
         out.append(
             _untested(ctx, "bot-worker-session-attribution", "no probe worker slot observed")
         )
+    out.extend(_window_cells(ctx, tally))
     return out
 
 
 async def _ws_capture(port: GatewayPort, ctx: StepContext) -> list[Observation]:
-    tally = _FeedTally()
+    tally = _FeedTally(window_start=ctx.now())
     try:
         async with asyncio.timeout(ctx.capture_seconds):
             await _drain_feed(port, ctx, tally)
@@ -622,6 +983,67 @@ async def _ws_capture(port: GatewayPort, ctx: StepContext) -> list[Observation]:
         reason = f"feed handshake refused with {rejected.status}"
         return [denied, *(_untested(ctx, cell, reason) for cell in WS_CELLS[1:])]
     return _feed_observations(ctx, port, tally)
+
+
+def _usage_keys(value: object, depth: int = 0) -> set[str]:
+    """Which of PER_BOT_KEYS appear as a field name, or as a `_`-separated part of one, within
+    MAX_USAGE_KEY_DEPTH levels. Only those canonical words come back, never a raw key."""
+    if depth > MAX_USAGE_KEY_DEPTH:
+        return set()
+    found: set[str] = set()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            found |= PER_BOT_KEYS & set(str(key).lower().replace("-", "_").split("_"))
+            found |= _usage_keys(child, depth + 1)
+    elif isinstance(value, list):
+        for child in value:
+            found |= _usage_keys(child, depth + 1)
+    return found
+
+
+async def _usage_endpoints(port: GatewayPort, ctx: StepContext) -> list[Observation]:
+    """Exactly one GET to each usage path the grants allow; never a child path or a POST (a
+    child path can trigger a credit re-read). The bodies carry the OS username and billing data,
+    so only field names are recorded."""
+    out: list[Observation] = []
+    answered: list[tuple[str, object]] = []
+    for cell_id, path in (
+        ("usage-api-app-token", USAGE_PATH),
+        ("sessions-usage-api-app-token", SESSIONS_USAGE_PATH),
+    ):
+        if not ctx.grants.has_api(path):
+            out.append(_untested(ctx, cell_id, f"no {path} grant declared"))
+            continue
+        status, body = await port.http("GET", path)
+        out.append(_http_observation(ctx, "usage-endpoints", cell_id, "GET", path, status, body))
+        parsed = _parse(body)
+        if 200 <= status < 300 and isinstance(parsed, dict | list):
+            answered.append((path, parsed))
+    kept = ctx.run.events.rows_kept
+    seen = (
+        f"capture so far: context_usage rows {kept.get('context_usage', 0)}, "
+        f"subagent_done rows {kept.get('subagent_done', 0)}"
+    )
+    cell = "bot-token-usage-per-bot"
+    if not answered:
+        out.append(_untested(ctx, cell, f"no usage endpoint answered with a body; {seen}"))
+        return out
+    found = sorted(set().union(*(_usage_keys(parsed) for _, parsed in answered)))
+    if not found:
+        shapes = "; ".join(f"{path} {describe(parsed)}" for path, parsed in answered)
+        out.append(_untested(ctx, cell, f"no per-slot or per-bot field names: {shapes}; {seen}"))
+        return out
+    paths = ", ".join(path for path, _ in answered)
+    excerpt = (
+        f"{paths}: per-slot or per-bot field names present ({', '.join(found)}); what the "
+        f"figures mean is not concluded here; {seen}"
+    )
+    out.append(
+        Observation(
+            cell, "APP-TOKEN", ctx.now(), _ref(ctx, "usage-endpoints"), excerpt, state="ALLOWED"
+        )
+    )
+    return out
 
 
 def _member_record_path(slug: str) -> str:
@@ -703,6 +1125,11 @@ STEPS: tuple[Step, ...] = (
         _deny_matrix,
     ),
     Step("agents-roster", ("bot-list-via-agents", "bot-name-avatar"), _agents_roster),
+    Step(
+        "usage-endpoints",
+        ("usage-api-app-token", "sessions-usage-api-app-token", "bot-token-usage-per-bot"),
+        _usage_endpoints,
+    ),
     Step("chat-slots", ("user-chat-slots-api", "user-chat-slot-history"), _chat_slots),
     Step("ws-capture", WS_CELLS, _ws_capture),
     Step("member-record-write", ("bot-dashboard-member-record",), _member_record_write),
@@ -711,12 +1138,16 @@ STEPS: tuple[Step, ...] = (
 )
 
 STEP_IDS = tuple(step.id for step in STEPS)
+# Steps whose grants the D-P1 overlay dropped: selectable by id, not part of the default run.
+OPT_IN_STEP_IDS = ("chat-slots", "member-record-write", "member-record-ungranted", "cli-compare")
+DEFAULT_STEP_IDS = tuple(step_id for step_id in STEP_IDS if step_id not in OPT_IN_STEP_IDS)
 
 
 def select_steps(step_ids: list[str] | None) -> list[Step]:
-    """Steps in canonical order; an unknown id raises UnknownStep."""
+    """Steps in canonical order, the default run when no ids are given; an unknown id raises
+    UnknownStep."""
     if step_ids is None:
-        return list(STEPS)
+        return [step for step in STEPS if step.id in DEFAULT_STEP_IDS]
     unknown = [step_id for step_id in step_ids if step_id not in STEP_IDS]
     if unknown:
         raise UnknownStep(unknown[0])

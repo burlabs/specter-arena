@@ -4,13 +4,14 @@ import pytest
 
 from backend.specter_arena.config import Grants
 from backend.specter_arena.probe.matrix import empty_run, to_host_facts_json, to_matrix_json
-from backend.specter_arena.probe.sanitise import digest
+from backend.specter_arena.probe.sanitise import digest, placeholder
 from backend.specter_arena.probe.steps import (
     STEP_IDS,
     STEPS,
     StepContext,
     UnknownStep,
     execute_step,
+    is_allowed_client_text,
     refusal_reasons,
     run_steps,
     select_steps,
@@ -35,7 +36,8 @@ def make_ctx(slug: str = "probe", **kwargs: object) -> StepContext:
     run = empty_run()
     run.run_id = "r1"
     run.probe_slug = slug
-    return StepContext(run=run, now=lambda: NOW, capture_seconds=0.2, **kwargs)  # type: ignore[arg-type]
+    options: dict[str, object] = {"now": lambda: NOW, "capture_seconds": 0.2, **kwargs}
+    return StepContext(run=run, **options)  # type: ignore[arg-type]
 
 
 def state(ctx: StepContext, cell_id: str) -> str:
@@ -57,6 +59,7 @@ def test_step_ids_match_the_design_order() -> None:
         "other-app-proxy",
         "deny-matrix",
         "agents-roster",
+        "usage-endpoints",
         "chat-slots",
         "ws-capture",
         "member-record-write",
@@ -80,7 +83,16 @@ def test_select_steps_orders_and_rejects_unknown_ids() -> None:
         "token-exchange",
         "cli-compare",
     ]
-    assert len(select_steps(None)) == 10
+    assert [s.id for s in select_steps(None)] == [
+        "token-exchange",
+        "own-proxy-unauth",
+        "other-app-proxy",
+        "deny-matrix",
+        "agents-roster",
+        "usage-endpoints",
+        "ws-capture",
+    ]
+    assert [s.id for s in select_steps(["cli-compare"])] == ["cli-compare"]
     with pytest.raises(UnknownStep):
         select_steps(["nope"])
 
@@ -361,16 +373,26 @@ def test_ws_capture_stops_at_the_time_window() -> None:
     assert state(ctx, "bot-id-observable") == "ALLOWED"
 
 
-def test_ws_capture_stops_at_the_frame_cap() -> None:
-    ctx = make_ctx()
-    ctx.max_frames = 1
+def test_the_retained_row_cap_stops_keeping_rows_but_not_signals() -> None:
+    dm = "member-probe"
     frames = [
-        slots_frame(slot_row("member-probe")),
-        slots_frame(slot_row("member-probe", running=True)),
+        slots_frame(slot_row(dm, running=True)),
+        *(event_frame("tool_call", slot=dm, kind="execute") for _ in range(5)),
+        slots_frame(slot_row(dm, running=False)),
     ]
+    ctx = make_ctx(max_kept_rows=2)
     run_one("ws-capture", FakePort(frames=frames), ctx)
-    assert "user-signal-start" in ctx.run.cells
-    assert state(ctx, "user-signal-start") == "UNTESTED"
+    assert len(ctx.run.events.rows) == 2
+    assert ctx.run.events.rows_dropped_by_cap == 3
+    assert signal_kinds(ctx).count("tool-call") == 5
+    assert state(ctx, "user-signal-terminal") == "ALLOWED"
+
+
+def test_a_long_feed_is_read_until_the_timer_ends_it() -> None:
+    frames = [slots_frame(slot_row("member-probe")) for _ in range(10_000)]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames, hang=True), ctx)
+    assert ctx.run.events.frames_seen["slots"] == 10_000
 
 
 def test_ws_capture_drops_unsanitisable_frames_and_counts_them() -> None:
@@ -432,7 +454,7 @@ def test_without_a_gateway_origin_every_step_is_untested_not_failed() -> None:
     port = FakePort()
     asyncio.run(run_steps(port, ctx))
     assert port.calls == []
-    assert len(ctx.run.cells) == sum(len(step.cells) for step in STEPS)
+    assert len(ctx.run.cells) == sum(len(step.cells) for step in select_steps(None))
     assert {cell.state for cell in ctx.run.cells.values()} == {"UNTESTED"}
     assert "gateway origin unavailable" in note(ctx, "app-owned-token-exchange")
 
@@ -734,3 +756,349 @@ def test_d_p1_grants_decide_the_slots_cells_from_the_slots_event() -> None:
     run_one("ws-capture", FakePort(frames=[slots_frame(slot_row("member-probe"))]), ctx)
     assert "slots grant is declared" in note(ctx, "user-slots-no-grant-denied")
     assert state(ctx, "user-slots-visible") == "ALLOWED"
+
+
+DM = "member-probe"
+
+
+def marker(generation: object = 2) -> dict[str, object]:
+    return {"type": "_probe_reconnect", "data": {"generation": generation}}
+
+
+def test_subscribe_subagents_is_sent_once_and_only_with_the_subagent_grant() -> None:
+    granted = FakePort(frames=[slots_frame(slot_row(DM))])
+    run_one("ws-capture", granted, make_ctx(grants=D_P1_GRANTS))
+    assert granted.sent == ['{"type":"subscribe_subagents"}']
+    slots_only = Grants(frozenset(), frozenset({"slots:user"}), "manifest")
+    quiet = FakePort(frames=[slots_frame(slot_row(DM))])
+    run_one("ws-capture", quiet, make_ctx(grants=slots_only))
+    assert quiet.sent == []
+
+
+def test_only_the_subscribe_message_is_an_allowed_client_text() -> None:
+    assert is_allowed_client_text('{"type":"subscribe_subagents"}')
+    assert not is_allowed_client_text('{"type": "subscribe_subagents"}')
+    assert not is_allowed_client_text('{"type":"chat","text":"hi"}')
+
+
+def test_a_reconnect_marker_resyncs_without_a_spurious_start_or_removal() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        marker(),
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("subagent_snapshot", id="sa-1", slot=DM),
+        slots_frame(slot_row(DM, running=False)),
+    ]
+    ctx = make_ctx(reconnect_after_start=1)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert signal_kinds(ctx) == ["start", "reconnect", "resync", "terminal"]
+    excerpt = ctx.run.cells["reconnect-snapshot"].evidence[0].excerpt
+    assert excerpt.startswith("1 reconnect(s); probe rows before 1, after 1")
+    assert excerpt.endswith("replayed within 10 s: subagent_snapshot 1")
+    assert note(ctx, "reconnect-cursor-history") == "no history frames after reconnect"
+
+
+def test_a_reconnect_with_no_slots_frame_after_it_is_untested() -> None:
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM)), marker()]), ctx)
+    assert note(ctx, "reconnect-snapshot") == "reconnected but no slots frame followed"
+
+
+def test_forged_or_malformed_markers_and_underscore_frames_are_ignored() -> None:
+    frames: list[dict[str, object]] = [
+        slots_frame(slot_row(DM, running=True)),
+        marker(1),
+        marker(True),
+        marker("2"),
+        {"type": "_probe_reconnect"},
+        {"type": "_other", "data": {}},
+        slots_frame(slot_row(DM, running=False)),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert signal_kinds(ctx) == ["start", "terminal"]
+    assert "no deliberate reconnect was configured" in note(ctx, "reconnect-snapshot")
+    assert "_other" not in ctx.run.events.frames_seen
+
+
+def test_earlier_turns_replayed_after_a_reconnect_decide_cursor_history() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("chat_done", slot=DM, turn=3),
+        marker(),
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("chat_done", slot=DM, turn=2),
+        event_frame("chat_done", slot=DM, turn=3),
+        event_frame("chat_done", slot=DM, turn=4),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "reconnect-cursor-history") == "ALLOWED"
+    assert ctx.run.cells["reconnect-cursor-history"].evidence[0].excerpt.startswith("1 earlier")
+
+
+def test_the_reconnect_timer_drops_the_feed_after_the_first_start() -> None:
+    port = FakePort(frames=[slots_frame(slot_row(DM)), slots_frame(slot_row(DM, running=True))])
+    port.hang = True
+    ctx = make_ctx(reconnect_after_start=0.05)
+    run_one("ws-capture", port, ctx)
+    assert port.drops == 1
+    idle = FakePort(frames=[slots_frame(slot_row(DM))], hang=True)
+    run_one("ws-capture", idle, make_ctx(reconnect_after_start=0.05))
+    assert idle.drops == 0
+
+
+def test_an_event_before_its_slot_row_is_kept_as_a_probe_row_at_the_next_slots_frame() -> None:
+    worker = "w9"
+    frames = [
+        slots_frame(slot_row(DM)),
+        event_frame("tool_call", slot=worker, kind="execute"),
+        slots_frame(slot_row(DM), slot_row(worker, created_by=DM, running=True)),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    (row,) = ctx.run.events.rows
+    assert (row["rowKind"], row["data"]) == ("probe", {"kind": "execute", "slot": worker})
+    assert "tool-call" in signal_kinds(ctx, worker)
+
+
+def test_an_event_whose_slot_never_becomes_a_probe_slot_is_kept_in_plain_form() -> None:
+    frames = [
+        slots_frame(slot_row(DM)),
+        event_frame("tool_call", slot="chat-7", kind="execute"),
+        slots_frame(slot_row(DM)),
+        event_frame("chat_done", slot="chat-8", turn=1),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    rows = ctx.run.events.rows
+    assert [row["rowKind"] for row in rows] == ["non-probe", "non-probe"]
+    assert rows[0]["data"] == {
+        "kind": placeholder("execute"),
+        "slot": digest(ctx.run.salt, "chat-7"),
+    }
+    assert "chat-7" not in str(rows)
+
+
+def test_a_pending_event_expires_after_its_ttl() -> None:
+    ticks = iter([0.0])
+    frames = [
+        slots_frame(slot_row(DM)),
+        event_frame("tool_call", slot="w9", kind="execute"),
+        event_frame("chat_done", slot=DM, turn=1),
+    ]
+    ctx = make_ctx(monotonic=lambda: next(ticks, 10.0))
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert [row["rowKind"] for row in ctx.run.events.rows] == ["non-probe", "probe"]
+
+
+def test_subagent_frames_on_the_dm_slot_decide_both_subagent_cells() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("subagent_spawn", id="sa-1", slot=DM, batch_id="b-1", task="secret task"),
+        event_frame("subagent_status", id="sa-1", slot=DM, status="running"),
+        event_frame("subagent_done", id="sa-1", slot=DM, outcome="completed"),
+    ]
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "subagent-events-visible") == "ALLOWED"
+    excerpt = ctx.run.cells["bot-worker-session-attribution-subagent"].evidence[0].excerpt
+    assert excerpt.startswith("2 subagent_spawn/subagent_done frame(s)")
+    assert "batch_id present: yes" in excerpt
+    worker = ctx.run.attempts[f"subagent:{digest(ctx.run.salt, 'sa-1')}"]
+    assert (worker.kind, worker.bot_ref) == ("worker-session", "probe")
+    assert [s.kind for s in worker.signals] == [
+        "subagent-spawn",
+        "subagent-status",
+        "subagent-done",
+    ]
+    assert "secret task" not in str(ctx.run.events.rows)
+
+
+def test_a_longer_slug_is_not_attributed_and_no_grant_leaves_the_cell_untested() -> None:
+    other = "member-probex"
+    frames = [
+        slots_frame(slot_row(DM), slot_row(other)),
+        event_frame("subagent_spawn", id="sa-2", slot=other),
+    ]
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "bot-worker-session-attribution-subagent") == "UNTESTED"
+    assert "a quiet bot and a denial" in note(ctx, "subagent-events-visible")
+    bare = make_ctx(grants=Grants(frozenset(), frozenset({"slots:user"}), "manifest"))
+    run_one("ws-capture", FakePort(frames=frames), bare)
+    assert note(bare, "subagent-events-visible") == "no subagent grant declared"
+
+
+def test_event_signals_decide_the_lifecycle_cells() -> None:
+    frames = [
+        slots_frame(slot_row(DM)),
+        event_frame("chat_status", slot=DM, status="Thinking"),
+        event_frame("tool_call", slot=DM, kind="execute"),
+        event_frame("tool_result", slot=DM, kind="execute", is_error=True),
+        event_frame("approval", id="ap-1", slot=DM, tool="shell"),
+        event_frame("question_card", slot=DM),
+        event_frame("chat_done", slot=DM, turn=1),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    for cell in ("user-signal-start", "user-signal-progress", "user-signal-terminal"):
+        assert state(ctx, cell) == "ALLOWED", cell
+    assert (
+        ctx.run.cells["user-signal-terminal"]
+        .evidence[0]
+        .excerpt.endswith("a turn boundary, not an outcome")
+    )
+    approval = ctx.run.cells["user-signal-approval"].evidence[0].excerpt
+    assert approval.endswith("question_card frames: 1")
+    assert state(ctx, "user-signal-tool-error") == "ALLOWED"
+
+
+def test_tool_error_is_untested_without_an_indicator_or_without_a_tool_result() -> None:
+    frames = [slots_frame(slot_row(DM)), event_frame("tool_result", slot=DM, kind="execute")]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert (
+        note(ctx, "user-signal-tool-error") == "1 tool_result frame(s) carried no error indicator"
+    )
+    quiet = make_ctx()
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), quiet)
+    assert note(quiet, "user-signal-tool-error") == "no tool_result on a probe slot in the window"
+    assert note(quiet, "closed-tab-collection") == "no probe-slot progress or terminal"
+
+
+def test_a_terminal_in_a_long_idle_gap_decides_the_closed_tab_cell() -> None:
+    times = iter(f"2026-11-14T10:{minute:02d}:00+00:00" for minute in range(60))
+    frames = [slots_frame(slot_row(DM, running=True)), slots_frame(slot_row(DM, running=False))]
+    ctx = make_ctx(now=lambda: next(times))
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "closed-tab-collection") == "ALLOWED"
+    busy_times = iter(f"2026-11-14T10:{minute:02d}:00+00:00" for minute in range(60))
+    every_ten_seconds = [f"2026-11-14T10:{m:02d}:{s:02d}+00:00" for m in range(60) for s in (0, 10)]
+    busy = make_ctx(now=lambda: next(busy_times), page_requests=lambda: every_ten_seconds)
+    run_one("ws-capture", FakePort(frames=frames), busy)
+    assert state(busy, "closed-tab-collection") == "UNTESTED"
+
+
+def roster_body(name: str) -> tuple[int, bytes]:
+    return 200, json_body({"agents": [{"slug": "probe", "display_name": name}]})
+
+
+class RenamingPort(FakePort):
+    """Answers /api/agents with a new display name on the second read."""
+
+    def __init__(self, frames: list[dict[str, object]]) -> None:
+        super().__init__(frames=frames, hang=True)
+        self.names = iter(["Probe", "Probe Renamed"])
+
+    async def http(
+        self,
+        method: str,
+        path: str,
+        body: bytes | None = None,
+        *,
+        token: bool = True,
+        local: bool = False,
+    ) -> tuple[int, bytes]:
+        self.calls.append((method, path, token, local))
+        return roster_body(next(self.names, "Probe Renamed"))
+
+
+def test_the_roster_poller_decides_rename_from_digests_only() -> None:
+    port = RenamingPort([slots_frame(slot_row(DM))])
+    ctx = make_ctx(grants=D_P1_GRANTS, agents_poll_seconds=0.05)
+    run_one("ws-capture", port, ctx)
+    cell = ctx.run.cells["bot-id-stable-across-rename"]
+    assert cell.state == "ALLOWED"
+    assert "Probe Renamed" not in str(cell) and "Probe Renamed" not in str(ctx.run.events.rows)
+    assert all(call[1] == "/api/agents" for call in port.calls)
+
+
+def test_rename_needs_a_slug_and_the_agents_grant() -> None:
+    no_slug = make_ctx(slug="", grants=D_P1_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame()]), no_slug)
+    assert note(no_slug, "bot-id-stable-across-rename") == "probe slug not set"
+    slots_only = make_ctx(grants=Grants(frozenset(), frozenset({"slots:user"}), "manifest"))
+    run_one("ws-capture", FakePort(frames=[slots_frame()]), slots_only)
+    assert note(slots_only, "bot-id-stable-across-rename") == "no /api/agents grant declared"
+
+
+def test_a_failing_roster_read_is_skipped_and_the_poll_continues() -> None:
+    port = FakePort({("GET", "/api/agents"): TimeoutError()}, frames=[slots_frame()], hang=True)
+    ctx = make_ctx(grants=D_P1_GRANTS, agents_poll_seconds=0.05)
+    run_one("ws-capture", port, ctx)
+    assert len(port.calls) >= 2
+    assert note(ctx, "bot-id-stable-across-rename") == "display_name did not change across 0 reads"
+
+
+USERNAME = "sentinel-os-user"
+
+
+def test_usage_endpoints_make_exactly_two_gets_and_record_field_names_only() -> None:
+    usage = (200, json_body({"user": USERNAME, "credits": 3, "sessions": [{"slot": "s", "n": 1}]}))
+    sessions = (200, json_body({"owner": USERNAME, "total_tokens": 9}))
+    port = FakePort({("GET", "/api/usage"): usage, ("GET", "/api/sessions/usage"): sessions})
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("usage-endpoints", port, ctx)
+    assert port.calls == [
+        ("GET", "/api/usage", True, False),
+        ("GET", "/api/sessions/usage", True, False),
+    ]
+    assert state(ctx, "usage-api-app-token") == "ALLOWED"
+    assert state(ctx, "sessions-usage-api-app-token") == "ALLOWED"
+    per_bot = ctx.run.cells["bot-token-usage-per-bot"]
+    assert per_bot.state == "ALLOWED"
+    assert "field names present (slot)" in per_bot.evidence[0].excerpt
+    assert USERNAME not in str(ctx.run.cells)
+
+
+def test_usage_without_per_bot_fields_or_bodies_leaves_the_per_bot_cell_untested() -> None:
+    flat = (200, json_body({"credits": 3}))
+    port = FakePort({("GET", "/api/usage"): flat, ("GET", "/api/sessions/usage"): DENY})
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("usage-endpoints", port, ctx)
+    assert state(ctx, "sessions-usage-api-app-token") == "DENIED"
+    assert note(ctx, "bot-token-usage-per-bot").startswith(
+        "no per-slot or per-bot field names: /api/usage object with fields credits"
+    )
+    listed = FakePort(
+        {("GET", "/api/usage"): (200, b'"text"'), ("GET", "/api/sessions/usage"): DENY}
+    )
+    odd = make_ctx(grants=D_P1_GRANTS)
+    run_one("usage-endpoints", listed, odd)
+    assert state(odd, "usage-api-app-token") == "UNTESTED"
+    assert note(odd, "bot-token-usage-per-bot").startswith("no usage endpoint answered with a body")
+
+
+def test_usage_paths_without_a_grant_are_not_requested() -> None:
+    only_usage = Grants(frozenset({"/api/usage"}), frozenset(), "manifest")
+    port = FakePort({("GET", "/api/usage"): (200, json_body([{"bot_id": "x"}]))})
+    ctx = make_ctx(grants=only_usage)
+    run_one("usage-endpoints", port, ctx)
+    assert port.calls == [("GET", "/api/usage", True, False)]
+    assert note(ctx, "sessions-usage-api-app-token") == "no /api/sessions/usage grant declared"
+    assert state(ctx, "bot-token-usage-per-bot") == "ALLOWED"
+
+
+def test_events_without_a_slot_unsanitisable_events_and_a_full_buffer() -> None:
+    frames: list[dict[str, object]] = [
+        slots_frame(slot_row(DM)),
+        event_frame("approval_resolved", id="ap-1", approved=True),
+        event_frame("context_usage", slot=DM, pct=float("nan")),
+        *(event_frame("tool_call", slot=f"chat-{n}", kind="read") for n in range(101)),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    rows = ctx.run.events.rows
+    assert rows[0]["data"] == {"approved": True, "id": digest(ctx.run.salt, "ap-1")}
+    assert ctx.run.stats.dropped == 1
+    assert len(rows) == 102
+    assert {row["rowKind"] for row in rows} == {"non-probe"}
+
+
+def test_per_bot_field_names_deeper_than_three_levels_are_not_read() -> None:
+    deep = {"a": {"b": {"c": {"d": {"slot": 1}}}}}
+    port = FakePort({("GET", "/api/usage"): (200, json_body(deep))})
+    ctx = make_ctx(grants=Grants(frozenset({"/api/usage"}), frozenset(), "manifest"))
+    run_one("usage-endpoints", port, ctx)
+    assert state(ctx, "bot-token-usage-per-bot") == "UNTESTED"

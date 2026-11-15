@@ -45,7 +45,20 @@ def probe_enabled(environ: Mapping[str, str] | None = None, root: Path | None = 
 
 MANIFEST_FILE = "app.json"
 OWN_API_ENTRY = "/apps/specter-arena/api/*"
+RUN_OPTIONS_FILE = ".probe-run.json"
 _CHILDREN_SUFFIX = "/*"
+
+
+def read_run_options_file(path: Path | None = None) -> object:
+    """The parsed staged run-options file, or None when there is none. Lives here, outside the
+    probe package, because probe code may not read files. Raises ValueError for invalid JSON
+    and OSError when the file exists but cannot be read."""
+    target = APP_ROOT / RUN_OPTIONS_FILE if path is None else path
+    try:
+        text = target.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    return json.loads(text)
 
 
 @dataclass(frozen=True)

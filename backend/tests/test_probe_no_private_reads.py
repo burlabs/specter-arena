@@ -12,6 +12,8 @@ MODULES = [
     "sanitise",
     "frames",
     "events",
+    "observers",
+    "options",
     "matrix",
     "snapshot",
     "steps",
