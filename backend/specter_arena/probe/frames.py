@@ -83,16 +83,26 @@ def is_bot_dm_key(key: str, probe_slug: str) -> bool:
     return key == dm_key or key.startswith(f"{dm_key}{MEMORY_STORE_SUFFIX}")
 
 
-def probe_keys(rows: list[Row], probe_slug: str) -> set[str]:
-    """The probe bot's DM slot plus every slot whose `created_by` chain reaches it.
+def is_bot_root(row: Row, probe_slug: str) -> bool:
+    """A slot the probe bot itself runs: its DM key form, or a row whose `agent` field is the
+    probe slug. Crew 0.12.2 runs a bot's DM turns in slots whose key is not always the
+    `member-<slug>` form, but `agent` always carries the slug (an identifier, not a display
+    name), so an exact match cannot pick up another bot."""
+    if not probe_slug:
+        return False
+    return is_bot_dm_key(_text(row, "key"), probe_slug) or _text(row, "agent") == probe_slug
 
-    A worker counts when its `created_by` names either DM key form, whether or not that DM row
-    is in the snapshot. Walks at most MAX_LINEAGE_DEPTH levels. Growth is monotonic, so a cycle
-    in `created_by` ends the walk instead of looping.
+
+def probe_keys(rows: list[Row], probe_slug: str) -> set[str]:
+    """The probe bot's own slots plus every slot whose `created_by` chain reaches one.
+
+    A worker counts when its `created_by` names a bot slot in the snapshot or either DM key
+    form, whether or not that DM row is present. Walks at most MAX_LINEAGE_DEPTH levels. Growth
+    is monotonic, so a cycle in `created_by` ends the walk instead of looping.
     """
     if not probe_slug:
         return set()
-    keys = {key for row in rows if is_bot_dm_key(key := _text(row, "key"), probe_slug)}
+    keys = {key for row in rows if (key := _text(row, "key")) and is_bot_root(row, probe_slug)}
     for _ in range(MAX_LINEAGE_DEPTH):
         grown = {
             _text(row, "key")
@@ -110,7 +120,7 @@ def probe_keys(rows: list[Row], probe_slug: str) -> set[str]:
 
 
 def slot_role(row: Row, probe_slug: str) -> SlotRole:
-    if is_bot_dm_key(_text(row, "key"), probe_slug):
+    if is_bot_root(row, probe_slug):
         return "bot-dm"
     return "worker" if _text(row, "created_by") else "other"
 

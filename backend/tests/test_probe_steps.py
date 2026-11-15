@@ -1110,3 +1110,75 @@ def test_per_bot_field_names_deeper_than_three_levels_are_not_read() -> None:
     ctx = make_ctx(grants=Grants(frozenset({"/api/usage"}), frozenset(), "manifest"))
     run_one("usage-endpoints", port, ctx)
     assert state(ctx, "bot-token-usage-per-bot") == "UNTESTED"
+
+
+def test_a_bot_turn_in_a_slot_named_by_its_agent_field_is_attributed() -> None:
+    """The 0.12.2 sitting shape: a stale `member-` DM row that never runs, and the bot's real
+    DM turn in a slot keyed otherwise whose `agent` is the slug, with a worker under it."""
+    stale = slot_row(f"{DM}.memory-old", agent="probe")
+    live, worker = "chat-live", "chat-worker"
+    frames = [
+        slots_frame(stale, slot_row(live, agent="probe", created_by="someone")),
+        slots_frame(stale, slot_row(live, agent="probe", created_by="someone", running=True)),
+        event_frame("tool_call", slot=live, kind="execute"),
+        event_frame("subagent_spawn", id="sa-1", slot=live),
+        slots_frame(
+            stale,
+            slot_row(live, agent="probe", created_by="someone", running=True),
+            slot_row(worker, agent="helper", created_by=live, running=True),
+        ),
+        event_frame("chat_done", slot=live, turn=1),
+        slots_frame(
+            stale,
+            slot_row(live, agent="probe", created_by="someone"),
+            slot_row(worker, agent="helper", created_by=live),
+        ),
+    ]
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    for cell in (
+        "user-signal-start",
+        "user-signal-progress",
+        "user-signal-terminal",
+        "bot-worker-session-attribution",
+        "bot-worker-session-attribution-subagent",
+        "subagent-events-visible",
+    ):
+        assert state(ctx, cell) == "ALLOWED", cell
+    assert ctx.run.attempts[live].kind == "bot-turn"
+    assert ctx.run.attempts[worker].kind == "worker-session"
+    subagent = ctx.run.attempts[f"subagent:{digest(ctx.run.salt, 'sa-1')}"]
+    assert (subagent.kind, subagent.bot_ref) == ("worker-session", "probe")
+    assert {row["rowKind"] for row in ctx.run.events.rows} == {"probe"}
+    assert ctx.run.cells["bot-id-observable"].evidence[0].excerpt == (
+        "probe bot slot present: DM slot key member-probe; a slot whose agent field is the "
+        "probe slug"
+    )
+
+
+def test_an_agent_field_for_another_bot_or_a_longer_slug_is_not_attributed() -> None:
+    frames = [
+        slots_frame(
+            slot_row("chat-a", agent="probex", running=True),
+            slot_row("chat-b", agent="Probe", running=True),
+        ),
+        event_frame("chat_done", slot="chat-a", turn=1),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert ctx.run.probe_slots == frozenset()
+    assert note(ctx, "bot-id-observable") == "probe DM slot not in the snapshots"
+    assert {row["rowKind"] for row in ctx.run.events.rows} == {"non-probe"}
+
+
+def test_the_bot_id_excerpt_names_which_form_matched() -> None:
+    by_agent = make_ctx()
+    run_one(
+        "ws-capture", FakePort(frames=[slots_frame(slot_row("chat-x", agent="probe"))]), by_agent
+    )
+    excerpt = by_agent.run.cells["bot-id-observable"].evidence[0].excerpt
+    assert excerpt == "probe bot slot present: a slot whose agent field is the probe slug"
+    by_key = make_ctx()
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), by_key)
+    excerpt = by_key.run.cells["bot-id-observable"].evidence[0].excerpt
+    assert excerpt == "probe bot slot present: DM slot key member-probe"
