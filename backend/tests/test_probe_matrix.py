@@ -242,7 +242,7 @@ def test_matrix_json_is_all_untested_for_an_empty_run() -> None:
     document = to_matrix_json(empty_run())
     cells = document["cells"]
     assert isinstance(cells, list)
-    assert len(cells) == 46
+    assert len(cells) == 51
     assert {cell["state"] for cell in cells} == {"UNTESTED"}
     assert all(
         cell["credential"] is None and cell["evidenceRef"] is None and cell["probedAt"] is None
@@ -282,3 +282,69 @@ def test_cell_defaults_to_untested() -> None:
     cell = Cell(question_by_id("bot-goals-read"))
     assert cell.state == "UNTESTED"
     assert cell.notes == "not yet probed"
+
+
+NEW_CELLS = {
+    "bot-token-usage-per-bot": ("bot", "usage-endpoints", False),
+    "bot-worker-session-attribution-subagent": ("bot", "ws-capture", True),
+    "sessions-usage-api-app-token": ("user-owned", "usage-endpoints", False),
+    "subagent-events-visible": ("user-owned", "ws-capture", True),
+    "usage-api-app-token": ("user-owned", "usage-endpoints", False),
+}
+
+
+@pytest.mark.parametrize("cell_id", sorted(NEW_CELLS))
+def test_the_fp0203_cells_are_must_matrix_questions(cell_id: str) -> None:
+    question = question_by_id(cell_id)
+    assert (question.kind, question.priority) == ("matrix", "must")
+    assert (question.scope, question.method, question.needs_owner) == NEW_CELLS[cell_id]
+
+
+@pytest.mark.parametrize(
+    "cell_id",
+    [
+        "user-signal-tool-error",
+        "closed-tab-collection",
+        "reconnect-snapshot",
+        "reconnect-cursor-history",
+        "bot-id-stable-across-rename",
+    ],
+)
+def test_cells_the_capture_window_now_decides_name_ws_capture(cell_id: str) -> None:
+    question = question_by_id(cell_id)
+    assert (question.method, question.needs_owner) == ("ws-capture", True)
+
+
+def test_a_later_untested_keeps_the_decided_cell_and_appends_its_reason() -> None:
+    run = empty_run()
+    apply_observation(run, observe(status=403, body_shape="error"))
+    kept = apply_observation(run, observe(untested_reason="request timed out"))
+    assert kept.state == "DENIED"
+    assert kept.evidence == run.cells["bot-goals-read"].evidence
+    assert kept.notes == "later window untested: request timed out"
+    again = apply_observation(run, observe(untested_reason="feed closed"))
+    assert (
+        again.notes
+        == "later window untested: request timed out; later window untested: feed closed"
+    )
+
+
+def test_a_later_decision_replaces_the_cell_and_untested_replaces_untested() -> None:
+    run = empty_run()
+    apply_observation(run, observe(untested_reason="first window"))
+    assert apply_observation(run, observe(untested_reason="second")).notes == "second"
+    apply_observation(run, observe(status=403, body_shape="error"))
+    replaced = apply_observation(run, observe(status=200, body_shape="expected"))
+    assert replaced.state == "ALLOWED"
+    assert replaced.notes is None
+
+
+def test_decided_cells_carry_the_run_host_version_and_untested_cells_do_not() -> None:
+    run = empty_run()
+    run.host_version = "0.12.2"
+    apply_observation(run, observe(status=403, body_shape="error"))
+    document = to_matrix_json(run)
+    cells = {cell["id"]: cell for cell in document["cells"]}  # type: ignore[attr-defined]
+    assert cells["bot-goals-read"]["hostVersion"] == "0.12.2"
+    assert "hostVersion" not in cells["bot-fresh-start"]
+    assert document["hostVersion"] == "0.12.2"

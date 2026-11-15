@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from backend.specter_arena.probe.events import (
     COUNT_ONLY,
     ENUM_FIELDS,
@@ -9,6 +11,9 @@ from backend.specter_arena.probe.events import (
     burst_max_per_second,
     percentile,
 )
+from backend.specter_arena.probe.questions import canonical_json
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_the_vocabulary_is_sorted_unique_and_covers_every_named_type() -> None:
@@ -123,3 +128,9 @@ def test_the_pending_buffer_is_bounded_and_evicts_the_oldest() -> None:
     assert evicted[100] is not None
     assert evicted[100].slot == "s0"
     assert len(buffer) == 100
+
+
+def test_the_committed_vocabulary_file_matches_the_module_byte_for_byte() -> None:
+    committed = (REPO_ROOT / "docs" / "compatibility" / "event-vocabulary.json").read_bytes()
+    expected = canonical_json({"version": 1, "eventTypes": list(EVENT_VOCABULARY)})
+    assert committed == expected.encode()

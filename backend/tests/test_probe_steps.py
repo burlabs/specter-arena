@@ -98,13 +98,24 @@ def test_token_exchange_refused_is_denied_and_other_faults_are_untested() -> Non
     ctx = make_ctx()
     run_one("token-exchange", FakePort(token=exchange_refused(403)), ctx)
     assert state(ctx, "app-owned-token-exchange") == "DENIED"
-    run_one("token-exchange", FakePort(token=exchange_refused(500)), ctx)
-    assert state(ctx, "app-owned-token-exchange") == "UNTESTED"
-    assert "status 500" in note(ctx, "app-owned-token-exchange")
-    run_one("token-exchange", FakePort(token=""), ctx)
-    assert "empty token" in note(ctx, "app-owned-token-exchange")
+    faults: list[tuple[str | BaseException, str]] = [
+        (exchange_refused(500), "token exchange failed (status 500)"),
+        ("", "token exchange returned an empty token"),
+        (TimeoutError(), "request timed out"),
+    ]
+    for token, reason in faults:
+        fresh = make_ctx()
+        run_one("token-exchange", FakePort(token=token), fresh)
+        assert state(fresh, "app-owned-token-exchange") == "UNTESTED"
+        assert note(fresh, "app-owned-token-exchange") == reason
+
+
+def test_a_later_fault_in_the_same_run_keeps_the_decided_cell() -> None:
+    ctx = make_ctx()
+    run_one("token-exchange", FakePort(token=exchange_refused(403)), ctx)
     run_one("token-exchange", FakePort(token=TimeoutError()), ctx)
-    assert note(ctx, "app-owned-token-exchange") == "request timed out"
+    assert state(ctx, "app-owned-token-exchange") == "DENIED"
+    assert note(ctx, "app-owned-token-exchange").endswith("request timed out")
 
 
 def test_own_proxy_unauth_sends_no_token_to_the_loopback_port() -> None:
