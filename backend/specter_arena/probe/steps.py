@@ -19,6 +19,7 @@ from .frames import (
     diff_slots,
     event_signal_kind,
     is_bot_dm_key,
+    is_bot_root,
     json_type_name,
     outcome_evidence,
     probe_keys,
@@ -516,6 +517,7 @@ def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) 
     probes = probe_keys(rows, run.probe_slug)
     run.probe_slots = frozenset(probes)
     current = {str(row["key"]): row for row in rows if row["key"] in probes}
+    run.bot_slots = frozenset(k for k, row in current.items() if is_bot_root(row, run.probe_slug))
     raw = {str(row["key"]): row for row in _keyed(frame_rows(frame)) if row["key"] in probes}
     for row in current.values():
         if "last_activity_ts" in row:
@@ -552,6 +554,12 @@ def absorb_slots(frame: dict[str, object], ctx: StepContext, tally: _FeedTally) 
         _keep_event(ctx, tally, event, "non-probe")
 
 
+def _is_bot_slot(run: Run, slot: str) -> bool:
+    """Whether an event's slot is one the bot runs itself, by DM key form or by the latest
+    `slots` frame (event frames carry no `agent` field of their own)."""
+    return slot in run.bot_slots or is_bot_dm_key(slot, run.probe_slug)
+
+
 def _event_attempt(run: Run, event_type: str, slot: str, data: dict[str, object]) -> Attempt:
     """A subagent frame belongs to a worker attempt named by its (digested) id; every other
     event belongs to its slot's attempt."""
@@ -559,7 +567,7 @@ def _event_attempt(run: Run, event_type: str, slot: str, data: dict[str, object]
     if event_type.startswith("subagent_") and isinstance(worker_id, str):
         key = f"subagent:{worker_id}"
         if key not in run.attempts:
-            bot_ref = run.probe_slug if is_bot_dm_key(slot, run.probe_slug) else None
+            bot_ref = run.probe_slug if _is_bot_slot(run, slot) else None
             run.attempts[key] = Attempt(key, "worker-session", bot_ref=bot_ref)
         return run.attempts[key]
     return _attempt_for(run, slot, run.last_rows.get(slot, {"key": slot}))
@@ -582,7 +590,7 @@ def _probe_event(
         tally.question_cards += 1
     elif event_type.startswith("subagent_"):
         tally.subagent_frames += 1
-        rooted = is_bot_dm_key(slot, run.probe_slug)
+        rooted = _is_bot_slot(run, slot)
         if event_type in ("subagent_spawn", "subagent_done") and rooted:
             tally.subagent_attributed += 1
             tally.batch_id_seen = tally.batch_id_seen or "batch_id" in data
@@ -688,7 +696,7 @@ async def _poll_agents(port: GatewayPort, ctx: StepContext, tally: _FeedTally) -
             row = next((r for r in rows if _is_probe_row(r, run.probe_slug)), None)
             name = row.get("display_name") if row is not None else None
             if isinstance(name, str):
-                dm_keys = frozenset(k for k in run.last_rows if is_bot_dm_key(k, run.probe_slug))
+                dm_keys = frozenset(run.bot_slots)
                 tally.rename.record(digest(run.salt, name), dm_keys)
         await asyncio.sleep(ctx.agents_poll_seconds)
 
@@ -939,7 +947,12 @@ def _feed_observations(ctx: StepContext, port: GatewayPort, tally: _FeedTally) -
         else _untested(ctx, "user-source-links", "no probe slot carried source_links")
     )
     if tally.dm_row is not None:
-        out.append(_seen(ctx, "bot-id-observable", f"DM slot key member-{slug} present"))
+        form = (
+            f"DM slot key member-{slug}"
+            if is_bot_dm_key(str(tally.dm_row.get("key", "")), slug)
+            else "a slot whose agent field is the probe slug"
+        )
+        out.append(_seen(ctx, "bot-id-observable", f"probe bot slot present: {form}"))
         has_agent = "agent" in tally.dm_row
         out.append(
             _seen(ctx, "bot-own-session-attribution", "DM slot carries key and agent fields")

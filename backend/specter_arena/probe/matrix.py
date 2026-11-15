@@ -217,6 +217,8 @@ class Run:
     last_rows: dict[str, dict[str, object]] = field(default_factory=dict)
     # Probe key set from the latest slots frame; event frames are classified against it.
     probe_slots: frozenset[str] = frozenset()
+    # The subset of probe_slots the bot runs itself (not its workers); events name only a slot.
+    bot_slots: frozenset[str] = frozenset()
     # Set by a deliberate reconnect: the next slots frame re-baselines instead of diffing.
     resync_pending: bool = False
     events: EventLog = field(default_factory=EventLog)

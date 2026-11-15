@@ -6,6 +6,7 @@ from backend.specter_arena.probe.frames import (
     MAX_EVIDENCE_CHARS,
     diff_slots,
     is_bot_dm_key,
+    is_bot_root,
     json_type_name,
     outcome_evidence,
     probe_keys,
@@ -258,3 +259,13 @@ def test_no_signal_over_random_sequences_names_the_verdict() -> None:
         for signal in diff_slots(prev, curr, at=AT):
             assert "accept" not in f"{signal.kind}{signal.slot_key}{signal.at}"
         prev = curr
+
+
+def test_a_bot_root_is_its_dm_key_or_an_exact_agent_match() -> None:
+    assert is_bot_root(slot_row("member-probe"), "probe")
+    assert is_bot_root(slot_row("chat-1", agent="probe"), "probe")
+    assert not is_bot_root(slot_row("chat-1", agent="probex"), "probe")
+    assert not is_bot_root(slot_row("chat-1", agent="probe"), "")
+    rows = [slot_row("chat-1", agent="probe"), slot_row("w", created_by="chat-1")]
+    assert probe_keys(rows, "probe") == {"chat-1", "w"}
+    assert slot_role(rows[0], "probe") == "bot-dm"
