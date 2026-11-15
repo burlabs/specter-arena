@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Literal, cast
 
+from .events import EventLog
 from .frames import Attempt
 from .questions import (
     Question,
@@ -216,6 +217,9 @@ class Run:
     last_rows: dict[str, dict[str, object]] = field(default_factory=dict)
     # Probe key set from the latest slots frame; event frames are classified against it.
     probe_slots: frozenset[str] = frozenset()
+    # Set by a deliberate reconnect: the next slots frame re-baselines instead of diffing.
+    resync_pending: bool = False
+    events: EventLog = field(default_factory=EventLog)
     # JSON type name of selected probe-row fields as last seen (values are not kept here).
     field_types: dict[str, str] = field(default_factory=dict)
     # Per-run salt for digests: held in memory only, excluded from repr and never serialised.

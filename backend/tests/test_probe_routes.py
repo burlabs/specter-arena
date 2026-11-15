@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import time
 import types
@@ -16,6 +17,7 @@ from backend.specter_arena.probe.routes import (
     default_port_factory,
     probe_routes,
 )
+from backend.specter_arena.probe.steps import DEFAULT_STEP_IDS, select_steps
 from backend.tests.probe_fakes import (
     SECRET,
     FakePort,
@@ -36,12 +38,25 @@ def proxy_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("KIROCREW_PROXY_SECRET", SECRET)
 
 
+@pytest.fixture(autouse=True)
+def staged_options(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
+    """Every service in this module reads a staged options file naming the host version."""
+    global OPTIONS_PATH
+    OPTIONS_PATH = tmp_path_factory.mktemp("options") / ".probe-run.json"
+    OPTIONS_PATH.write_text(json.dumps({"hostVersion": "0.12.2"}))
+    yield
+
+
+OPTIONS_PATH = Path("unset")
+
+
 def service(port: FakePort | None = None, **kwargs: object) -> ProbeService:
     chosen = port or FakePort({("GET", "/api/chat/slots"): (200, json_body([]))})
     options: dict[str, object] = {
         "out_dir": None,
         "gateway_available": lambda: True,
         "capture_seconds": 0.2,
+        "options_path": OPTIONS_PATH,
     }
     options.update(kwargs)
     return ProbeService(lambda: chosen, **options)  # type: ignore[arg-type]
@@ -137,17 +152,19 @@ def test_signed_run_returns_202_and_the_snapshot_is_live(make_client: MakeClient
     assert len(snapshot["hostFacts"]) == 16
 
 
-def test_a_run_with_no_body_runs_every_step(make_client: MakeClient) -> None:
+def test_a_run_with_no_body_runs_the_default_steps(make_client: MakeClient) -> None:
     client = make_client(service())
     assert call(client, "POST", "/api/probe/run").status_code == 202
-    assert wait_until_done(client)["decidedCells"] == 29
+    state = wait_until_done(client)
+    assert state["steps"] == list(DEFAULT_STEP_IDS)
+    assert state["decidedCells"] == sum(len(step.cells) for step in select_steps(None))
 
 
 def test_without_a_gateway_origin_the_run_records_untested_cells(
     make_client: MakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("KIROCREW_GATEWAY_ORIGIN", raising=False)
-    svc = ProbeService(lambda: FakePort(), out_dir=None)
+    svc = ProbeService(lambda: FakePort(), out_dir=None, options_path=OPTIONS_PATH)
     client = make_client(svc)
     call(client, "POST", "/api/probe/run", {"steps": ["token-exchange"]})
     wait_until_done(client)
@@ -159,7 +176,7 @@ def test_export_holds_snapshot_matrix_and_host_facts(make_client: MakeClient) ->
     call(client, "POST", "/api/probe/run", {"steps": ["token-exchange"]})
     wait_until_done(client)
     exported = call(client, "GET", "/api/probe/export").json()
-    assert set(exported) == {"snapshot", "matrix", "hostFacts"}
+    assert set(exported) == {"snapshot", "matrix", "hostFacts", "eventCapture"}
     cells = {cell["id"]: cell for cell in exported["matrix"]["cells"]}
     assert cells["app-owned-token-exchange"]["credential"] == "APP-TOKEN"
     assert exported["hostFacts"]["facts"][0]["status"] == "UNTESTED"
@@ -306,7 +323,7 @@ def test_without_a_live_driver_a_run_is_503(
     make_client: MakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setitem(sys.modules, LIVE_MODULE, None)
-    client = make_client(ProbeService(out_dir=None))
+    client = make_client(ProbeService(out_dir=None, options_path=OPTIONS_PATH))
     assert call(client, "POST", "/api/probe/run").status_code == 503
 
 
@@ -420,3 +437,127 @@ def test_state_counts_the_declared_entries_and_an_explicit_false_grants_nothing(
         "request",
         0,
     )
+
+
+def test_a_run_without_a_host_version_is_409_before_any_gateway_call(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    port = FakePort()
+    client = make_client(service(port, options_path=tmp_path / "absent.json"))
+    response = call(client, "POST", "/api/probe/run", {"steps": ["token-exchange"]})
+    assert (response.status_code, response.json()) == (409, {"error": "host_version_unset"})
+    assert port.calls == []
+    accepted = call(client, "POST", "/api/probe/run", {"hostVersion": "0.12.2"})
+    assert accepted.status_code == 202
+
+
+@pytest.mark.parametrize(
+    ("body", "fragment"),
+    [
+        ({"captureSeconds": 901}, "captureSeconds must be between 1 and 900"),
+        ({"reconnectAfterStartSeconds": 0}, "reconnectAfterStartSeconds"),
+        ({"hostVersion": "latest"}, "hostVersion"),
+        ({"windowSeconds": 30}, "unknown run option windowSeconds"),
+    ],
+)
+def test_bad_run_options_are_422(make_client: MakeClient, body: object, fragment: str) -> None:
+    client = make_client(service())
+    response = call(client, "POST", "/api/probe/run", body)
+    assert response.status_code == 422
+    assert fragment in response.json()["error"]
+
+
+def test_an_invalid_staged_options_file_is_422(make_client: MakeClient, tmp_path: Path) -> None:
+    broken = tmp_path / ".probe-run.json"
+    broken.write_text("{")
+    client = make_client(service(options_path=broken))
+    response = call(client, "POST", "/api/probe/run")
+    assert response.json() == {"error": "run options file invalid"}
+
+
+def test_run_options_reach_the_run_and_the_body_wins_over_the_file(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    staged = tmp_path / ".probe-run.json"
+    staged.write_text(json.dumps({"hostVersion": "0.12.2", "captureSeconds": 900}))
+    svc = service(options_path=staged)
+    client = make_client(svc)
+    body = {"steps": ["token-exchange"], "captureSeconds": 1, "hostVersion": "0.12.3"}
+    call(client, "POST", "/api/probe/run", body)
+    wait_until_done(client)
+    assert svc.run.host_version == "0.12.3"
+    exported = call(client, "GET", "/api/probe/export").json()
+    cells = {cell["id"]: cell for cell in exported["matrix"]["cells"]}
+    assert cells["app-owned-token-exchange"]["hostVersion"] == "0.12.3"
+
+
+def test_signed_page_requests_are_timed_and_bounded(make_client: MakeClient) -> None:
+    svc = service()
+    client = make_client(svc)
+    for _ in range(3):
+        call(client, "GET", "/api/probe/state")
+    assert len(svc._page_requests) == 3
+    assert all(stamp.endswith("+00:00") for stamp in svc._page_requests)
+    assert svc._page_requests.maxlen == 500
+    unsigned = client.get("/api/probe/state")
+    assert unsigned.status_code == 401
+    assert len(svc._page_requests) == 3
+
+
+GRAMMAR = re.compile(r"^(sha256:[0-9a-f]{12}|<redacted type=(str|list|object) len=\d+>)$")
+
+
+def test_the_export_carries_an_event_capture_with_no_raw_text(make_client: MakeClient) -> None:
+    frames: list[dict[str, object]] = [
+        slots_frame(slot_row("member-p"), slot_row("chat-7")),
+        {"type": "chat_done", "data": {"slot": "member-p", "turn": 1, "text": "PRIVATE"}},
+        {"type": "tool_call", "data": {"slot": "chat-7", "kind": "execute", "tool": "PRIVATE"}},
+        {"type": "chat_chunk", "data": {"slot": "member-p", "text": "PRIVATE"}},
+    ]
+    client = make_client(service(FakePort(frames=frames)))
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p"})
+    call(client, "POST", "/api/probe/run", {"steps": ["ws-capture"]})
+    wait_until_done(client)
+    capture = call(client, "GET", "/api/probe/export").json()["eventCapture"]
+    meta, rows = capture["_meta"], capture["rows"]
+    assert (meta["capture"], meta["hostVersion"]) == ("event-frames", "0.12.2")
+    assert meta["framesSeen"] == {"chat_chunk": 1, "chat_done": 1, "slots": 1, "tool_call": 1}
+    assert [row["frameSeq"] for row in rows] == [2, 3]
+    assert all(type(row["receivedAtMs"]) is int and "receivedAt" not in row for row in rows)
+    assert "PRIVATE" not in json.dumps(capture)
+    probe, other = rows
+    assert probe["data"] == {"slot": "member-p", "turn": 1}
+    for value in other["data"].values():
+        assert GRAMMAR.match(value)
+
+
+def test_each_run_leaves_export_files_on_disk(make_client: MakeClient, tmp_path: Path) -> None:
+    svc = service(FakePort(frames=[slots_frame(slot_row("chat-1"))]), out_dir=tmp_path)
+    client = make_client(svc)
+    call(client, "POST", "/api/probe/run", {"steps": ["ws-capture"]})
+    wait_until_done(client)
+    folder = tmp_path / svc.run.run_id
+    export = json.loads((folder / "export.json").read_text())
+    capture = json.loads((folder / "event-capture.json").read_text())
+    assert capture == export["eventCapture"]
+    assert not list(folder.glob(".*.tmp"))
+    note = {"cellId": "bot-fresh-start", "state": "UNTESTED", "note": "skipped"}
+    call(client, "POST", "/api/probe/annotate", {**note, "credential": "OWNER-SESSION"})
+    export = json.loads((folder / "export.json").read_text())
+    cells = {cell["id"]: cell for cell in export["matrix"]["cells"]}
+    assert cells["bot-fresh-start"]["notes"] == "skipped"
+
+
+def test_an_interrupted_export_write_leaves_no_partial_file_and_the_run_finishes(
+    make_client: MakeClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def refuse(_self: Path, _target: Path) -> Path:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(Path, "replace", refuse)
+    svc = service(FakePort(frames=[slots_frame(slot_row("chat-1"))]), out_dir=tmp_path)
+    client = make_client(svc)
+    call(client, "POST", "/api/probe/run", {"steps": ["ws-capture"]})
+    state = wait_until_done(client)
+    assert (state["status"], state["evidenceFile"]) == ("done", "denied")
+    assert not (tmp_path / svc.run.run_id / "export.json").exists()

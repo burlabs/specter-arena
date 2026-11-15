@@ -102,6 +102,17 @@ ENUM_FIELDS = frozenset({"kind", "source", "status", "outcome", "stop_reason", "
 PENDING_LIMIT = 100
 PENDING_TTL_SECONDS = 5.0
 MAX_KEPT_ROWS = 2000
+MAX_SIZE_SAMPLES = 5000
+MAX_BURST_BUCKETS = 3600
+OTHER_TYPE = "other"
+CAPTURE_KIND = "event-frames"
+
+
+def event_label(frame_type: object) -> str:
+    """The vocabulary name a frame is counted under; anything outside it is `other`."""
+    return (
+        frame_type if isinstance(frame_type, str) and frame_type in EVENT_VOCABULARY else OTHER_TYPE
+    )
 
 
 def percentile(values: list[int], fraction: float) -> int:
@@ -112,19 +123,11 @@ def percentile(values: list[int], fraction: float) -> int:
     return ordered[max(0, math.ceil(fraction * len(ordered)) - 1)]
 
 
-def burst_max_per_second(received_at_ms: list[int]) -> int:
-    """The most frames that arrived within one wall-clock second."""
-    counts: dict[int, int] = {}
-    for stamp in received_at_ms:
-        second = stamp // 1000
-        counts[second] = counts.get(second, 0) + 1
-    return max(counts.values(), default=0)
-
-
 @dataclass
 class EventLog:
-    """Per-type counters, sizes and receive times for every frame seen, plus a bounded list of
-    retained (already sanitised) event rows. Raw frame bytes are measured, never held."""
+    """Per-type counters, sizes and per-second arrival counts for every frame seen, plus a
+    bounded list of retained (already sanitised) event rows. Raw frame bytes are measured, never
+    held. Size samples and burst buckets are capped per type so a long window stays bounded."""
 
     max_rows: int = MAX_KEPT_ROWS
     rows: list[dict[str, object]] = field(default_factory=list)
@@ -133,15 +136,20 @@ class EventLog:
     rows_dropped_by_cap: int = 0
     keys_seen: dict[str, set[str]] = field(default_factory=dict)
     _sizes: dict[str, list[int]] = field(default_factory=dict)
-    _times: dict[str, list[int]] = field(default_factory=dict)
+    _bursts: dict[str, dict[int, int]] = field(default_factory=dict)
     _seq: int = 0
 
     def seen(self, event_type: str, size_bytes: int, received_at_ms: int) -> int:
         """Count one frame of any type and return its frame sequence number."""
         self._seq += 1
         self.frames_seen[event_type] = self.frames_seen.get(event_type, 0) + 1
-        self._sizes.setdefault(event_type, []).append(size_bytes)
-        self._times.setdefault(event_type, []).append(received_at_ms)
+        sizes = self._sizes.setdefault(event_type, [])
+        if len(sizes) < MAX_SIZE_SAMPLES:
+            sizes.append(size_bytes)
+        buckets = self._bursts.setdefault(event_type, {})
+        second = received_at_ms // 1000
+        if second in buckets or len(buckets) < MAX_BURST_BUCKETS:
+            buckets[second] = buckets.get(second, 0) + 1
         return self._seq
 
     def keep(
@@ -174,13 +182,33 @@ class EventLog:
     def measurement(self) -> dict[str, dict[str, int]]:
         return {
             event_type: {
-                "count": len(sizes),
+                "count": self.frames_seen[event_type],
                 "bytesP50": percentile(sizes, 0.5),
                 "bytesP95": percentile(sizes, 0.95),
                 "bytesMax": max(sizes),
-                "burstMaxPerSecond": burst_max_per_second(self._times[event_type]),
+                "burstMaxPerSecond": max(self._bursts[event_type].values()),
             }
             for event_type, sizes in sorted(self._sizes.items())
+        }
+
+    def to_capture(
+        self, *, run_id: str, host_version: str, captured_at: str, sanitisation: str
+    ) -> dict[str, object]:
+        """The `event-frames` capture: `_meta` plus the retained rows, in arrival order."""
+        return {
+            "_meta": {
+                "capture": CAPTURE_KIND,
+                "sanitisation": sanitisation,
+                "hostVersion": host_version,
+                "runId": run_id,
+                "capturedAt": captured_at,
+                "framesSeen": dict(sorted(self.frames_seen.items())),
+                "rowsKept": dict(sorted(self.rows_kept.items())),
+                "rowsDroppedByCap": self.rows_dropped_by_cap,
+                "measurement": self.measurement(),
+                "keysSeen": {name: sorted(keys) for name, keys in sorted(self.keys_seen.items())},
+            },
+            "rows": sorted(self.rows, key=lambda row: int(str(row["frameSeq"]))),
         }
 
 
@@ -192,6 +220,9 @@ class PendingEvent:
     held_at: float
     probe_form: dict[str, object]
     plain_form: dict[str, object]
+    frame_seq: int
+    event_type: str
+    received_at_ms: int
 
 
 class PendingEvents:

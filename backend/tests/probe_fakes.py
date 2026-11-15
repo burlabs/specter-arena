@@ -88,6 +88,8 @@ class FakePort:
         self._transport = transport
         self.calls: list[tuple[str, str, bool, bool]] = []
         self.bodies: list[bytes | None] = []
+        self.sent: list[str] = []
+        self.drops = 0
         self.closed = False
 
     @property
@@ -117,6 +119,12 @@ class FakePort:
 
     def open_feed(self) -> AsyncIterator[dict[str, object]]:
         return self._feed()
+
+    async def send_text(self, text: str) -> None:
+        self.sent.append(text)
+
+    def drop_feed(self) -> None:
+        self.drops += 1
 
     async def _feed(self) -> AsyncIterator[dict[str, object]]:
         try:
