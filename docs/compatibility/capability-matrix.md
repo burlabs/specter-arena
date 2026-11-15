@@ -1,6 +1,6 @@
 # Capability matrix
 
-Host: Kiro Crew 0.12.0. Authoritative run: `20261111T230641Z-4f743d` (L3-v1b), captured 2026-11-11, after PR #34. Closed by Eric on 2026-11-12 under the A7 timebox; unanswered cells are UNTESTED with the reason. No other host version was probed.
+Host: Kiro Crew 0.12.0. Authoritative run: `20261111T230641Z-4f743d` (L3-v1b), captured 2026-11-11, after PR #34. Closed by Eric on 2026-11-12 under the A7 timebox; unanswered cells are UNTESTED with the reason. No other host version was probed. The five cells FP-02+03 added (`bot-token-usage-per-bot`, `bot-worker-session-attribution-subagent`, `sessions-usage-api-app-token`, `subagent-events-visible`, `usage-api-app-token`) are UNTESTED until the slice-1 probe runs.
 
 Inaccessible information is marked inaccessible, not guessed. A completed model turn is not accepted work.
 
@@ -36,7 +36,9 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `bot-per-bot-opt-in` | UNTESTED | none | bot | none |
 | `bot-reimport-kirobot` | UNTESTED | none | bot | none |
 | `bot-scheduled-turn-origin` | UNTESTED | none | bot | none |
+| `bot-token-usage-per-bot` | UNTESTED | none | bot | none |
 | `bot-worker-session-attribution` | UNTESTED | none | bot | none |
+| `bot-worker-session-attribution-subagent` | UNTESTED | none | bot | none |
 | `closed-tab-collection` | UNTESTED | none | app-owned | none |
 | `external-cli-slot-appears` | UNTESTED | none | external-cli | none |
 | `gateway-restart-reconnect` | UNTESTED | none | app-owned | none |
@@ -45,6 +47,9 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `other-app-slots-absent` | UNTESTED | none | other-app | none |
 | `reconnect-cursor-history` | UNTESTED | none | app-owned | none |
 | `reconnect-snapshot` | UNTESTED | none | app-owned | none |
+| `sessions-usage-api-app-token` | UNTESTED | none | user-owned | none |
+| `subagent-events-visible` | UNTESTED | none | user-owned | none |
+| `usage-api-app-token` | UNTESTED | none | user-owned | none |
 | `user-chat-slot-history` | UNTESTED | none | user-owned | none |
 | `user-chat-slots-api` | DENIED | APP-TOKEN | user-owned | evidence/L3-v1b/export.json#user-chat-slots-api |
 | `user-outcome-evidence` | UNTESTED | none | user-owned | none |
@@ -62,7 +67,7 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 - ALLOWED: 7
 - DENIED: 10
 - UNSUPPORTED: 0
-- UNTESTED: 29
+- UNTESTED: 34
 
 ## Notes per cell
 
@@ -94,7 +99,9 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `bot-per-bot-opt-in` | Not probed. Source reading expects UNSUPPORTED, but no evidence file backs that, so the cell stays UNTESTED. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-reimport-kirobot` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-scheduled-turn-origin` | No scheduled bot turn was triggered. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
+| `bot-token-usage-per-bot` | not yet probed |
 | `bot-worker-session-attribution` | No worker slot row was observed, and it is unknown whether the probe bot dispatched a worker. The targeted rerun with explicit delegation (L3-v1c) was skipped. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
+| `bot-worker-session-attribution-subagent` | not yet probed |
 | `closed-tab-collection` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `external-cli-slot-appears` | No external CLI session was started and no slot key was supplied. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `gateway-restart-reconnect` | Needs a gateway restart, which needs Eric's go-ahead at run time (FD-21); not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
@@ -103,6 +110,9 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `other-app-slots-absent` | No second app was installed to compare slots. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `reconnect-cursor-history` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `reconnect-snapshot` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
+| `sessions-usage-api-app-token` | not yet probed |
+| `subagent-events-visible` | not yet probed |
+| `usage-api-app-token` | not yet probed |
 | `user-chat-slot-history` | No worker slot was observed, so there was no history to fetch. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `user-chat-slots-api` | GET /api/chat/slots answered 403; object with fields code, error; code="forbidden"; error="Forbidden" (export.json run 20261111T230641Z-4f743d) |
 | `user-outcome-evidence` | No terminal signal in the capture window. The bot DM row produced only "removed" signals (4 in L3-v1b); the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |

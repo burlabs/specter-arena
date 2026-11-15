@@ -264,6 +264,16 @@
       "notes": "No scheduled bot turn was triggered. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
+      "id": "bot-token-usage-per-bot",
+      "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
       "id": "bot-worker-session-attribution",
       "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
       "scope": "bot",
@@ -272,6 +282,16 @@
       "evidenceRef": null,
       "probedAt": null,
       "notes": "No worker slot row was observed, and it is unknown whether the probe bot dispatched a worker. The targeted rerun with explicit delegation (L3-v1c) was skipped. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+    },
+    {
+      "id": "bot-worker-session-attribution-subagent",
+      "question": "Is a spawn_run subagent frame attributable to the probe bot's DM slot (slot field, subagent_spawn/subagent_done)?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
     },
     {
       "id": "closed-tab-collection",
@@ -352,6 +372,36 @@
       "evidenceRef": null,
       "probedAt": null,
       "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+    },
+    {
+      "id": "sessions-usage-api-app-token",
+      "question": "Does GET /api/sessions/usage answer an app token granted that path (status and field names only)?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "subagent-events-visible",
+      "question": "Does the subagent:user grant deliver subagent_* frames rooted at the probe bot's slot?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
+    },
+    {
+      "id": "usage-api-app-token",
+      "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "not yet probed"
     },
     {
       "id": "user-chat-slot-history",
