@@ -5,17 +5,21 @@ import string
 
 import pytest
 
+from backend.specter_arena.probe.events import EVENT_FIELDS
 from backend.specter_arena.probe.sanitise import (
+    DROPPED_ROW_FIELDS,
+    MAX_FRAME_BYTES,
     SANITISED_PATTERN,
     SanitiseStats,
     digest,
     placeholder,
     redact_text,
+    reduce_event,
     sanitise_frame,
     sanitise_slot_row,
     sanitise_value,
 )
-from backend.tests.probe_fakes import slot_row, slots_frame
+from backend.tests.probe_fakes import event_frame, prose_row, slot_row, slots_frame
 
 GRAMMAR = re.compile(r"^(sha256:[0-9a-f]{12}|<redacted type=(str|list|object) len=\d+>)$")
 SALT = b"0123456789abcdef"
@@ -199,17 +203,25 @@ def test_probe_rows_keep_values_after_redaction() -> None:
     dull = "y" * 20
     row = slot_row(
         "member-probe",
-        title="Probe turn",
-        last_message=f"called with token={dull}",
+        title=f"Probe turn token={dull}",
         todo={"items": ["one", "two"]},
         ratio=0.5,
     )
     out = sanitise_slot_row(row, is_probe=True, salt=SALT)
-    assert out["title"] == "Probe turn"
+    assert out["title"] == "Probe turn [redacted]"
     assert out["key"] == "member-probe"
     assert out["todo"] == {"items": ["one", "two"]}
     assert dull not in json.dumps(out)
-    assert "[redacted]" in str(out["last_message"])
+
+
+def test_probe_rows_drop_their_prose_fields_and_keep_the_rest() -> None:
+    prose = "PROSE-SENTINEL"
+    row = prose_row("member-probe", prose)
+    out = sanitise_slot_row(row, is_probe=True, salt=SALT)
+    assert DROPPED_ROW_FIELDS.isdisjoint(out)
+    assert prose not in json.dumps(out)
+    for kept in ("agent", "lineage_minted", "source_links", "wait_state", "running"):
+        assert out[kept] == row[kept], kept
 
 
 def test_probe_rows_reject_values_they_cannot_represent() -> None:
@@ -306,3 +318,131 @@ def test_without_a_probe_slug_every_row_is_shape_only() -> None:
     out = sanitise_frame(frame, "", SALT, stats)
     assert out is not None
     assert out["data"][0]["title"].startswith("<redacted")  # type: ignore[index]
+
+
+PROBE_SLOTS = frozenset({"member-probe", "w1"})
+TEXT = "TEXT-SENTINEL words the probe must never keep"
+
+# Each frame carries every text-bearing key Crew is known to send for its type.
+TEXT_BEARING_FRAMES = (
+    event_frame("chat_status", slot="member-probe", status=TEXT),
+    event_frame("chat_chunk", slot="member-probe", text=TEXT, chunk=TEXT),
+    event_frame("chat_thinking", slot="member-probe", text=TEXT),
+    event_frame(
+        "tool_call",
+        slot="member-probe",
+        tool=TEXT,
+        purpose=TEXT,
+        input_preview=TEXT,
+        kind="execute",
+        tool_call_id="call-1",
+    ),
+    event_frame("tool_result", slot="member-probe", result=TEXT, kind="execute", is_error=False),
+    event_frame(
+        "approval", id="ap-1", slot="member-probe", tool=TEXT, tool_input=TEXT, tool_purpose=TEXT
+    ),
+    event_frame(
+        "subagent_spawn",
+        id="sa-1",
+        slot="member-probe",
+        batch_id="b-1",
+        task=TEXT,
+        agent=TEXT,
+        label=TEXT,
+        model=TEXT,
+    ),
+    event_frame("subagent_status", id="sa-1", slot="member-probe", status=TEXT),
+    event_frame(
+        "subagent_done", id="sa-1", slot="member-probe", result=TEXT, error=TEXT, outcome="done"
+    ),
+    event_frame("subagent_chunk", id="sa-1", slot="member-probe", text=TEXT),
+)
+
+
+@pytest.mark.parametrize("probe_slots", [PROBE_SLOTS, frozenset()], ids=["probe", "non-probe"])
+@pytest.mark.parametrize("frame", TEXT_BEARING_FRAMES, ids=lambda f: str(f["type"]))
+def test_no_event_text_survives_for_any_slot(
+    frame: dict[str, object], probe_slots: frozenset[str]
+) -> None:
+    out = sanitise_frame(frame, "probe", SALT, SanitiseStats(), probe_slots)
+    assert out is not None
+    assert "SENTINEL" not in json.dumps(out)
+
+
+@pytest.mark.parametrize("event_type", sorted(EVENT_FIELDS))
+def test_every_allow_listed_type_keeps_only_its_keys(event_type: str) -> None:
+    data = {name: 1 for name in EVENT_FIELDS[event_type]} | {"slot": "member-probe", "extra": 2}
+    out = sanitise_frame(
+        event_frame(event_type, **data), "probe", SALT, SanitiseStats(), PROBE_SLOTS
+    )
+    assert out is not None
+    assert out["type"] == event_type
+    kept = out["data"]
+    assert isinstance(kept, dict)
+    assert set(kept) == EVENT_FIELDS[event_type]
+
+
+def test_a_probe_event_keeps_its_slot_and_enum_words_and_digests_ids() -> None:
+    frame = event_frame(
+        "subagent_done",
+        id="sa-1",
+        slot="member-probe",
+        batch_id="b-1",
+        outcome="completed",
+        stop_reason="Free text, Not an enum",
+        elapsed=3.5,
+        credits=2,
+        stopped=False,
+        partial=None,
+    )
+    out = reduce_event("subagent_done", frame["data"], PROBE_SLOTS, SALT)
+    assert out["slot"] == "member-probe"
+    assert out["outcome"] == "completed"
+    assert out["id"] == digest(SALT, "sa-1")
+    assert out["batch_id"] == digest(SALT, "b-1")
+    assert out["stop_reason"] == placeholder("Free text, Not an enum")
+    assert (out["elapsed"], out["credits"], out["stopped"], out["partial"]) == (3.5, 2, False, None)
+
+
+def test_a_non_probe_event_matches_the_grammar_or_is_a_scalar() -> None:
+    frame = event_frame(
+        "tool_result",
+        slot="chat-7",
+        kind="execute",
+        is_shell=True,
+        tool_call_id="call-9",
+        is_error=False,
+    )
+    out = reduce_event("tool_result", frame["data"], PROBE_SLOTS, SALT)
+    assert out["slot"] == digest(SALT, "chat-7")
+    for value in out.values():
+        assert value is None or isinstance(value, bool | int | float) or GRAMMAR.match(str(value))
+    assert "chat-7" not in json.dumps(out)
+
+
+def test_nested_event_values_keep_shape_only_and_odd_values_drop_the_frame() -> None:
+    nested = reduce_event(
+        "subagent_done", {"slot": "member-probe", "error": {"m": TEXT}}, PROBE_SLOTS, SALT
+    )
+    assert nested["error"] == "<redacted type=object len=1>"
+    assert reduce_event("chat_done", ["not", "an", "object"], PROBE_SLOTS, SALT) == {}
+    stats = SanitiseStats()
+    bad = event_frame("context_usage", slot="member-probe", pct=float("nan"))
+    assert sanitise_frame(bad, "probe", SALT, stats, PROBE_SLOTS) is None
+    assert stats.dropped == 1
+
+
+def test_vocabulary_types_without_fields_keep_their_type_and_are_not_unknown() -> None:
+    stats = SanitiseStats()
+    for event_type in ("dashboard", "refresh", "chat_chunk", "update_progress"):
+        assert sanitise_frame(event_frame(event_type, x=TEXT), "p", SALT, stats) == {
+            "type": event_type
+        }
+    assert stats.unknown_types == {}
+
+
+def test_an_oversize_event_frame_is_dropped_and_counted() -> None:
+    stats = SanitiseStats()
+    big = event_frame("chat_done", slot="member-probe", pad="x" * (MAX_FRAME_BYTES + 1))
+    assert sanitise_frame(big, "probe", SALT, stats, PROBE_SLOTS) is None
+    assert stats.dropped == 1

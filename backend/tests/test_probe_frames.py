@@ -1,9 +1,12 @@
 import random
 
+import pytest
+
 from backend.specter_arena.probe.frames import (
     MAX_EVIDENCE_CHARS,
     diff_slots,
     is_bot_dm_key,
+    json_type_name,
     outcome_evidence,
     probe_keys,
     slot_role,
@@ -131,15 +134,59 @@ def test_advancing_activity_while_running_is_progress() -> None:
     assert kinds(prev, {"s": slot_row("s", running=True, last_activity_ts=2.0)}) == ["progress"]
 
 
-def test_unchanged_or_non_numeric_activity_is_not_progress() -> None:
+def test_unchanged_backwards_or_absent_activity_is_not_progress() -> None:
     prev = {"s": slot_row("s", running=True, last_activity_ts=1.0)}
     assert kinds(prev, {"s": slot_row("s", running=True, last_activity_ts=1.0)}) == []
     assert kinds(prev, {"s": slot_row("s", running=True, last_activity_ts=0.5)}) == []
+    for absent in (None, "", True, "  "):
+        moved = {"s": slot_row("s", running=True, last_activity_ts=absent)}
+        assert kinds(prev, moved) == [], absent
+        assert kinds(moved, prev) == [], absent
+    missing = slot_row("s", running=True)
+    del missing["last_activity_ts"]
+    assert kinds({"s": missing}, prev) == []
+    assert kinds(prev, {"s": missing}) == []
+
+
+ISO_STAMPS = (
+    ("2026-11-13T05:00:00", "2026-11-13T05:00:01"),
+    ("2026-11-13T05:00:00Z", "2026-11-13T05:00:01Z"),
+    ("2026-11-13T05:00:00+00:00", "2026-11-13T05:00:00.500000+00:00"),
+    (1763010000.0, 1763010000.25),
+)
+
+
+@pytest.mark.parametrize(("then", "now"), ISO_STAMPS)
+def test_a_string_or_numeric_stamp_that_advances_is_progress(then: object, now: object) -> None:
+    before = {"s": slot_row("s", running=True, last_activity_ts=then)}
+    after = {"s": slot_row("s", running=True, last_activity_ts=now)}
+    assert kinds(before, after) == ["progress"]
+    assert kinds(after, before) == []
+    assert kinds(after, after) == []
+
+
+def test_mixed_awareness_or_unparseable_stamps_count_any_change_as_progress() -> None:
+    naive = {"s": slot_row("s", running=True, last_activity_ts="2026-11-13T05:00:00")}
+    aware = {"s": slot_row("s", running=True, last_activity_ts="2026-11-13T04:00:00+00:00")}
     odd = {"s": slot_row("s", running=True, last_activity_ts="soon")}
-    assert kinds(prev, odd) == []
-    assert kinds(odd, prev) == []
-    flag = {"s": slot_row("s", running=True, last_activity_ts=True)}
-    assert kinds(prev, flag) == []
+    assert kinds(naive, aware) == ["progress"]
+    assert kinds(aware, naive) == ["progress"]
+    assert kinds(naive, odd) == ["progress"]
+    assert kinds(odd, odd) == []
+
+
+def test_a_slot_that_is_not_running_never_emits_progress() -> None:
+    before = {"s": slot_row("s", running=False, last_activity_ts="2026-11-13T05:00:00Z")}
+    after = {"s": slot_row("s", running=False, last_activity_ts="2026-11-13T05:00:09Z")}
+    assert kinds(before, after) == []
+
+
+def test_json_type_name_names_each_json_type() -> None:
+    cases = {"str": "x", "number": 1.5, "bool": False, "null": None, "list": [1], "object": {}}
+    assert {json_type_name(value): name for name, value in cases.items()} == {
+        name: name for name in cases
+    }
+    assert json_type_name(3) == "number"
 
 
 def test_running_turning_false_is_terminal() -> None:

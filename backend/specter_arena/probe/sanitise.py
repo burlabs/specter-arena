@@ -7,6 +7,7 @@ import math
 import re
 from dataclasses import dataclass, field
 
+from .events import ENUM_FIELDS, EVENT_FIELDS, EVENT_VOCABULARY
 from .frames import probe_keys, slot_rows
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
@@ -22,7 +23,16 @@ ID_FIELDS = frozenset(
         "instance_id",
         "session_id",
         "id",
+        "batch_id",
+        "child_session",
+        "tool_call_id",
+        "instance",
     }
+)
+
+# Prose a probe slot row carries; dropped before the row is retained.
+DROPPED_ROW_FIELDS = frozenset(
+    {"messages", "last_message", "prompt_preview", "welcome_message", "options"}
 )
 
 MAX_DEPTH = 32
@@ -31,6 +41,7 @@ REDACTED_TEXT = "[redacted]"
 SANITISED_PATTERN = r"^(sha256:[0-9a-f]{12}|<redacted type=(str|list|object) len=\d+>)$"
 
 _TYPE_NAME = re.compile(r"[a-z][a-z0-9_.:-]{0,39}")
+_ENUM_WORD = re.compile(r"[a-z][a-z0-9_-]{0,31}")
 
 _SECRET_PATTERNS = (
     re.compile(r"(?i)\bbearer\s+[\w.~+/=-]{8,}"),
@@ -114,11 +125,13 @@ def _redact_probe_value(value: object, depth: int = 0) -> object:
 
 
 def sanitise_slot_row(row: dict[str, object], *, is_probe: bool, salt: bytes) -> dict[str, object]:
-    """Probe rows keep their values after redaction; every other row keeps shape only."""
+    """Probe rows keep their values after redaction, minus their prose fields; every other row
+    keeps shape only."""
     if not isinstance(row, dict):
         raise TypeError("slot row must be an object")
     if is_probe:
-        redacted = _redact_probe_value(row)
+        kept = {key: value for key, value in row.items() if key not in DROPPED_ROW_FIELDS}
+        redacted = _redact_probe_value(kept)
         assert isinstance(redacted, dict)
         return redacted
     sanitised = sanitise_value(row, salt)
@@ -126,10 +139,56 @@ def sanitise_slot_row(row: dict[str, object], *, is_probe: bool, salt: bytes) ->
     return sanitised
 
 
+def _event_value(name: str, value: object, *, is_probe: bool, salt: bytes) -> object:
+    if value is None or isinstance(value, bool | int):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("non-finite number")
+        return value
+    if isinstance(value, str):
+        if name == "slot" and is_probe:
+            return value
+        if name == "slot" or name in ID_FIELDS:
+            return digest(salt, value)
+        if is_probe and name in ENUM_FIELDS and _ENUM_WORD.fullmatch(value):
+            return value
+    return placeholder(value)
+
+
+def reduce_event(
+    event_type: str, data: object, probe_slots: frozenset[str], salt: bytes
+) -> dict[str, object]:
+    """The allow-listed keys of an event's `data`, never any other key.
+
+    A probe-slot event keeps its `slot` text and short enum words; every other string becomes a
+    digest (identifiers) or a placeholder, whatever slot it belongs to. Nested values keep shape
+    only.
+    """
+    if not isinstance(data, dict):
+        return {}
+    slot = data.get("slot")
+    is_probe = isinstance(slot, str) and slot in probe_slots
+    allowed = EVENT_FIELDS.get(event_type, frozenset())
+    return {
+        name: _event_value(name, data[name], is_probe=is_probe, salt=salt)
+        for name in sorted(allowed)
+        if name in data
+    }
+
+
 def sanitise_frame(
-    frame: dict[str, object], probe_slug: str, salt: bytes, stats: SanitiseStats
+    frame: dict[str, object],
+    probe_slug: str,
+    salt: bytes,
+    stats: SanitiseStats,
+    probe_slots: frozenset[str] = frozenset(),
 ) -> dict[str, object] | None:
-    """Sanitise one gateway frame. Fails closed: any error drops the frame and counts it."""
+    """Sanitise one gateway frame. Fails closed: any error drops the frame and counts it.
+
+    `probe_slots` is the probe key set from the latest `slots` frame; event frames need it
+    because they carry a slot key but no lineage.
+    """
     try:
         if len(json.dumps(frame)) > MAX_FRAME_BYTES:
             raise ValueError("frame too large")
@@ -137,7 +196,13 @@ def sanitise_frame(
         if frame_type != "slots":
             label = frame_type if isinstance(frame_type, str) else ""
             label = label if _TYPE_NAME.fullmatch(label) else "invalid"
-            stats.count_unknown(label)
+            if label in EVENT_FIELDS:
+                return {
+                    "type": label,
+                    "data": reduce_event(label, frame.get("data"), probe_slots, salt),
+                }
+            if label not in EVENT_VOCABULARY:
+                stats.count_unknown(label)
             return {"type": label}
         data = frame.get("data")
         rows = slot_rows(frame)

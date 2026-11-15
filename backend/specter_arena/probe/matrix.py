@@ -213,6 +213,10 @@ class Run:
     frames: deque[dict[str, object]] = field(default_factory=lambda: deque(maxlen=RING_SIZE))
     frame_sink: Callable[[dict[str, object]], None] | None = None
     last_rows: dict[str, dict[str, object]] = field(default_factory=dict)
+    # Probe key set from the latest slots frame; event frames are classified against it.
+    probe_slots: frozenset[str] = frozenset()
+    # JSON type name of selected probe-row fields as last seen (values are not kept here).
+    field_types: dict[str, str] = field(default_factory=dict)
     # Per-run salt for digests: held in memory only, excluded from repr and never serialised.
     salt: bytes = field(default_factory=lambda: secrets.token_bytes(16), repr=False)
     probed_at: str | None = None

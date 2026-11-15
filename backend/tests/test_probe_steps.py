@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 
+from backend.specter_arena.config import Grants
 from backend.specter_arena.probe.matrix import empty_run, to_host_facts_json, to_matrix_json
 from backend.specter_arena.probe.sanitise import digest
 from backend.specter_arena.probe.steps import (
@@ -18,6 +19,7 @@ from backend.tests.probe_fakes import (
     NOW,
     FakePort,
     error_body,
+    event_frame,
     exchange_refused,
     json_body,
     rejected,
@@ -297,20 +299,20 @@ def test_ws_capture_terminal_without_text_and_without_terminal() -> None:
 
 
 def test_ws_capture_without_grants_reads_an_empty_snapshot_as_denied() -> None:
-    ctx = make_ctx(grants_declared=False)
+    ctx = make_ctx(grants=Grants.none())
     run_one("ws-capture", FakePort(frames=[slots_frame()]), ctx)
     assert state(ctx, "user-slots-no-grant-denied") == "DENIED"
     assert "no slots grant" in note(ctx, "user-slots-visible")
 
 
 def test_ws_capture_without_grants_reports_visible_rows() -> None:
-    ctx = make_ctx(grants_declared=False)
+    ctx = make_ctx(grants=Grants.none())
     run_one("ws-capture", FakePort(frames=[slots_frame(slot_row("chat-1"))]), ctx)
     assert state(ctx, "user-slots-no-grant-denied") == "ALLOWED"
 
 
 def test_ws_capture_without_grants_and_without_frames_is_untested() -> None:
-    ctx = make_ctx(grants_declared=False)
+    ctx = make_ctx(grants=Grants.none())
     run_one("ws-capture", FakePort(frames=[], transport=None), ctx)
     assert state(ctx, "user-slots-no-grant-denied") == "UNTESTED"
     assert "no frame received" in note(ctx, "app-owned-ws-token-transport")
@@ -377,7 +379,7 @@ def test_member_record_write_and_ungranted_follow_the_grant_phase() -> None:
     assert state(ctx, "bot-dashboard-member-record") == "ALLOWED"
     assert "grant is declared" in note(ctx, "bot-dashboard-record-ungranted")
     assert port.bodies[0] is not None
-    bare = make_ctx(grants_declared=False)
+    bare = make_ctx(grants=Grants.none())
     run_one("member-record-write", port, bare)
     run_one("member-record-ungranted", FakePort({("POST", path): DENY}), bare)
     assert "no member-records grant" in note(bare, "bot-dashboard-member-record")
@@ -589,3 +591,135 @@ def test_ws_capture_does_not_attribute_a_longer_slug_to_the_probe_bot() -> None:
     assert ctx.run.attempts == {}
     assert state(ctx, "bot-id-observable") == "UNTESTED"
     assert "other bot" not in str(list(ctx.run.frames))
+
+
+D_P1_GRANTS = Grants(
+    api=frozenset(
+        {"/apps/specter-arena/api/*", "/api/agents", "/api/usage", "/api/sessions/usage"}
+    ),
+    events=frozenset({"slots:user", "subagent:user"}),
+    basis="manifest",
+)
+
+
+def signal_kinds(ctx: StepContext, key: str = "member-probe") -> list[str]:
+    return [signal.kind for signal in ctx.run.attempts[key].signals]
+
+
+def test_h1_a_non_slots_frame_neither_removes_the_slot_nor_swallows_the_terminal() -> None:
+    dm = "member-probe"
+    frames: list[dict[str, object]] = [
+        slots_frame(slot_row(dm, running=False)),
+        slots_frame(slot_row(dm, running=True)),
+        {"type": "dashboard", "data": {"x": 1}},
+        slots_frame(slot_row(dm, running=True)),
+        event_frame("chat_status", slot=dm, status="Thinking"),
+        slots_frame(slot_row(dm, running=False)),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    kinds = signal_kinds(ctx)
+    assert kinds.count("start") == 1
+    assert kinds.count("terminal") == 1
+    assert "removed" not in kinds
+    assert state(ctx, "user-signal-terminal") == "ALLOWED"
+
+
+@pytest.mark.parametrize("between", ["dashboard", "refresh", "update_progress", "models_changed"])
+def test_h1_a_frame_between_running_and_idle_keeps_the_terminal(between: str) -> None:
+    dm = "member-probe"
+    frames: list[dict[str, object]] = [
+        slots_frame(slot_row(dm, running=True)),
+        {"type": between, "data": {}},
+        slots_frame(slot_row(dm, running=False)),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert signal_kinds(ctx) == ["start", "terminal"]
+    assert ctx.run.last_rows[dm]["running"] is False
+
+
+def test_an_empty_slots_frame_still_reads_as_no_rows() -> None:
+    ctx = make_ctx(grants=Grants.none())
+    frames: list[dict[str, object]] = [{"type": "dashboard", "data": {}}, slots_frame()]
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "user-slots-no-grant-denied") == "DENIED"
+
+
+def test_a_string_stamp_that_moves_is_progress_and_its_type_is_named() -> None:
+    dm = "member-probe"
+    frames = [
+        slots_frame(slot_row(dm, running=True, last_activity_ts="2026-11-13T05:00:00")),
+        slots_frame(slot_row(dm, running=True, last_activity_ts="2026-11-13T05:00:04")),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert signal_kinds(ctx) == ["start", "progress"]
+    excerpt = ctx.run.cells["user-signal-progress"].evidence[0].excerpt
+    assert excerpt.endswith("last_activity_ts is JSON str")
+
+
+def test_outcome_text_comes_from_the_raw_row_and_prose_is_not_retained() -> None:
+    dm = "member-probe"
+    frames = [
+        slots_frame(slot_row(dm, running=True)),
+        slots_frame(slot_row(dm, running=False, last_message="finished the sweep")),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert ctx.run.attempts[dm].outcome_evidence == "finished the sweep"
+    assert "last_message" not in ctx.run.last_rows[dm]
+    assert "finished the sweep" not in str(list(ctx.run.frames))
+
+
+def test_event_frames_are_kept_allow_listed_with_the_probe_slot_text() -> None:
+    dm = "member-probe"
+    frames = [
+        slots_frame(slot_row(dm, running=True)),
+        event_frame("chat_done", slot=dm, turn=2, continuing=False, text="secret reply"),
+        event_frame("chat_done", slot="chat-7", turn=1),
+    ]
+    ctx = make_ctx()
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    probe_event, other_event = list(ctx.run.frames)[1:]
+    assert probe_event == {
+        "type": "chat_done",
+        "data": {"continuing": False, "slot": dm, "turn": 2},
+    }
+    assert other_event["data"] == {"slot": digest(ctx.run.salt, "chat-7"), "turn": 1}
+    assert ctx.run.probe_slots == frozenset({dm})
+
+
+def test_with_the_d_p1_grants_no_member_record_post_and_no_chat_slots_read() -> None:
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    port = FakePort()
+    for step_id in ("member-record-write", "chat-slots", "cli-compare"):
+        run_one(step_id, port, ctx)
+    assert port.calls == []
+    assert "no member-records grant" in note(ctx, "bot-dashboard-member-record")
+    assert note(ctx, "user-chat-slots-api") == "no /api/chat/slots grant declared"
+    assert note(ctx, "user-chat-slot-history") == "no /api/chat/slots grant declared"
+
+
+def test_cli_compare_without_the_chat_slots_grant_reads_only_the_feed() -> None:
+    ctx = make_ctx(grants=D_P1_GRANTS, cli_slot_key="absent")
+    port = FakePort()
+    run_one("cli-compare", port, ctx)
+    assert port.calls == []
+    assert "/api/chat/slots not granted" in note(ctx, "external-cli-slot-appears")
+
+
+def test_with_the_d_p1_grants_the_ungranted_refusal_is_probed() -> None:
+    path = "/api/member-records/probe"
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    port = FakePort({("POST", path): DENY})
+    run_one("member-record-ungranted", port, ctx)
+    assert port.calls == [("POST", path, True, False)]
+    assert state(ctx, "bot-dashboard-record-ungranted") == "DENIED"
+
+
+def test_d_p1_grants_decide_the_slots_cells_from_the_slots_event() -> None:
+    ctx = make_ctx(grants=D_P1_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row("member-probe"))]), ctx)
+    assert "slots grant is declared" in note(ctx, "user-slots-no-grant-denied")
+    assert state(ctx, "user-slots-visible") == "ALLOWED"

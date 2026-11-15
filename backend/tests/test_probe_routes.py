@@ -404,3 +404,19 @@ def test_a_v0_manifest_lets_the_deny_by_default_cell_be_decided(
     wait_until_done(client)
     assert svc.run.cells["user-slots-no-grant-denied"].state == "DENIED"
     assert svc.run.grants_basis == "manifest"
+
+
+def test_state_counts_the_declared_entries_and_an_explicit_false_grants_nothing(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    client = make_client(service(manifest_path=manifest_with(tmp_path, V1_PERMISSIONS)))
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p"})
+    state = call(client, "GET", "/api/probe/state").json()
+    assert (state["grantedApi"], state["grantedEvents"]) == (3, 1)
+    call(client, "POST", "/api/probe/config", {"probeSlug": "p", "grantsDeclared": False})
+    state = call(client, "GET", "/api/probe/state").json()
+    assert (state["grantsDeclared"], state["grantsBasis"], state["grantedApi"]) == (
+        False,
+        "request",
+        0,
+    )

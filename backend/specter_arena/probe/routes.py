@@ -15,7 +15,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
-from ..config import APP_ROOT, detect_grants, gateway_env
+from ..config import APP_ROOT, Grants, gateway_env, read_grants
 from ..proxy_auth import Handler, signed
 from .matrix import (
     CREDENTIALS,
@@ -100,15 +100,18 @@ class ProbeService:
         self.error: str | None = None
         self.other_app = "specter-other"
         self.cli_slot_key = ""
-        self.grants_declared = True
+        self.grants = Grants.assumed("default")
         self.run = self._fresh_run()
-        self.run.grants_basis = "default"
+        self.run.grants_basis = self.grants.basis
 
     def _resolve_grants(self, explicit: bool | None) -> None:
         if explicit is None:
-            self.grants_declared, self.run.grants_basis = detect_grants(self._manifest_path)
+            self.grants = read_grants(self._manifest_path)
+        elif explicit:
+            self.grants = Grants.assumed("request")
         else:
-            self.grants_declared, self.run.grants_basis = explicit, "request"
+            self.grants = Grants.none("request")
+        self.run.grants_basis = self.grants.basis
         self._grants_resolved = True
 
     def _fresh_run(self, probe_slug: str = "") -> Run:
@@ -137,8 +140,10 @@ class ProbeService:
             "status": self.status,
             "error": self.error,
             "probeSlug": self.run.probe_slug,
-            "grantsDeclared": self.grants_declared,
+            "grantsDeclared": self.grants.beyond_own_entry,
             "grantsBasis": self.run.grants_basis,
+            "grantedApi": len(self.grants.api),
+            "grantedEvents": len(self.grants.events),
             "decidedCells": len(self.run.cells),
             "droppedFrames": self.run.stats.dropped,
             "bufferedFrames": len(self.run.frames),
@@ -178,7 +183,7 @@ class ProbeService:
         ctx = StepContext(
             run=self.run,
             now=_now,
-            grants_declared=self.grants_declared,
+            grants=self.grants,
             gateway_available=self._gateway_available(),
             other_app=self.other_app,
             cli_slot_key=self.cli_slot_key,
