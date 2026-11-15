@@ -1,0 +1,1924 @@
+{
+  "_meta": {
+    "capture": "event-frames",
+    "sanitisation": "SPECTER-DIAGNOSTIC-ONLY; non-probe values reduced to sha256:<12 hex> digests (salted per run, salt never stored) or <redacted type=... len=n> placeholders; probe rows keep values after secret redaction minus their prose fields; event frames keep allow-listed fields only, with no free text for any slot; frames that fail sanitising are dropped and counted",
+    "hostVersion": "0.12.2",
+    "runId": "20261115T215658Z-8625d7",
+    "capturedAt": "2026-11-15T22:12:26.784430+00:00",
+    "framesSeen": {
+      "chat_chunk": 382,
+      "chat_done": 8,
+      "chat_status": 8,
+      "chat_thinking": 744,
+      "context_usage": 27,
+      "dashboard": 180,
+      "other": 370,
+      "refresh": 10,
+      "slots": 33,
+      "subagent_chunk": 514,
+      "subagent_done": 1,
+      "tool_call": 91,
+      "tool_result": 19
+    },
+    "rowsKept": {
+      "chat_done": 8,
+      "chat_status": 8,
+      "context_usage": 27,
+      "subagent_done": 1,
+      "tool_call": 91,
+      "tool_result": 19
+    },
+    "rowsDroppedByCap": 0,
+    "measurement": {
+      "chat_chunk": {
+        "count": 382,
+        "bytesP50": 131,
+        "bytesP95": 230,
+        "bytesMax": 237,
+        "burstMaxPerSecond": 115
+      },
+      "chat_done": {
+        "count": 8,
+        "bytesP50": 235,
+        "bytesP95": 237,
+        "bytesMax": 237,
+        "burstMaxPerSecond": 1
+      },
+      "chat_status": {
+        "count": 8,
+        "bytesP50": 188,
+        "bytesP95": 188,
+        "bytesMax": 188,
+        "burstMaxPerSecond": 1
+      },
+      "chat_thinking": {
+        "count": 744,
+        "bytesP50": 92,
+        "bytesP95": 113,
+        "bytesMax": 208,
+        "burstMaxPerSecond": 46
+      },
+      "context_usage": {
+        "count": 27,
+        "bytesP50": 222,
+        "bytesP95": 222,
+        "bytesMax": 222,
+        "burstMaxPerSecond": 2
+      },
+      "dashboard": {
+        "count": 180,
+        "bytesP50": 1666,
+        "bytesP95": 1666,
+        "bytesMax": 1666,
+        "burstMaxPerSecond": 1
+      },
+      "other": {
+        "count": 370,
+        "bytesP50": 69,
+        "bytesP95": 1081,
+        "bytesMax": 155800,
+        "burstMaxPerSecond": 8
+      },
+      "refresh": {
+        "count": 10,
+        "bytesP50": 52,
+        "bytesP95": 52,
+        "bytesMax": 52,
+        "burstMaxPerSecond": 1
+      },
+      "slots": {
+        "count": 33,
+        "bytesP50": 123788,
+        "bytesP95": 127278,
+        "bytesMax": 127278,
+        "burstMaxPerSecond": 2
+      },
+      "subagent_chunk": {
+        "count": 514,
+        "bytesP50": 144,
+        "bytesP95": 156,
+        "bytesMax": 169,
+        "burstMaxPerSecond": 170
+      },
+      "subagent_done": {
+        "count": 1,
+        "bytesP50": 7073,
+        "bytesP95": 7073,
+        "bytesMax": 7073,
+        "burstMaxPerSecond": 1
+      },
+      "tool_call": {
+        "count": 91,
+        "bytesP50": 533,
+        "bytesP95": 2156,
+        "bytesMax": 11433,
+        "burstMaxPerSecond": 5
+      },
+      "tool_result": {
+        "count": 19,
+        "bytesP50": 392,
+        "bytesP95": 4601,
+        "bytesMax": 4601,
+        "burstMaxPerSecond": 2
+      }
+    },
+    "keysSeen": {
+      "chat_done": [
+        "continuing",
+        "needs_input",
+        "slot",
+        "turn",
+        "turn_gen"
+      ],
+      "chat_status": [
+        "slot"
+      ],
+      "context_usage": [
+        "pct",
+        "slot",
+        "used_tokens",
+        "window_tokens"
+      ],
+      "subagent_done": [
+        "elapsed",
+        "error",
+        "id",
+        "slot"
+      ],
+      "tool_call": [
+        "is_shell",
+        "kind",
+        "slot",
+        "tool_call_id"
+      ],
+      "tool_result": [
+        "slot",
+        "tool_call_id"
+      ]
+    }
+  },
+  "rows": [
+    {
+      "frameSeq": 30,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794779896736,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 34,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779899129,
+      "data": {
+        "pct": 7.2,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 71806,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 38,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779899137,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=7>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 40,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779899220,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 41,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779899224,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 43,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779899225,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 50,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779909139,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:c07d953dbf0e"
+      }
+    },
+    {
+      "frameSeq": 76,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779913503,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:973ff3c8b8dd"
+      }
+    },
+    {
+      "frameSeq": 87,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779929127,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:7d5b64dbf229"
+      }
+    },
+    {
+      "frameSeq": 109,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779937406,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:818d180b9bd8"
+      }
+    },
+    {
+      "frameSeq": 114,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779944243,
+      "data": {
+        "pct": 7.3,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 73232,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 115,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779944244,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 116,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779944405,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:816020101196"
+      }
+    },
+    {
+      "frameSeq": 121,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779946188,
+      "data": {
+        "pct": 7.3,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 73255,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 125,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794779946225,
+      "data": {
+        "continuing": false,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 7,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 142,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779950734,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:3e329d36750a"
+      }
+    },
+    {
+      "frameSeq": 147,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779954638,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1a5f2b35b9eb"
+      }
+    },
+    {
+      "frameSeq": 157,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794779959883,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 193,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779963254,
+      "data": {
+        "pct": 7.3,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 73255,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 214,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779963310,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:de318eb0aeb3"
+      }
+    },
+    {
+      "frameSeq": 216,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779963314,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:de318eb0aeb3"
+      }
+    },
+    {
+      "frameSeq": 218,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779963346,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:de318eb0aeb3"
+      }
+    },
+    {
+      "frameSeq": 219,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779963347,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:de318eb0aeb3"
+      }
+    },
+    {
+      "frameSeq": 221,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779964877,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:2e72246f1e94"
+      }
+    },
+    {
+      "frameSeq": 223,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779964879,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:2e72246f1e94"
+      }
+    },
+    {
+      "frameSeq": 225,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779964926,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:2e72246f1e94"
+      }
+    },
+    {
+      "frameSeq": 226,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779964927,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:2e72246f1e94"
+      }
+    },
+    {
+      "frameSeq": 273,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779965726,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:eb9e83132f41"
+      }
+    },
+    {
+      "frameSeq": 275,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779966683,
+      "data": {
+        "pct": 7.5,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 74979,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 276,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779966685,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:1fb7780dd82f"
+      }
+    },
+    {
+      "frameSeq": 278,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779966689,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:1fb7780dd82f"
+      }
+    },
+    {
+      "frameSeq": 284,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779966858,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:1fb7780dd82f"
+      }
+    },
+    {
+      "frameSeq": 285,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779966862,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:1fb7780dd82f"
+      }
+    },
+    {
+      "frameSeq": 290,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779968235,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:bdf069c8dcf8"
+      }
+    },
+    {
+      "frameSeq": 292,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779968239,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:bdf069c8dcf8"
+      }
+    },
+    {
+      "frameSeq": 294,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779968291,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:bdf069c8dcf8"
+      }
+    },
+    {
+      "frameSeq": 295,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779968291,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:bdf069c8dcf8"
+      }
+    },
+    {
+      "frameSeq": 297,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779969819,
+      "data": {
+        "pct": 7.5,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 75312,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 298,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779969820,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:eb665634abed"
+      }
+    },
+    {
+      "frameSeq": 300,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779969823,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:eb665634abed"
+      }
+    },
+    {
+      "frameSeq": 303,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779969877,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:eb665634abed"
+      }
+    },
+    {
+      "frameSeq": 305,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779969880,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:eb665634abed"
+      }
+    },
+    {
+      "frameSeq": 308,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779970278,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:3bcaa3d2551d"
+      }
+    },
+    {
+      "frameSeq": 325,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779971230,
+      "data": {
+        "pct": 7.6,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 75644,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 329,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794779971260,
+      "data": {
+        "continuing": true,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 8,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 336,
+      "rowKind": "probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794779976439,
+      "data": {
+        "slot": "chat-61-1794779966"
+      }
+    },
+    {
+      "frameSeq": 340,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779978720,
+      "data": {
+        "is_shell": false,
+        "kind": "other",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:0456a1f298f7"
+      }
+    },
+    {
+      "frameSeq": 342,
+      "rowKind": "probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779978722,
+      "data": {
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:0456a1f298f7"
+      }
+    },
+    {
+      "frameSeq": 343,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779978722,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:0456a1f298f7"
+      }
+    },
+    {
+      "frameSeq": 345,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779978741,
+      "data": {
+        "is_shell": false,
+        "kind": "other",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:ee64e727cbb2"
+      }
+    },
+    {
+      "frameSeq": 347,
+      "rowKind": "probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779978745,
+      "data": {
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:ee64e727cbb2"
+      }
+    },
+    {
+      "frameSeq": 348,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779978746,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:ee64e727cbb2"
+      }
+    },
+    {
+      "frameSeq": 350,
+      "rowKind": "probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779979998,
+      "data": {
+        "pct": 4.0,
+        "slot": "chat-61-1794779966",
+        "used_tokens": 40471,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 351,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779979998,
+      "data": {
+        "is_shell": false,
+        "kind": "other",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:f253908531fc"
+      }
+    },
+    {
+      "frameSeq": 353,
+      "rowKind": "probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779980015,
+      "data": {
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:f253908531fc"
+      }
+    },
+    {
+      "frameSeq": 354,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779980016,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:f253908531fc"
+      }
+    },
+    {
+      "frameSeq": 356,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779981091,
+      "data": {
+        "is_shell": true,
+        "kind": "execute",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 358,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779981168,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 360,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779981172,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 362,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779981173,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 364,
+      "rowKind": "probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779981179,
+      "data": {
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 365,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779981310,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:72a3a43aea22"
+      }
+    },
+    {
+      "frameSeq": 369,
+      "rowKind": "probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779982570,
+      "data": {
+        "pct": 4.3,
+        "slot": "chat-61-1794779966",
+        "used_tokens": 42501,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 370,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779982570,
+      "data": {
+        "is_shell": false,
+        "kind": "other",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:b242ec47d879"
+      }
+    },
+    {
+      "frameSeq": 372,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779982572,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:b242ec47d879"
+      }
+    },
+    {
+      "frameSeq": 374,
+      "rowKind": "probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779982612,
+      "data": {
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:b242ec47d879"
+      }
+    },
+    {
+      "frameSeq": 375,
+      "rowKind": "probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779982613,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "chat-61-1794779966",
+        "tool_call_id": "sha256:b242ec47d879"
+      }
+    },
+    {
+      "frameSeq": 397,
+      "rowKind": "probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779984069,
+      "data": {
+        "pct": 4.3,
+        "slot": "chat-61-1794779966",
+        "used_tokens": 42763,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 400,
+      "rowKind": "probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794779984091,
+      "data": {
+        "continuing": false,
+        "needs_input": false,
+        "slot": "chat-61-1794779966",
+        "turn": 1,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 406,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794779984787,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 408,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779986603,
+      "data": {
+        "pct": 7.6,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 75644,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 409,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779986604,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:fdd1ebca5fe8"
+      }
+    },
+    {
+      "frameSeq": 411,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779986608,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:fdd1ebca5fe8"
+      }
+    },
+    {
+      "frameSeq": 428,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794779986666,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:fdd1ebca5fe8"
+      }
+    },
+    {
+      "frameSeq": 429,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779986667,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:fdd1ebca5fe8"
+      }
+    },
+    {
+      "frameSeq": 432,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794779986908,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:16f0eedbb4b8"
+      }
+    },
+    {
+      "frameSeq": 461,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779988604,
+      "data": {
+        "pct": 7.8,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 77728,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 463,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794779988623,
+      "data": {
+        "pct": 7.8,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 77728,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 466,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794779988694,
+      "data": {
+        "continuing": true,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 9,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 480,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780013094,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:6cddc651d591"
+      }
+    },
+    {
+      "frameSeq": 544,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780022238,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:8132eb3d0e3d"
+      }
+    },
+    {
+      "frameSeq": 563,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794780048227,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 590,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780048436,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:5a8809762218"
+      }
+    },
+    {
+      "frameSeq": 592,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780050592,
+      "data": {
+        "pct": 7.8,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 77728,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 596,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780050636,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:d4b7c91be98a"
+      }
+    },
+    {
+      "frameSeq": 598,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780050639,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:d4b7c91be98a"
+      }
+    },
+    {
+      "frameSeq": 600,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780050704,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:d4b7c91be98a"
+      }
+    },
+    {
+      "frameSeq": 601,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780050705,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:d4b7c91be98a"
+      }
+    },
+    {
+      "frameSeq": 604,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780052047,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:15f6bc0972d8"
+      }
+    },
+    {
+      "frameSeq": 606,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780052050,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:15f6bc0972d8"
+      }
+    },
+    {
+      "frameSeq": 622,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780052642,
+      "data": {
+        "pct": 7.9,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 79392,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 623,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780052643,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:15f6bc0972d8"
+      }
+    },
+    {
+      "frameSeq": 624,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780052649,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:15f6bc0972d8"
+      }
+    },
+    {
+      "frameSeq": 651,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780054013,
+      "data": {
+        "pct": 8.0,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 79528,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 655,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794780054047,
+      "data": {
+        "continuing": true,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 10,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 738,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794780061621,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 795,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780065422,
+      "data": {
+        "pct": 8.0,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 79528,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 848,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780065573,
+      "data": {
+        "pct": 8.1,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 81058,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 851,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794780065602,
+      "data": {
+        "continuing": true,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 11,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 998,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780077054,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c806d6bcc49"
+      }
+    },
+    {
+      "frameSeq": 1009,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794780087241,
+      "data": {
+        "slot": "sha256:cd63875fb52b"
+      }
+    },
+    {
+      "frameSeq": 1026,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780119583,
+      "data": {
+        "pct": 60.3,
+        "slot": "sha256:cd63875fb52b",
+        "used_tokens": 602868,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 1027,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780119583,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=7>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1029,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780119693,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1030,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780119700,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1032,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780119701,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1034,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780119778,
+      "data": {
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1035,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780119778,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:e98fef432fbf"
+      }
+    },
+    {
+      "frameSeq": 1057,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780120715,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:a606a4e0fbf5"
+      }
+    },
+    {
+      "frameSeq": 1077,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780125074,
+      "data": {
+        "pct": 60.5,
+        "slot": "sha256:cd63875fb52b",
+        "used_tokens": 604561,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 1097,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780125092,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=7>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1099,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780125147,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1101,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780125151,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1103,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780125152,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1105,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780125164,
+      "data": {
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1106,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780125165,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:be16d1568f2a"
+      }
+    },
+    {
+      "frameSeq": 1138,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780127915,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:782698cf4ef0"
+      }
+    },
+    {
+      "frameSeq": 1141,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780130094,
+      "data": {
+        "pct": 60.5,
+        "slot": "sha256:cd63875fb52b",
+        "used_tokens": 605110,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 1166,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780130117,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=7>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:7418b396740e"
+      }
+    },
+    {
+      "frameSeq": 1168,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780130191,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:7418b396740e"
+      }
+    },
+    {
+      "frameSeq": 1169,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780130196,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:7418b396740e"
+      }
+    },
+    {
+      "frameSeq": 1171,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780130196,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:cd63875fb52b",
+        "tool_call_id": "sha256:7418b396740e"
+      }
+    },
+    {
+      "frameSeq": 1192,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780139185,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:4a92fdba3e38"
+      }
+    },
+    {
+      "frameSeq": 1210,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780144664,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:737d6c9d92fa"
+      }
+    },
+    {
+      "frameSeq": 1229,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780148844,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:d07190fdaef2"
+      }
+    },
+    {
+      "frameSeq": 1232,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780152063,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:06091b6eadd8"
+      }
+    },
+    {
+      "frameSeq": 1255,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780156818,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:b1de8f45f331"
+      }
+    },
+    {
+      "frameSeq": 1282,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780186341,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:bd5969be4745"
+      }
+    },
+    {
+      "frameSeq": 1285,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780186943,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:a77002c9866c"
+      }
+    },
+    {
+      "frameSeq": 1287,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780187635,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:93f088b4d479"
+      }
+    },
+    {
+      "frameSeq": 1290,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780188192,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:be009fc663bc"
+      }
+    },
+    {
+      "frameSeq": 1292,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780188656,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:6fd7e011edc6"
+      }
+    },
+    {
+      "frameSeq": 1303,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780197848,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:29960425ef9d"
+      }
+    },
+    {
+      "frameSeq": 1913,
+      "rowKind": "non-probe",
+      "eventType": "subagent_done",
+      "receivedAtMs": 1794780462959,
+      "data": {
+        "elapsed": 3445.9930963516235,
+        "error": null,
+        "id": "sha256:1f1754a2a8c1",
+        "slot": "sha256:c9a0d715fb1c"
+      }
+    },
+    {
+      "frameSeq": 1931,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780471241,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=7>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1933,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780471307,
+      "data": {
+        "pct": 22.8,
+        "slot": "sha256:c9a0d715fb1c",
+        "used_tokens": 227941,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 1934,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780471319,
+      "data": {
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1935,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780471325,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1937,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780471325,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1951,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780498812,
+      "data": {
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1952,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780498813,
+      "data": {
+        "is_shell": true,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:1c1dc7bc7d2c"
+      }
+    },
+    {
+      "frameSeq": 1990,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780510796,
+      "data": {
+        "slot": "sha256:c9a0d715fb1c",
+        "tool_call_id": "sha256:458f30d78933"
+      }
+    },
+    {
+      "frameSeq": 2237,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780517785,
+      "data": {
+        "pct": 23.0,
+        "slot": "sha256:c9a0d715fb1c",
+        "used_tokens": 230401,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 2239,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780517856,
+      "data": {
+        "pct": 23.0,
+        "slot": "sha256:c9a0d715fb1c",
+        "used_tokens": 230401,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 2242,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794780517888,
+      "data": {
+        "continuing": false,
+        "needs_input": false,
+        "slot": "sha256:c9a0d715fb1c",
+        "turn": 86,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    },
+    {
+      "frameSeq": 2273,
+      "rowKind": "non-probe",
+      "eventType": "chat_status",
+      "receivedAtMs": 1794780567061,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5"
+      }
+    },
+    {
+      "frameSeq": 2277,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780569485,
+      "data": {
+        "pct": 8.1,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 81058,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 2278,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780569486,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=5>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:976e8b10dce8"
+      }
+    },
+    {
+      "frameSeq": 2280,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780569489,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:976e8b10dce8"
+      }
+    },
+    {
+      "frameSeq": 2282,
+      "rowKind": "non-probe",
+      "eventType": "tool_result",
+      "receivedAtMs": 1794780569550,
+      "data": {
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:976e8b10dce8"
+      }
+    },
+    {
+      "frameSeq": 2283,
+      "rowKind": "non-probe",
+      "eventType": "tool_call",
+      "receivedAtMs": 1794780569551,
+      "data": {
+        "is_shell": false,
+        "kind": "<redacted type=str len=0>",
+        "slot": "sha256:10a3b7fe51e5",
+        "tool_call_id": "sha256:976e8b10dce8"
+      }
+    },
+    {
+      "frameSeq": 2307,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780571529,
+      "data": {
+        "pct": 8.2,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 82465,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 2309,
+      "rowKind": "non-probe",
+      "eventType": "context_usage",
+      "receivedAtMs": 1794780571536,
+      "data": {
+        "pct": 8.2,
+        "slot": "sha256:10a3b7fe51e5",
+        "used_tokens": 82465,
+        "window_tokens": 1000000
+      }
+    },
+    {
+      "frameSeq": 2313,
+      "rowKind": "non-probe",
+      "eventType": "chat_done",
+      "receivedAtMs": 1794780571577,
+      "data": {
+        "continuing": false,
+        "needs_input": false,
+        "slot": "sha256:10a3b7fe51e5",
+        "turn": 12,
+        "turn_gen": "<redacted type=str len=8>"
+      }
+    }
+  ]
+}

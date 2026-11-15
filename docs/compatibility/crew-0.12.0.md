@@ -1,6 +1,6 @@
 # Kiro Crew 0.12.0 compatibility record
 
-Specter Arena is probed against Kiro Crew 0.12.0 only (A4). The manifest floor `minKiroCrewVersion: "0.12.0"` is declared; newer hosts are assumed to work until a re-probe finds a break, and no newer host was probed.
+FP-01 probed Specter Arena against Kiro Crew 0.12.0 only (A4). The manifest floor `minKiroCrewVersion: "0.12.0"` is declared. FP-02+03 slice 1 later probed 0.12.2; that record is `crew-0.12.2.md`, and a matrix cell with `hostVersion` 0.12.2 comes from it.
 
 ## Install method
 

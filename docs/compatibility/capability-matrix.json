@@ -1,7 +1,7 @@
 {
-  "hostVersion": "0.12.0",
-  "runId": "20261111T230641Z-4f743d",
-  "probedAt": "2026-11-11T23:08:07.227362+00:00",
+  "hostVersion": "0.12.2",
+  "runId": "20261115T215658Z-8625d7",
+  "probedAt": "2026-11-15T22:12:26.784307+00:00",
   "cells": [
     {
       "id": "app-owned-grant-staging",
@@ -29,9 +29,10 @@
       "scope": "app-owned",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-token-exchange",
-      "probedAt": "2026-11-11T23:07:37.187739+00:00",
-      "notes": "token received (258 characters, value not recorded) (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#app-owned-token-exchange",
+      "probedAt": "2026-11-15T21:57:26.747200+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "token received (258 characters, value not recorded) (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "app-owned-token-lifetime",
@@ -49,9 +50,10 @@
       "scope": "app-owned",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-unsigned-direct-rejected",
-      "probedAt": "2026-11-11T23:07:37.189180+00:00",
-      "notes": "GET /api/ping (unsigned, backend loopback) answered 401; object with fields error; error=\"unauthorized\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#app-owned-unsigned-direct-rejected",
+      "probedAt": "2026-11-15T21:57:26.747826+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/ping (unsigned, backend loopback) answered 401; object with fields error; error=\"unauthorized\" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "app-owned-ws-token-transport",
@@ -59,9 +61,10 @@
       "scope": "app-owned",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#app-owned-ws-token-transport",
-      "probedAt": "2026-11-11T23:08:07.219061+00:00",
-      "notes": "feed opened with token via query; 16 frames (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#app-owned-ws-token-transport",
+      "probedAt": "2026-11-15T22:12:26.784195+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "feed opened with token via query; 2388 frames (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-activity-read",
@@ -69,9 +72,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-activity-read",
-      "probedAt": "2026-11-11T23:07:37.203939+00:00",
-      "notes": "GET /api/members/specter-probe-bot/activity answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-activity-read",
+      "probedAt": "2026-11-15T21:02:18.677868+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members/specter-probe-bot/activity answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-attribution-survives-restart",
@@ -139,9 +143,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-goals-read",
-      "probedAt": "2026-11-11T23:07:37.200760+00:00",
-      "notes": "GET /api/members/specter-probe-bot/goals answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-goals-read",
+      "probedAt": "2026-11-15T21:02:18.673298+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members/specter-probe-bot/goals answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-id-observable",
@@ -149,9 +154,10 @@
       "scope": "bot",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-id-observable",
-      "probedAt": "2026-11-11T23:08:07.219121+00:00",
-      "notes": "DM slot key member-specter-probe-bot present (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-id-observable",
+      "probedAt": "2026-11-15T22:12:26.784239+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "probe bot slot present: DM slot key member-specter-probe-bot; a slot whose agent field is the probe slug (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-id-stable-across-rename",
@@ -161,7 +167,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "Probe bot was not renamed during the run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "notes": "Not exercised: prompt E (rename) was skipped in the shortened slice-1 sitting; display_name did not change across the roster reads. Run S1-v1, 2026-11-15."
     },
     {
       "id": "bot-key-results-read",
@@ -169,9 +175,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-key-results-read",
-      "probedAt": "2026-11-11T23:07:37.202450+00:00",
-      "notes": "GET /api/members/specter-probe-bot/goals/key-results answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-key-results-read",
+      "probedAt": "2026-11-15T21:02:18.675460+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members/specter-probe-bot/goals/key-results answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only)"
     },
     {
       "id": "bot-ledger-read",
@@ -179,9 +186,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-ledger-read",
-      "probedAt": "2026-11-11T23:07:37.198994+00:00",
-      "notes": "GET /api/members/specter-probe-bot/projections answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-ledger-read",
+      "probedAt": "2026-11-15T21:02:18.670894+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members/specter-probe-bot/projections answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-list-members-denied",
@@ -189,9 +197,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-list-members-denied",
-      "probedAt": "2026-11-11T23:07:37.197336+00:00",
-      "notes": "GET /api/members answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-list-members-denied",
+      "probedAt": "2026-11-15T21:02:18.668512+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-list-via-agents",
@@ -199,9 +208,10 @@
       "scope": "bot",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-list-via-agents",
-      "probedAt": "2026-11-11T23:07:37.213893+00:00",
-      "notes": "/api/agents answered 200; probe bot row fields avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-list-via-agents",
+      "probedAt": "2026-11-15T21:57:26.793188+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "/api/agents answered 200; probe bot row fields avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-name-avatar",
@@ -209,9 +219,10 @@
       "scope": "bot",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-name-avatar",
-      "probedAt": "2026-11-11T23:07:37.213940+00:00",
-      "notes": "probe bot row has name-like and avatar-like fields: avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-name-avatar",
+      "probedAt": "2026-11-15T21:57:26.793220+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "probe bot row has name-like and avatar-like fields: avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-notes-memory-private",
@@ -219,9 +230,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-notes-memory-private",
-      "probedAt": "2026-11-11T23:07:37.205463+00:00",
-      "notes": "GET /api/members/specter-probe-bot/notes answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-notes-memory-private",
+      "probedAt": "2026-11-15T21:02:18.679801+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/members/specter-probe-bot/notes answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only)"
     },
     {
       "id": "bot-own-session-attribution",
@@ -229,9 +241,10 @@
       "scope": "bot",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#bot-own-session-attribution",
-      "probedAt": "2026-11-11T23:08:07.219125+00:00",
-      "notes": "DM slot carries key and agent fields (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-own-session-attribution",
+      "probedAt": "2026-11-15T22:12:26.784241+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "DM slot carries key and agent fields (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-per-bot-opt-in",
@@ -267,21 +280,23 @@
       "id": "bot-token-usage-per-bot",
       "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-token-usage-per-bot",
+      "probedAt": "2026-11-15T21:57:26.853739+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "/api/usage, /api/sessions/usage: per-slot or per-bot field names present (session); what the figures mean is not concluded here; capture so far: context_usage rows 0, subagent_done rows 0 (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-worker-session-attribution",
       "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
       "scope": "bot",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "No worker slot row was observed, and it is unknown whether the probe bot dispatched a worker. The targeted rerun with explicit delegation (L3-v1c) was skipped. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-worker-session-attribution",
+      "probedAt": "2026-11-15T22:12:26.784246+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "created_by chain reaches the probe bot; lineage_minted=True (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "bot-worker-session-attribution-subagent",
@@ -291,7 +306,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not exercised: the probe bot has no spawn_run tool on Crew 0.12.2 and refused prompt C, so no subagent was started. Eric accepted this as a coverage limit on 2026-11-15. Run S1-v1."
     },
     {
       "id": "closed-tab-collection",
@@ -301,7 +316,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "notes": "Not exercised: the arena tab was not closed in the slice-1 sitting (step F skipped). The capture saw a 900 s gap with no page request, but the cell needs the owner to attest the tab was closed. Run S1-v1, 2026-11-15."
     },
     {
       "id": "external-cli-slot-appears",
@@ -329,9 +344,10 @@
       "scope": "other-app",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#other-app-api-denied",
-      "probedAt": "2026-11-11T23:07:37.195925+00:00",
-      "notes": "GET /api/config answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#other-app-api-denied",
+      "probedAt": "2026-11-15T21:02:18.665325+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/config answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only)"
     },
     {
       "id": "other-app-proxy-denied",
@@ -361,27 +377,29 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "notes": "Not observed: no history frames arrived after the deliberate reconnect, and the code never writes DENIED for a quiet stream (run S1-v1 20261115T215658Z-8625d7; owner broad grant)."
     },
     {
       "id": "reconnect-snapshot",
       "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
       "scope": "app-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#reconnect-snapshot",
+      "probedAt": "2026-11-15T22:12:26.784292+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "1 reconnect(s); probe rows before 2, after 2, present in both 2; running state carried over for 2 of 2; replayed within 10 s: none (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "sessions-usage-api-app-token",
       "question": "Does GET /api/sessions/usage answer an app token granted that path (status and field names only)?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#sessions-usage-api-app-token",
+      "probedAt": "2026-11-15T21:57:26.853667+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/sessions/usage answered 200; object with fields usage (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "subagent-events-visible",
@@ -391,17 +409,18 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "not yet probed"
+      "notes": "Not exercised: no spawn_run subagent was started (the probe bot has no spawn_run tool); subagent:user and subagent:all were granted. Run S1-v1, 2026-11-15."
     },
     {
       "id": "usage-api-app-token",
       "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "not yet probed"
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#usage-api-app-token",
+      "probedAt": "2026-11-15T21:57:26.847195+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "GET /api/usage answered 200; object with fields billing, refreshing, sessions, username (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-chat-slot-history",
@@ -427,11 +446,12 @@
       "id": "user-outcome-evidence",
       "question": "What outcome evidence exists beyond idle? (never recorded as \"accepted\")",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "No terminal signal in the capture window. The bot DM row produced only \"removed\" signals (4 in L3-v1b); the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#user-outcome-evidence",
+      "probedAt": "2026-11-15T22:12:26.784234+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "outcome text: I ran echo b, and it printed b with exit code 0. I called work_brief first. Then… (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-signal-approval",
@@ -441,37 +461,40 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "Signal not observed in the capture window (L3-v1b); no approval was requested of the probe bot. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "notes": "Not exercised: prompt D (approval) was skipped in the shortened slice-1 sitting; question_card frames: 0. Run S1-v1, 2026-11-15."
     },
     {
       "id": "user-signal-progress",
       "question": "Is progress observable (last_activity_ts, running)?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#user-signal-progress",
+      "probedAt": "2026-11-15T22:12:26.784225+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "signal observed on a probe slot: context-usage, progress, tool-call, tool-result; last_activity_ts is JSON str (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-signal-start",
       "question": "Is a start signal observable (running false to true)?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#user-signal-start",
+      "probedAt": "2026-11-15T22:12:26.784220+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "signal observed on a probe slot: chat-status, start (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-signal-terminal",
       "question": "Is a terminal signal observable, and does it carry any outcome evidence?",
       "scope": "user-owned",
-      "state": "UNTESTED",
-      "credential": null,
-      "evidenceRef": null,
-      "probedAt": null,
-      "notes": "Signal not observed in the capture window (L3-v1b). The bot DM row produced only \"removed\" signals; the cause is open. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "state": "ALLOWED",
+      "credential": "APP-TOKEN",
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#user-signal-terminal",
+      "probedAt": "2026-11-15T22:12:26.784228+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "signal observed on a probe slot: chat-done, terminal; a turn boundary, not an outcome (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-signal-tool-error",
@@ -481,7 +504,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "No tool error was provoked. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
+      "notes": "Not observed: no tool error was provoked, and the 5 tool_result frames on the probe slot carried no error field (run S1-v1 20261115T215658Z-8625d7; owner broad grant)."
     },
     {
       "id": "user-slots-no-grant-denied",
@@ -489,9 +512,10 @@
       "scope": "user-owned",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v0/run-log.md",
-      "probedAt": "2026-11-10",
-      "notes": "Phase v0 (no slots:user grant): evidence/SUMMARY.md records 0 user-origin rows delivered. The cited L3-v0 run log is the diagnostic-page summary Eric pasted; the raw export was not saved and the time of day is not recorded."
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#user-slots-no-grant-denied",
+      "probedAt": "2026-11-15T21:02:48.685953+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "first slots frame held 0 rows without a slots grant (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only)"
     },
     {
       "id": "user-slots-visible",
@@ -499,9 +523,10 @@
       "scope": "user-owned",
       "state": "ALLOWED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/L3-v1b/export.json#user-slots-visible",
-      "probedAt": "2026-11-11T23:08:07.219091+00:00",
-      "notes": "snapshots held up to 34 rows (export.json run 20261111T230641Z-4f743d)"
+      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#user-slots-visible",
+      "probedAt": "2026-11-15T22:12:26.784212+00:00",
+      "hostVersion": "0.12.2",
+      "notes": "snapshots held up to 42 rows (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
     },
     {
       "id": "user-source-links",
