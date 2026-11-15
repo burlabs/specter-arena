@@ -19,6 +19,7 @@ from .steps import (
     PortError,
     TokenExchangeError,
     is_allowed_client_text,
+    is_reserved_frame_type,
 )
 
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
@@ -66,6 +67,7 @@ class LiveGateway:
         self._connection: ClientConnection | None = None
         self._queued: list[str] = []
         self._generation = 0
+        self._closing: asyncio.Task[None] | None = None
 
     @property
     def token_transport(self) -> str | None:
@@ -146,7 +148,7 @@ class LiveGateway:
 
     def drop_feed(self) -> None:
         if self._connection is not None:
-            asyncio.get_running_loop().create_task(self._connection.close())
+            self._closing = asyncio.get_running_loop().create_task(self._connection.close())
 
     async def open_feed(self) -> AsyncIterator[dict[str, object]]:
         failures = 0
@@ -168,10 +170,9 @@ class LiveGateway:
                             frame = json.loads(raw) if isinstance(raw, str) else None
                         except ValueError:
                             frame = None
-                        frame_type = frame.get("type") if isinstance(frame, dict) else None
-                        if isinstance(frame_type, str) and frame_type.startswith("_"):
-                            continue
-                        if isinstance(frame, dict):
+                        if isinstance(frame, dict) and not is_reserved_frame_type(
+                            frame.get("type")
+                        ):
                             yield frame
                 self._connection = None
             except (TimeoutError, OSError, WebSocketException):

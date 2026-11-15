@@ -5,7 +5,6 @@ from backend.specter_arena.probe.events import (
     ENUM_FIELDS,
     EVENT_FIELDS,
     EVENT_VOCABULARY,
-    MAX_BURST_BUCKETS,
     MAX_SIZE_SAMPLES,
     EventLog,
     PendingEvent,
@@ -59,7 +58,7 @@ def test_size_samples_and_burst_buckets_are_bounded_but_counts_are_exact() -> No
     measured = log.measurement()["refresh"]
     assert measured["count"] == MAX_SIZE_SAMPLES + 10
     assert measured["bytesMax"] == 1
-    assert len(log._bursts["refresh"]) == MAX_BURST_BUCKETS
+    assert measured["burstMaxPerSecond"] == 1
 
 
 def test_types_outside_the_vocabulary_are_counted_as_other() -> None:
