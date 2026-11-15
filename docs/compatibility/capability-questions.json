@@ -184,10 +184,24 @@
       "priority": "best-effort"
     },
     {
+      "id": "bot-token-usage-per-bot",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
+      "priority": "must"
+    },
+    {
       "id": "bot-worker-session-attribution",
       "kind": "matrix",
       "scope": "bot",
       "question": "Is a dispatched worker linked to its bot (created_by, lineage_minted)?",
+      "priority": "must"
+    },
+    {
+      "id": "bot-worker-session-attribution-subagent",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Is a spawn_run subagent frame attributable to the probe bot's DM slot (slot field, subagent_spawn/subagent_done)?",
       "priority": "must"
     },
     {
@@ -340,6 +354,27 @@
       "kind": "matrix",
       "scope": "app-owned",
       "question": "After WS reconnect, what is recovered (slots snapshot, subagent cards, log replay)?",
+      "priority": "must"
+    },
+    {
+      "id": "sessions-usage-api-app-token",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does GET /api/sessions/usage answer an app token granted that path (status and field names only)?",
+      "priority": "must"
+    },
+    {
+      "id": "subagent-events-visible",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does the subagent:user grant deliver subagent_* frames rooted at the probe bot's slot?",
+      "priority": "must"
+    },
+    {
+      "id": "usage-api-app-token",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
       "priority": "must"
     },
     {

@@ -13,22 +13,22 @@ COMPAT = REPO_ROOT / "docs" / "compatibility"
 KEBAB = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
 
-def test_there_are_62_unique_kebab_case_ids_sorted() -> None:
+def test_there_are_67_unique_kebab_case_ids_sorted() -> None:
     ids = questions.question_ids()
-    assert len(ids) == 62
-    assert len(set(ids)) == 62
+    assert len(ids) == 67
+    assert len(set(ids)) == 67
     assert list(ids) == sorted(ids)
     assert all(KEBAB.fullmatch(question_id) for question_id in ids)
 
 
 def test_counts_by_kind_and_priority() -> None:
-    assert Counter(q.kind for q in questions.QUESTIONS) == {"matrix": 46, "host-fact": 16}
+    assert Counter(q.kind for q in questions.QUESTIONS) == {"matrix": 51, "host-fact": 16}
     assert Counter(q.priority for q in questions.QUESTIONS) == {
-        "must": 45,
+        "must": 50,
         "best-effort": 16,
         "deferred": 1,
     }
-    assert len(questions.matrix_questions()) == 46
+    assert len(questions.matrix_questions()) == 51
     assert len(questions.host_fact_questions()) == 16
 
 

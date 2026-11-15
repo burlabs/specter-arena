@@ -4,7 +4,7 @@ from __future__ import annotations
 import secrets
 from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal, cast
 
 from .frames import Attempt
@@ -22,6 +22,7 @@ HOST_VERSION = "0.12.0"
 RING_SIZE = 500
 MAX_EXCERPT_CHARS = 500
 NOT_YET_PROBED = "not yet probed"
+LATER_UNTESTED = "later window untested: "
 
 CapabilityState = Literal["ALLOWED", "DENIED", "UNSUPPORTED", "UNTESTED"]
 Credential = Literal["APP-TOKEN", "OWNER-SESSION"]
@@ -228,7 +229,12 @@ class Run:
 
 
 def apply_observation(run: Run, observation: Observation) -> Cell:
-    """Classify an observation and store the resulting cell on the run."""
+    """Classify an observation and store the resulting cell on the run.
+
+    Decisions are monotonic within a run: a later UNTESTED never replaces a decided cell (the
+    run spans several capture windows), it only appends its reason to the cell's notes. A later
+    decided observation still replaces the cell.
+    """
     question = question_by_id(observation.cell_id)
     state = classify(observation)
     if state == "UNTESTED":
@@ -238,7 +244,12 @@ def apply_observation(run: Run, observation: Observation) -> Cell:
                 f"response not decisive (status {observation.status}); {observation.excerpt}"
             )[:MAX_EXCERPT_CHARS]
         )
-        cell = to_cell(question, "UNTESTED", notes=reason)
+        earlier = run.cells.get(question.id)
+        if earlier is not None and earlier.state != "UNTESTED":
+            later = f"{LATER_UNTESTED}{reason}"
+            cell = replace(earlier, notes=f"{earlier.notes}; {later}" if earlier.notes else later)
+        else:
+            cell = to_cell(question, "UNTESTED", notes=reason)
     else:
         evidence = Evidence.of(
             observation.credential,
@@ -298,7 +309,7 @@ def fact_for(run: Run, question: Question) -> HostFact:
     return run.host_facts.get(question.id) or HostFact(question)
 
 
-def _cell_json(cell: Cell) -> dict[str, object]:
+def _cell_json(cell: Cell, host_version: str) -> dict[str, object]:
     decisive = cell.decisive
     item: dict[str, object] = {
         "id": cell.question.id,
@@ -309,6 +320,8 @@ def _cell_json(cell: Cell) -> dict[str, object]:
         "evidenceRef": decisive.ref if decisive else None,
         "probedAt": cell.probed_at,
     }
+    if cell.state != "UNTESTED":
+        item["hostVersion"] = host_version
     if cell.notes:
         item["notes"] = cell.notes
     return item
@@ -316,7 +329,9 @@ def _cell_json(cell: Cell) -> dict[str, object]:
 
 def to_matrix_json(run: Run) -> dict[str, object]:
     """SC-4 capability-matrix.json: one cell per matrix question, UNTESTED until probed."""
-    cells = [_cell_json(cell_for(run, question)) for question in matrix_questions()]
+    cells = [
+        _cell_json(cell_for(run, question), run.host_version) for question in matrix_questions()
+    ]
     return {
         "hostVersion": run.host_version,
         "runId": run.run_id,
