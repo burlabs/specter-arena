@@ -12,6 +12,7 @@ from backend.specter_arena.probe.steps import (
     UnknownStep,
     execute_step,
     is_allowed_client_text,
+    is_reserved_frame_type,
     refusal_reasons,
     run_steps,
     select_steps,
@@ -775,6 +776,13 @@ def test_subscribe_subagents_is_sent_once_and_only_with_the_subagent_grant() -> 
     assert quiet.sent == []
 
 
+def test_only_underscore_types_are_reserved_for_the_probe() -> None:
+    assert is_reserved_frame_type("_probe_reconnect")
+    assert is_reserved_frame_type("_anything")
+    assert not is_reserved_frame_type("slots")
+    assert not is_reserved_frame_type(None)
+
+
 def test_only_the_subscribe_message_is_an_allowed_client_text() -> None:
     assert is_allowed_client_text('{"type":"subscribe_subagents"}')
     assert not is_allowed_client_text('{"type": "subscribe_subagents"}')
@@ -1000,8 +1008,8 @@ class RenamingPort(FakePort):
         token: bool = True,
         local: bool = False,
     ) -> tuple[int, bytes]:
-        self.calls.append((method, path, token, local))
-        return roster_body(next(self.names, "Probe Renamed"))
+        self.responses[("GET", "/api/agents")] = roster_body(next(self.names, "Probe Renamed"))
+        return await super().http(method, path, body, token=token, local=local)
 
 
 def test_the_roster_poller_decides_rename_from_digests_only() -> None:

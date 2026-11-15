@@ -155,6 +155,8 @@ class ProbeService:
             self._write_denied = True
 
     def _write_exports(self) -> None:
+        if self._out_dir is None or self._write_denied:
+            return
         export = self.export()
         self._write_json("export.json", export)
         self._write_json("event-capture.json", export["eventCapture"])
@@ -162,6 +164,9 @@ class ProbeService:
     def page_request(self) -> None:
         """Record when a signed page request arrived; only the time is kept."""
         self._page_requests.append(_now())
+
+    def page_request_times(self) -> list[str]:
+        return list(self._page_requests)
 
     @property
     def running(self) -> bool:
@@ -214,7 +219,7 @@ class ProbeService:
             options = load_run_options(
                 options_body, staged, default_capture_seconds=self._capture_seconds
             )
-        except (OptionsError, ValueError, OSError) as error:
+        except (ValueError, OSError) as error:
             reason = str(error) if isinstance(error, OptionsError) else "run options file invalid"
             raise BadRequest(reason) from error
         if options.host_version is None:
@@ -233,7 +238,7 @@ class ProbeService:
             capture_seconds=options.capture_seconds,
             reconnect_after_start=options.reconnect_after_start,
             agents_poll_seconds=options.agents_poll_seconds,
-            page_requests=lambda: list(self._page_requests),
+            page_requests=self.page_request_times,
         )
         self.run.host_version = options.host_version
         self.status = "running"

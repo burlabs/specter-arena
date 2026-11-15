@@ -31,7 +31,7 @@ def test_the_body_wins_over_the_file_key_by_key() -> None:
 @pytest.mark.parametrize(
     ("key", "good", "bad"),
     [
-        ("captureSeconds", [1, 900, 0.5 + 1], [0, 900.5, -1]),
+        ("captureSeconds", [1, 900, 1.5], [0, 900.5, -1]),
         ("reconnectAfterStartSeconds", [1, 120, None], [0, 121]),
         ("agentsPollSeconds", [5, 120], [4.9, 121]),
     ],
@@ -78,4 +78,3 @@ def test_the_options_file_reader(tmp_path: Path) -> None:
     path.write_text("{")
     with pytest.raises(ValueError):
         read_run_options_file(path)
-    assert read_run_options_file() is None

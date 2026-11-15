@@ -115,6 +115,12 @@ def is_allowed_client_text(text: str) -> bool:
     return text in ALLOWED_CLIENT_TEXT
 
 
+def is_reserved_frame_type(frame_type: object) -> bool:
+    """Frame types starting with `_` belong to the probe itself (the reconnect marker); a gateway
+    frame of such a type is dropped so the host can never forge one."""
+    return isinstance(frame_type, str) and frame_type.startswith("_")
+
+
 def _epoch_ms() -> int:
     return time.time_ns() // 1_000_000
 
@@ -687,9 +693,7 @@ async def _poll_agents(port: GatewayPort, ctx: StepContext, tally: _FeedTally) -
         await asyncio.sleep(ctx.agents_poll_seconds)
 
 
-async def _reconnect_after_start(
-    port: GatewayPort, ctx: StepContext, tally: _FeedTally, delay: float
-) -> None:
+async def _reconnect_after_start(port: GatewayPort, tally: _FeedTally, delay: float) -> None:
     """One deliberate reconnect per window, landing inside the first probe turn."""
     await tally.started.wait()
     await asyncio.sleep(delay)
@@ -706,7 +710,7 @@ async def _drain_feed(port: GatewayPort, ctx: StepContext, tally: _FeedTally) ->
         helpers.append(asyncio.create_task(_poll_agents(port, ctx, tally)))
     if ctx.reconnect_after_start is not None:
         delay = ctx.reconnect_after_start
-        helpers.append(asyncio.create_task(_reconnect_after_start(port, ctx, tally, delay)))
+        helpers.append(asyncio.create_task(_reconnect_after_start(port, tally, delay)))
     feed = port.open_feed()
     try:
         async for frame in feed:
@@ -715,7 +719,7 @@ async def _drain_feed(port: GatewayPort, ctx: StepContext, tally: _FeedTally) ->
             if frame_type == RECONNECT_MARKER:
                 _absorb_marker(frame, ctx, tally)
                 continue
-            if isinstance(frame_type, str) and frame_type.startswith("_"):
+            if is_reserved_frame_type(frame_type):
                 continue
             received_ms = ctx.clock_ms()
             seq = run.events.seen(event_label(frame_type), _frame_size(frame), received_ms)

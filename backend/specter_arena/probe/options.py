@@ -4,11 +4,12 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from ..config import RUN_OPTIONS_FILE
+
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
 HOST_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
 DEFAULT_AGENTS_POLL_SECONDS = 15.0
-FILE_SOURCE = ".probe-run.json"
 
 # Option key: (lowest, highest, nullable).
 _RANGES: dict[str, tuple[float, float, bool]] = {
@@ -60,7 +61,7 @@ def load_run_options(
 ) -> RunOptions:
     """Run options for one start, key by key: the request body, else the staged
     `.probe-run.json` (already parsed; None when absent), else the defaults."""
-    merged = {**_checked(FILE_SOURCE, staged), **_checked("request", body)}
+    merged = {**_checked(RUN_OPTIONS_FILE, staged), **_checked("request", body)}
     capture = merged.get("captureSeconds", default_capture_seconds)
     reconnect = merged.get("reconnectAfterStartSeconds")
     poll = merged.get("agentsPollSeconds", DEFAULT_AGENTS_POLL_SECONDS)

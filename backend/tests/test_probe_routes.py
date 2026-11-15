@@ -12,6 +12,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from backend.specter_arena.probe.routes import (
+    MAX_PAGE_REQUESTS,
     SERVICE,
     ProbeService,
     default_port_factory,
@@ -38,6 +39,9 @@ def proxy_secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("KIROCREW_PROXY_SECRET", SECRET)
 
 
+OPTIONS_PATH = Path("unset")
+
+
 @pytest.fixture(autouse=True)
 def staged_options(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     """Every service in this module reads a staged options file naming the host version."""
@@ -45,9 +49,6 @@ def staged_options(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     OPTIONS_PATH = tmp_path_factory.mktemp("options") / ".probe-run.json"
     OPTIONS_PATH.write_text(json.dumps({"hostVersion": "0.12.2"}))
     yield
-
-
-OPTIONS_PATH = Path("unset")
 
 
 def service(port: FakePort | None = None, **kwargs: object) -> ProbeService:
@@ -496,12 +497,15 @@ def test_signed_page_requests_are_timed_and_bounded(make_client: MakeClient) -> 
     client = make_client(svc)
     for _ in range(3):
         call(client, "GET", "/api/probe/state")
-    assert len(svc._page_requests) == 3
-    assert all(stamp.endswith("+00:00") for stamp in svc._page_requests)
-    assert svc._page_requests.maxlen == 500
+    times = svc.page_request_times()
+    assert len(times) == 3
+    assert all(stamp.endswith("+00:00") for stamp in times)
     unsigned = client.get("/api/probe/state")
     assert unsigned.status_code == 401
-    assert len(svc._page_requests) == 3
+    assert len(svc.page_request_times()) == 3
+    for _ in range(MAX_PAGE_REQUESTS):
+        svc.page_request()
+    assert len(svc.page_request_times()) == MAX_PAGE_REQUESTS
 
 
 GRAMMAR = re.compile(r"^(sha256:[0-9a-f]{12}|<redacted type=(str|list|object) len=\d+>)$")
