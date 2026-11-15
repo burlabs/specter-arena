@@ -11,7 +11,7 @@ Each live probe run commits its evidence under `docs/compatibility/evidence/<run
 | `L3-v0/` | Probe app, no grants | `run-log.md`; the raw export was not saved |
 | `L3-v1/` | Probe app with grants, before PR #34 | `run-log.md`, `export.json` (run `20261110T013502Z-d9acb2`); superseded |
 | `L3-v1b/` | Probe app with grants, after PR #34 | `run-log.md`, `export.json` (run `20261111T230641Z-4f743d`); authoritative for the grant-phase cells |
-| `SUMMARY.md` | All runs | Closing summary: host facts, ALLOWED and DENIED cells, and the UNTESTED list |
+| `SUMMARY.md` | FP-01 runs | Closing summary: host facts, ALLOWED and DENIED cells, and the UNTESTED list |
 
 ## What is here (FP-02+03 slice 1, Crew 0.12.2)
 

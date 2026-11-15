@@ -9,7 +9,7 @@ Phase v1 ran under **Eric's broad owner grant**, decided in chat on 2026-11-15 (
 - api: `/apps/specter-arena/api/*`, `/api/*`
 - events: `slots:user`, `slots:all`, `subagent:user`, `subagent:all`, `notification:all`, `sessions`, `artifacts`, `log`, `panels`, `skills`, `workflow_run_event`, `yolo`
 
-The staged app version was `0.0.0-probe.4`. The release `app.json` was not changed. An ALLOWED 0.12.2 cell therefore shows what a fully granted app can reach. Before FP-03 relies on a cell, it must choose the shipped grant set, and narrower grants may answer differently. In Crew 0.12.2 an api entry ending in `*` matches by prefix (`dashboard/token_auth_app_scope.py`), so `/api/*` passes the scope gate for every `/api/...` path. Handlers that check for the owner themselves still refuse: the member ledger, goals and activity routes and `/api/members` answered 403 under this grant.
+The staged app version was `0.0.0-probe.4`. The release `app.json` was not changed. An ALLOWED 0.12.2 cell therefore shows what a fully granted app can reach. Before FP-03 relies on a cell, it must choose the shipped grant set, and narrower grants may answer differently. In Crew 0.12.2 an api entry ending in `*` matches by prefix (`dashboard/token_auth_app_scope.py`), so `/api/*` passes the scope gate for every `/api/...` path. The member ledger, goals and activity routes and `/api/members` answered 404 `not_found` under the broad grant, where phase v0 got the 403 scope refusal. The matrix cites the v0 refusals for those cells, because a 404 under a grant that admits the path does not show the app is refused.
 
 ## Install method
 

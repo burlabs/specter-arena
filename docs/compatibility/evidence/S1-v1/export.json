@@ -438,7 +438,7 @@
             "credential": "APP-TOKEN",
             "at": "2026-11-15T22:12:26.784234+00:00",
             "ref": "run/20261115T215658Z-8625d7/ws-capture",
-            "excerpt": "outcome text: I ran echo b, and it printed b with exit code 0. I called work_brief first. Then\u2026"
+            "excerpt": "outcome text: I ran echo b, and it printed b with exit code 0. I called work_brief first. Then…"
           }
         ]
       },
@@ -831,7 +831,7 @@
             "at": "2026-11-15T22:00:52.085527+00:00"
           }
         ],
-        "outcomeEvidence": "I ran echo b, and it printed b with exit code 0. I called work_brief first. Then\u2026"
+        "outcomeEvidence": "I ran echo b, and it printed b with exit code 0. I called work_brief first. Then…"
       }
     ]
   },

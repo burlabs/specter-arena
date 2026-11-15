@@ -6,7 +6,7 @@ Inaccessible information is marked inaccessible, not guessed. A completed model 
 
 ALLOWED requires APP-TOKEN evidence in every scope. DENIED and UNSUPPORTED require an existing evidence file. UNTESTED cells carry a reason.
 
-Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic export of run `20261111T230641Z-4f743d`); the cell id after `#` names the entry. `user-slots-no-grant-denied` rests on `evidence/L3-v0/run-log.md` (phase v0, no export saved). Screenshots were reported to the coordinator as pasted images or text in chat and are not committed as files.
+Evidence by run: 17 cells cite `evidence/S1-v1/export.json` and 8 cite `evidence/S1-v0/export.json` (Crew 0.12.2, slice 1; see the run logs in those folders). 1 cell still cites FP-01's `evidence/L3-v1b/export.json` (Crew 0.12.0). In each case the cell id after `#` names the entry. Screenshots were reported to the coordinator as pasted images or text in chat and are not committed as files.
 
 | Id | State | Credential | Scope | Evidence |
 |---|---|---|---|---|
@@ -16,19 +16,19 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `app-owned-token-lifetime` | UNTESTED | none | app-owned | none |
 | `app-owned-unsigned-direct-rejected` | DENIED | APP-TOKEN | app-owned | evidence/S1-v1/export.json#app-owned-unsigned-direct-rejected |
 | `app-owned-ws-token-transport` | ALLOWED | APP-TOKEN | app-owned | evidence/S1-v1/export.json#app-owned-ws-token-transport |
-| `bot-activity-read` | DENIED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-activity-read |
+| `bot-activity-read` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-activity-read |
 | `bot-attribution-survives-restart` | UNTESTED | none | bot | none |
 | `bot-dashboard-member-record` | UNTESTED | none | bot | none |
 | `bot-dashboard-record-ungranted` | UNTESTED | none | bot | none |
 | `bot-dashboard-webview-hook` | UNTESTED | none | bot | none |
 | `bot-delete-behaviour` | UNTESTED | none | bot | none |
 | `bot-fresh-start` | UNTESTED | none | bot | none |
-| `bot-goals-read` | DENIED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-goals-read |
+| `bot-goals-read` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-goals-read |
 | `bot-id-observable` | ALLOWED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-id-observable |
 | `bot-id-stable-across-rename` | UNTESTED | none | bot | none |
 | `bot-key-results-read` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-key-results-read |
-| `bot-ledger-read` | DENIED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-ledger-read |
-| `bot-list-members-denied` | DENIED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-list-members-denied |
+| `bot-ledger-read` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-ledger-read |
+| `bot-list-members-denied` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-list-members-denied |
 | `bot-list-via-agents` | ALLOWED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-list-via-agents |
 | `bot-name-avatar` | ALLOWED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-name-avatar |
 | `bot-notes-memory-private` | DENIED | APP-TOKEN | bot | evidence/S1-v0/export.json#bot-notes-memory-private |
@@ -79,19 +79,19 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `app-owned-token-lifetime` | No long-lived WS observed across a token expiry. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `app-owned-unsigned-direct-rejected` | GET /api/ping (unsigned, backend loopback) answered 401; object with fields error; error="unauthorized" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `app-owned-ws-token-transport` | feed opened with token via query; 2388 frames (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
-| `bot-activity-read` | GET /api/members/specter-probe-bot/activity answered 404; object with fields code, error; code="not_found"; error="not found" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `bot-activity-read` | GET /api/members/specter-probe-bot/activity answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found. |
 | `bot-attribution-survives-restart` | Needs a gateway restart, which needs Eric's go-ahead at run time (FD-21); not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-dashboard-member-record` | The one attempt (L3-v1b) was not decisive: POST /api/member-records/<bot> answered 400 code="bad_record_type" (the record type did not meet the host's name rules), a probe request defect, not a host answer. Not retried. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-dashboard-record-ungranted` | The refusal is probed in phase v0, and the L3-v0 run did not conclude it. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-dashboard-webview-hook` | Not probed by design (FD-6): the Webview drawer hook is out of scope for FP-01. |
 | `bot-delete-behaviour` | Probe bot was not deleted during the run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-fresh-start` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
-| `bot-goals-read` | GET /api/members/specter-probe-bot/goals answered 404; object with fields code, error; code="not_found"; error="not found" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `bot-goals-read` | GET /api/members/specter-probe-bot/goals answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found. |
 | `bot-id-observable` | probe bot slot present: DM slot key member-specter-probe-bot; a slot whose agent field is the probe slug (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `bot-id-stable-across-rename` | Not exercised: prompt E (rename) was skipped in the shortened slice-1 sitting; display_name did not change across the roster reads. Run S1-v1, 2026-11-15. |
 | `bot-key-results-read` | GET /api/members/specter-probe-bot/goals/key-results answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only) |
-| `bot-ledger-read` | GET /api/members/specter-probe-bot/projections answered 404; object with fields code, error; code="not_found"; error="not found" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
-| `bot-list-members-denied` | GET /api/members answered 404; object with fields code, error; code="not_found"; error="not found" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `bot-ledger-read` | GET /api/members/specter-probe-bot/projections answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found. |
+| `bot-list-members-denied` | GET /api/members answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found. |
 | `bot-list-via-agents` | /api/agents answered 200; probe bot row fields avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `bot-name-avatar` | probe bot row has name-like and avatar-like fields: avatar, description, display_name, kiro_agent, memory_store, model, name, owns_mate_file, reasoning_effort, scope, session_color, source, triggers, workspace (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `bot-notes-memory-private` | GET /api/members/specter-probe-bot/notes answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only) |
@@ -108,7 +108,7 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `other-app-api-denied` | GET /api/config answered 403; object with fields code, error; code="forbidden"; error="app token not permitted for this endpoint" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only) |
 | `other-app-proxy-denied` | The one attempt (L3-v1b) was not decisive: GET /apps/specter-other/api/ping answered 403 with a body that was not valid JSON. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `other-app-slots-absent` | No second app was installed to compare slots. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
-| `reconnect-cursor-history` | no history frames after reconnect (run S1-v1 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `reconnect-cursor-history` | Not observed: no history frames arrived after the deliberate reconnect, and the code never writes DENIED for a quiet stream (run S1-v1 20261115T215658Z-8625d7; owner broad grant). |
 | `reconnect-snapshot` | 1 reconnect(s); probe rows before 2, after 2, present in both 2; running state carried over for 2 of 2; replayed within 10 s: none (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `sessions-usage-api-app-token` | GET /api/sessions/usage answered 200; object with fields usage (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `subagent-events-visible` | Not exercised: no spawn_run subagent was started (the probe bot has no spawn_run tool); subagent:user and subagent:all were granted. Run S1-v1, 2026-11-15. |
@@ -120,13 +120,13 @@ Evidence for 16 cells is `evidence/L3-v1b/export.json` (the sanitised diagnostic
 | `user-signal-progress` | signal observed on a probe slot: context-usage, progress, tool-call, tool-result; last_activity_ts is JSON str (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-signal-start` | signal observed on a probe slot: chat-status, start (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-signal-terminal` | signal observed on a probe slot: chat-done, terminal; a turn boundary, not an outcome (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
-| `user-signal-tool-error` | 5 tool_result frame(s) carried no error indicator (run S1-v1 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `user-signal-tool-error` | Not observed: no tool error was provoked, and the 5 tool_result frames on the probe slot carried no error field (run S1-v1 20261115T215658Z-8625d7; owner broad grant). |
 | `user-slots-no-grant-denied` | first slots frame held 0 rows without a slots grant (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only) |
 | `user-slots-visible` | snapshots held up to 42 rows (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-source-links` | No probe slot carried source_links in the capture (L3-v1b). A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 
-## Open questions that bear on issue #21
+## FP-01 open questions (issue #21), as answered on Crew 0.12.2
 
-- The bot DM row was reported `removed` four times in L3-v1b with no start, progress, terminal or approval signal. Full-list frames to app sockets match the probe parser, so the row was genuinely absent from some filtered frames. Root cause open.
-- Whether the probe bot dispatched a worker is unknown, so worker attribution is unobserved.
-- `GET /api/chat/slots` answers 403 with code "forbidden" and error "Forbidden" even with an approved grant, which differs from the scope refusal ("app token not permitted for this endpoint"). A handler or another layer refuses app tokens there.
+- FP-01 saw the bot DM row reported `removed` four times, with no start, progress, terminal or approval signal. Slice 1 traced the `removed` signals to probe defects H1 to H3 (#54). On 0.12.2 the live DM key also carries an id after the slug, so the derived `member-<slug>` form no longer finds the active DM (#60). With those fixed (#54, #60), S1-v1 observed start, progress and terminal on the bot's own slot.
+- FP-01 did not know whether the probe bot dispatched a worker. In S1-v1 a session-create worker was observed and attributed through `created_by` (`lineage_minted=True`). A `spawn_run` subagent was not exercised: the bot has no `spawn_run` tool on 0.12.2. Eric accepted that as a coverage limit on 2026-11-15.
+- `GET /api/chat/slots` answering 403 `Forbidden` with an approved grant is still FP-01 evidence. Slice 1 did not run the `chat-slots` step, which is out of the default run (FD2-G1).

@@ -72,10 +72,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-activity-read",
-      "probedAt": "2026-11-15T21:57:26.781408+00:00",
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-activity-read",
+      "probedAt": "2026-11-15T21:02:18.677868+00:00",
       "hostVersion": "0.12.2",
-      "notes": "GET /api/members/specter-probe-bot/activity answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "GET /api/members/specter-probe-bot/activity answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-attribution-survives-restart",
@@ -143,10 +143,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-goals-read",
-      "probedAt": "2026-11-15T21:57:26.774137+00:00",
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-goals-read",
+      "probedAt": "2026-11-15T21:02:18.673298+00:00",
       "hostVersion": "0.12.2",
-      "notes": "GET /api/members/specter-probe-bot/goals answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "GET /api/members/specter-probe-bot/goals answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-id-observable",
@@ -186,10 +186,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-ledger-read",
-      "probedAt": "2026-11-15T21:57:26.770216+00:00",
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-ledger-read",
+      "probedAt": "2026-11-15T21:02:18.670894+00:00",
       "hostVersion": "0.12.2",
-      "notes": "GET /api/members/specter-probe-bot/projections answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "GET /api/members/specter-probe-bot/projections answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-list-members-denied",
@@ -197,10 +197,10 @@
       "scope": "bot",
       "state": "DENIED",
       "credential": "APP-TOKEN",
-      "evidenceRef": "docs/compatibility/evidence/S1-v1/export.json#bot-list-members-denied",
-      "probedAt": "2026-11-15T21:57:26.755700+00:00",
+      "evidenceRef": "docs/compatibility/evidence/S1-v0/export.json#bot-list-members-denied",
+      "probedAt": "2026-11-15T21:02:18.668512+00:00",
       "hostVersion": "0.12.2",
-      "notes": "GET /api/members answered 404; object with fields code, error; code=\"not_found\"; error=\"not found\" (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "GET /api/members answered 403; object with fields code, error; code=\"forbidden\"; error=\"app token not permitted for this endpoint\" (export.json run 20261115T205118Z-a923f2; phase v0, own api entry only). Under the broad grant in S1-v1 the same route answered 404 not_found."
     },
     {
       "id": "bot-list-via-agents",
@@ -377,7 +377,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "no history frames after reconnect (run S1-v1 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "Not observed: no history frames arrived after the deliberate reconnect, and the code never writes DENIED for a quiet stream (run S1-v1 20261115T215658Z-8625d7; owner broad grant)."
     },
     {
       "id": "reconnect-snapshot",
@@ -504,7 +504,7 @@
       "credential": null,
       "evidenceRef": null,
       "probedAt": null,
-      "notes": "5 tool_result frame(s) carried no error indicator (run S1-v1 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+      "notes": "Not observed: no tool error was provoked, and the 5 tool_result frames on the probe slot carried no error field (run S1-v1 20261115T215658Z-8625d7; owner broad grant)."
     },
     {
       "id": "user-slots-no-grant-denied",
