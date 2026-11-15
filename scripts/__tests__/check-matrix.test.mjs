@@ -6,8 +6,12 @@ import { after, describe, it } from 'node:test';
 import {
   COMPATIBILITY_DIR,
   EVIDENCE_ROOT,
+  LEGACY_EVIDENCE,
+  LEGACY_HOST_VERSION,
   SCOPES,
+  compareVersions,
   evidencePath,
+  knownHostVersions,
   run,
   validateHostFacts,
   validateMatrix,
@@ -22,7 +26,7 @@ const questions = [
   { id: 'app-owned-a', kind: 'matrix', scope: 'app-owned', question: 'q', priority: 'must' },
   { id: 'host-b', kind: 'host-fact', question: 'q', priority: 'must' },
 ];
-const EVIDENCE = `${EVIDENCE_ROOT}/run-1/log.md`;
+const EVIDENCE = `${EVIDENCE_ROOT}/L3-v1b/log.md`;
 /** @type {(file: string) => boolean} */
 const exists = (file) => file === EVIDENCE;
 
@@ -291,26 +295,25 @@ describe('run', () => {
     assert.deepEqual(lines, ['check:matrix: capability matrix, host facts and monitoring scope ok']);
   });
 
-  it('commits exactly the 62 questions: 46 matrix cells and 16 host facts', () => {
+  it('keeps at least the 62 FP-01 questions: 46 matrix cells and 16 host facts', () => {
     const doc = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'capability-questions.json'), 'utf8'));
-    assert.equal(doc.questions.length, 62);
-    assert.equal(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'matrix').length, 46);
-    assert.equal(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'host-fact').length, 16);
+    assert.ok(doc.questions.length >= 62);
+    assert.ok(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'matrix').length >= 46);
+    assert.ok(doc.questions.filter((/** @type {{ kind: string }} */ q) => q.kind === 'host-fact').length >= 16);
   });
 
-  it('commits the closed live run: 7 ALLOWED, 10 DENIED and 29 UNTESTED cells, every cell id once', () => {
+  it('never loses proof: at least the 17 ALLOWED, DENIED or UNSUPPORTED FP-01 cells stay proven, every cell id once', () => {
     const matrix = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'capability-matrix.json'), 'utf8'));
     const states = /** @type {Record<string, number>} */ ({});
     for (const cell of matrix.cells) states[cell.state] = (states[cell.state] ?? 0) + 1;
-    assert.deepEqual(states, { ALLOWED: 7, DENIED: 10, UNTESTED: 29 });
-    assert.equal(new Set(matrix.cells.map((/** @type {{ id: string }} */ cell) => cell.id)).size, 46);
+    assert.ok((states.ALLOWED ?? 0) + (states.DENIED ?? 0) + (states.UNSUPPORTED ?? 0) >= 17, JSON.stringify(states));
+    assert.equal(new Set(matrix.cells.map((/** @type {{ id: string }} */ cell) => cell.id)).size, matrix.cells.length);
   });
 
-  it('commits 15 OBSERVED host facts and 1 UNTESTED', () => {
+  it('never loses a host fact: at least 15 stay OBSERVED or NOT-OBSERVED', () => {
     const facts = JSON.parse(readFileSync(join(COMPATIBILITY_DIR, 'host-facts.json'), 'utf8'));
-    const statuses = /** @type {Record<string, number>} */ ({});
-    for (const fact of facts.facts) statuses[fact.status] = (statuses[fact.status] ?? 0) + 1;
-    assert.deepEqual(statuses, { OBSERVED: 15, UNTESTED: 1 });
+    const proven = facts.facts.filter((/** @type {{ status: string }} */ fact) => fact.status !== 'UNTESTED').length;
+    assert.ok(proven >= 15, String(proven));
   });
 
   it('fails when a file is missing', () => {
@@ -323,7 +326,7 @@ describe('run', () => {
 
   it('fails when an ALLOWED cell has OWNER-SESSION evidence (deliberate violation)', () => {
     const root = copyRoot();
-    const evidence = join(root, EVIDENCE_ROOT, 'run-1');
+    const evidence = join(root, EVIDENCE_ROOT, 'L3-v1b');
     mkdirSync(evidence, { recursive: true });
     writeFileSync(join(evidence, 'log.md'), 'log');
     edit(root, 'capability-matrix.json', (text) => {
@@ -340,7 +343,7 @@ describe('run', () => {
 
   it('passes the same ALLOWED cell once the evidence is APP-TOKEN', () => {
     const root = copyRoot();
-    const evidence = join(root, EVIDENCE_ROOT, 'run-1');
+    const evidence = join(root, EVIDENCE_ROOT, 'L3-v1b');
     mkdirSync(evidence, { recursive: true });
     writeFileSync(join(evidence, 'log.md'), 'log');
     edit(root, 'capability-matrix.json', (text) => {
@@ -374,5 +377,115 @@ describe('run', () => {
     mkdirSync(dirname(join(root, COMPATIBILITY_DIR, 'monitoring-scope.md')), { recursive: true });
     edit(root, 'monitoring-scope.md', (text) => text.replace(/^Status:.*$/m, ''));
     assert.equal(runLogged(root).code, 1);
+  });
+});
+
+describe('host-version policy', () => {
+  const NEW_EVIDENCE = `${EVIDENCE_ROOT}/20261115T180000Z-abc123/export.json`;
+  /** @type {(file: string) => boolean} */
+  const existsNew = (file) => file === NEW_EVIDENCE || file === EVIDENCE;
+  const known = ['0.12.0', '0.12.2'];
+  const newCell = { ...allowed, evidenceRef: NEW_EVIDENCE };
+
+  /**
+   * @param {Record<string, unknown>} cell
+   * @param {string} [top] matrix hostVersion
+   */
+  function cellProblems(cell, top = '0.12.2') {
+    const matrix = { hostVersion: top, cells: [{ id: 'app-owned-a', scope: 'app-owned', ...cell }] };
+    return validateMatrix(matrix, questions, { evidenceExists: existsNew, markdown: '| `app-owned-a` | ALLOWED |', knownVersions: known });
+  }
+
+  it('knows a host version only when its crew-<version>.md record exists', () => {
+    assert.ok(knownHostVersions(COMPATIBILITY_DIR).includes(LEGACY_HOST_VERSION));
+    assert.deepEqual(knownHostVersions(join(tmp, 'absent')), []);
+  });
+
+  it('orders dotted versions numerically', () => {
+    assert.ok(compareVersions('0.12.2', '0.12.0') > 0);
+    assert.ok(compareVersions('0.9.0', '0.12.0') < 0);
+    assert.equal(compareVersions('0.12', '0.12.0'), 0);
+    assert.equal(LEGACY_HOST_VERSION, '0.12.0');
+    assert.ok(LEGACY_EVIDENCE.includes('L3-v1b'));
+  });
+
+  it('reads a cell without hostVersion as FP-01 evidence when its evidence is FP-01 evidence', () => {
+    assert.deepEqual(cellProblems(allowed), []);
+  });
+
+  it('requires hostVersion on a cell whose evidence is a new run (deliberate violation)', () => {
+    assert.deepEqual(cellProblems(newCell), ['app-owned-a: hostVersion is required unless all evidence is FP-01 evidence (0.12.0)']);
+  });
+
+  it('accepts a declared known hostVersion and an FP-01 cell kept at 0.12.0 beside it', () => {
+    assert.deepEqual(cellProblems({ ...newCell, hostVersion: '0.12.2' }), []);
+    assert.deepEqual(cellProblems({ ...allowed, hostVersion: '0.12.0' }), []);
+  });
+
+  it('rejects an unknown hostVersion and one newer than the matrix', () => {
+    assert.deepEqual(cellProblems({ ...newCell, hostVersion: '0.13.0' }), ['app-owned-a: hostVersion 0.13.0 has no docs/compatibility/crew-<version>.md record']);
+    assert.equal(cellProblems({ ...newCell, hostVersion: '0.12.2' }, '0.12.0').length, 1);
+    assert.deepEqual(cellProblems({ ...newCell, hostVersion: 12 }), ['app-owned-a: hostVersion 12 has no docs/compatibility/crew-<version>.md record']);
+  });
+
+  it('rejects a matrix hostVersion with no compatibility record', () => {
+    assert.deepEqual(cellProblems(allowed, '0.13.0'), ['hostVersion must be 0.12.0 or 0.12.2, got 0.13.0']);
+  });
+
+  it('keeps an UNTESTED cell free of hostVersion', () => {
+    assert.ok(cellProblems({ ...untested, hostVersion: '0.12.2' }).includes('app-owned-a: UNTESTED must not declare hostVersion'));
+  });
+
+  /**
+   * @param {Record<string, unknown>} fact
+   * @param {Record<string, string>} recordTexts
+   */
+  function factProblems(fact, recordTexts) {
+    const doc = { hostVersion: '0.12.2', facts: [{ id: 'host-b', status: 'OBSERVED', ...fact }] };
+    return validateHostFacts(doc, questions, { evidenceExists: existsNew, markdown: recordTexts['0.12.0'] ?? '', knownVersions: known, recordTexts });
+  }
+
+  const evidence = (/** @type {string} */ ref) => [{ credential: 'OWNER-SESSION', at: 'x', ref }];
+
+  it('checks each fact against the record of its own host version', () => {
+    const texts = { '0.12.0': '| `host-b` | OBSERVED |', '0.12.2': '| `host-b` | NOT-OBSERVED |' };
+    assert.deepEqual(factProblems({ evidence: evidence(EVIDENCE) }, texts), []);
+    assert.deepEqual(factProblems({ status: 'NOT-OBSERVED', hostVersion: '0.12.2', evidence: evidence(NEW_EVIDENCE) }, texts), []);
+    assert.deepEqual(factProblems({ hostVersion: '0.12.2', evidence: evidence(NEW_EVIDENCE) }, texts), ['crew-0.12.2.md disagrees for host-b']);
+  });
+
+  it('requires hostVersion on a fact whose evidence is a new run and rejects unknown and newer ones', () => {
+    const texts = { '0.12.0': '| `host-b` | OBSERVED |', '0.12.2': '| `host-b` | OBSERVED |' };
+    assert.ok(factProblems({ evidence: evidence(NEW_EVIDENCE) }, texts).includes('host-b: hostVersion is required unless all evidence is FP-01 evidence (0.12.0)'));
+    assert.ok(factProblems({ hostVersion: '0.13.0', evidence: evidence(EVIDENCE) }, texts).some((problem) => problem.includes('has no docs/compatibility/crew-<version>.md record')));
+    const doc = { hostVersion: '0.12.0', facts: [{ id: 'host-b', status: 'OBSERVED', hostVersion: '0.12.2', evidence: evidence(NEW_EVIDENCE) }] };
+    const older = validateHostFacts(doc, questions, { evidenceExists: existsNew, markdown: '', knownVersions: known, recordTexts: texts });
+    assert.ok(older.includes('host-b: hostVersion 0.12.2 is newer than the host-facts hostVersion 0.12.0'));
+  });
+
+  it('lets an UNTESTED fact omit evidence and hostVersion', () => {
+    assert.deepEqual(factProblems({ status: 'UNTESTED', notes: 'n' }, { '0.12.0': '| `host-b` | UNTESTED |' }), []);
+  });
+
+  it('run() discovers every crew-<version>.md record and accepts a 0.12.2 cell with its own evidence', () => {
+    const root = mkdtempSync(join(tmp, 'policy-'));
+    cpSync(COMPATIBILITY_DIR, join(root, COMPATIBILITY_DIR), { recursive: true });
+    mkdirSync(dirname(join(root, NEW_EVIDENCE)), { recursive: true });
+    writeFileSync(join(root, NEW_EVIDENCE), '{}');
+    writeFileSync(join(root, COMPATIBILITY_DIR, 'crew-0.12.2.md'), '# Crew 0.12.2\n');
+    const matrixPath = join(root, COMPATIBILITY_DIR, 'capability-matrix.json');
+    const matrix = JSON.parse(readFileSync(matrixPath, 'utf8'));
+    Object.assign(matrix.cells[0], { state: 'ALLOWED', credential: 'APP-TOKEN', evidenceRef: NEW_EVIDENCE, probedAt: '2026-11-15T18:00:00Z', hostVersion: '0.12.2' });
+    matrix.hostVersion = '0.12.2';
+    writeFileSync(matrixPath, JSON.stringify(matrix));
+    const mdPath = join(root, COMPATIBILITY_DIR, 'capability-matrix.md');
+    writeFileSync(mdPath, readFileSync(mdPath, 'utf8').replace(`| \`${matrix.cells[0].id}\` | UNTESTED |`, `| \`${matrix.cells[0].id}\` | ALLOWED |`));
+    /** @type {string[]} */
+    const lines = [];
+    assert.equal(run({ root, log: (line) => lines.push(line) }), 0, lines.join('\n'));
+    delete matrix.cells[0].hostVersion;
+    writeFileSync(matrixPath, JSON.stringify(matrix));
+    assert.equal(run({ root, log: (line) => lines.push(line) }), 1);
+    assert.ok(lines.some((line) => line.includes('hostVersion is required')));
   });
 });
