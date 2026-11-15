@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 import starlette
@@ -16,7 +17,14 @@ import json, sys
 import backend.app as m
 paths = sorted({getattr(route, "path", "") for route in m.app.routes})
 loaded = sorted(name for name in sys.modules if name.startswith("backend.specter_arena.probe"))
-print(json.dumps({"paths": paths, "probe_modules": loaded}))
+store = sorted(
+    n for n in sys.modules
+    if n == "backend.specter_arena.store" or n.startswith("backend.specter_arena.store.")
+)
+print(json.dumps({
+    "paths": paths, "probe_modules": loaded, "store_modules": store,
+    "sqlite3": "sqlite3" in sys.modules,
+}))
 """
 
 
@@ -28,7 +36,7 @@ def app_copy(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def inspect_app(root: Path, **extra_env: str) -> dict[str, list[str]]:
+def inspect_app(root: Path, **extra_env: str) -> dict[str, Any]:
     deps_dir = str(Path(starlette.__file__).resolve().parents[1])
     env = {
         key: value for key, value in os.environ.items() if not key.startswith(("PYTHON", "SPECTER"))
@@ -54,6 +62,13 @@ def test_without_the_switch_the_probe_is_not_imported_and_its_routes_are_absent(
     assert graph["probe_modules"] == []
     assert not any(path.startswith("/api/probe") for path in graph["paths"])
     assert "/api/ping" in graph["paths"]
+    assert "/api/ready" in graph["paths"]
+
+
+def test_importing_the_release_app_loads_neither_the_store_nor_sqlite3(app_copy: Path) -> None:
+    for extra in ({}, {"SPECTER_PROBE": "1"}):
+        graph = inspect_app(app_copy, **extra)
+        assert (graph["store_modules"], graph["sqlite3"]) == ([], False), extra
 
 
 def test_a_non_one_env_value_does_not_turn_the_probe_on(app_copy: Path) -> None:

@@ -44,7 +44,7 @@ def test_signed_ping_returns_the_ok_shape() -> None:
 def test_unsigned_ping_is_401() -> None:
     response = TestClient(app).get("/api/ping")
     assert response.status_code == 401
-    assert response.json() == {"error": "unauthorized"}
+    assert response.json() == {"contractVersion": 1, "error": "unauthorized"}
 
 
 def test_ping_with_a_bad_signature_is_401() -> None:
@@ -79,7 +79,7 @@ def test_ping_without_a_configured_secret_is_503(monkeypatch: pytest.MonkeyPatch
     monkeypatch.delenv("KIROCREW_PROXY_SECRET")
     response = TestClient(app).get("/api/ping", headers=sign_headers())
     assert response.status_code == 503
-    assert response.json() == {"error": "proxy_secret_missing"}
+    assert response.json() == {"contractVersion": 1, "error": "proxy_secret_missing"}
 
 
 def test_responses_never_contain_the_secret() -> None:
