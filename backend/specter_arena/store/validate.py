@@ -15,8 +15,8 @@ from .records import (
     MAX_NAME_CHARS,
     MAX_PAYLOAD_BYTES,
     MAX_PAYLOAD_VALUE_CHARS,
+    MAX_QUARANTINE_COUNT,
     MAX_ROSTER_ROWS,
-    MAX_SLOT_KEY_CHARS,
     OBSERVATION_SOURCE,
     ORIGINS,
     ROW_EVENT_TYPE,
@@ -37,7 +37,11 @@ ROSTER_REASON_PATTERN = r"[a-z][a-z0-9-]{0,39}"
 _AVATAR_KIND = re.compile(AVATAR_KIND_PATTERN)
 _AVATAR_REF = re.compile(AVATAR_REF_PATTERN)
 _ROSTER_REASON = re.compile(ROSTER_REASON_PATTERN)
-_TOKEN = re.compile(r"[A-Za-z0-9._-]{1,128}")
+# The wire (observation.v1) is the narrower contract: the store never keeps a value it cannot carry.
+_TOKEN = re.compile(r"[a-z][a-z0-9_-]{0,47}")
+_SLOT_KEY = re.compile(r"[A-Za-z0-9_.:-]{1,256}")
+_TOOL_CALL_ID = re.compile(r"[A-Za-z0-9_.:-]{1,128}")
+_DEDUP_KEY = re.compile(r"[A-Za-z0-9:._=-]{1,512}")
 _HEX_GEN = re.compile(r"[0-9a-f]{1,16}")
 _FACT_DIGEST = re.compile(r"[0-9a-f]{64}")
 _QUARANTINE_REASON = re.compile(r"[a-z][a-z0-9-]{0,39}")
@@ -46,8 +50,6 @@ _QUARANTINE_DIGEST = re.compile(r"sha256:[0-9a-f]{12}")
 _DROPPED_KEY = re.compile(r"[a-z][a-z0-9-]{0,23}")
 _RUN_ID = re.compile(r"[A-Za-z0-9-]{8,64}")
 
-MAX_TOOL_CALL_ID_CHARS = 128
-MAX_DEDUP_KEY_CHARS = 512
 MAX_DROPPED_KEYS = 8
 INVALID_FRAME_TYPE = "invalid"
 
@@ -138,7 +140,7 @@ def _fact_ok(kind: str, value: object) -> bool:
     if kind == "hex":
         return _HEX_GEN.fullmatch(value) is not None
     if kind == "slot":
-        return 1 <= len(value) <= MAX_SLOT_KEY_CHARS
+        return _SLOT_KEY.fullmatch(value) is not None
     return False
 
 
@@ -198,7 +200,7 @@ def _observation_fields_reason(item: ObservationIn) -> str | None:
         return "bad-field"
     if not isinstance(item.dm_key, str) or parse_dm_key(item.dm_key) is None:
         return "bad-dm-key"
-    if not isinstance(item.slot_key, str) or not 1 <= len(item.slot_key) <= MAX_SLOT_KEY_CHARS:
+    if not isinstance(item.slot_key, str) or _SLOT_KEY.fullmatch(item.slot_key) is None:
         return "bad-field"
     if not isinstance(item.event_type, str):
         return "bad-field"
@@ -211,8 +213,7 @@ def _observation_fields_reason(item: ObservationIn) -> str | None:
     ):
         return "bad-field"
     if item.tool_call_id is not None and (
-        not isinstance(item.tool_call_id, str)
-        or not 1 <= len(item.tool_call_id) <= MAX_TOOL_CALL_ID_CHARS
+        not isinstance(item.tool_call_id, str) or _TOOL_CALL_ID.fullmatch(item.tool_call_id) is None
     ):
         return "bad-field"
     if item.binding_id is not None and not isinstance(item.binding_id, str):
@@ -231,7 +232,7 @@ def _dedup_reason(item: ObservationIn) -> str | None:
     if item.fact_digest is not None:
         return "bad-dedup"
     key = item.dedup_key
-    if key is not None and (not isinstance(key, str) or not 1 <= len(key) <= MAX_DEDUP_KEY_CHARS):
+    if key is not None and (not isinstance(key, str) or _DEDUP_KEY.fullmatch(key) is None):
         return "bad-dedup"
     return None
 
@@ -268,7 +269,7 @@ def quarantine_reason(item: QuarantineIn) -> str | None:
         return "bad-field"
     if not isinstance(item.reason, str) or _QUARANTINE_REASON.fullmatch(item.reason) is None:
         return "bad-field"
-    if not _is_int(item.size_bytes, MAX_COUNT) or not _is_int(item.count, MAX_COUNT):
+    if not _is_int(item.size_bytes, MAX_COUNT) or not _is_int(item.count, MAX_QUARANTINE_COUNT):
         return "bad-field"
     if item.count < 1:
         return "bad-field"

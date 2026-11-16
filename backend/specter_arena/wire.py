@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .store import ObservationIn
+    from .store import BindingRecord, ObservationIn, QuarantineRecord
 
 MAX_JSON_INT = 9_007_199_254_740_991
 CONTRACT_VERSION = 1
@@ -59,6 +59,10 @@ _AVATAR_REF = re.compile(r"[A-Za-z0-9._-]{1,128}")
 _REASON = re.compile(r"[a-z][a-z0-9-]{0,63}")
 _STATE = re.compile(r"[a-z][a-z0-9-]{0,47}")
 _CURSOR = re.compile(r"[A-Za-z0-9_-]+")
+_MEMBER_ID = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?")
+_MEMORY_STORE = re.compile(r"[A-Za-z0-9_-]{1,200}")
+_FRAME_TYPE = re.compile(r"[a-z][a-z0-9_]{0,63}")
+_QUARANTINE_DIGEST = re.compile(r"sha256:[0-9a-f]{12}")
 
 _SIGNAL_KEYS = ("needsInput", "hasOptions", "pendingApproval", "waitingForInput")
 
@@ -365,10 +369,82 @@ def read_roster(value: object) -> dict[str, object]:
     return body
 
 
+def read_bot_binding(value: object) -> dict[str, object]:
+    """Validate a `bot-binding.v1` body and return it."""
+    body = _object(
+        value,
+        "bot-binding",
+        frozenset(
+            {
+                "contractVersion",
+                "bindingId",
+                "installationId",
+                "memberId",
+                "memoryStore",
+                "displayName",
+                "presence",
+                "createdAtMs",
+                "lastSeenAtMs",
+            }
+        ),
+        frozenset(),
+    )
+    _const(body["contractVersion"], "contractVersion", CONTRACT_VERSION)
+    _text(body["bindingId"], "bindingId", _BINDING_ID)
+    _text(body["installationId"], "installationId", _BINDING_ID)
+    _text(body["memberId"], "memberId", _MEMBER_ID)
+    _text(body["memoryStore"], "memoryStore", _MEMORY_STORE)
+    name = body["displayName"]
+    if name is not None and (not isinstance(name, str) or len(name) > 128):
+        raise _fail("displayName", "not a string of at most 128 characters")
+    _one_of(body["presence"], "presence", ("present", "absent", "unknown"))
+    _integer(body["createdAtMs"], "createdAtMs")
+    _nullable_integer(body["lastSeenAtMs"], "lastSeenAtMs")
+    return body
+
+
+def read_quarantine_record(value: object) -> dict[str, object]:
+    """Validate a `quarantine-record.v1` body and return it."""
+    body = _object(
+        value,
+        "quarantine-record",
+        frozenset(
+            {
+                "contractVersion",
+                "installationId",
+                "bindingId",
+                "reasonCode",
+                "frameType",
+                "sizeBytes",
+                "digest",
+                "count",
+                "firstReceivedAtMs",
+                "receivedAtMs",
+                "sourceTimeMs",
+            }
+        ),
+        frozenset(),
+    )
+    _const(body["contractVersion"], "contractVersion", CONTRACT_VERSION)
+    _text(body["installationId"], "installationId", _BINDING_ID)
+    _nullable_text(body["bindingId"], "bindingId", _BINDING_ID)
+    _text(body["reasonCode"], "reasonCode", _REASON)
+    _text(body["frameType"], "frameType", _FRAME_TYPE)
+    _integer(body["sizeBytes"], "sizeBytes", 0, 4_294_967_295)
+    _nullable_text(body["digest"], "digest", _QUARANTINE_DIGEST)
+    _integer(body["count"], "count", 1, 2_147_483_647)
+    _nullable_integer(body["firstReceivedAtMs"], "firstReceivedAtMs")
+    _integer(body["receivedAtMs"], "receivedAtMs")
+    _nullable_integer(body["sourceTimeMs"], "sourceTimeMs")
+    return body
+
+
 READERS: dict[str, Callable[[object], dict[str, object]]] = {
     "observation": read_observation,
     "roster-item": read_roster_item,
     "roster": read_roster,
+    "bot-binding": read_bot_binding,
+    "quarantine-record": read_quarantine_record,
 }
 
 
@@ -405,3 +481,43 @@ def to_wire(item: ObservationIn, *, binding_id: str) -> dict[str, object]:
         "kind": item.kind,
         "payload": dict(item.payload),
     }
+
+
+def bot_binding_to_wire(record: BindingRecord) -> dict[str, object]:
+    """The `bot-binding.v1` body for a stored binding.
+
+    The body is read back through its own reader, so a stored value the wire cannot carry (a
+    memory store id with a dot, say) raises `ContractViolation` instead of reaching a client.
+    """
+    return read_bot_binding(
+        {
+            "contractVersion": CONTRACT_VERSION,
+            "bindingId": record.binding_id,
+            "installationId": record.installation_id,
+            "memberId": record.member_id,
+            "memoryStore": record.memory_store,
+            "displayName": record.display_name,
+            "presence": record.presence,
+            "createdAtMs": record.created_at_ms,
+            "lastSeenAtMs": record.last_seen_ms,
+        }
+    )
+
+
+def quarantine_record_to_wire(record: QuarantineRecord) -> dict[str, object]:
+    """The `quarantine-record.v1` body. The store keeps no binding on a quarantine row."""
+    return read_quarantine_record(
+        {
+            "contractVersion": CONTRACT_VERSION,
+            "installationId": record.installation_id,
+            "bindingId": None,
+            "reasonCode": record.reason,
+            "frameType": record.frame_type,
+            "sizeBytes": record.size_bytes,
+            "digest": record.digest,
+            "count": record.count,
+            "firstReceivedAtMs": record.first_received_at_ms,
+            "receivedAtMs": record.received_at_ms,
+            "sourceTimeMs": None,
+        }
+    )

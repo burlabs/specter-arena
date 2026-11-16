@@ -25,11 +25,12 @@ EVENT_TYPES = frozenset({"chat_done", "chat_status", "context_usage", "tool_call
 
 MAX_JSON_INT = 2**53 - 1
 MAX_COUNT = 2**31
+MAX_QUARANTINE_COUNT = 2**31 - 1
 MAX_SLOT_KEY_CHARS = 256
 
-# Value kinds: "bool", "int" (0..MAX_JSON_INT), "token" (^[A-Za-z0-9._-]{1,128}$), "hex"
-# (^[0-9a-f]{1,16}$) and "slot" (a slot key, up to MAX_SLOT_KEY_CHARS). Anything else is
-# `payload-shape`.
+# Value kinds follow observation.v1: "bool", "int" (0..MAX_JSON_INT), "token"
+# (^[a-z][a-z0-9_-]{0,47}$), "hex" (^[0-9a-f]{1,16}$) and "slot" (^[A-Za-z0-9_.:-]{1,256}$).
+# A key outside the table, or a value of the wrong kind, is `payload-shape`.
 ROW_FACT_KEYS: Mapping[str, str] = {
     "slotMode": "token",
     "slotOrigin": "token",
