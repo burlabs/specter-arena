@@ -69,17 +69,39 @@ describe.each(schemaFiles)('contract %s', (schemaFile) => {
   });
 });
 
-describe('hand-written types', () => {
-  const properties = (name: string): string[] => {
-    const schema = readJson(`${schemasDir}${name}.v1.schema.json`) as { properties: Record<string, unknown>; required: string[] };
-    expect([...schema.required].sort()).toEqual(Object.keys(schema.properties).sort());
-    return Object.keys(schema.properties).sort();
-  };
+interface TypedSchema {
+  readonly schema: string;
+  /** Path to a nested object schema inside the file, e.g. ['properties', 'condition']. */
+  readonly path: readonly string[];
+  readonly keys: Record<string, true>;
+}
 
-  it('name exactly the schema properties', () => {
-    expect(Object.keys(API_ERROR_KEYS).sort()).toEqual(properties('api-error'));
-    expect(Object.keys(PAGE_KEYS).sort()).toEqual(properties('page'));
-    expect(Object.keys(READY_KEYS).sort()).toEqual(properties('ready'));
+const TYPED: readonly TypedSchema[] = [
+  { schema: 'api-error', path: [], keys: API_ERROR_KEYS },
+  { schema: 'page', path: [], keys: PAGE_KEYS },
+  { schema: 'ready', path: [], keys: READY_KEYS },
+];
+/** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
+const BACKEND_ONLY = ['bot-binding', 'quarantine-record'];
+
+describe('hand-written types', () => {
+  const nested = (entry: TypedSchema): { properties: Record<string, unknown>; required: string[] } =>
+    entry.path.reduce<unknown>(
+      (node, key) => (node as Record<string, unknown>)[key],
+      readJson(`${schemasDir}${entry.schema}.v1.schema.json`),
+    ) as { properties: Record<string, unknown>; required: string[] };
+
+  it.each(TYPED)('$schema $path names exactly the schema properties, all required', (entry) => {
+    const node = nested(entry);
+    expect(Object.keys(entry.keys).sort()).toEqual(Object.keys(node.properties).sort());
+    expect([...node.required].sort()).toEqual(Object.keys(node.properties).sort());
+  });
+
+  it('covers every schema file', () => {
+    const typed = new Set(TYPED.map((entry) => entry.schema));
+    const names = schemaFiles.map((file) => file.replace(/\.v\d+\.schema\.json$/, ''));
+    expect(names.filter((name) => !typed.has(name) && !BACKEND_ONLY.includes(name))).toEqual([]);
+    expect(BACKEND_ONLY.filter((name) => !names.includes(name))).toEqual([]);
   });
 
   it('accept values the schemas accept', () => {
@@ -89,5 +111,22 @@ describe('hand-written types', () => {
     for (const [name, value] of [['api-error', error], ['page', page], ['ready', ready]] as const) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
+  });
+});
+
+describe('$ref forms the contracts rely on', () => {
+  it('resolves a fragment $ref to another schema definition', () => {
+    const local = new Ajv({ strict: true });
+    for (const name of schemaFiles) local.addSchema(readJson(`${schemasDir}${name}`) as object);
+    const validate = local.compile({
+      $id: 'urn:specter-arena:contract:fragment-probe:v1',
+      type: 'object',
+      properties: { id: { $ref: 'urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId' } },
+      required: ['id'],
+      additionalProperties: false,
+    });
+    expect(validate({ id: 'bnd_0a1b2c3d' })).toBe(true);
+    expect(validate({ id: 'not an id!' })).toBe(false);
+    expect(validate({ id: 7 })).toBe(false);
   });
 });

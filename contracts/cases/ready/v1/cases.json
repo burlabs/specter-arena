@@ -68,5 +68,15 @@
     "file": "invalid/latest-null-migrating.json",
     "valid": false,
     "instancePath": "/latestVersion"
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
   }
 ]

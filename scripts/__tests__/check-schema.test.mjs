@@ -7,6 +7,7 @@ import {
   caseProblems,
   deniedToken,
   forEachSchema,
+  futureMajorProblems,
   parseExemptions,
   parseOwners,
   run,
@@ -47,9 +48,11 @@ function tree(files = {}) {
     'contracts/cases/thing/v1/cases.json': JSON.stringify([
       { file: 'valid/a.json', valid: true },
       { file: 'invalid/b.json', valid: false, instancePath: '/label' },
+      { file: 'invalid/v2.json', valid: false, instancePath: '/contractVersion' },
     ]),
     'contracts/cases/thing/v1/valid/a.json': '{"contractVersion":1}',
     'contracts/cases/thing/v1/invalid/b.json': '{"contractVersion":1,"label":1}',
+    'contracts/cases/thing/v1/invalid/v2.json': '{"contractVersion":2}',
   };
   const root = mkdtempSync(join(tmp, 'root-'));
   for (const [name, text] of Object.entries({ ...base, ...files })) {
@@ -233,6 +236,27 @@ describe('caseProblems', () => {
   });
 });
 
+describe('futureMajorProblems', () => {
+  const cases = JSON.stringify([{ file: 'valid/a.json', valid: true }, { file: 'invalid/v2.json', valid: false }]);
+  it('accepts an invalid case that names the next major', () => {
+    assert.deepEqual(futureMajorProblems('d', 'L', cases, 1, () => '{"contractVersion":2}'), []);
+  });
+  it('fails when no invalid case names the next major (positive control)', () => {
+    assert.deepEqual(futureMajorProblems('d', 'L', cases, 1, () => '{"contractVersion":1}'), ['L: needs an invalid case whose body has contractVersion 2 (VERSIONING.md rule 5)']);
+  });
+  it('ignores a valid case that names it, an unreadable body and a body that is not an object', () => {
+    const onlyValid = JSON.stringify([{ file: 'valid/a.json', valid: true }]);
+    assert.equal(futureMajorProblems('d', 'L', onlyValid, 1, () => '{"contractVersion":2}').length, 1);
+    assert.equal(futureMajorProblems('d', 'L', cases, 1, () => { throw new Error('x'); }).length, 1);
+    assert.equal(futureMajorProblems('d', 'L', cases, 1, () => '[2]').length, 1);
+    assert.equal(futureMajorProblems('d', 'L', JSON.stringify([null, { valid: false }]), 1, () => '{"contractVersion":2}').length, 1);
+  });
+  it('leaves an unparseable or non-list cases file to caseProblems', () => {
+    assert.deepEqual(futureMajorProblems('d', 'L', '{', 1, () => ''), []);
+    assert.deepEqual(futureMajorProblems('d', 'L', '{}', 1, () => ''), []);
+  });
+});
+
 describe('run', () => {
   it('passes a conforming tree', () => {
     assert.deepEqual(runLogged(tree()), { code: 0, lines: ['check:schema: 1 schema(s) and 0 migration(s) ok'] });
@@ -289,6 +313,11 @@ describe('run', () => {
   it('fails on missing, unparseable and unlisted case data', () => {
     failsWith(runLogged(tree({ 'contracts/cases/thing/v1/cases.json': null })), /cases\.json is missing/);
     failsWith(runLogged(tree({ 'contracts/cases/thing/v1/valid/extra.json': '{}' })), /extra\.json is not listed/);
+  });
+
+  it('fails when a schema has no future-major case (positive control)', () => {
+    const files = { 'contracts/cases/thing/v1/cases.json': JSON.stringify([{ file: 'valid/a.json', valid: true }, { file: 'invalid/b.json', valid: false }]), 'contracts/cases/thing/v1/invalid/v2.json': null };
+    failsWith(runLogged(tree(files)), /needs an invalid case whose body has contractVersion 2/);
   });
 
   it('fails on a duplicate $id, an unparseable schema and a schema Ajv rejects', () => {
