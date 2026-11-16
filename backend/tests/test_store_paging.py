@@ -22,6 +22,7 @@ from backend.tests.contract_support import compile_schema, load_registry
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PAGE_SCHEMA = REPO_ROOT / "contracts" / "schemas" / "page.v1.schema.json"
+PAGE_V1 = "urn:specter-arena:contract:page:v1"
 
 
 def token_of(raw: str) -> str:
@@ -203,9 +204,6 @@ def test_the_page_constants_match_the_page_v1_schema() -> None:
     assert properties["items"]["maxItems"] == MAX_LIMIT
     assert properties["nextCursor"]["maxLength"] == MAX_CURSOR_CHARS
     assert properties["nextCursor"]["pattern"] == CURSOR_PATTERN
-
-
-PAGE_V1 = "urn:specter-arena:contract:page:v1"
 
 
 def test_real_to_wire_output_validates_against_page_v1() -> None:

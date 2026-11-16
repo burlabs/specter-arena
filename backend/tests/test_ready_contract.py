@@ -11,6 +11,7 @@ from backend.specter_arena.store import StoreStatus, latest_version
 from backend.specter_arena.store_runtime import StoreRuntime
 from backend.tests.contract_support import compile_schema, load_registry
 from backend.tests.test_routes_ping import SECRET, sign_headers
+from backend.tests.test_routes_ready import FixedRuntime
 
 READY_V1 = "urn:specter-arena:contract:ready:v1"
 API_ERROR_V1 = "urn:specter-arena:contract:api-error:v1"
@@ -33,16 +34,6 @@ def restore_runtime() -> Iterator[None]:
     original = app.state.store_runtime
     yield
     app.state.store_runtime = original
-
-
-class FixedRuntime:
-    probe_on = False
-
-    def __init__(self, status: StoreStatus) -> None:
-        self.status = status
-
-    async def refresh(self) -> StoreStatus:
-        return self.status
 
 
 def ready_body(client: TestClient) -> tuple[int, Any]:
@@ -95,11 +86,12 @@ def test_signed_error_bodies_validate_against_api_error_v1(
     validator: Callable[[str], Callable[[Any], Any]], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client = TestClient(app)
-    unsigned = client.get("/api/ready").json()
+    unsigned = client.get("/api/ready")
     monkeypatch.delenv("KIROCREW_PROXY_SECRET")
-    missing = client.get("/api/ready", headers=sign_headers("/api/ready")).json()
-    for body in (unsigned, missing):
-        validator(API_ERROR_V1)(body)
+    missing = client.get("/api/ready", headers=sign_headers("/api/ready"))
+    for response in (unsigned, missing):
+        validator(API_ERROR_V1)(response.json())
+    assert (unsigned.status_code, missing.status_code) == (401, 503)
 
 
 def test_a_ready_body_that_breaks_the_contract_is_rejected(
