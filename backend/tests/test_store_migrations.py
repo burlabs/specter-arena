@@ -76,7 +76,7 @@ def schema(connection: sqlite3.Connection) -> list[tuple[str, str, str]]:
 
 def test_an_empty_store_migrates_to_the_latest_version(conn: sqlite3.Connection) -> None:
     assert current_version(conn) == 0
-    assert migrate(conn, REAL, now=lambda: "2026-11-14T00:00:00Z") == latest_version() == 1
+    assert migrate(conn, REAL, now=lambda: "2026-11-14T00:00:00Z") == latest_version(REAL) == 1
     assert tables(conn) == {"schema_migrations", "store_meta"}
     assert conn.execute(
         "SELECT version, name, sha256, applied_at FROM schema_migrations"

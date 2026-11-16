@@ -109,3 +109,20 @@ def test_the_frozen_baseline_has_no_denied_token(tmp_path: Path) -> None:
         assert classifier_like_names(conn) == []
     finally:
         conn.close()
+
+
+def sql_identifier_words(sql: str) -> set[str]:
+    code = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)
+    code = re.sub(r"--[^\n]*", " ", code)
+    code = re.sub(r"'(?:[^']|'')*'", "''", code)
+    return {word for name in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", code) for word in words(name)}
+
+
+def test_no_packaged_migration_uses_a_denied_word_in_any_identifier() -> None:
+    for migration in load_migrations():
+        assert sql_identifier_words(migration.sql) & DENYLIST == set(), migration.name
+
+
+def test_the_identifier_scan_catches_a_denied_word_outside_names_it_would_miss() -> None:
+    sql = "CREATE INDEX rank_ix ON t (x); -- role in a comment is ignored\nSELECT 'tier';"
+    assert sql_identifier_words(sql) & DENYLIST == {"rank"}

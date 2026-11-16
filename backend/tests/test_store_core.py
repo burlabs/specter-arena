@@ -230,7 +230,7 @@ def test_a_newer_database_is_refused_untouched(data_dir: Path) -> None:
     before = db_file(data_dir).read_bytes()
     with pytest.raises(SchemaNewer) as caught:
         open_store(data_dir)
-    assert status_for_error(caught.value, 9) == StoreStatus("schema-newer", 9, 1)
+    assert status_for_error(caught.value, 9) == StoreStatus("schema-newer", 9, len(PACKAGED))
     assert db_file(data_dir).read_bytes() == before
     assert sorted(p.name for p in (data_dir / "store").iterdir()) == ["specter-arena.db"]
 
