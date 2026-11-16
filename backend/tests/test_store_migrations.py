@@ -35,7 +35,8 @@ FIXTURE_V1 = Path(__file__).resolve().parent / "fixtures" / "store" / "schema-v1
 FIXTURE_STORE_ID = "00000000-0000-4000-8000-000000000001"
 UUID_V4 = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
 
-REAL = load_migrations()
+PACKAGED = load_migrations()
+REAL = PACKAGED[:1]
 SYNTHETIC_0002 = make_migration(
     2,
     "notes",
@@ -75,7 +76,7 @@ def schema(connection: sqlite3.Connection) -> list[tuple[str, str, str]]:
 
 def test_an_empty_store_migrates_to_the_latest_version(conn: sqlite3.Connection) -> None:
     assert current_version(conn) == 0
-    assert migrate(conn, REAL, now=lambda: "2026-11-14T00:00:00Z") == latest_version() == 1
+    assert migrate(conn, REAL, now=lambda: "2026-11-14T00:00:00Z") == latest_version(REAL) == 1
     assert tables(conn) == {"schema_migrations", "store_meta"}
     assert conn.execute(
         "SELECT version, name, sha256, applied_at FROM schema_migrations"
@@ -98,6 +99,7 @@ def test_migrating_an_up_to_date_store_changes_nothing(conn: sqlite3.Connection)
 
 def test_the_baseline_migration_is_frozen() -> None:
     assert [(m.version, m.name) for m in REAL] == [(1, "baseline")]
+    assert PACKAGED[0] == REAL[0]
     assert REAL[0].sha256 == BASELINE_SHA256
     raw = (MIGRATIONS_DIR / "0001_baseline.sql").read_bytes()
     assert hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest() == BASELINE_SHA256
@@ -339,7 +341,7 @@ def test_migration_files_load_in_version_order(tmp_path: Path) -> None:
 def test_latest_version_reads_the_packaged_files_once() -> None:
     assert packaged_migrations() is packaged_migrations()
     assert packaged_migrations() == load_migrations(MIGRATIONS_DIR)
-    assert latest_version() == len(REAL)
+    assert latest_version() == len(PACKAGED)
     assert latest_version((*REAL, SYNTHETIC_0002)) == 2
 
 

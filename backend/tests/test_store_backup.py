@@ -24,7 +24,8 @@ from backend.specter_arena.store.migrate import load_migrations, make_migration
 backup_module = importlib.import_module("backend.specter_arena.store.backup")
 
 
-REAL = load_migrations()
+PACKAGED = load_migrations()
+REAL = PACKAGED[:1]
 FIXTURE_V1 = Path(__file__).resolve().parent / "fixtures" / "store" / "schema-v1.sql"
 FIXTURE_STORE_ID = "00000000-0000-4000-8000-000000000001"
 
@@ -264,7 +265,7 @@ def test_restore_without_a_live_database_returns_none(tmp_path: Path) -> None:
 
 def test_an_older_backup_restores_and_then_migrates_forward(tmp_path: Path) -> None:
     data_dir = data_dir_in(tmp_path)
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=REAL)
     v1_copy = backup(opened, tmp_path / "saved")
     opened.close()
     shutil.rmtree(data_dir / "store")

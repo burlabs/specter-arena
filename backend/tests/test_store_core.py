@@ -25,7 +25,8 @@ from backend.specter_arena.store.migrate import load_migrations, make_migration
 
 posix_only = pytest.mark.skipif(os.name != "posix", reason="file modes are POSIX-only")
 
-REAL = load_migrations()
+PACKAGED = load_migrations()
+REAL = PACKAGED[:1]
 NOTES = make_migration(
     2, "notes", "CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT NOT NULL) STRICT;\n"
 )
@@ -70,7 +71,7 @@ def store_id(store: Store) -> str:
 def test_an_empty_store_opens_ready_at_the_latest_version(data_dir: Path) -> None:
     opened = open_store(data_dir)
     try:
-        assert opened.status() == StoreStatus("ready", 1, 1)
+        assert opened.status() == StoreStatus("ready", len(PACKAGED), len(PACKAGED))
         assert opened.db_path == db_file(data_dir)
         assert opened.backups_dir == data_dir / "store" / "backups"
         with opened.read() as conn:
@@ -229,7 +230,7 @@ def test_a_newer_database_is_refused_untouched(data_dir: Path) -> None:
     before = db_file(data_dir).read_bytes()
     with pytest.raises(SchemaNewer) as caught:
         open_store(data_dir)
-    assert status_for_error(caught.value, 9) == StoreStatus("schema-newer", 9, 1)
+    assert status_for_error(caught.value, 9) == StoreStatus("schema-newer", 9, len(PACKAGED))
     assert db_file(data_dir).read_bytes() == before
     assert sorted(p.name for p in (data_dir / "store").iterdir()) == ["specter-arena.db"]
 
