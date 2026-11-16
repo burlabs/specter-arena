@@ -1,0 +1,121 @@
+[
+  {
+    "file": "valid/unknown-type-bound.json",
+    "valid": true
+  },
+  {
+    "file": "valid/oversize-no-binding.json",
+    "valid": true
+  },
+  {
+    "file": "valid/invalid-type-literal.json",
+    "valid": true
+  },
+  {
+    "file": "valid/aggregated-window.json",
+    "valid": true
+  },
+  {
+    "file": "valid/digest-null.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-payload-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-digest.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-count.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-first-received.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/digest-full-length.json",
+    "valid": false,
+    "instancePath": "/digest"
+  },
+  {
+    "file": "invalid/digest-uppercase.json",
+    "valid": false,
+    "instancePath": "/digest"
+  },
+  {
+    "file": "invalid/digest-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/digest"
+  },
+  {
+    "file": "invalid/frame-type-has-space.json",
+    "valid": false,
+    "instancePath": "/frameType"
+  },
+  {
+    "file": "invalid/frame-type-free-text.json",
+    "valid": false,
+    "instancePath": "/frameType"
+  },
+  {
+    "file": "invalid/reason-code-uppercase.json",
+    "valid": false,
+    "instancePath": "/reasonCode"
+  },
+  {
+    "file": "invalid/reason-code-too-long.json",
+    "valid": false,
+    "instancePath": "/reasonCode"
+  },
+  {
+    "file": "invalid/size-negative.json",
+    "valid": false,
+    "instancePath": "/sizeBytes"
+  },
+  {
+    "file": "invalid/size-string.json",
+    "valid": false,
+    "instancePath": "/sizeBytes"
+  },
+  {
+    "file": "invalid/count-zero.json",
+    "valid": false,
+    "instancePath": "/count"
+  },
+  {
+    "file": "invalid/count-above-max.json",
+    "valid": false,
+    "instancePath": "/count"
+  },
+  {
+    "file": "invalid/first-received-string.json",
+    "valid": false,
+    "instancePath": "/firstReceivedAtMs"
+  },
+  {
+    "file": "invalid/installation-numeric.json",
+    "valid": false,
+    "instancePath": "/installationId"
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/size-nan.json",
+    "valid": false
+  }
+]

@@ -236,6 +236,37 @@ export function caseProblems(dir, label, cases, listDir, exists) {
 }
 
 /**
+ * VERSIONING.md rule 5: a newer-than-known major fails closed, so each schema needs an invalid case
+ * whose body names the next major.
+ * @param {string} dir directory holding cases.json and valid/ invalid/
+ * @param {string} label
+ * @param {string} cases text of cases.json
+ * @param {number} major the schema's major version
+ * @param {(file: string) => string} read file text
+ * @returns {string[]}
+ */
+export function futureMajorProblems(dir, label, cases, major, read) {
+  /** @type {unknown} */
+  let entries;
+  try {
+    entries = JSON.parse(cases);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(entries)) return [];
+  const found = entries.some((entry) => {
+    if (!isRecord(entry) || entry.valid !== false || typeof entry.file !== 'string') return false;
+    try {
+      const body = JSON.parse(read(join(dir, entry.file)));
+      return isRecord(body) && body.contractVersion === major + 1;
+    } catch {
+      return false;
+    }
+  });
+  return found ? [] : [`${label}: needs an invalid case whose body has contractVersion ${major + 1} (VERSIONING.md rule 5)`];
+}
+
+/**
  * @param {string} root
  * @param {string} path
  * @returns {string[]}
@@ -309,7 +340,9 @@ export function run({ root = '.', log = console.log } = {}) {
       const casesFile = join(root, caseDir, 'cases.json');
       if (!existsSync(casesFile)) problems.push(`${caseDir}/cases.json is missing`);
       else {
-        problems.push(...caseProblems(join(root, caseDir), caseDir, readFileSync(casesFile, 'utf8'), (sub) => listNames(root, `${caseDir}/${sub}`), existsSync));
+        const casesText = readFileSync(casesFile, 'utf8');
+        problems.push(...caseProblems(join(root, caseDir), caseDir, casesText, (sub) => listNames(root, `${caseDir}/${sub}`), existsSync));
+        problems.push(...futureMajorProblems(join(root, caseDir), caseDir, casesText, Number(match.groups.major), (file) => readFileSync(file, 'utf8')));
       }
     }
   }
