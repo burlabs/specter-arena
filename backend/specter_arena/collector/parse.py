@@ -299,8 +299,7 @@ def parse_slots(frame: Mapping[str, object], bound_keys: frozenset[str]) -> Slot
             continue
         key = row.get("key")
         dm = bot_dm_key(key)
-        if dm is not None and row.get("mode") == "member":
-            assert isinstance(key, str)
+        if isinstance(key, str) and dm is not None and row.get("mode") == "member":
             built = _build_row(row, dm, worker=False)
             if isinstance(built, str):
                 rejected.append(built)
@@ -308,8 +307,7 @@ def parse_slots(frame: Mapping[str, object], bound_keys: frozenset[str]) -> Slot
                 bots.append(built)
                 bot_keys.add(key)
             continue
-        if dm is None and is_store_less_key(key):
-            assert isinstance(key, str)
+        if isinstance(key, str) and dm is None and is_store_less_key(key):
             store_less[_sha12(key)] = None
             continue
         pending.append(row)
@@ -354,9 +352,8 @@ def parse_event(event_type: str, frame: Mapping[str, object]) -> EventParse | st
     if not isinstance(data, dict):
         return "schema-mismatch"
     slot_key = data.get("slot")
-    if not ref_key_ok(slot_key):
+    if not isinstance(slot_key, str) or not ref_key_ok(slot_key):
         return "schema-mismatch"
-    assert isinstance(slot_key, str)
 
     payload: dict[str, Fact] = {}
     nulled = 0

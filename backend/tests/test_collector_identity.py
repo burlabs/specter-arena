@@ -9,6 +9,7 @@ from backend.specter_arena.collector.identity import (
     slot_key_ok,
 )
 from backend.specter_arena.collector.vocabulary import LIMITS
+from backend.specter_arena.store.dmkey import MAX_DM_KEY_CHARS
 from backend.specter_arena.store.records import MAX_PAYLOAD_BYTES
 
 OLD_GENERATION = (
@@ -37,6 +38,10 @@ HOSTILE = [
 
 def test_the_collector_uses_the_stores_parser_not_its_own() -> None:
     assert identity.parse_dm_key is store.parse_dm_key
+
+
+def test_key_length_cap_matches_the_store() -> None:
+    assert identity.MAX_KEY_CHARS == MAX_DM_KEY_CHARS
 
 
 def test_payload_cap_matches_the_store() -> None:

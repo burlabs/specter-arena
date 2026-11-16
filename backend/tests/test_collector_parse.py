@@ -609,17 +609,21 @@ def test_unknown_event_types_are_a_reason_not_an_exception() -> None:
 
 def test_recorded_0_12_2_event_shapes_parse_to_the_allow_list_only() -> None:
     rows = json.loads(RECORDED.read_text())["rows"]
-    parsed_types: set[str] = set()
+    seen_keys: dict[str, set[str]] = {name: set() for name in EVENT_FIELDS}
     for row in rows:
         event_type = row.get("eventType")
-        if event_type not in EVENT_FIELDS:
+        data = row.get("data")
+        if event_type not in EVENT_FIELDS or not isinstance(data, dict):
             continue
-        data = {key: value for key, value in row.items() if key in {"slot"} or key.islower()}
-        result = parse_event(event_type, {"type": event_type, "data": {"slot": BOT_A, **data}})
-        if isinstance(result, EventParse):
-            parsed_types.add(event_type)
-            assert set(result.payload) <= EVENT_PAYLOAD_KEYS[event_type]
-    assert parsed_types
+        result = parse_event(event_type, {"type": event_type, "data": {**data, "slot": BOT_A}})
+        assert isinstance(result, EventParse)
+        assert set(result.payload) <= EVENT_PAYLOAD_KEYS[event_type]
+        assert result.nulled == 0
+        seen_keys[event_type] |= set(result.payload)
+    assert seen_keys["chat_done"] == {"continuing", "needsInput"}
+    assert seen_keys["tool_call"] == {"isShell"}
+    assert seen_keys["context_usage"] == {"usedTokens", "windowTokens"}
+    assert seen_keys["tool_result"] == set() == seen_keys["chat_status"]
 
 
 # --- fit with the lanes --------------------------------------------------------------------
