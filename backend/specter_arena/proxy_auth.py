@@ -100,6 +100,10 @@ def verify_v2(
 _CACHE = ReplayCache()
 
 
+# The integer major version every contract body carries (api-error.v1, ready.v1).
+CONTRACT_VERSION = 1
+
+
 def signed(handler: Handler) -> Handler:
     """Require a fresh, unreplayed gateway v2 signature before running the handler."""
 
@@ -107,7 +111,10 @@ def signed(handler: Handler) -> Handler:
     async def wrapper(request: Request) -> Response:
         secret = gateway_env().secret
         if not secret:
-            return JSONResponse({"error": "proxy_secret_missing"}, status_code=503)
+            return JSONResponse(
+                {"contractVersion": CONTRACT_VERSION, "error": "proxy_secret_missing"},
+                status_code=503,
+            )
         body = await request.body()
         verified = verify_v2(
             request.headers.get(V2_HEADER, ""),
@@ -120,7 +127,9 @@ def signed(handler: Handler) -> Handler:
             now=time.time(),
         )
         if not verified:
-            return JSONResponse({"error": "unauthorized"}, status_code=401)
+            return JSONResponse(
+                {"contractVersion": CONTRACT_VERSION, "error": "unauthorized"}, status_code=401
+            )
         return await handler(request)
 
     return wrapper

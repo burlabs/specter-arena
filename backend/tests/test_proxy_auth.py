@@ -205,3 +205,33 @@ def test_request_target_omits_the_question_mark_without_a_query() -> None:
 
 def test_request_target_falls_back_to_the_decoded_path() -> None:
     assert request_target(make_request(None, b"")) == "/api/ping"
+
+
+def test_signed_error_bodies_carry_the_contract_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route
+    from starlette.testclient import TestClient
+
+    from backend.specter_arena.proxy_auth import CONTRACT_VERSION, signed
+
+    @signed
+    async def handler(_request: Request) -> JSONResponse:
+        return JSONResponse({"ok": True})
+
+    client = TestClient(Starlette(routes=[Route("/x", handler)]))
+    monkeypatch.setenv("KIROCREW_PROXY_SECRET", "s")
+    unsigned = client.get("/x")
+    bad_mac = client.get(
+        "/x", headers={"X-KiroCrew-Proxy-V2": "1:deadbeef", "X-KiroCrew-Proxy-Nonce": "n"}
+    )
+    monkeypatch.delenv("KIROCREW_PROXY_SECRET")
+    missing = client.get("/x")
+    assert CONTRACT_VERSION == 1
+    for response, status, error in (
+        (unsigned, 401, "unauthorized"),
+        (bad_mac, 401, "unauthorized"),
+        (missing, 503, "proxy_secret_missing"),
+    ):
+        assert response.status_code == status
+        assert response.json() == {"contractVersion": 1, "error": error}

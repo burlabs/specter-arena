@@ -20,8 +20,6 @@ FORBIDDEN_IN_PROBE = {"sqlite3", "sqlite", "KIROCREW_HOME"}
 ALLOWED_PROBE_DYNAMIC_IMPORTS = {".live"}
 DYNAMIC_IMPORTERS = {"__import__", "importlib.import_module", "import_module"}
 
-needs_lifespan = pytest.mark.skip(reason="needs the W-1b store lifespan in backend/app.py (#47)")
-
 
 def resolve_imports(path: Path, root: Path) -> set[str]:
     """Absolute dotted names a module imports, with relative imports resolved by their level."""
@@ -181,7 +179,10 @@ with TestClient(m.app) as client:
     status = client.get("/health").status_code
 print(json.dumps({
     "health": status,
-    "store_modules": sorted(n for n in sys.modules if n.startswith("backend.specter_arena.store")),
+    "store_modules": sorted(
+        n for n in sys.modules
+        if n == "backend.specter_arena.store" or n.startswith("backend.specter_arena.store.")
+    ),
     "sqlite3": "sqlite3" in sys.modules,
 }))
 """
@@ -195,7 +196,6 @@ def store_root(home: Path) -> Path:
     return home / "apps" / "specter-arena" / "data" / "store"
 
 
-@needs_lifespan
 def test_the_probe_env_switch_never_loads_or_creates_the_store(
     app_copy: Path, tmp_path: Path
 ) -> None:
@@ -205,7 +205,6 @@ def test_the_probe_env_switch_never_loads_or_creates_the_store(
     assert not store_root(home).exists()
 
 
-@needs_lifespan
 def test_the_probe_switch_file_never_creates_the_store(app_copy: Path, tmp_path: Path) -> None:
     (app_copy / ".probe-enabled").write_text("")
     home = tmp_path / "crew-home"
@@ -214,7 +213,6 @@ def test_the_probe_switch_file_never_creates_the_store(app_copy: Path, tmp_path:
     assert not (home / "apps").exists()
 
 
-@needs_lifespan
 def test_release_mode_creates_an_owner_only_migrated_store(app_copy: Path, tmp_path: Path) -> None:
     home = tmp_path / "crew-home"
     out = run_python(LIFESPAN, app_copy, **crew_env(home))
@@ -230,7 +228,6 @@ def test_release_mode_creates_an_owner_only_migrated_store(app_copy: Path, tmp_p
         conn.close()
 
 
-@needs_lifespan
 def test_release_mode_without_crew_variables_creates_nothing(
     app_copy: Path, tmp_path: Path
 ) -> None:
@@ -241,7 +238,6 @@ def test_release_mode_without_crew_variables_creates_nothing(
     assert list(user_home.rglob("*")) == []
 
 
-@needs_lifespan
 def test_the_runtime_check_catches_a_probe_that_opens_the_store(
     app_copy: Path, tmp_path: Path
 ) -> None:
