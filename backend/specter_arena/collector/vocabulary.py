@@ -90,6 +90,7 @@ class Limits:
     batch_max: int = 100
     flush_interval_s: float = 0.25
     raw_frame_max_chars: int = 64 * 1024
+    payload_max_bytes: int = 65_536
     frame_peek_chars: int = 64
     ws_max_size: int = 2 * 1024 * 1024
     heartbeat_interval_s: float = 10.0
