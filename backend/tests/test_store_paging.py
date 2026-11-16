@@ -18,9 +18,11 @@ from backend.specter_arena.store.paging import (
     decode_cursor,
     encode_cursor,
 )
+from backend.tests.contract_support import compile_schema, load_registry
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PAGE_SCHEMA = REPO_ROOT / "contracts" / "schemas" / "page.v1.schema.json"
+PAGE_V1 = "urn:specter-arena:contract:page:v1"
 
 
 def token_of(raw: str) -> str:
@@ -195,9 +197,6 @@ def test_keyset_paging_visits_each_row_once_across_duplicate_timestamps_and_inse
         conn.close()
 
 
-@pytest.mark.skipif(
-    not PAGE_SCHEMA.is_file(), reason="page.v1 schema lands with D-3; enabled by #49"
-)
 def test_the_page_constants_match_the_page_v1_schema() -> None:
     schema = json.loads(PAGE_SCHEMA.read_text(encoding="utf-8"))
     properties = schema["properties"]
@@ -205,3 +204,16 @@ def test_the_page_constants_match_the_page_v1_schema() -> None:
     assert properties["items"]["maxItems"] == MAX_LIMIT
     assert properties["nextCursor"]["maxLength"] == MAX_CURSOR_CHARS
     assert properties["nextCursor"]["pattern"] == CURSOR_PATTERN
+
+
+def test_real_to_wire_output_validates_against_page_v1() -> None:
+    validate = compile_schema(PAGE_V1, load_registry())
+    full = [(n, f"row-{n}") for n in range(MAX_LIMIT + 1)]
+    pages = [
+        build_page(full, MAX_LIMIT, lambda row: (row[0],)),
+        build_page(full[:3], 5, lambda row: (row[0],)),
+        Page((), None),
+    ]
+    for page in pages:
+        validate(page.to_wire(lambda row: {"id": row[0], "label": row[1]}))
+    assert pages[0].next_cursor is not None and pages[1].next_cursor is None
