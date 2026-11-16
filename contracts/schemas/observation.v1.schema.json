@@ -1,0 +1,166 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:observation:v1",
+  "title": "Observation envelope v1",
+  "description": "One normalized, allow-listed fact the collector took from a Crew frame for one bot binding. It never carries prompt text, messages, titles or tool arguments: every payload property is a number, a boolean, a bounded token or an id. kind row-change is derived from a slot snapshot row (eventType slot-row; dedupKey is null and factDigest is 64 lower-case hex, the digest of the payload minus lastActivityMs that the store uses to suppress an unchanged row); kind event is one of the listed per-bot events (dedupKey may be a string or null, factDigest is null). turn and turnGen (a hex string such as a8b8767e) and toolCallId live in sourceRef, not in the event payload. The collector writes origin live only; recorded and fixture exist so a stray value is visible and rejected by the store. sourceTimeMs is null when Crew gave no usable time. An event type that is not listed here is quarantined, not an observation.",
+  "type": "object",
+  "definitions": {
+    "slotKey": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,256}$" },
+    "toolCallId": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,200}$" },
+    "token": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,47}$" },
+    "turnGen": { "type": "string", "pattern": "^[0-9a-f]{1,16}$" },
+    "timeMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "counter": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "sourceRefRow": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "slot-row" }
+      },
+      "required": ["slotKey", "eventType"],
+      "additionalProperties": false
+    },
+    "sourceRefChatDone": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "chat_done" },
+        "turn": { "$ref": "#/definitions/counter" },
+        "turnGen": { "$ref": "#/definitions/turnGen" }
+      },
+      "required": ["slotKey", "eventType"],
+      "additionalProperties": false
+    },
+    "sourceRefToolCall": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "tool_call" },
+        "toolCallId": { "$ref": "#/definitions/toolCallId" }
+      },
+      "required": ["slotKey", "eventType", "toolCallId"],
+      "additionalProperties": false
+    },
+    "sourceRefToolResult": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "tool_result" },
+        "toolCallId": { "$ref": "#/definitions/toolCallId" }
+      },
+      "required": ["slotKey", "eventType", "toolCallId"],
+      "additionalProperties": false
+    },
+    "sourceRefContextUsage": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "context_usage" }
+      },
+      "required": ["slotKey", "eventType"],
+      "additionalProperties": false
+    },
+    "sourceRefChatStatus": {
+      "type": "object",
+      "properties": {
+        "slotKey": { "$ref": "#/definitions/slotKey" },
+        "eventType": { "type": "string", "const": "chat_status" }
+      },
+      "required": ["slotKey", "eventType"],
+      "additionalProperties": false
+    },
+    "rowFacts": {
+      "type": "object",
+      "properties": {
+        "running": { "type": "boolean" },
+        "slotMode": { "$ref": "#/definitions/token" },
+        "slotOrigin": { "$ref": "#/definitions/token" },
+        "turn": { "$ref": "#/definitions/counter" },
+        "turnGen": { "$ref": "#/definitions/turnGen" },
+        "lastActivityMs": { "$ref": "#/definitions/timeMs" },
+        "createdMs": { "$ref": "#/definitions/timeMs" },
+        "createdBy": { "$ref": "#/definitions/slotKey" },
+        "lineageMinted": { "type": "boolean" },
+        "parentKey": { "$ref": "#/definitions/slotKey" },
+        "pendingApproval": { "type": "boolean" },
+        "needsInput": { "type": "boolean" },
+        "hasOptions": { "type": "boolean" },
+        "waitingForInput": { "type": "boolean" },
+        "interrupted": { "type": "boolean" },
+        "stopping": { "type": "boolean" },
+        "admissionQueued": { "type": "boolean" },
+        "queueDepth": { "$ref": "#/definitions/counter" },
+        "compacting": { "type": "boolean" },
+        "subagentsRunning": { "$ref": "#/definitions/counter" },
+        "subagentsQueued": { "$ref": "#/definitions/counter" },
+        "waitStatePresent": { "type": "boolean" },
+        "stopState": { "$ref": "#/definitions/token" }
+      },
+      "required": ["running"],
+      "additionalProperties": false
+    },
+    "chatDonePayload": {
+      "type": "object",
+      "properties": {
+        "continuing": { "type": "boolean" },
+        "needsInput": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "toolCallPayload": {
+      "type": "object",
+      "properties": {
+        "isShell": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "contextUsagePayload": {
+      "type": "object",
+      "properties": {
+        "usedTokens": { "$ref": "#/definitions/counter" },
+        "windowTokens": { "$ref": "#/definitions/counter" }
+      },
+      "additionalProperties": false
+    },
+    "emptyPayload": {
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "bindingId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "installationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "source": { "type": "string", "const": "crew-ws" },
+    "sourceRef": { "type": "object" },
+    "dedupKey": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9:._=-]{1,512}$" },
+    "factDigest": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+    "receivedAtMs": { "$ref": "#/definitions/timeMs" },
+    "sourceTimeMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 },
+    "origin": { "enum": ["live", "recorded", "fixture"] },
+    "kind": { "enum": ["row-change", "event"] },
+    "payload": { "type": "object" }
+  },
+  "required": ["contractVersion", "bindingId", "installationId", "source", "sourceRef", "dedupKey", "factDigest", "receivedAtMs", "sourceTimeMs", "origin", "kind", "payload"],
+  "additionalProperties": false,
+  "if": { "properties": { "kind": { "const": "row-change" } } },
+  "then": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefRow" }, "payload": { "$ref": "#/definitions/rowFacts" }, "dedupKey": { "type": "null" }, "factDigest": { "type": "string" } } },
+  "else": {
+    "properties": { "factDigest": { "type": "null" } },
+    "if": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefChatDone" } } },
+    "then": { "properties": { "payload": { "$ref": "#/definitions/chatDonePayload" } } },
+    "else": {
+      "if": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefToolCall" } } },
+      "then": { "properties": { "payload": { "$ref": "#/definitions/toolCallPayload" } } },
+      "else": {
+        "if": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefToolResult" } } },
+        "then": { "properties": { "payload": { "$ref": "#/definitions/emptyPayload" } } },
+        "else": {
+          "if": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefContextUsage" } } },
+          "then": { "properties": { "payload": { "$ref": "#/definitions/contextUsagePayload" } } },
+          "else": { "properties": { "sourceRef": { "$ref": "#/definitions/sourceRefChatStatus" }, "payload": { "$ref": "#/definitions/emptyPayload" } } }
+        }
+      }
+    }
+  }
+}

@@ -11,6 +11,9 @@ Status `DRAFT` means the shape may still change in place. `FROZEN` means it chan
 | `ready` | 1 | crew-integration | FROZEN | `GET /api/ready`; UI and the readiness check |
 | `bot-binding` | 1 | work-ledger | DRAFT | Binding records from the store; FP-05 references `definitions.bindingId` |
 | `quarantine-record` | 1 | work-ledger | DRAFT | Redacted summary of a frame the collector would not trust; diagnostics |
+| `observation` | 1 | crew-integration | DRAFT | Built by the collector, persisted by the store; parity test |
+| `roster-item` | 1 | crew-integration | DRAFT | One bot in `GET /api/roster`; FP-04 UI |
+| `roster` | 1 | crew-integration | DRAFT | `GET /api/roster`; FP-04 UI |
 
 ## Rules for schema authors
 
