@@ -59,3 +59,7 @@ class RestoreError(StoreError):
 
 class InvalidCursor(StoreError, ValueError):
     code = "invalid-cursor"
+
+
+class UnknownRun(StoreError):
+    code = "unknown-run"
