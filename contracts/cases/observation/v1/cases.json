@@ -1,0 +1,218 @@
+[
+  {
+    "file": "valid/row-change-full.json",
+    "valid": true
+  },
+  {
+    "file": "valid/row-change-minimal.json",
+    "valid": true
+  },
+  {
+    "file": "valid/worker-row-attributed.json",
+    "valid": true
+  },
+  {
+    "file": "valid/chat-done-with-turn.json",
+    "valid": true
+  },
+  {
+    "file": "valid/chat-done-turn-gen-max-length.json",
+    "valid": true
+  },
+  {
+    "file": "valid/chat-done-without-turn-null-dedup.json",
+    "valid": true
+  },
+  {
+    "file": "valid/tool-call.json",
+    "valid": true
+  },
+  {
+    "file": "valid/tool-result.json",
+    "valid": true
+  },
+  {
+    "file": "valid/context-usage.json",
+    "valid": true
+  },
+  {
+    "file": "valid/chat-status.json",
+    "valid": true
+  },
+  {
+    "file": "valid/received-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-root-property.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/missing-binding-id.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/missing-payload.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/binding-id-numeric.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/origin-replay.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/source-roster-not-in-v1.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/kind-unknown.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-change-with-event-ref.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-change-event-type-slots.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/event-with-slot-row-ref.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/unlisted-event-type.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-message-text.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-running-missing.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-running-string.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-running-number.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-turn-gen-integer.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-payload-wait-state-renamed.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/chat-done-extra-text.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/chat-done-turn-gen-integer.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/chat-done-turn-gen-uppercase.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/chat-done-turn-gen-too-long.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/tool-call-arguments.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/tool-call-missing-tool-call-id.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/tool-result-with-payload.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/chat-status-with-payload.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/context-usage-pct-key.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/context-usage-negative-tokens.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/context-usage-tokens-string.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/dedup-key-has-space.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/slot-key-too-long.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/source-ref-extra-property.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/received-negative.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/received-boolean.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/received-fraction.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-change-fact-digest-null.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/event-with-fact-digest.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-change-dedup-key-set.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/fact-digest-63-chars.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/missing-fact-digest.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/received-nan.json",
+    "valid": false
+  }
+]

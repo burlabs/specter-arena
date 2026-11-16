@@ -22,8 +22,85 @@ export interface ReadyV1 {
   latestVersion: number | null;
 }
 
+export interface RosterAvatarV1 {
+  kind: string;
+  ref: string | null;
+}
+
+/** The four Crew flags as the collector last saw them (null when not seen); not mapped to a state. */
+export interface RosterSignalsV1 {
+  needsInput: boolean | null;
+  hasOptions: boolean | null;
+  pendingApproval: boolean | null;
+  waitingForInput: boolean | null;
+}
+
+/** state is a documented token, not a closed list: working, settled, unknown today. */
+export interface RosterConditionV1 {
+  state: string;
+  reasonCode: string;
+  basis: 'row' | 'event' | null;
+  sourceTimeMs: number | null;
+  observedAtMs: number | null;
+  signals: RosterSignalsV1;
+}
+
+export interface RosterCoverageV1 {
+  state: 'covered' | 'gap' | 'unknown';
+  sinceMs: number | null;
+  reasonCode: string | null;
+  openGapCount: number;
+}
+
+export interface RosterWorkersV1 {
+  running: number;
+  seen: number;
+}
+
+export interface RosterItemV1 {
+  contractVersion: 1;
+  bindingId: string;
+  displayName: string | null;
+  avatar: RosterAvatarV1 | null;
+  presence: 'present' | 'absent' | 'unknown';
+  condition: RosterConditionV1;
+  coverage: RosterCoverageV1;
+  lastObservedAtMs: number | null;
+  workers: RosterWorkersV1;
+}
+
+export interface RosterCollectorV1 {
+  state: string;
+  reasonCode: string | null;
+  sinceMs: number | null;
+}
+
+/** code is a token such as cron-turns-not-observable; count is null when the note has no number. */
+export interface RosterNoteV1 {
+  code: string;
+  count: number | null;
+}
+
+export interface RosterV1 {
+  contractVersion: 1;
+  items: RosterItemV1[];
+  nextCursor: string | null;
+  rosterRevision: number;
+  collector: RosterCollectorV1;
+  notes: RosterNoteV1[];
+}
+
 // A Record over keyof T makes tsc reject a missing or an extra key, so the test can compare these
 // names with the schema's properties in both directions.
 export const API_ERROR_KEYS: Record<keyof ApiErrorV1, true> = { contractVersion: true, error: true };
 export const PAGE_KEYS: Record<keyof PageV1, true> = { contractVersion: true, items: true, nextCursor: true };
 export const READY_KEYS: Record<keyof ReadyV1, true> = { contractVersion: true, status: true, store: true, storeVersion: true, latestVersion: true };
+export const ROSTER_AVATAR_KEYS: Record<keyof RosterAvatarV1, true> = { kind: true, ref: true };
+export const ROSTER_SIGNALS_KEYS: Record<keyof RosterSignalsV1, true> = { needsInput: true, hasOptions: true, pendingApproval: true, waitingForInput: true };
+export const ROSTER_CONDITION_KEYS: Record<keyof RosterConditionV1, true> = { state: true, reasonCode: true, basis: true, sourceTimeMs: true, observedAtMs: true, signals: true };
+export const ROSTER_COVERAGE_KEYS: Record<keyof RosterCoverageV1, true> = { state: true, sinceMs: true, reasonCode: true, openGapCount: true };
+export const ROSTER_WORKERS_KEYS: Record<keyof RosterWorkersV1, true> = { running: true, seen: true };
+export const ROSTER_ITEM_KEYS: Record<keyof RosterItemV1, true> = { contractVersion: true, bindingId: true, displayName: true, avatar: true, presence: true, condition: true, coverage: true, lastObservedAtMs: true, workers: true };
+export const ROSTER_COLLECTOR_KEYS: Record<keyof RosterCollectorV1, true> = { state: true, reasonCode: true, sinceMs: true };
+export const ROSTER_NOTE_KEYS: Record<keyof RosterNoteV1, true> = { code: true, count: true };
+export const ROSTER_KEYS: Record<keyof RosterV1, true> = { contractVersion: true, items: true, nextCursor: true, rosterRevision: true, collector: true, notes: true };
