@@ -24,6 +24,7 @@ from backend.specter_arena.store import (
     open_store,
     parse_dm_key,
     record_rebind,
+    start_run,
 )
 from backend.specter_arena.store.bindings import new_binding_id, store_id
 from backend.specter_arena.store.migrate import (
@@ -64,6 +65,10 @@ def installation(opened: Store) -> str:
 
 
 def run(opened: Store, *items: IngestItem, installation_id: str | None = None) -> IngestResult:
+    with opened.read() as conn:
+        started = conn.execute("SELECT count(*) FROM collector_run").fetchone()[0]
+    if not started:
+        start_run(opened, run_id="run-00000001", now_ms=T0 - 1)
     return ingest(
         opened,
         IngestBatch(
@@ -134,7 +139,9 @@ def test_ac01_the_previous_test_schema_upgrades_and_keeps_the_installation(
         assert result.counts["binding"].persisted == 1
     finally:
         opened.close()
-    backups = sorted((data_dir / "store" / "backups").glob("pre-migrate-v1-to-v2-*.db"))
+    backups = sorted(
+        (data_dir / "store" / "backups").glob(f"pre-migrate-v1-to-v{latest_version()}-*.db")
+    )
     assert len(backups) == 1
 
 
@@ -248,6 +255,7 @@ def test_ac02_the_database_refuses_a_binding_for_an_unknown_installation(store: 
 
 def test_ac02_concurrent_sessions_create_one_binding(data_dir: Path) -> None:
     handles = [open_store(data_dir) for _ in range(4)]
+    start_run(handles[0], run_id="run-00000001", now_ms=T0 - 1)
     barrier = threading.Barrier(len(handles))
     results: list[IngestResult] = []
 
@@ -321,7 +329,7 @@ def test_ac05_presence_is_unknown_until_the_first_successful_poll(store: Store) 
     record = get_binding(store, binding_id)
     assert record is not None and record.presence == "unknown" and record.display_name is None
     failed = run(store, RosterPoll(success=False, polled_at_ms=T0 + 1, reason="roster-unavailable"))
-    assert failed.counts["roster"].deduplicated == 1
+    assert failed.counts["roster"].persisted == 1
     assert count(store, "SELECT count(*) FROM bot_presence") == 0
     record = get_binding(store, binding_id)
     assert record is not None and record.presence == "unknown"
