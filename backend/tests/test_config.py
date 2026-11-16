@@ -4,8 +4,11 @@ from pathlib import Path
 import pytest
 
 from backend.specter_arena.config import (
+    AGENTS_API_ENTRY,
     APP_ROOT,
     OWN_API_ENTRY,
+    REQUIRED_API_PATHS,
+    REQUIRED_EVENTS,
     GatewayEnv,
     Grants,
     gateway_env,
@@ -188,3 +191,52 @@ def test_a_malformed_manifest_fails_closed_to_assumed(tmp_path: Path, manifest: 
 
 def test_a_missing_manifest_names_the_error(tmp_path: Path) -> None:
     assert read_grants(tmp_path / "absent.json").basis == "manifest-unreadable: FileNotFoundError"
+
+
+D_P9_PERMISSIONS = {
+    "api": [OWN_API_ENTRY, AGENTS_API_ENTRY],
+    "events": ["slots:user"],
+}
+
+
+def test_the_d_p9_manifest_has_no_missing_grant(tmp_path: Path) -> None:
+    grants = read_grants(write_manifest(tmp_path, {"permissions": D_P9_PERMISSIONS}))
+    assert grants.missing() == ()
+
+
+def test_the_current_release_manifest_lacks_both_collector_grants() -> None:
+    # CI-8 adds the D-P9 grants to app.json and turns this into an assertion that none are missing.
+    assert read_grants(APP_ROOT / "app.json").missing() == (
+        "event:slots:user",
+        f"api:{AGENTS_API_ENTRY}",
+    )
+
+
+def test_missing_names_each_absent_grant_separately() -> None:
+    only_event = Grants(frozenset({OWN_API_ENTRY}), frozenset({"slots:user"}), "manifest")
+    assert only_event.missing() == (f"api:{AGENTS_API_ENTRY}",)
+    only_agents = Grants(frozenset({OWN_API_ENTRY, AGENTS_API_ENTRY}), frozenset(), "manifest")
+    assert only_agents.missing() == ("event:slots:user",)
+    assert Grants.none().missing() == (
+        "event:slots:user",
+        "api:/apps/specter-arena/api/ping",
+        f"api:{AGENTS_API_ENTRY}",
+    )
+
+
+def test_unknown_grants_report_nothing_missing_so_the_host_decides() -> None:
+    assert Grants.assumed("manifest-unreadable: OSError").missing() == ()
+
+
+def test_the_own_namespace_wildcard_admits_the_required_own_path() -> None:
+    own_only = Grants(frozenset({OWN_API_ENTRY}), frozenset({"slots:user"}), "manifest")
+    assert own_only.has_api(REQUIRED_API_PATHS[0])
+    assert REQUIRED_API_PATHS[1] == AGENTS_API_ENTRY
+    assert REQUIRED_EVENTS == ("slots:user",)
+
+
+def test_a_grant_for_a_different_event_does_not_satisfy_the_requirement() -> None:
+    wrong = Grants(
+        frozenset({OWN_API_ENTRY, AGENTS_API_ENTRY}), frozenset({"subagent:user"}), "manifest"
+    )
+    assert wrong.missing() == ("event:slots:user",)

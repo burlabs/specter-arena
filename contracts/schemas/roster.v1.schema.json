@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:roster:v1",
+  "title": "Roster response v1",
+  "description": "Body of GET /api/roster: one keyset page of roster items in immutable binding order, the revision of the projection it was read from, the collector's own state, and standing notes about what the collector cannot see. It repeats the contractVersion, items and nextCursor members of page.v1 with a typed item, because a closed schema cannot be composed with allOf. Each note is a code and an optional count, never prose: the standing note is cron-turns-not-observable with a null count, and bots the collector skips for lack of a memory store are reported as unsupported-store-less-bot with their count.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:roster-item:v1" }, "maxItems": 200 },
+    "nextCursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$" },
+    "rosterRevision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "collector": {
+      "type": "object",
+      "properties": {
+        "state": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,47}$" },
+        "reasonCode": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+        "sinceMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 }
+      },
+      "required": ["state", "reasonCode", "sinceMs"],
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+          "count": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000000 }
+        },
+        "required": ["code", "count"],
+        "additionalProperties": false
+      },
+      "maxItems": 8
+    }
+  },
+  "required": ["contractVersion", "items", "nextCursor", "rosterRevision", "collector", "notes"],
+  "additionalProperties": false
+}

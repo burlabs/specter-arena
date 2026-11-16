@@ -1,0 +1,219 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:roster-item:v1",
+  "title": "Roster item v1",
+  "description": "One bot as GET /api/roster reports it: facts and a derived condition, never a Crew id or slot key. condition.state is a documented string, not a closed list, so FP-04 can add values: working, settled, unknown. condition.signals are the four Crew flags as the collector last saw them (null when not seen); they are not mapped to a state. coverage.state says whether the collector observed this bot; unknown is the default. presence is unknown until the first successful roster poll. avatar is Crew's avatar kind token and one reference string (a file name or an id), or null.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "bindingId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "avatar": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9._-]{1,128}$"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "presence": {
+      "enum": [
+        "present",
+        "absent",
+        "unknown"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,47}$"
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "row",
+            "event",
+            null
+          ]
+        },
+        "sourceTimeMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observedAtMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "signals": {
+          "type": "object",
+          "properties": {
+            "needsInput": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "hasOptions": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "pendingApproval": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "waitingForInput": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "needsInput",
+            "hasOptions",
+            "pendingApproval",
+            "waitingForInput"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "state",
+        "reasonCode",
+        "basis",
+        "sourceTimeMs",
+        "observedAtMs",
+        "signals"
+      ],
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "covered",
+            "gap",
+            "unknown"
+          ]
+        },
+        "sinceMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "openGapCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "state",
+        "sinceMs",
+        "reasonCode",
+        "openGapCount"
+      ],
+      "additionalProperties": false
+    },
+    "lastObservedAtMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "workers": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "seen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "running",
+        "seen"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "bindingId",
+    "displayName",
+    "avatar",
+    "presence",
+    "condition",
+    "coverage",
+    "lastObservedAtMs",
+    "workers"
+  ],
+  "additionalProperties": false
+}

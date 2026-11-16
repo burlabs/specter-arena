@@ -41,9 +41,12 @@ def test_schemas_exist() -> None:
     assert {path.name for path in SCHEMA_FILES} >= {
         "api-error.v1.schema.json",
         "bot-binding.v1.schema.json",
+        "observation.v1.schema.json",
         "page.v1.schema.json",
         "quarantine-record.v1.schema.json",
         "ready.v1.schema.json",
+        "roster-item.v1.schema.json",
+        "roster.v1.schema.json",
     }
 
 

@@ -45,6 +45,10 @@ def probe_enabled(environ: Mapping[str, str] | None = None, root: Path | None = 
 
 MANIFEST_FILE = "app.json"
 OWN_API_ENTRY = "/apps/specter-arena/api/*"
+AGENTS_API_ENTRY = "/api/agents"
+REQUIRED_EVENTS = ("slots:user",)
+# Checked with `has_api`, so the own-namespace wildcard must admit the first path.
+REQUIRED_API_PATHS = ("/apps/specter-arena/api/ping", AGENTS_API_ENTRY)
 RUN_OPTIONS_FILE = ".probe-run.json"
 _CHILDREN_SUFFIX = "/*"
 
@@ -102,6 +106,14 @@ class Grants:
             elif path == entry or path.startswith(f"{entry}/"):
                 return True
         return False
+
+    def missing(self) -> tuple[str, ...]:
+        """Required grants this manifest does not declare; () when unknown (the host decides)."""
+        if self.unknown:
+            return ()
+        lacking = [f"event:{name}" for name in REQUIRED_EVENTS if name not in self.events]
+        lacking += [f"api:{path}" for path in REQUIRED_API_PATHS if not self.has_api(path)]
+        return tuple(lacking)
 
 
 def read_grants(manifest_path: Path | None = None) -> Grants:
