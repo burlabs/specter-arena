@@ -40,7 +40,9 @@ def _cases() -> list[Any]:
 def test_schemas_exist() -> None:
     assert {path.name for path in SCHEMA_FILES} >= {
         "api-error.v1.schema.json",
+        "bot-binding.v1.schema.json",
         "page.v1.schema.json",
+        "quarantine-record.v1.schema.json",
         "ready.v1.schema.json",
     }
 
@@ -114,3 +116,94 @@ def test_nan_is_rejected_by_the_loader(tmp_path: Path) -> None:
     path.write_text('{"n": NaN}')
     with pytest.raises(CaseParseError):
         load_json(path)
+
+
+def _write_schema(directory: Path, name: str, body: dict[str, Any]) -> None:
+    schema = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "$id": f"urn:specter-arena:contract:{name}:v1",
+        **body,
+    }
+    (directory / f"{name}.v1.schema.json").write_text(json.dumps(schema))
+
+
+def test_ref_in_array_items_resolves_across_files(tmp_path: Path) -> None:
+    """A $ref as the `items` member resolves, and a failing item has a deep pointer."""
+    _write_schema(
+        tmp_path,
+        "inner",
+        {
+            "type": "object",
+            "properties": {"id": {"type": "string"}},
+            "required": ["id"],
+            "additionalProperties": False,
+        },
+    )
+    _write_schema(
+        tmp_path,
+        "list",
+        {
+            "type": "object",
+            "properties": {
+                "items": {"type": "array", "items": {"$ref": "urn:specter-arena:contract:inner:v1"}}
+            },
+            "required": ["items"],
+            "additionalProperties": False,
+        },
+    )
+    validate = compile_schema("urn:specter-arena:contract:list:v1", load_registry(tmp_path))
+    validate({"items": [{"id": "a"}]})
+    with pytest.raises(fastjsonschema.JsonSchemaValueException) as raised:
+        validate({"items": [{"id": "a"}, {"id": 2}]})
+    assert error_pointer(raised.value) == "/items/1/id"
+
+
+def test_ref_to_a_definition_fragment_resolves(tmp_path: Path) -> None:
+    _write_schema(
+        tmp_path,
+        "inner",
+        {
+            "type": "object",
+            "definitions": {"id": {"type": "string", "pattern": "^[a-z]+$"}},
+            "properties": {"id": {"$ref": "#/definitions/id"}},
+            "required": ["id"],
+            "additionalProperties": False,
+        },
+    )
+    _write_schema(
+        tmp_path,
+        "outer",
+        {
+            "type": "object",
+            "properties": {"id": {"$ref": "urn:specter-arena:contract:inner:v1#/definitions/id"}},
+            "required": ["id"],
+            "additionalProperties": False,
+        },
+    )
+    validate = compile_schema("urn:specter-arena:contract:outer:v1", load_registry(tmp_path))
+    validate({"id": "abc"})
+    with pytest.raises(fastjsonschema.JsonSchemaValueException) as raised:
+        validate({"id": "ABC"})
+    assert error_pointer(raised.value) == "/id"
+
+
+def test_whole_schema_ref_to_a_schema_with_local_refs_does_not_compile(
+    tmp_path: Path,
+) -> None:
+    """Why VERSIONING.md forbids local #/definitions refs in a schema that others $ref whole."""
+    _write_schema(
+        tmp_path,
+        "inner",
+        {
+            "type": "object",
+            "definitions": {"id": {"type": "string"}},
+            "properties": {"id": {"$ref": "#/definitions/id"}},
+        },
+    )
+    _write_schema(
+        tmp_path,
+        "outer",
+        {"type": "array", "items": {"$ref": "urn:specter-arena:contract:inner:v1"}},
+    )
+    with pytest.raises(fastjsonschema.JsonSchemaDefinitionException):
+        compile_schema("urn:specter-arena:contract:outer:v1", load_registry(tmp_path))

@@ -1,0 +1,91 @@
+[
+  {
+    "file": "valid/present-with-name.json",
+    "valid": true
+  },
+  {
+    "file": "valid/absent-never-named.json",
+    "valid": true
+  },
+  {
+    "file": "valid/presence-unknown-before-first-poll.json",
+    "valid": true
+  },
+  {
+    "file": "valid/display-name-at-limit.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-binding-id.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-memory-store.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/binding-id-numeric.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/member-id-uppercase.json",
+    "valid": false,
+    "instancePath": "/memberId"
+  },
+  {
+    "file": "invalid/member-id-81-chars.json",
+    "valid": false,
+    "instancePath": "/memberId"
+  },
+  {
+    "file": "invalid/memory-store-null.json",
+    "valid": false,
+    "instancePath": "/memoryStore"
+  },
+  {
+    "file": "invalid/presence-unknown-value.json",
+    "valid": false,
+    "instancePath": "/presence"
+  },
+  {
+    "file": "invalid/display-name-too-long.json",
+    "valid": false,
+    "instancePath": "/displayName"
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/created-fraction.json",
+    "valid": false,
+    "instancePath": "/createdAtMs"
+  },
+  {
+    "file": "invalid/created-nan.json",
+    "valid": false
+  }
+]

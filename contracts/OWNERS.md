@@ -6,9 +6,11 @@ Status `DRAFT` means the shape may still change in place. `FROZEN` means it chan
 
 | Schema | Version | Owner | Status | Emitted by / consumed by |
 |---|---|---|---|---|
-| `api-error` | 1 | crew-integration | DRAFT | Error bodies of app routes; UI and tests |
-| `page` | 1 | work-ledger | DRAFT | Keyset-paged lists from the store; UI |
-| `ready` | 1 | crew-integration | DRAFT | `GET /api/ready`; UI and the readiness check |
+| `api-error` | 1 | crew-integration | FROZEN | Error bodies of app routes; UI and tests |
+| `page` | 1 | work-ledger | FROZEN | Keyset-paged lists from the store; UI |
+| `ready` | 1 | crew-integration | FROZEN | `GET /api/ready`; UI and the readiness check |
+| `bot-binding` | 1 | work-ledger | DRAFT | Binding records from the store; FP-05 references `definitions.bindingId` |
+| `quarantine-record` | 1 | work-ledger | DRAFT | Redacted summary of a frame the collector would not trust; diagnostics |
 
 ## Rules for schema authors
 
