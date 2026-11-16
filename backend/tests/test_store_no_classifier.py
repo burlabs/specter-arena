@@ -4,6 +4,8 @@ from pathlib import Path
 
 from backend.specter_arena.store.migrate import load_migrations, make_migration, migrate
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 # FP-02-AC06: no required Specter class, archetype, species category, capability score or hidden
 # agent classifier in the schema. A name is flagged when any of its words is in this list.
 DENYLIST = frozenset(
@@ -11,20 +13,25 @@ DENYLIST = frozenset(
         "class",
         "classes",
         "archetype",
+        "archetypes",
         "species",
         "category",
+        "categories",
         "taxonomy",
         "role",
+        "roles",
         "rarity",
         "tier",
         "rank",
         "score",
+        "scores",
         "rating",
         "classifier",
         "classification",
         "capability",
         "capabilities",
         "alignment",
+        "element",
         "specialty",
         "specialization",
     }
@@ -50,7 +57,10 @@ def classifier_like_names(conn: sqlite3.Connection) -> list[str]:
 
 def migrated(path: Path, *extra_sql: str) -> sqlite3.Connection:
     conn = sqlite3.connect(path, isolation_level=None)
-    extra = [make_migration(2 + i, f"extra{i}", sql) for i, sql in enumerate(extra_sql)]
+    extra = [
+        make_migration(len(load_migrations()) + 1 + i, f"extra{i}", sql)
+        for i, sql in enumerate(extra_sql)
+    ]
     migrate(conn, (*load_migrations(), *extra))
     return conn
 
@@ -83,3 +93,19 @@ def test_name_splitting_handles_snake_and_camel_case() -> None:
     assert words("app_schema_family") == {"app", "schema", "family"}
     assert words("powerScore") == {"power", "score"}
     assert words("store_meta") & DENYLIST == set()
+
+
+def test_the_denylist_equals_the_schema_tooling_set() -> None:
+    source = (REPO_ROOT / "scripts" / "check-schema.mjs").read_text(encoding="utf-8")
+    block = re.search(r"DENIED_TOKENS = new Set\(\[(.*?)\]\)", source, re.DOTALL)
+    assert block is not None
+    assert set(re.findall(r"'([a-z]+)'", block.group(1))) == DENYLIST
+
+
+def test_the_frozen_baseline_has_no_denied_token(tmp_path: Path) -> None:
+    conn = sqlite3.connect(tmp_path / "store.db", isolation_level=None)
+    try:
+        migrate(conn, load_migrations()[:1])
+        assert classifier_like_names(conn) == []
+    finally:
+        conn.close()

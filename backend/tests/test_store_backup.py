@@ -24,7 +24,8 @@ from backend.specter_arena.store.migrate import load_migrations, make_migration
 backup_module = importlib.import_module("backend.specter_arena.store.backup")
 
 
-REAL = load_migrations()
+PACKAGED = load_migrations()
+REAL = PACKAGED[:1]
 FIXTURE_V1 = Path(__file__).resolve().parent / "fixtures" / "store" / "schema-v1.sql"
 FIXTURE_STORE_ID = "00000000-0000-4000-8000-000000000001"
 

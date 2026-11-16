@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 import starlette
 
+from backend.specter_arena.store.migrate import latest_version
+
 BACKEND = Path(__file__).resolve().parents[1]
 PROBE_DIR = BACKEND / "specter_arena" / "probe"
 STORE_DIR = BACKEND / "specter_arena" / "store"
@@ -223,7 +225,7 @@ def test_release_mode_creates_an_owner_only_migrated_store(app_copy: Path, tmp_p
         assert stat.S_IMODE(db.stat().st_mode) == 0o600
     conn = sqlite3.connect(db)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone() == (1,)
+        assert conn.execute("PRAGMA user_version").fetchone() == (latest_version(),)
     finally:
         conn.close()
 
