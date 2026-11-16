@@ -23,6 +23,52 @@ HEARTBEAT_STALE_MS = 30_000
 
 EVENT_TYPES = frozenset({"chat_done", "chat_status", "context_usage", "tool_call", "tool_result"})
 
+MAX_JSON_INT = 2**53 - 1
+MAX_COUNT = 2**31
+MAX_SLOT_KEY_CHARS = 256
+
+# Value kinds: "bool", "int" (0..MAX_JSON_INT), "token" (^[A-Za-z0-9._-]{1,128}$), "hex"
+# (^[0-9a-f]{1,16}$) and "slot" (a slot key, up to MAX_SLOT_KEY_CHARS). Anything else is
+# `payload-shape`.
+ROW_FACT_KEYS: Mapping[str, str] = {
+    "slotMode": "token",
+    "slotOrigin": "token",
+    "running": "bool",
+    "turn": "int",
+    "turnGen": "hex",
+    "lastActivityMs": "int",
+    "createdMs": "int",
+    "createdBy": "slot",
+    "lineageMinted": "bool",
+    "parentKey": "slot",
+    "pendingApproval": "bool",
+    "needsInput": "bool",
+    "hasOptions": "bool",
+    "waitingForInput": "bool",
+    "interrupted": "bool",
+    "stopping": "bool",
+    "admissionQueued": "bool",
+    "compacting": "bool",
+    "waitStatePresent": "bool",
+    "queueDepth": "int",
+    "subagentsRunning": "int",
+    "subagentsQueued": "int",
+    "stopState": "token",
+}
+ROW_REQUIRED_KEYS = frozenset({"running"})
+
+EVENT_PAYLOAD_KEYS: Mapping[str, Mapping[str, str]] = {
+    "chat_done": {"continuing": "bool", "needsInput": "bool"},
+    "chat_status": {},
+    "context_usage": {"usedTokens": "int", "windowTokens": "int"},
+    "tool_call": {"isShell": "bool"},
+    "tool_result": {},
+}
+
+ROW_EVENT_TYPE = "slot-row"
+OBSERVATION_SOURCE = "crew-ws"
+ORIGINS = frozenset({"live", "recorded", "fixture"})
+
 REJECT_REASONS = frozenset(
     {
         "wrong-installation",

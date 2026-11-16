@@ -25,10 +25,12 @@ from .migrate import latest_version
 from .paging import Page, build_page, clamp_limit, decode_cursor, encode_cursor
 from .records import (
     COVERAGE_REASONS,
+    EVENT_PAYLOAD_KEYS,
     EVENT_TYPES,
     HEARTBEAT_STALE_MS,
     MAX_BATCH_ITEMS,
     REJECT_REASONS,
+    ROW_FACT_KEYS,
     BindingRecord,
     BindingRef,
     BindingSeen,
@@ -58,6 +60,7 @@ from .records import (
     RosterRowIn,
     RunStart,
 )
+from .runs import end_run, heartbeat, set_paused, start_run
 from .status import (
     StoreState,
     StoreStatus,
@@ -67,6 +70,7 @@ from .status import (
     unconfigured_status,
 )
 from .store import Store, open_store
+from .validate import row_fact_digest
 
 __all__ = [
     "BackupError",
@@ -80,6 +84,7 @@ __all__ = [
     "CoverageMark",
     "CoverageView",
     "DmKey",
+    "EVENT_PAYLOAD_KEYS",
     "EVENT_TYPES",
     "HEARTBEAT_STALE_MS",
     "IngestBatch",
@@ -102,6 +107,7 @@ __all__ = [
     "QuarantineIn",
     "QuarantineRecord",
     "REJECT_REASONS",
+    "ROW_FACT_KEYS",
     "RebuildReport",
     "Rejection",
     "RestoreError",
@@ -127,7 +133,9 @@ __all__ = [
     "decode_cursor",
     "disabled_status",
     "encode_cursor",
+    "end_run",
     "get_binding",
+    "heartbeat",
     "ingest",
     "latest_version",
     "migrating_status",
@@ -136,6 +144,9 @@ __all__ = [
     "record_rebind",
     "resolve_data_dir",
     "restore",
+    "row_fact_digest",
+    "set_paused",
+    "start_run",
     "status_for_error",
     "unconfigured_status",
 ]

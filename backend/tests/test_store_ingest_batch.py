@@ -8,7 +8,6 @@ import pytest
 from backend.specter_arena.store import (
     MAX_BATCH_ITEMS,
     BindingSeen,
-    CoverageMark,
     DmKey,
     IngestBatch,
     IngestItem,
@@ -21,6 +20,7 @@ from backend.specter_arena.store import (
     UnknownRun,
     ingest,
     open_store,
+    start_run,
 )
 from backend.specter_arena.store import connection as connection_module
 from backend.specter_arena.store.bindings import store_id
@@ -42,6 +42,10 @@ def store(tmp_path: Path) -> Iterator[Store]:
 
 
 def run(opened: Store, *items: IngestItem) -> IngestResult:
+    with opened.read() as conn:
+        started = conn.execute("SELECT count(*) FROM collector_run").fetchone()[0]
+    if not started:
+        start_run(opened, run_id="run-00000001", now_ms=T0 - 1)
     with opened.read() as conn:
         installation_id = store_id(conn)
     return ingest(opened, IngestBatch("run-00000001", installation_id, items))
@@ -195,18 +199,6 @@ def test_a_full_batch_is_accepted(store: Store) -> None:
     result = run(store, *(BindingSeen(ALPHA, T0) for _ in range(MAX_BATCH_ITEMS)))
     assert result.counts["binding"].persisted == 1
     assert result.counts["binding"].deduplicated == MAX_BATCH_ITEMS - 1
-
-
-@pytest.mark.parametrize(
-    "item",
-    [CoverageMark("open-covered", T0)],
-)
-def test_item_kinds_not_built_yet_are_a_usage_error_and_write_nothing(
-    store: Store, item: IngestItem
-) -> None:
-    with pytest.raises(StoreUsageError):
-        run(store, BindingSeen(ALPHA, T0), item)
-    assert bindings_count(store) == 0
 
 
 def test_a_driver_failure_rolls_the_batch_back_and_is_store_unavailable(
