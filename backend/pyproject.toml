@@ -11,7 +11,14 @@ dependencies = [
 
 [dependency-groups]
 # httpx2 backs starlette.testclient.TestClient.
-dev = ["pytest", "pytest-cov", "ruff", "mypy", "httpx2"]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "httpx2",
+    "fastjsonschema==2.22.3",
+]
 
 # No [build-system]: the project is never installed, matching how Crew runs it.
 [tool.uv]

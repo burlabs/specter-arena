@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:page:v1",
+  "title": "Page envelope v1",
+  "description": "Keyset-paged list: the items of one page and the opaque cursor for the next page, or null on the last page. A typed list defines its own schema with these two members and a typed item.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "items": { "type": "array", "items": { "type": "object" }, "maxItems": 200 },
+    "nextCursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$" }
+  },
+  "required": ["contractVersion", "items", "nextCursor"],
+  "additionalProperties": false
+}

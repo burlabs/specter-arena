@@ -29,7 +29,7 @@ The final set has 13 jobs. Each PR in the FP-00 sequence adds the jobs it can ma
 | `backend-smoke` | PR-2 Backend | Crew-style deps-only start of `backend.app:app`; `GET /health` returns 200 |
 | `cdk-synth` | PR-3 Preview infrastructure | In `infra/`: `npm ci`, `typecheck`, offline `synth`, and Vitest template assertions, with no AWS credentials |
 | `build` | PR-4 UI stub | The Vite library build writes `ui/dist/index.mjs` |
-| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/`; no tests or fixtures imports in the backend runtime |
+| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/`; no tests or fixtures imports in the backend runtime; the offline validators `npm run probe:check` (FP-01) and `npm run check:schema` (FP-02+03) run as steps here, so neither adds a 14th required check |
 | `e2e-smoke` | PR-4 UI stub | Playwright Chromium smoke against the built preview harness |
 
 A PR with zero registered checks is not passing. The required-check list in `docs/ops/branch-protection.md` is applied only after all 13 jobs have run at least once.

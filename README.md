@@ -35,6 +35,7 @@ npm run coverage
 | `npm run check:diagnostic` | Positive control: the diagnostic bundle still carries its marker, so the `check:fixtures` exclusion scan is meaningful |
 | `npm run probe:check` | Offline validation of the committed capability matrix and recorded payloads; not a live probe |
 | `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2`) for the owner to install; prints the install command, never installs |
+| `npm run check:schema` | Offline validation of the contract schemas, their cases and owner table, the FP-02-AC06 denylist, and the spec-id registry |
 | `npm run dev` | Serves the FIXTURE preview harness with Vite's dev server (no backend) |
 
 Run `npm ci && npm run build` before installing this repo into Crew from a local path: a local-path install copies the folder without building it, and Crew loads `ui/dist/index.mjs`.
