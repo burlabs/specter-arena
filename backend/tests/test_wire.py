@@ -118,6 +118,37 @@ def test_integer_fields_reject_nan_infinity_huge_floats_bools_and_nesting(bad: o
             reader(mutated(base, path, bad))
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        ["collector", "sinceMs"],
+        ["items", 0, "coverage", "sinceMs"],
+        ["items", 0, "condition", "sourceTimeMs"],
+        ["items", 0, "condition", "observedAtMs"],
+        ["items", 0, "lastObservedAtMs"],
+    ],
+    ids=lambda path: ".".join(str(step) for step in path),
+)
+def test_nullable_times_reject_a_negative_value_but_accept_null(path: list[str | int]) -> None:
+    assert READERS["roster"](mutated(valid_roster(), path, None))
+    with pytest.raises(ContractViolation):
+        READERS["roster"](mutated(valid_roster(), path, -1))
+    with pytest.raises(ContractViolation):
+        READERS["roster"](mutated(valid_roster(), path, 2**53))
+
+
+def test_roster_item_rejects_a_negative_since_ms_on_its_own() -> None:
+    item = valid_roster()["items"][0]
+    with pytest.raises(ContractViolation):
+        READERS["roster-item"](mutated(item, ["coverage", "sinceMs"], -1))
+
+
+def test_observation_rejects_a_negative_source_time() -> None:
+    with pytest.raises(ContractViolation):
+        READERS["observation"](mutated(valid_row_change(), ["sourceTimeMs"], -1))
+    assert READERS["observation"](mutated(valid_row_change(), ["sourceTimeMs"], None))
+
+
 def test_whole_valued_floats_are_integers_like_json_schema() -> None:
     body = mutated(valid_row_change(), ["receivedAtMs"], 1_760_000_000_500.0)
     assert READERS["observation"](body) == body
