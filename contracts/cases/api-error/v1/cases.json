@@ -1,0 +1,59 @@
+[
+  {
+    "file": "valid/unauthorized.json",
+    "valid": true
+  },
+  {
+    "file": "valid/snake-case-code.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/missing-error.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-string.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-boolean.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/error-uppercase.json",
+    "valid": false,
+    "instancePath": "/error"
+  },
+  {
+    "file": "invalid/error-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/error"
+  },
+  {
+    "file": "invalid/error-numeric.json",
+    "valid": false,
+    "instancePath": "/error"
+  },
+  {
+    "file": "invalid/error-free-text.json",
+    "valid": false,
+    "instancePath": "/error"
+  }
+]

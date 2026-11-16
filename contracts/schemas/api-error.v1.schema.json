@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:api-error:v1",
+  "title": "API error body v1",
+  "description": "Body of every non-2xx response from an app route that emits a contract-versioned error. The code is a short snake_case token, never exception text, a path, or user input.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "error": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" }
+  },
+  "required": ["contractVersion", "error"],
+  "additionalProperties": false
+}

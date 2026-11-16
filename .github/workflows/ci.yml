@@ -234,6 +234,8 @@ jobs:
           npm run check:diagnostic
       - name: Committed capability matrix and recorded payloads validate offline
         run: npm run probe:check
+      - name: Contract schemas, cases, owners, FP-02-AC06 guard and spec ids validate offline
+        run: npm run check:schema
 
   e2e-smoke:
     runs-on: ubuntu-latest

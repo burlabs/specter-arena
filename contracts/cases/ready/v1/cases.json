@@ -1,0 +1,72 @@
+[
+  {
+    "file": "valid/ready.json",
+    "valid": true
+  },
+  {
+    "file": "valid/not-ready-migrating.json",
+    "valid": true
+  },
+  {
+    "file": "valid/not-ready-disabled-by-probe-switch.json",
+    "valid": true
+  },
+  {
+    "file": "valid/latest-null-disabled.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/ready-with-null-version.json",
+    "valid": false,
+    "instancePath": "/storeVersion"
+  },
+  {
+    "file": "invalid/ready-status-store-unavailable.json",
+    "valid": false,
+    "instancePath": "/store"
+  },
+  {
+    "file": "invalid/not-ready-claims-store-ready.json",
+    "valid": false,
+    "instancePath": "/store"
+  },
+  {
+    "file": "invalid/unknown-store-state.json",
+    "valid": false,
+    "instancePath": "/store"
+  },
+  {
+    "file": "invalid/negative-version.json",
+    "valid": false,
+    "instancePath": "/storeVersion"
+  },
+  {
+    "file": "invalid/latest-version-fraction.json",
+    "valid": false,
+    "instancePath": "/latestVersion"
+  },
+  {
+    "file": "invalid/version-as-string.json",
+    "valid": false,
+    "instancePath": "/storeVersion"
+  },
+  {
+    "file": "invalid/nan-version.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/extra-path-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-latest-version.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/latest-null-migrating.json",
+    "valid": false,
+    "instancePath": "/latestVersion"
+  }
+]

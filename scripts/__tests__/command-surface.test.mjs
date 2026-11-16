@@ -82,6 +82,11 @@ describe('package.json command surface', () => {
     assert.equal(scripts.build, 'vite build --config ui/vite.config.ts');
   });
 
+  it('declares the FP-02+03 command surface without touching earlier names', () => {
+    assert.equal(scripts['check:schema'], 'node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs');
+    assert.equal(scripts['probe:check'], 'node scripts/check-matrix.mjs && node scripts/check-recorded.mjs');
+  });
+
   it('enforces 90% line coverage on scripts/', () => {
     assert.match(scripts.coverage ?? '', /--test-coverage-lines=90\b/);
     assert.match(scripts.coverage ?? '', /--test-coverage-include=scripts\/\*\.mjs/);
@@ -172,6 +177,12 @@ describe('ci.yml', () => {
   it('runs the diagnostic positive control and the evidence validators inside the fixtures job', () => {
     const fixtures = jobsSection.slice(jobsSection.indexOf('\n  fixtures:'), jobsSection.indexOf('\n  e2e-smoke:'));
     assert.match(fixtures, /npm run check:fixtures[\s\S]*npm run build:diagnostic[\s\S]*npm run check:diagnostic[\s\S]*npm run probe:check/);
+  });
+
+  it('runs check:schema as a fixtures-job step, not as a new job', () => {
+    const fixtures = jobsSection.slice(jobsSection.indexOf('\n  fixtures:'), jobsSection.indexOf('\n  e2e-smoke:'));
+    assert.match(fixtures, /npm run probe:check[\s\S]*npm run check:schema/);
+    assert.equal(jobs.includes('schema'), false);
   });
 
   it('verifies the gitleaks checksum before running it', () => {

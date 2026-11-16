@@ -22,6 +22,7 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `@types/react` | 18.3.1 | MIT | React types |
 | `@types/react-dom` | 18.3.1 | MIT | react-dom types |
 | `@playwright/test` | 1.65.0 | Apache-2.0 | Chromium smoke test of the preview harness |
+| `ajv` | 8.20.0 | MIT | Validates `contracts/schemas/` (draft-07) in the Vitest contract runner and `npm run check:schema`; dev only, never bundled. Brings `fast-uri` 3.1.9, `json-schema-traverse` 1.0.0 and `require-from-string` 2.0.2. ESLint keeps its own nested `ajv` 6.15.0 |
 
 React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Crew 0.12.0), so the unit tests and preview harness run the same major the production bundle meets. `ui/src/` uses only APIs present in React 18 and 19.
 
@@ -47,6 +48,7 @@ React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Cr
 | `ruff` | 0.17.4 | MIT | Lint and format check |
 | `mypy` | 2.4.1 | MIT | Strict type check |
 | `httpx2` | 2.16.0 | BSD-3-Clause | Transport for `starlette.testclient` |
+| `fastjsonschema` | 2.22.3 | BSD-3-Clause | Validates `contracts/schemas/` (draft-07) in the pytest contract runner; no dependencies; dev group only, so `requirements.txt` is unchanged |
 
 ## Preview infrastructure (`infra/`, separate npm project, never shipped)
 
