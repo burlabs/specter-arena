@@ -1,6 +1,6 @@
 # Spec ids
 
-Central registry of spec-id prefixes. A prefix is reserved here before any requirements file uses it, so parallel planning workers cannot collide. `scripts/check-spec-ids.mjs` reads this table and every `.kiro/specs/**/*.md`. Its unit test runs it against the repository in the `test` job; once the contract tooling lands (FP-02+03 slice D-3), `npm run check:schema` runs it in the `fixtures` job too.
+Central registry of spec-id prefixes. A prefix is reserved here before any requirements file uses it, so parallel planning workers cannot collide. `scripts/check-spec-ids.mjs` reads this table and every `.kiro/specs/**/*.md`. Its unit test runs it against the repository in the `test` job, and `npm run check:schema` runs it in the `fixtures` job.
 
 ## Rules
 

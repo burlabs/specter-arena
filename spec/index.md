@@ -23,6 +23,6 @@ Work is owned by five logical components. Details are in `docs/architecture/comp
 | Feature | Folder | Status |
 |---|---|---|
 | FP-01 Installed Crew shell and bot telemetry capability proof | `.kiro/specs/fp-01-crew-integration-probe/` | Complete (closed 2026-11-13); capability matrix and host facts in `docs/compatibility/` |
-| FP-02+03 Domain contracts, durable state, and continuous observation | `.kiro/specs/fp-02-03-contracts-and-observation/` | Pass 1 in progress: slice 1 probe, store and evidence merged; contract tooling (#48, #49) open. Pass 2 is designed next |
+| FP-02+03 Domain contracts, durable state, and continuous observation | `.kiro/specs/fp-02-03-contracts-and-observation/` | Pass 1 complete (#38-#50 closed); Pass 2 (bot binding, observation, coverage, collector, roster read route) planned 2026-11-16, implementation in progress |
 
 Feature sessions add folders under `.kiro/specs/` and link them here.
