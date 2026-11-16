@@ -63,6 +63,18 @@ Pass 1 delivers the parts marked "Pass 1". The rest are designed in Pass 2 again
 | FP0203-DEL-5 | No Specter class, archetype, species, capability score, or hidden classifier anywhere in the schema (FP-02-AC06); only a bot-binding reference is reserved for FP-05. | RS-13 | 1 |
 | FP0203-DEL-6 | Pass 2 (designed after slice 1; listed so Pass 1 does not preclude them): FP-02-AC02, AC03, AC05 and FP-03-AC01..AC06 against proven signals only. | RS-14 | 2 |
 
+## Pass 2 delivery requirements
+
+Delivery's rows for Pass 2 (ids from the delivery plan; crew-integration and work-ledger rows are added when their plans assign ids). Acceptance criteria stay the intake's.
+
+| Id | Requirement | Source | Pass |
+|---|---|---|---|
+| FP0203-DEL-7 | Wire contracts for `bot-binding`, `quarantine-record`, `observation`, `roster-item` and `roster`, each with versioned cases read by both runners and an OWNERS row; UI roster types hand-written and checked against the schema (FP-02-AC04). | RS-21 | 2 |
+| FP0203-DEL-8 | `npm run check:schema` fails a schema that has no invalid case naming the next major, and a denylist that differs from the SQL test's list; new schemas stay free of classifier fields (FP-02-AC06). | RS-21 | 2 |
+| FP0203-DEL-9 | Bounded collector load tests, synthetic fixtures and a parity test between the reader and the shared cases, without a new CI job (FP-03-AC02, FP-03-AC04, FP-03-AC06, FP-02-AC03). | RS-21, RS-22 | 2 |
+| FP0203-DEL-10 | The three seed schemas move to `FROZEN` when Pass 2 starts; later schemas stay `DRAFT` until their first consumer merges. | RS-21 | 2 |
+| FP0203-DEL-11 | Spec, registry and doc upkeep for Pass 2, and a producer meta-test requiring every schema `$id` to be named by a producer test. | RS-21 | 2 |
+
 ## Exclusions
 
 Roster UI (FP-04), Specter or Grimoire work (FP-05), encounters and XP (FP-08+09); total ordering across sources, replay UI, CQRS infrastructure, a message broker, multi-tenant SaaS, a complete future schema; transcript-based quality judging, automated agent repair, forced history import, a Feature Planner dependency; `/api/member-records/*` (FP-10).
