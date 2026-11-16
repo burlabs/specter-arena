@@ -44,6 +44,14 @@
     "valid": true
   },
   {
+    "file": "valid/slot-fields-at-limit.json",
+    "valid": true
+  },
+  {
+    "file": "valid/row-integers-at-max.json",
+    "valid": true
+  },
+  {
     "file": "invalid/extra-root-property.json",
     "valid": false
   },
@@ -213,6 +221,18 @@
   },
   {
     "file": "invalid/received-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/created-by-too-long.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/parent-key-too-long.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/row-integer-above-max.json",
     "valid": false
   }
 ]

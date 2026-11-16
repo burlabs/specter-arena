@@ -5,7 +5,7 @@
   "description": "One normalized, allow-listed fact the collector took from a Crew frame for one bot binding. It never carries prompt text, messages, titles or tool arguments: every payload property is a number, a boolean, a bounded token or an id. kind row-change is derived from a slot snapshot row (eventType slot-row; dedupKey is null and factDigest is 64 lower-case hex, the digest of the payload minus lastActivityMs that the store uses to suppress an unchanged row); kind event is one of the listed per-bot events (dedupKey may be a string or null, factDigest is null). turn and turnGen (a hex string such as a8b8767e) and toolCallId live in sourceRef, not in the event payload. The collector writes origin live only; recorded and fixture exist so a stray value is visible and rejected by the store. sourceTimeMs is null when Crew gave no usable time. An event type that is not listed here is quarantined, not an observation.",
   "type": "object",
   "definitions": {
-    "slotKey": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,300}$" },
+    "slotKey": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,256}$" },
     "toolCallId": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]{1,200}$" },
     "token": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,47}$" },
     "turnGen": { "type": "string", "pattern": "^[0-9a-f]{1,16}$" },
