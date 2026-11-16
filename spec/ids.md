@@ -1,0 +1,26 @@
+# Spec ids
+
+Central registry of spec-id prefixes. A prefix is reserved here before any requirements file uses it, so parallel planning workers cannot collide. `scripts/check-spec-ids.mjs` reads this table and every `.kiro/specs/**/*.md`. Its unit test runs it against the repository in the `test` job; once the contract tooling lands (FP-02+03 slice D-3), `npm run check:schema` runs it in the `fixtures` job too.
+
+## Rules
+
+- A requirement is defined once, as the first cell of a table row in a `requirements.md` (`FP02-REQ-01`), and an acceptance criterion is defined once as a bullet `- **FP-02-AC01:** ...` in the same file. Every other mention is a reference and must resolve to a definition.
+- A defined id's prefix must be registered below and its number must fall in the registered range.
+- A feature session that has several components writing the same spec folder infixes the component: `CI` crew-integration, `WL` work-ledger, `DEL` delivery. Acceptance criteria keep the id the intake gave them (`FP-02-AC01`).
+- Contract ids are `CT-<schema>-v<N>` and name a file in `contracts/schemas/`; `contracts/OWNERS.md` is their registry and `npm run check:schema` is their check.
+- Tracker issues cite ids; they never mint them.
+
+## Prefixes
+
+| Prefix | Meaning | Owner | Numbers | Status |
+|---|---|---|---|---|
+| `FP01-REQ` | FP-01 requirements | delivery | 1-99 | closed |
+| `FP01-DEL` | FP-01 delivery requirements | delivery | 1-99 | closed |
+| `FP-01-AC` | FP-01 acceptance criteria | delivery | 1-99 | closed |
+| `FP-02-AC` | FP-02 acceptance criteria | delivery | 1-99 | open |
+| `FP-03-AC` | FP-03 acceptance criteria | delivery | 1-99 | open |
+| `FP02-REQ` | FP-02 requirements, one per criterion | delivery | 1-99 | open |
+| `FP03-REQ` | FP-03 requirements, one per criterion | delivery | 1-99 | open |
+| `FP0203-CI` | FP-02+03 crew-integration requirements | crew-integration | 1-99 | open |
+| `FP0203-WL` | FP-02+03 work-ledger requirements | work-ledger | 1-99 | open |
+| `FP0203-DEL` | FP-02+03 delivery requirements | delivery | 1-99 | open |

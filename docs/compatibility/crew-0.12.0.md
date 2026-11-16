@@ -62,4 +62,4 @@ What was observed:
 
 - Screenshots were reported as pasted text or images in chat, not saved as files. None is committed.
 - Release-tree exclusion of the diagnostic page is proven by CI, not by a Crew install.
-- Monitoring scope is not decided here; see `monitoring-scope.md` (Status: NOT APPROVED, issue #21).
+- Monitoring scope is decided in `monitoring-scope.md` (Status: APPROVED, Eric, 2026-11-13), not here. On 0.12.0 that scope left session lifecycle signals, worker-to-bot attribution, token usage, rename stability, closed-tab collection and reconnect recovery UNTESTED. The FP-02+03 slice-1 probe on Crew 0.12.2 settled lifecycle signals, session-worker attribution, the reconnect snapshot and the usage endpoints; rename stability and closed-tab collection stayed UNTESTED. See `crew-0.12.2.md`.

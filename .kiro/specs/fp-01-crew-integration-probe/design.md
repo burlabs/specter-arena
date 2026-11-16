@@ -7,7 +7,7 @@ This file states the decisions that shape the repository. Planning artifacts sta
 - `docs/compatibility/capability-questions.json`: the canonical question list, `{ "version": 1, "questions": [...] }` sorted by id. Each entry has `kind` (`matrix` or `host-fact`), `scope` (matrix only), `question` and `priority`. The probe code generates it in a later slice; until then it is a placeholder with the same ids and kinds.
 - `docs/compatibility/capability-matrix.json` and `.md`: one cell per matrix question.
 - `docs/compatibility/host-facts.json` and `crew-0.12.0.md`: one fact per host-fact question, plus the pinned compatibility record.
-- `docs/compatibility/monitoring-scope.md`: the AC05 decision record. Status is NOT APPROVED until the decision gate with Eric.
+- `docs/compatibility/monitoring-scope.md`: the AC05 decision record. Status: APPROVED by Eric on 2026-11-13 (issue #21).
 - `docs/compatibility/evidence/<runId>/`: run evidence the cells cite.
 - `tests/recorded/crew-0.12.0/`: sanitised real payloads. Never imported by release code.
 - `docs/ops/crew-probe-runbook.md`: how the live run is performed.
