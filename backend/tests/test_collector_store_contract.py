@@ -40,6 +40,7 @@ from backend.tests.collector_scenarios import (
     chat_done,
     event,
     slots,
+    small,
     worker_row,
 )
 
@@ -418,3 +419,32 @@ def test_a_manifest_that_loses_a_grant_ends_the_real_run_with_scope_lost_or_sile
     assert table(
         store, "SELECT reason, end_ms IS NULL FROM coverage_interval WHERE state='gap'"
     ) == [(reason, 1)]
+
+
+def test_an_overflow_gap_sharing_a_millisecond_with_the_disconnect_close_is_still_persisted(
+    store: Store,
+) -> None:
+    frames = [slots(bot_row())] + [chat_done(turn) for turn in range(2, 12)]
+    harness = real(store, feeds=[[*frames, END]], limits=small(event_queue_max=3))
+    clock = harness.clock
+    frozen = clock.now_ms()
+
+    async def scenario() -> None:
+        await harness.collector.begin()
+        await harness.collector.feed_once()
+        await harness.collector.stop()
+
+    run(scenario())
+    assert clock.now_ms() == frozen
+    gaps = table(
+        store,
+        "SELECT reason, dropped_json, start_ms, end_ms FROM coverage_interval"
+        " WHERE reason = 'overflow'",
+    )
+    assert gaps == [("overflow", '{"events":7}', frozen, frozen)]
+    counts = harness.collector.diagnostics()["counts"]
+    assert counts["dropped_with_gap_record"] == 7
+    assert harness.collector.diagnostics()["balanced"] is True
+    order = "SELECT reason FROM coverage_interval WHERE state='gap' ORDER BY interval_id"
+    reasons = [row[0] for row in table(store, order)]
+    assert reasons == ["overflow", "disconnect"]

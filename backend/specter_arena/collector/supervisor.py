@@ -193,6 +193,24 @@ class _Batch:
         return len(self.rows) + len(self.events) + quarantined
 
 
+def _merge_marks(queued: list[CoverageMark], generated: list[CoverageMark]) -> list[CoverageMark]:
+    """Queued marks keep their order; each generated gap goes in by time.
+
+    The store applies a gap only inside an open covered interval. At one instant a gap
+    therefore goes before a `close`, never after it: a gap that shares its time with a
+    disconnect close would otherwise find no covered interval and be dropped as a duplicate.
+    """
+    merged = list(queued)
+    for gap in sorted(generated, key=lambda mark: mark.at_ms):
+        position = len(merged)
+        for index, other in enumerate(merged):
+            if other.at_ms > gap.at_ms or (other.at_ms == gap.at_ms and other.action == "close"):
+                position = index
+                break
+        merged.insert(position, gap)
+    return merged
+
+
 def _dm_key_of(row: RowFact) -> str:
     if row.dm is not None:
         return build_dm_key(row.dm)
@@ -908,10 +926,8 @@ class Collector:
                     dedup_key=event.dedup_key,
                 )
             )
-        marks: list[CoverageMark] = [m for m in batch.control if isinstance(m, CoverageMark)]
-        marks.extend(batch.generated)
-        ordered_marks = sorted(marks, key=lambda mark: mark.at_ms)
-        items.extend(ordered_marks)
+        queued = [m for m in batch.control if isinstance(m, CoverageMark)]
+        items.extend(_merge_marks(queued, batch.generated))
         items.extend(i for i in batch.control if not isinstance(i, CoverageMark))
         return items
 

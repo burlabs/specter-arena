@@ -175,3 +175,11 @@ def test_a_restart_gen_change_between_connects_is_one_mark_and_the_stream_contin
     reasons = [m.reason for m in harness.fake_store.coverage if m.action == "gap"]
     assert reasons == ["source-restart"]
     assert [o.turn_gen for o in rows_for(harness)] == [GEN, OTHER_GEN]
+
+
+def test_marks_that_share_a_millisecond_go_open_then_gap_then_close() -> None:
+    frames = [slots(bot_row())] + [chat_done(turn) for turn in range(2, 12)]
+    harness = session(frames, limits=small(event_queue_max=3))
+    sent = [m for b in harness.fake_store.batches for m in b.items if isinstance(m, CoverageMark)]
+    pairs = [(m.action, m.reason) for m in sent if m.at_ms == sent[0].at_ms]
+    assert pairs == [("open-covered", None), ("gap", "overflow"), ("close", "disconnect")]
