@@ -23,6 +23,7 @@ from .ingest import ingest
 from .location import resolve_data_dir
 from .migrate import latest_version
 from .paging import Page, build_page, clamp_limit, decode_cursor, encode_cursor
+from .projection import rebuild_projection
 from .records import (
     COVERAGE_REASONS,
     EVENT_PAYLOAD_KEYS,
@@ -60,6 +61,7 @@ from .records import (
     RosterRowIn,
     RunStart,
 )
+from .roster import recent_quarantine, roster_page, roster_revision
 from .runs import end_run, heartbeat, set_paused, start_run
 from .status import (
     StoreState,
@@ -141,9 +143,13 @@ __all__ = [
     "migrating_status",
     "open_store",
     "parse_dm_key",
+    "rebuild_projection",
+    "recent_quarantine",
     "record_rebind",
     "resolve_data_dir",
     "restore",
+    "roster_page",
+    "roster_revision",
     "row_fact_digest",
     "set_paused",
     "start_run",

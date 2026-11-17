@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 
+from .projection import fold_inserted, touch_duplicate
 from .records import ObservationIn, Outcome, QuarantineIn
 from .validate import canonical_payload, quarantine_frame_type
 
@@ -47,6 +48,7 @@ def insert_observation(
     if item.binding_id is not None and item.binding_id != binding_id:
         return "rejected", "binding-mismatch", None
     if _is_duplicate(conn, binding_id, item):
+        touch_duplicate(conn, binding_id, item)
         return "deduplicated", None, None
     cursor = conn.execute(
         "INSERT INTO observation (binding_id, kind, event_type, source, slot_key, turn, turn_gen,"
@@ -70,7 +72,9 @@ def insert_observation(
             canonical_payload(item.payload),
         ),
     )
-    return "persisted", None, int(cursor.lastrowid or 0)
+    seq = int(cursor.lastrowid or 0)
+    fold_inserted(conn, binding_id, item, seq)
+    return "persisted", None, seq
 
 
 def insert_quarantine(conn: sqlite3.Connection, run_id: str, item: QuarantineIn) -> None:
