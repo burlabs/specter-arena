@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { AttemptItemV1, RosterConditionV1, RosterItemV1 } from '../contracts/types';
+import type { RosterConditionV1, RosterItemV1 } from '../contracts/types';
 import * as copy from './copy';
 import * as model from './model';
-import { UNNAMED, attemptCondition, botCondition, formatTime, initialsOf, matchesQuery, nameOf, sortRoster, workerChips } from './model';
+import { UNNAMED, botCondition, formatTime, initialsOf, matchesQuery, nameOf, sortRoster, workerChips } from './model';
 
 const signals = { needsInput: null, hasOptions: null, pendingApproval: null, waitingForInput: null };
 const condition = (state: string, reasonCode: string): RosterConditionV1 => ({ state, reasonCode, basis: null, sourceTimeMs: null, observedAtMs: null, signals });
@@ -17,16 +17,6 @@ const item = (bindingId: string, displayName: string | null): RosterItemV1 => ({
   lastObservedAtMs: null,
   workers: { running: 0, seen: 0, unknown: 0 },
 });
-const attempt = (state: string, reasonCode: string, kind = 'worker'): AttemptItemV1 => ({
-  contractVersion: 1,
-  attemptId: 'att_1',
-  kind,
-  startedMs: 1,
-  endedMs: null,
-  endSignal: null,
-  condition: { state, reasonCode },
-});
-
 describe('condition labels', () => {
   it.each([
     ['working', 'Working', 'working'],
@@ -43,16 +33,6 @@ describe('condition labels', () => {
   it('never labels a settled bot idle, available or healthy', () => {
     const view = botCondition(condition('settled', 'not-running'));
     expect(`${view.label} ${view.reason}`).not.toMatch(/idle|available|healthy/i);
-  });
-
-  it('maps attempt states and never calls an ended attempt done, finished or succeeded', () => {
-    expect(attemptCondition(attempt('working', 'running'))).toMatchObject({ label: 'Working', tone: 'working' });
-    const ended = attemptCondition(attempt('ended', 'ended-chat-done'));
-    expect(ended).toMatchObject({ label: 'Ended', tone: 'ended' });
-    expect(ended.label).not.toMatch(/done|finished|succeeded/i);
-    expect(ended.reason).not.toMatch(/finished|succeeded/i);
-    expect(attemptCondition(attempt('unknown', 'feed-absent')).label).toBe('Unknown');
-    expect(attemptCondition(attempt('weird', 'x')).reason).toBe('Reason code: weird');
   });
 });
 

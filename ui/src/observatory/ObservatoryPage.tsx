@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
 import { BotSummary } from './BotSummary';
@@ -11,7 +11,7 @@ import { useInjectedStyle } from './useInjectedStyle';
 import { useRoster } from './useRoster';
 import type { RosterData } from './useRoster';
 import { useWatched } from './watched';
-import { Button, EmptyState, ErrorState, Icon } from './ui';
+import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
 
 type ViewName = 'watched' | 'all';
 
@@ -29,7 +29,7 @@ function initialView(data: RosterData | null, watched: ReadonlySet<string>): Vie
 const isTypingTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName));
 
-function ViewTabs({ view, onChange }: { view: ViewName; onChange: (next: ViewName) => void }) {
+function ViewTabs({ view, panelId, tabId, onChange }: { view: ViewName; panelId: string; tabId: (name: ViewName) => string; onChange: (next: ViewName) => void }) {
   const tabs = useRef(new Map<ViewName, HTMLButtonElement>());
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const index = VIEWS.findIndex((entry) => entry.name === view);
@@ -48,6 +48,8 @@ function ViewTabs({ view, onChange }: { view: ViewName; onChange: (next: ViewNam
           key={entry.name}
           type="button"
           role="tab"
+          id={tabId(entry.name)}
+          aria-controls={panelId}
           className="sa-tab"
           aria-selected={view === entry.name}
           tabIndex={view === entry.name ? 0 : -1}
@@ -79,11 +81,27 @@ export function ObservatoryPage() {
   const [legendOpen, setLegendOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const view = latchedView ?? initialView(data, watched) ?? 'all';
   const decidedView = latchedView ?? initialView(data, watched);
+  const view = decidedView ?? 'all';
   useEffect(() => {
     if (latchedView === null && decidedView !== null) setLatchedView(decidedView);
   }, [latchedView, decidedView]);
+
+  const tabsId = useId();
+  const panelId = `${tabsId}-panel`;
+  const tabId = (name: ViewName) => `${tabsId}-tab-${name}`;
+
+  const [departed, setDeparted] = useState(false);
+  useEffect(() => {
+    if (selectedId === null || data === null || !data.complete) return;
+    if (data.items.some((item) => item.bindingId === selectedId)) return;
+    setSelectedId(null);
+    setDeparted(true);
+  }, [data, selectedId]);
+  const select = (bindingId: string) => {
+    setDeparted(false);
+    setSelectedId(bindingId);
+  };
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -140,7 +158,7 @@ export function ObservatoryPage() {
       );
     }
     return (
-      <RosterList items={visible} selectedId={selectedId} watched={watched} watchListFull={full} onSelect={setSelectedId} onToggleWatch={toggle} />
+      <RosterList items={visible} selectedId={selectedId} watched={watched} watchListFull={full} onSelect={select} onToggleWatch={toggle} />
     );
   })();
 
@@ -185,9 +203,9 @@ export function ObservatoryPage() {
         </header>
 
         <div className="sa-layout">
-          <section className="sa-panel" aria-label="Roster">
+          <Panel label="Roster">
             <div className="sa-toolbar">
-              <ViewTabs view={view} onChange={setLatchedView} />
+              <ViewTabs view={view} panelId={panelId} tabId={tabId} onChange={setLatchedView} />
               <label className="sa-search">
                 <Icon name="search" />
                 <span className="sa-visually-hidden">Search bots by name</span>
@@ -208,19 +226,21 @@ export function ObservatoryPage() {
                 </Button>
               )}
             </div>
-            <p className="sa-result-count">{`${visible.length} of ${items.length} bots`}</p>
-            {list}
-          </section>
+            <div role="tabpanel" id={panelId} aria-labelledby={tabId(view)}>
+              <p className="sa-result-count">{`${visible.length} of ${items.length} bots`}</p>
+              {list}
+            </div>
+          </Panel>
 
-          <section className="sa-panel" aria-label="Bot detail">
+          <Panel label="Bot detail">
             {selected !== undefined ? (
               <BotSummary item={selected} />
-            ) : selectedId !== null ? (
+            ) : departed || selectedId !== null ? (
               <p role="status">This bot is no longer on the roster.</p>
             ) : (
               <p>Select a bot to see its condition and why.</p>
             )}
-          </section>
+          </Panel>
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null ? `Showing ${nameOf(selected)}: ${selectedCondition.label}` : ''}

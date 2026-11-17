@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { rosterBody } from '../../fixtures/monitoring-bodies';
+import { rosterBody } from '@kirocrew/app-sdk';
 import { BotSummary } from './BotSummary';
 
 const [atlas, , cinder, , ember] = rosterBody('default').items;

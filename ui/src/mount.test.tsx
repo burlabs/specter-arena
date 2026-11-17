@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
-import { rosterBody } from '../fixtures/monitoring-bodies.ts';
 import * as entry from './mount';
 import SpecterArenaApp from './mount';
 import { ROSTER_PATH, attemptsPath, rosterPath } from './host/paths';
@@ -9,6 +8,8 @@ import { ROSTER_PATH, attemptsPath, rosterPath } from './host/paths';
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
 vi.mock('@kirocrew/app-sdk', () => ({ useAppApi: () => client }));
+
+const { rosterBody } = await vi.importActual<typeof import('@kirocrew/app-sdk')>('@kirocrew/app-sdk');
 
 beforeEach(() => {
   client.get.mockReset();

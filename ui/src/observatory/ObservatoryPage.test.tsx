@@ -1,8 +1,8 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody, setFixtureScenario } from '../../fixtures/monitoring-bodies';
-import type { ScenarioName } from '../../fixtures/monitoring-bodies';
+import { rosterBody, setFixtureScenario } from '@kirocrew/app-sdk';
+import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
 import { WATCHED_KEY, writeWatched } from './watched';
 
@@ -38,6 +38,15 @@ describe('first load', () => {
     expect(screen.getByRole('tab', { name: 'All bots' }).getAttribute('aria-selected')).toBe('true');
   });
 
+  it('ties each view tab to one tabpanel labelled by the selected tab', async () => {
+    await open();
+    const panel = screen.getByRole('tabpanel');
+    for (const tab of screen.getAllByRole('tab')) expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+    expect(panel.getAttribute('aria-labelledby')).toBe(screen.getByRole('tab', { name: 'All bots' }).id);
+    fireEvent.click(screen.getByRole('tab', { name: 'Watched' }));
+    expect(panel.getAttribute('aria-labelledby')).toBe(screen.getByRole('tab', { name: 'Watched' }).id);
+  });
+
   it('opens on Watched when a watched bot is on the roster, and stays there after a refresh', async () => {
     writeWatched([ATLAS, 'bnd_gone']);
     await open();
@@ -63,7 +72,7 @@ describe('selection, watching and search', () => {
     expect(screen.getByText('Showing Atlas: Working')).toBeTruthy();
   });
 
-  it('says so when the selected bot is no longer on the roster', async () => {
+  it('clears the selection and says so when the bot is missing from a complete roster', async () => {
     await open();
     selectRow('Atlas');
     setFixtureScenario('empty');
@@ -71,6 +80,37 @@ describe('selection, watching and search', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     });
     await screen.findByText('This bot is no longer on the roster.');
+    expect(screen.queryByRole('heading', { level: 2, name: 'Atlas' })).toBeNull();
+    setFixtureScenario('default');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    });
+    await waitFor(() => expect(rowNames()).toHaveLength(7));
+    expect(screen.queryByRole('heading', { level: 2, name: 'Atlas' })).toBeNull();
+    selectRow('Atlas');
+    expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
+    expect(screen.queryByText('This bot is no longer on the roster.')).toBeNull();
+  });
+
+  it('keeps the selection when the bot is missing only from a truncated roster', async () => {
+    const [atlas] = rosterBody('default').items;
+    if (atlas === undefined) throw new Error('fixture');
+    let truncatedLoad = false;
+    let page = 0;
+    vi.spyOn(useAppApi(), 'get').mockImplementation(() => {
+      const items = truncatedLoad ? [{ ...atlas, bindingId: `bnd_page${++page}`, displayName: `Bot ${page}` }] : [atlas];
+      const body = { ...rosterBody('default'), items, nextCursor: truncatedLoad ? 'more' : null };
+      return Promise.resolve(new Response(JSON.stringify(body)));
+    });
+    render(<ObservatoryPage />);
+    await screen.findByRole('list', { name: 'Bots' });
+    selectRow('Atlas');
+    truncatedLoad = true;
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    });
+    await screen.findByText('This bot is no longer on the roster.');
+    expect(screen.getByText(/Roster truncated/)).toBeTruthy();
   });
 
   it('watches a bot, persists only the one key, and switches views with arrows', async () => {

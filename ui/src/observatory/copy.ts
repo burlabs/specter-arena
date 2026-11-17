@@ -20,22 +20,19 @@ export const REASON_WORDS: Readonly<Record<string, string>> = {
   'no-slot-yet': "Collection is running, but this bot's chat has not appeared in an update yet.",
   'unsupported-store-less-bot': 'This bot has no memory store, so Crew gives the app no turn data for it.',
   'unobserved-turns': 'One or more turns happened between two observations and were not seen.',
-  'ended-row-idle': "Ended. Crew's row for this chat went idle.",
-  'ended-chat-done': 'Ended. Crew sent a chat-done event.',
+  'ended-row-idle': "Ended. Crew's row stopped reporting a running turn.",
+  'ended-chat-done': "Ended when Crew's turn-complete event arrived.",
   'ended-other': 'Ended. The ending signal is not one this app recognizes.',
   'collector-not-started': 'The backend has not started its collector.',
   shutdown: 'The app was shut down cleanly.',
   'internal-error': 'The collector hit an internal error and stopped.',
 };
 
-/** Words for a code; `kind` swaps the subject of `running` for an attempt. Never returns an empty string. */
-export function reasonWords(code: string, kind?: string): string {
-  if (code === 'running' && kind === 'worker') return "Crew reports this worker running, and the collector saw its chat recently.";
-  if (code === 'running' && kind === 'bot-turn') return "Crew reports this turn running, and the collector saw its chat recently.";
+/** Words for a code. Never returns an empty string. */
+export function reasonWords(code: string): string {
   return REASON_WORDS[code] ?? `Reason code: ${code}`;
 }
 
-export const attemptKindLabel = (kind: string): string => (kind === 'bot-turn' ? 'Bot turn' : kind === 'worker' ? 'Worker' : kind);
 
 const COLLECTOR_STATE_WORDS: Readonly<Record<string, string>> = {
   starting: 'Collector is starting.',
@@ -77,17 +74,6 @@ export const COVERAGE_STATE_WORDS: Readonly<Record<string, string>> = {
   gap: 'Gap in collection',
   unknown: 'Not known',
 };
-
-export const BASIS_WORDS: Readonly<Record<string, string>> = { row: 'Crew chat row', event: 'Crew event' };
-
-export const SIGNAL_LABELS = [
-  ['needsInput', 'Needs input'],
-  ['hasOptions', 'Has options'],
-  ['pendingApproval', 'Pending approval'],
-  ['waitingForInput', 'Waiting for input'],
-] as const;
-
-export const signalWords = (value: boolean | null): string => (value === null ? 'Not seen' : value ? 'Yes' : 'No');
 
 export const UNAVAILABLE_TEXT = 'Unavailable until accepted-work tracking ships';
 

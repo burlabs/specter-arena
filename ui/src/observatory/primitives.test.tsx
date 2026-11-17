@@ -7,7 +7,7 @@ import { OperationalLegend } from './OperationalLegend';
 import { Time, TimeFormatContext } from './Time';
 import { botCondition } from './model';
 import { Button, EmptyState, ErrorState, Panel } from './ui';
-import { rosterBody } from '../../fixtures/monitoring-bodies';
+import { rosterBody } from '@kirocrew/app-sdk';
 
 const [atlas] = rosterBody('default').items as [RosterItemV1];
 

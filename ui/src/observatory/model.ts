@@ -1,7 +1,7 @@
-import type { AttemptItemV1, RosterConditionV1, RosterItemV1, RosterWorkersV1 } from '../contracts/types';
+import type { RosterConditionV1, RosterItemV1, RosterWorkersV1 } from '../contracts/types';
 import { reasonWords } from './copy';
 
-export type Tone = 'working' | 'settled' | 'unknown' | 'ended';
+export type Tone = 'working' | 'settled' | 'unknown';
 
 export interface ConditionView {
   tone: Tone;
@@ -15,24 +15,12 @@ const BOT_LABELS: Readonly<Record<string, { tone: Tone; label: string }>> = {
   unknown: { tone: 'unknown', label: 'Unknown' },
 };
 
-const ATTEMPT_LABELS: Readonly<Record<string, { tone: Tone; label: string }>> = {
-  working: { tone: 'working', label: 'Working' },
-  ended: { tone: 'ended', label: 'Ended' },
-  unknown: { tone: 'unknown', label: 'Unknown' },
-};
-
 const unknownToken = (state: string): ConditionView => ({ tone: 'unknown', label: 'Unknown', reason: `Reason code: ${state}` });
 
 /** Bot level (FP4-D1). A token outside the table is Unknown with its code. */
 export function botCondition(condition: RosterConditionV1): ConditionView {
   const known = BOT_LABELS[condition.state];
   return known ? { ...known, reason: reasonWords(condition.reasonCode) } : unknownToken(condition.state);
-}
-
-/** Attempt level (SC4-2). `kind` picks "turn" or "worker" for the `running` sentence. */
-export function attemptCondition(attempt: AttemptItemV1): ConditionView {
-  const known = ATTEMPT_LABELS[attempt.condition.state];
-  return known ? { ...known, reason: reasonWords(attempt.condition.reasonCode, attempt.kind) } : unknownToken(attempt.condition.state);
 }
 
 export interface Chip {

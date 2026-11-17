@@ -1,12 +1,13 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody } from '../../fixtures/monitoring-bodies';
 import type { RosterV1 } from '../contracts/types';
 import { HostApiError } from '../host';
 import { MAX_ROSTER_PAGES, failureOf, useRoster } from './useRoster';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock('@kirocrew/app-sdk', () => ({ useAppApi: () => client }));
+
+const { rosterBody } = await vi.importActual<typeof import('@kirocrew/app-sdk')>('@kirocrew/app-sdk');
 
 beforeEach(() => client.get.mockReset());
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { rosterBody } from '../../fixtures/monitoring-bodies';
+import { rosterBody } from '@kirocrew/app-sdk';
 import { RosterList } from './RosterList';
 
 const items = rosterBody('default').items;

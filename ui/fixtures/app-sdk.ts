@@ -27,6 +27,8 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
 }
 
 export { DECLARED_API, isPathPermitted };
+export { attemptsBody, rosterBody, setFixtureScenario } from './monitoring-bodies.ts';
+export type { ScenarioName } from './monitoring-bodies.ts';
 
 const client = createFixtureClient(DECLARED_API);
 

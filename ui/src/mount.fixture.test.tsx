@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { setFixtureScenario } from '../fixtures/monitoring-bodies.ts';
+import { setFixtureScenario } from '@kirocrew/app-sdk';
 import SpecterArenaApp from './mount';
 
 describe('release entry against the aliased fixture SDK', () => {

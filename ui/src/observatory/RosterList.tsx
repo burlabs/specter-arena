@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import type { KeyboardEvent, Ref } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
 import { ConditionBadge } from './ConditionBadge';
 import { Initials } from './Initials';
@@ -10,7 +10,6 @@ interface Props {
   selectedId: string | null;
   watched: ReadonlySet<string>;
   watchListFull: boolean;
-  listRef?: Ref<HTMLUListElement>;
   onSelect: (bindingId: string) => void;
   onToggleWatch: (bindingId: string) => void;
 }
@@ -23,7 +22,7 @@ function targetIndex(key: string, index: number, last: number): number | null {
   return null;
 }
 
-export function RosterList({ items, selectedId, watched, watchListFull, listRef, onSelect, onToggleWatch }: Props) {
+export function RosterList({ items, selectedId, watched, watchListFull, onSelect, onToggleWatch }: Props) {
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const [rovingId, setRovingId] = useState<string | null>(null);
   const has = (id: string | null) => id !== null && items.some((item) => item.bindingId === id);
@@ -40,7 +39,7 @@ export function RosterList({ items, selectedId, watched, watchListFull, listRef,
   };
 
   return (
-    <ul className="sa-roster" aria-label="Bots" ref={listRef} onKeyDown={onKeyDown}>
+    <ul className="sa-roster" aria-label="Bots" onKeyDown={onKeyDown}>
       {items.map((item) => {
         const isActive = item.bindingId === activeId;
         const isWatched = watched.has(item.bindingId);

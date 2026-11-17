@@ -15,7 +15,6 @@ const ICONS = {
     </>
   ),
   spark: <path d="m12 3 1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4L12 3Z" />,
-  chevron: <path d="m9 18 6-6-6-6" />,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -2,14 +2,13 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import * as copy from './copy';
 import {
   COVERAGE_STATE_WORDS,
   REASON_WORDS,
-  attemptKindLabel,
   collectorWords,
   noteWords,
   reasonWords,
-  signalWords,
   truncationWords,
 } from './copy';
 
@@ -48,10 +47,37 @@ describe('reason words tripwire', () => {
     expect(reasonWords('made-up-code')).toBe('Reason code: made-up-code');
   });
 
-  it('names the subject of a running attempt', () => {
-    expect(reasonWords('running', 'worker')).toContain('this worker');
-    expect(reasonWords('running', 'bot-turn')).toContain('this turn');
+  it('words a running bot', () => {
     expect(reasonWords('running')).toContain('a turn running');
+  });
+});
+
+describe('user-facing words', () => {
+  const strings = (value: unknown): string[] => {
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap(strings);
+    if (typeof value === 'object' && value !== null) return Object.values(value).flatMap(strings);
+    return [];
+  };
+
+  it('never uses idle, done, finished or succeeded', () => {
+    const { REASON_WORDS: reasons, ...rest } = copy;
+    const sampled = [
+      ...strings(reasons),
+      ...strings(rest),
+      ...['starting', 'running', 'reconnecting', 'paused', 'stopped', 'unavailable', 'odd'].flatMap((state) => [collectorWords(state, null), collectorWords(state, 'paused')]),
+      noteWords('cron-turns-not-observable', null),
+      noteWords('unsupported-store-less-bot', 2),
+      noteWords('other', null),
+      truncationWords(10),
+    ];
+    expect(sampled.length).toBeGreaterThan(60);
+    expect(sampled.filter((text) => /\b(idle|done|finished|succeeded)\b/i.test(text))).toEqual([]);
+  });
+
+  it('words the ended reasons without the Crew event names', () => {
+    expect(REASON_WORDS['ended-row-idle']).toBe("Ended. Crew's row stopped reporting a running turn.");
+    expect(REASON_WORDS['ended-chat-done']).toBe("Ended when Crew's turn-complete event arrived.");
   });
 });
 
@@ -72,11 +98,7 @@ describe('collector, note and other words', () => {
     expect(truncationWords(2000)).toBe('Roster truncated: showing the first 2000 bots. Search narrows only what was loaded.');
   });
 
-  it('labels kinds, signals and coverage states', () => {
-    expect(attemptKindLabel('bot-turn')).toBe('Bot turn');
-    expect(attemptKindLabel('worker')).toBe('Worker');
-    expect(attemptKindLabel('cron')).toBe('cron');
-    expect([signalWords(true), signalWords(false), signalWords(null)]).toEqual(['Yes', 'No', 'Not seen']);
+  it('labels coverage states', () => {
     expect(COVERAGE_STATE_WORDS.gap).toBe('Gap in collection');
   });
 });

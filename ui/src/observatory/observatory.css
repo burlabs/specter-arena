@@ -88,39 +88,12 @@
   border: 0;
 }
 
-.specter-arena-root .sa-eyebrow {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--violet);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
 .specter-arena-root .sa-panel {
   background: linear-gradient(145deg, rgba(38, 29, 55, 0.96), rgba(27, 21, 40, 0.96));
   border: 1px solid rgba(180, 154, 255, 0.14);
   border-radius: 16px;
   box-shadow: 0 18px 48px rgba(7, 4, 13, 0.2);
   padding: 18px;
-}
-
-.specter-arena-root .sa-panel-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
-.specter-arena-root .sa-panel-heading h2 {
-  font-size: 18px;
-}
-
-.specter-arena-root .sa-panel-heading > span {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .specter-arena-root .sa-page {
@@ -442,14 +415,6 @@
 
 .specter-arena-root .sa-status--unknown .sa-status__dot {
   border-style: dashed;
-}
-
-.specter-arena-root .sa-status--ended {
-  color: var(--muted);
-}
-
-.specter-arena-root .sa-status--ended .sa-status__dot {
-  border-radius: 2px;
 }
 
 .specter-arena-root .sa-legend {
