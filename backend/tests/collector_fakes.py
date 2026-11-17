@@ -8,7 +8,8 @@ applies the per-item reject codes the real store documents, so a collector bug s
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Mapping
+import asyncio
+from collections.abc import AsyncIterator, Callable, Mapping
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import dataclass, field
 
@@ -67,6 +68,7 @@ class FakeSleeper:
         self.delays.append(delay)
         if self._clock is not None:
             self._clock.advance(delay)
+        await asyncio.sleep(0)
 
 
 class FixedRandom:
@@ -89,7 +91,7 @@ class GatewayCall:
     credential: str | None
 
 
-FeedScript = list[str | bytes | BaseException]
+FeedScript = list[str | bytes | BaseException | Callable[[], None]]
 JsonAnswer = object | BaseException
 
 
@@ -98,12 +100,15 @@ class _ScriptedFeed:
         self._items = list(items)
 
     async def recv(self) -> str | bytes:
-        if not self._items:
-            raise Transient(SCRIPT_END)
-        item = self._items.pop(0)
-        if isinstance(item, BaseException):
-            raise item
-        return item
+        while self._items:
+            item = self._items.pop(0)
+            if isinstance(item, BaseException):
+                raise item
+            if callable(item):
+                item()
+                continue
+            return item
+        raise Transient(SCRIPT_END)
 
 
 class FakeGateway:
