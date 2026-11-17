@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .attempts import (
+    MAX_ATTEMPTS_PAGE,
     ActivityWindow,
     AttemptsResult,
     AttemptState,
@@ -111,6 +112,7 @@ __all__ = [
     "EVENT_TYPES",
     "Feed",
     "HEARTBEAT_STALE_MS",
+    "MAX_ATTEMPTS_PAGE",
     "IngestBatch",
     "IngestItem",
     "IngestResult",

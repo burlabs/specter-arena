@@ -91,7 +91,6 @@ async def roster(request: Request) -> JSONResponse:
 
 
 _BINDING_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
-ATTEMPTS_PAGE_LIMIT = 50
 
 
 @signed
@@ -115,8 +114,8 @@ async def attempts(request: Request) -> JSONResponse:
     try:
         limit = store_api.clamp_limit(
             int(raw_limit) if raw_limit is not None else None,
-            default=ATTEMPTS_PAGE_LIMIT,
-            maximum=ATTEMPTS_PAGE_LIMIT,
+            default=store_api.MAX_ATTEMPTS_PAGE,
+            maximum=store_api.MAX_ATTEMPTS_PAGE,
         )
     except ValueError:
         return _error("invalid_limit", 400)
