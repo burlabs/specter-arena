@@ -10,7 +10,6 @@ import json
 import logging
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -19,13 +18,12 @@ from backend.specter_arena.collector.gateway import AuthRejected, PolicyClose, T
 from backend.specter_arena.collector.supervisor import State
 from backend.specter_arena.collector.vocabulary import LIMITS
 from backend.specter_arena.store import Store, open_store, recent_quarantine
-from backend.tests.collector_fixtures import row, rows, slots_frame
-from backend.tests.collector_scenarios import SENTINEL, chat_done, slots, until
-from backend.tests.test_collector_store_contract import real, run, table
+from backend.tests.collector_fixtures import row, slots_frame
+from backend.tests.collector_scenarios import DM_A, SENTINEL, chat_done, slots, until
+from backend.tests.test_collector_store_contract import drive, real, run, table
 
 END = Transient("scripted-end")
 CAP = LIMITS.raw_frame_max_chars
-DM_A = rows()["botA"]["key"]
 SEED_PROMPT = "SEED-PROMPT-TEXT-1"
 SEED_SECRET = "SEED-SECRET-LOOKING-VALUE"
 
@@ -43,16 +41,6 @@ def padded_chat_done(length: int) -> str:
     """A chat_done frame whose raw JSON text is exactly `length` characters."""
     shell = json.dumps({"type": "chat_done", "data": {"slot": DM_A, "turn": 2, "pad": ""}})
     return shell.replace('"pad": ""', '"pad": "' + "p" * (length - len(shell)) + '"')
-
-
-def drive(harness: Any) -> None:
-    async def scenario() -> None:
-        assert await harness.collector.begin()
-        await harness.collector.feed_once()
-        await harness.collector.flush()
-        await harness.collector.stop()
-
-    run(scenario())
 
 
 def test_a_frame_at_the_cap_is_kept_and_one_character_over_is_quarantined(store: Store) -> None:

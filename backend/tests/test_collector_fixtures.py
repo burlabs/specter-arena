@@ -12,6 +12,7 @@ from backend.tests.collector_fixtures import (
     event_types,
     rows,
 )
+from backend.tests.collector_scenarios import DM_A, DM_B
 
 RECORDED = Path(__file__).resolve().parents[2] / "tests" / "recorded" / "crew-0.12.2"
 CAPTURE = json.loads((RECORDED / "s1-v1-event-capture.json").read_text(encoding="utf-8"))["_meta"]
@@ -50,3 +51,7 @@ def test_the_twelve_other_types_add_up_to_the_capture_other_bucket() -> None:
     for name, count in types.items():
         if name in CAPTURE["framesSeen"]:
             assert count == CAPTURE["framesSeen"][name], name
+
+
+def test_fixture_bot_keys_equal_the_scenario_builders_keys() -> None:
+    assert rows()["botA"]["key"] == DM_A and rows()["botB"]["key"] == DM_B
