@@ -30,7 +30,7 @@ export function AttemptsList({ items, hasOlder, loadingOlder, olderFailed, onLoa
                   <ConditionBadge view={view} />
                 </div>
                 <p>{view.reason}</p>
-                <p className="sa-facts">
+                <p>
                   First seen <Time ms={attempt.startedMs} />.{' '}
                   {attempt.endedMs === null ? 'Still open.' : (
                     <>

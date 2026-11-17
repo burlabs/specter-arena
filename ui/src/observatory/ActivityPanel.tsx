@@ -13,7 +13,7 @@ function Window({ title, label, window }: { title: string; label: '24 h' | '7 d'
   return (
     <section className="sa-card" aria-label={`Last ${title}`}>
       <h3>{`Last ${title}`}</h3>
-      <p className="sa-facts">
+      <p>
         From <Time ms={window.fromMs} /> to <Time ms={window.toMs} />
       </p>
       <p>{coverageSentence(window, label)}</p>
