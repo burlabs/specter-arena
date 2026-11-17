@@ -2,11 +2,25 @@ import json
 from pathlib import Path
 from typing import Any
 
+from backend.specter_arena.config import read_grants
+
 MANIFEST_PATH = Path(__file__).resolve().parents[2] / "app.json"
 
 IDENTITY_FIELDS = {"name", "version", "displayName", "description", "minKiroCrewVersion"}
 BACKEND_FIELDS = {"entryPoint", "type", "healthCheck", "routes"}
 OWN_NAMESPACE_API = "/apps/specter-arena/api/*"
+AGENTS_API_ENTRY = "/api/agents"
+SLOTS_EVENT = "slots:user"
+DENIED_API_PATHS = (
+    "/api/usage",
+    "/api/usage/turns",
+    "/api/sessions/usage",
+    "/api/members",
+    "/api/members/probe",
+    "/api/chat/slots",
+    "/api/member-records",
+    "/api/member-records/probe",
+)
 FORBIDDEN_TOP_LEVEL = {"crons", "agents", "signedPrincipal"}
 
 
@@ -40,9 +54,27 @@ def test_backend_section_matches_the_crew_runtime_contract() -> None:
     }
 
 
-def test_manifest_declares_only_the_own_namespace_api_permission() -> None:
+def test_manifest_declares_exactly_the_d_p9_grants() -> None:
     # The SDK rejects any path not listed here, including the app's own proxy namespace.
-    assert load_manifest()["permissions"] == {"api": [OWN_NAMESPACE_API]}
+    assert load_manifest()["permissions"] == {
+        "api": [OWN_NAMESPACE_API, AGENTS_API_ENTRY],
+        "events": [SLOTS_EVENT],
+    }
+
+
+def test_no_grant_reaches_usage_members_chat_slots_or_member_records() -> None:
+    grants = read_grants(MANIFEST_PATH)
+    assert grants.basis == "manifest" and grants.missing() == ()
+    for path in DENIED_API_PATHS:
+        assert not grants.has_api(path), path
+    assert grants.events == frozenset({SLOTS_EVENT})
+    assert not grants.has_event("subagent:user")
+
+
+def test_the_own_namespace_entry_comes_first_and_the_api_list_has_no_duplicates() -> None:
+    api = load_manifest()["permissions"]["api"]
+    assert api[0] == OWN_NAMESPACE_API
+    assert len(api) == len(set(api))
 
 
 def test_own_namespace_permission_matches_the_page_call_paths() -> None:

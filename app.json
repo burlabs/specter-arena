@@ -12,7 +12,11 @@
   },
   "permissions": {
     "api": [
-      "/apps/specter-arena/api/*"
+      "/apps/specter-arena/api/*",
+      "/api/agents"
+    ],
+    "events": [
+      "slots:user"
     ]
   },
   "ui": {

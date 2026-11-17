@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 
 from backend.specter_arena import wire
-from backend.specter_arena.collector.gateway import Transient
+from backend.specter_arena.collector.gateway import AuthRejected, PolicyClose, Transient
 from backend.specter_arena.collector.parse import (
     EVENT_PAYLOAD_KEYS as PARSE_EVENT_KEYS,
 )
@@ -31,6 +31,7 @@ from backend.tests.collector_scenarios import (
     DM_B,
     KEY_A,
     KEY_B,
+    NARROWED,
     SENTINEL,
     WORKER_1,
     agent_row,
@@ -361,3 +362,59 @@ def test_pause_and_resume_write_the_real_flag_and_the_paused_close(store: Store)
         await harness.collector.stop()
 
     run(scenario())
+
+
+def stopped_run(store: Store, reason: str, **options: Any) -> Any:
+    harness = real(store, **options)
+
+    async def scenario() -> None:
+        await harness.collector.start()
+        await harness.collector.wait_closed()
+
+    run(scenario())
+    assert harness.collector.status().reason_code == reason
+    return harness
+
+
+def assert_closed_with(store: Store, reason: str) -> None:
+    assert table(store, "SELECT end_reason FROM collector_run") == [(reason,)]
+    open_gap = "SELECT reason FROM coverage_interval WHERE state='gap' AND end_ms IS NULL"
+    assert table(store, open_gap) == [(reason,)]
+    open_covered = "SELECT 1 FROM coverage_interval WHERE state='covered' AND end_ms IS NULL"
+    assert table(store, open_covered) == []
+
+
+def test_close_1008_ends_the_real_run_with_app_disabled(store: Store) -> None:
+    stopped_run(store, "app-disabled", feeds=[[slots(bot_row()), PolicyClose()]])
+    assert_closed_with(store, "app-disabled")
+
+
+def test_a_second_403_ends_the_real_run_with_auth_stopped(store: Store) -> None:
+    stopped_run(
+        store,
+        "auth-stopped",
+        feeds=[[slots(bot_row()), AuthRejected(403)], AuthRejected(403)],
+    )
+    assert_closed_with(store, "auth-stopped")
+
+
+def test_a_manifest_that_loses_a_grant_ends_the_real_run_with_scope_lost_or_silent(
+    store: Store,
+) -> None:
+    harness = real(store, feeds=[[slots(bot_row())]], holding=True, answers={"/api/agents": [[]]})
+
+    async def scenario() -> None:
+        await harness.collector.start()
+        while not table(store, "SELECT 1 FROM observation"):
+            await asyncio.sleep(0.001)
+        harness.grants_now[0] = NARROWED
+        await harness.collector._guarded(harness.collector.poll_roster)
+        await harness.collector.wait_closed()
+
+    run(scenario())
+    reason = "scope-lost-or-silent"
+    assert harness.collector.status().reason_code == reason
+    assert table(store, "SELECT end_reason FROM collector_run") == [(reason,)]
+    assert table(
+        store, "SELECT reason, end_ms IS NULL FROM coverage_interval WHERE state='gap'"
+    ) == [(reason, 1)]

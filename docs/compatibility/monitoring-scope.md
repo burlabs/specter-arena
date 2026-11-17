@@ -25,7 +25,7 @@ Product scope, narrowed by Eric on 2026-11-13, is three things per bot: the bot'
 
 Proven (ALLOWED, `APP-TOKEN` evidence):
 
-- `bot-id-observable`: the bot's own thread appears in `slots:user` rows under a key of the form `member-<slug>`, which identifies the bot. Stability across a rename is not proven (`bot-id-stable-across-rename` is UNTESTED).
+- `bot-id-observable`: the bot's own thread appears in `slots:user` rows under a key of the form `member-<member_id>[.memory-<memory_store>]` on Crew 0.12.2, where `member_id` is the slug or `<slug first 48 characters>-<12 hex>` and `memory_store` is the bot's private memory store. The key identifies the bot. Stability across a rename is not proven (`bot-id-stable-across-rename` is UNTESTED); see "Pass 2 decisions".
 - `bot-own-session-attribution`: that thread's row carries the key and an `agent` field, so the thread is attributable to the bot.
 - `bot-list-via-agents`: `GET /api/agents` returns the bot's row.
 - `bot-name-avatar`: that row carries `name`, `display_name` and `avatar`, which covers the bot-name part of the scope.
@@ -63,7 +63,7 @@ XP stays tied to attributable accepted outcomes (product invariant 3, unchanged)
 
 ### 3. Unbound sessions (PA1-D2, FD-30)
 
-Bots only. The app keeps a bot's own thread (key `member-<slug>`, optionally with a `.memory-` suffix; see `bot-id-observable`) and sessions whose `created_by` chain reaches one. Every other session received through `slots:user` is dropped at collection time and is never stored or shown. Plain chats and agents with no bot are out of scope.
+Bots only. The app keeps a bot's own thread (key `member-<member_id>.memory-<memory_store>`; see `bot-id-observable`) and sessions whose `created_by` equals the bot's own slot key exactly. A deeper `created_by` chain is not followed. Every other session received through `slots:user` is dropped at collection time and is never stored or shown. Plain chats and agents with no bot are out of scope.
 
 ### 4. Arena on a bot dashboard (PA1-D5, FD-31)
 
@@ -78,3 +78,35 @@ FP-10 owns the live probe of both the write and the ungranted refusal, and owns 
 The approved scope is native, bot-level monitoring of bot name, tasks or spawned work, and (only if proven) tokens as an operational stat, restricted to bots. It supports a demo built on bot identity and name today (`bot-id-observable`, `bot-name-avatar`). Task and spawned-work display depends on the FP-03 opening probe above.
 
 FP-03 monitoring implementation is UNBLOCKED within this scope only.
+
+## Pass 2 decisions
+
+These record what the Pass 2 collector (FP-02+03) keeps and what it does not know. The status header above is unchanged.
+
+### Grants (D-P9)
+
+The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone.
+
+### Bot identity (D-P10)
+
+1. A binding is `member_id` plus `memory_store`, taken from the DM slot key, scoped to one installation. Two generations never share a key, so a delete-and-recreate under the same name is a second binding and is never merged.
+2. `/api/agents` rows join to bindings by exact `memory_store`, never by name. Only `scope == "global"` rows count. The `agent` field of a slot row is a diagnostic and is not used to join.
+3. A rename is a new display revision of the same binding. A bot that leaves `/api/agents` becomes absent and keeps its history; a bot that reappears under the same key reuses its binding.
+4. A bot with no private memory store (a `member-<id>` key without `.memory-`) is not bound. The roster reports how many were seen as the note `unsupported-store-less-bot`.
+5. A worker session belongs to a bot only when its `created_by` equals that bot's slot key exactly. Nothing is attributed by name, prefix or a longer chain.
+
+### What the collector keeps
+
+The bot's name, display name, avatar kind and file or id, condition facts (running, turn, flags, timestamps) and per-event counters. It keeps no title, message, prompt, path, tool input or avatar trait, and it never reads `/api/members/*`. Rows for sessions that do not belong to a bound bot are dropped at collection time.
+
+### Accepted gaps (D-P11)
+
+No probe sitting was held for Pass 2. These stay UNTESTED and the first live check is the owner acceptance sitting (OA-1):
+
+- `bot-id-stable-across-rename`: the design assumes the key survives a rename; this is read from source only.
+- `closed-tab-collection`: collection with the arena tab closed is exercised by tests with no page involved, not by a live run.
+- `bot-delete-behaviour` and replacement: what the feed and `/api/agents` show after a delete and recreate.
+- Narrow-grant delivery: whether `slots:user` alone delivers rows under the D-P9 grant set (the S1-v1 run used a broad owner grant).
+- Approval signals, tool errors and `spawn_run` subagent attribution: not collected in Pass 2.
+- Gateway restart behaviour and an open socket outliving its token (worst case, one counted coverage gap per hour).
+- Cron-origin (scheduled) turns are not delivered under `slots:user`, so they are invisible. Every roster response carries the standing note `cron-turns-not-observable`. A bot whose DM thread was never opened has no slot and is not on the roster.

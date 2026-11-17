@@ -27,6 +27,14 @@ class StoreRuntime:
         self._store: Any | None = None
         self._status: Any | None = None
 
+    @property
+    def store(self) -> Any | None:
+        """The open store, or None while closed, failed or under the probe switch.
+
+        Read-only: the collector and the roster route use it; nothing else may.
+        """
+        return self._store
+
     def _store_module(self) -> ModuleType:
         return importlib.import_module(".store", __package__)
 
