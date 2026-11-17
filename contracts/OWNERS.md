@@ -9,11 +9,11 @@ Status `DRAFT` means the shape may still change in place. `FROZEN` means it chan
 | `api-error` | 1 | crew-integration | FROZEN | Error bodies of app routes; UI and tests |
 | `page` | 1 | work-ledger | FROZEN | Keyset-paged lists from the store; UI |
 | `ready` | 1 | crew-integration | FROZEN | `GET /api/ready`; UI and the readiness check |
-| `bot-binding` | 1 | work-ledger | DRAFT | Binding records from the store; FP-05 references `definitions.bindingId` |
-| `quarantine-record` | 1 | work-ledger | DRAFT | Redacted summary of a frame the collector would not trust; diagnostics |
-| `observation` | 1 | crew-integration | DRAFT | Built by the collector, persisted by the store; parity test |
-| `roster-item` | 1 | crew-integration | DRAFT | One bot in `GET /api/roster`; FP-04 UI |
-| `roster` | 1 | crew-integration | DRAFT | `GET /api/roster`; FP-04 UI |
+| `bot-binding` | 1 | work-ledger | DRAFT | Binding records from the store (`bot_binding_to_wire`); no route emits it yet; FP-05 references `definitions.bindingId` |
+| `quarantine-record` | 1 | work-ledger | DRAFT | Redacted summary of a frame the collector would not trust (`quarantine_record_to_wire`); no route emits it yet |
+| `observation` | 1 | crew-integration | DRAFT | Built by the collector (`wire.to_wire`), persisted by the store; no wire reader outside tests yet |
+| `roster-item` | 1 | crew-integration | DRAFT | One bot in `GET /api/roster` (route merged); FP-04 UI is the first consumer |
+| `roster` | 1 | crew-integration | DRAFT | `GET /api/roster` (route merged); FP-04 UI is the first consumer |
 
 ## Rules for schema authors
 

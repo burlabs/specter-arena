@@ -24,12 +24,12 @@ Planned 2026-11-16 (parent #66). Slices in dependency order; each is one reviewa
 - [x] CI-6 crew-integration (#71, PR #87): condition rules, roster view, wire readers
 - [x] WL-5 work-ledger (#72, PR #84): `0003` observations and coverage, ingest, runs, coverage marks, pause flag
 - [x] CI-7b crew-integration (#73, PR #88): gateway client, grant self-check, collector fakes, no-fallback guard
-- [ ] CI-7c crew-integration (#74): collector supervisor
-- [ ] WL-6 work-ledger (#75): `0004` projections, rebuild, roster read
-- [ ] DEL-8 delivery (#76): collector load tests, fixtures, parity (after CI-7c)
-- [ ] CI-8 crew-integration (#77): collector wiring, roster route, release grants, monitoring scope
-- [x] DEL-6 delivery (#78): Pass 2 spec rows and doc upkeep (this change)
-- [ ] DEL-9 delivery (#79): producer meta-test and closeout (after CI-8 and WL-6)
+- [x] CI-7c crew-integration (#74, PR #91): collector supervisor, auth and stop, coverage marks, real-store contract test
+- [x] WL-6 work-ledger (#75, PR #90): `0004` projection and attempt, fold, rebuild, roster read, bot-binding and quarantine-record wire entries
+- [x] DEL-8 delivery (#76, PR #93): collector load and limits tests, fixtures, reader parity
+- [x] CI-8 crew-integration (#77, PR #92): collector boot, lifespan wiring, roster route, release grants, monitoring scope
+- [x] DEL-6 delivery (#78, PR #89): Pass 2 spec rows and doc upkeep
+- [x] DEL-9 delivery (#79): producer meta-test and closeout (this change)
 - [ ] OA-1 owner (#80): acceptance sitting for FP-03-AC01 and FP-03-AC05 with the collector merged
 
 Deferred (D-P8): `spawn_run` attribution, approval frames, history reconstruction after a gap, the 30-minute soak and the Python 3.12 store re-measure.
