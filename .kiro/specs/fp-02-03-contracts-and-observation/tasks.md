@@ -30,6 +30,6 @@ Planned 2026-11-16 (parent #66). Slices in dependency order; each is one reviewa
 - [x] CI-8 crew-integration (#77, PR #92): collector boot, lifespan wiring, roster route, release grants, monitoring scope
 - [x] DEL-6 delivery (#78, PR #89): Pass 2 spec rows and doc upkeep
 - [x] DEL-9 delivery (#79): producer meta-test and closeout (this change)
-- [ ] OA-1 owner (#80): acceptance sitting for FP-03-AC01 and FP-03-AC05 with the collector merged
+- [x] OA-1 owner (#80): acceptance sitting PASSED on 2026-11-16 (Crew 0.12.2, release grants): narrow-grant delivery, closed-tab collection (FP-03-AC01), rename and delete-and-recreate (FP-03-AC05); record in #66 and `docs/compatibility/monitoring-scope.md`
 
 Deferred (D-P8): `spawn_run` attribution, approval frames, history reconstruction after a gap, the 30-minute soak and the Python 3.12 store re-measure.

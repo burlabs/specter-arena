@@ -25,7 +25,7 @@ Product scope, narrowed by Eric on 2026-11-13, is three things per bot: the bot'
 
 Proven (ALLOWED, `APP-TOKEN` evidence):
 
-- `bot-id-observable`: the bot's own thread appears in `slots:user` rows under a key of the form `member-<member_id>[.memory-<memory_store>]` on Crew 0.12.2, where `member_id` is the slug or `<slug first 48 characters>-<12 hex>` and `memory_store` is the bot's private memory store. The key identifies the bot. Stability across a rename is not proven (`bot-id-stable-across-rename` is UNTESTED); see "Pass 2 decisions".
+- `bot-id-observable`: the bot's own thread appears in `slots:user` rows under a key of the form `member-<member_id>[.memory-<memory_store>]` on Crew 0.12.2, where `member_id` is the slug or `<slug first 48 characters>-<12 hex>` and `memory_store` is the bot's private memory store. The key identifies the bot. Stability across a rename is owner-attested by OA-1 for the release app; the probe cell `bot-id-stable-across-rename` stays UNTESTED in the matrix. See "Pass 2 decisions".
 - `bot-own-session-attribution`: that thread's row carries the key and an `agent` field, so the thread is attributable to the bot.
 - `bot-list-via-agents`: `GET /api/agents` returns the bot's row.
 - `bot-name-avatar`: that row carries `name`, `display_name` and `avatar`, which covers the bot-name part of the scope.
@@ -99,14 +99,23 @@ The release manifest grants exactly one event, `slots:user`, and two api entries
 
 The bot's name, display name, avatar kind and file or id, condition facts (running, turn, flags, timestamps) and per-event counters. It keeps no title, message, prompt, path, tool input or avatar trait, and it never reads `/api/members/*`. Rows for sessions that do not belong to a bound bot are dropped at collection time.
 
-### Accepted gaps (D-P11)
+### Owner-attested by OA-1 (2026-11-16, Crew 0.12.2, release grants)
 
-No probe sitting was held for Pass 2. These stay UNTESTED and the first live check is the owner acceptance sitting (OA-1):
+Eric ran the owner acceptance sitting (OA-1, #80) against the release app built from main `3e7dc25`, with only the D-P9 grants, and read four `GET /api/roster` bodies. Record: https://github.com/burlabs/specter-arena/issues/66#issuecomment-6937679089. The collector stayed `running`, coverage read `covered` throughout with no gaps, and the `cron-turns-not-observable` note was present. This is owner-attested product evidence; the probe cells in `capability-matrix.json` keep their APP-TOKEN states.
 
-- `bot-id-stable-across-rename`: the design assumes the key survives a rename; this is read from source only.
-- `closed-tab-collection`: collection with the arena tab closed is exercised by tests with no page involved, not by a live run.
-- `bot-delete-behaviour` and replacement: what the feed and `/api/agents` show after a delete and recreate.
-- Narrow-grant delivery: whether `slots:user` alone delivers rows under the D-P9 grant set (the S1-v1 run used a broad owner grant).
+- Narrow-grant delivery (D-P9): bot DM rows and their lifecycle reach the app under `slots:user` alone. A throwaway bot went `working`, then `settled`.
+- Closed-tab collection (FP-03-AC01): a 180 s shell turn finished while every Crew tab was closed, and the roster showed it `settled` with source and observed times from inside the closed window.
+- Rename stability (FP-03-AC05): after a display-name change the bot kept the same binding, and the roster showed the new display name.
+- Delete and recreate (FP-03-AC05): the recreated bot got a second binding; the old binding read `absent` with its history kept. Two earlier generations of the probe bot also stayed separate bindings, both `absent`.
+- Absent bots read condition `unknown` (`presence-absent`), never `working` or `settled`.
+
+### Accepted gaps (D-P11), still unproven live
+
+No probe sitting was held for Pass 2, and OA-1 did not exercise these:
+
+- Worker attribution under the narrow grant: no worker session was started during OA-1, so `workers` stayed 0. Direct `created_by` attribution is tested offline only.
 - Approval signals, tool errors and `spawn_run` subagent attribution: not collected in Pass 2.
 - Gateway restart behaviour and an open socket outliving its token (worst case, one counted coverage gap per hour).
-- Cron-origin (scheduled) turns are not delivered under `slots:user`, so they are invisible. Every roster response carries the standing note `cron-turns-not-observable`. A bot whose DM thread was never opened has no slot and is not on the roster.
+- Cron-origin (scheduled) turns are not delivered under `slots:user`, so they are invisible. Every roster response carries the standing note `cron-turns-not-observable`.
+- A bot whose DM thread was never opened has no slot and is not on the roster (OA-1 saw this for two such bots, as designed).
+- Whether reinstalling shows a consent screen for the new grants was not reported.
