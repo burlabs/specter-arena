@@ -5,6 +5,9 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
+// Measured bundle length at this PR's last commit, times 1.25, rounded up to the next 1,000.
+const BUNDLE_BUDGET_CHARS = 45_000;
+
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
 
@@ -53,7 +56,13 @@ describe('library build', () => {
   it('does not inline React or embed local paths', () => {
     expect(bundle).not.toMatch(/__CLIENT_INTERNALS|__SECRET_INTERNALS|react\.transitional\.element|jsxDEV/);
     expect(bundle).not.toContain(fileURLToPath(new URL('..', import.meta.url)));
-    expect(bundle.length).toBeLessThan(6_000);
+    expect(bundle.length).toBeLessThan(BUNDLE_BUDGET_CHARS);
+  });
+
+  it('ships its scoped stylesheet as a string and no CSS import', () => {
+    expect(bundle).toContain('data-specter-arena');
+    expect(bundle).toContain('.specter-arena-root');
+    expect(bundle).not.toContain('@import');
   });
 
   it('carries no fixture or diagnostic marker', () => {

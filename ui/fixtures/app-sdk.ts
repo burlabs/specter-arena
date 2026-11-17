@@ -2,6 +2,7 @@
 // harness through a bundler alias. The library build leaves the real module external, so
 // this file never reaches ui/dist.
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
+import { monitoringResponse } from './monitoring-bodies.ts';
 
 export const FIXTURE_SDK_LABEL = 'SPECTER-FIXTURE-ONLY: fixture app-sdk, not the Crew host';
 
@@ -20,12 +21,14 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
         new Error(`[app-sdk] App "specter-arena" not permitted to access ${pathname}. Declared: [${declared.join(', ')}]`),
       );
     }
-    return Promise.resolve(CANNED_RESPONSE);
+    return monitoringResponse(pathname) ?? Promise.resolve(CANNED_RESPONSE);
   };
   return { get: (path) => guard(path), post: (path) => guard(path) };
 }
 
 export { DECLARED_API, isPathPermitted };
+export { attemptsBody, rosterBody, setFixtureScenario } from './monitoring-bodies.ts';
+export type { ScenarioName } from './monitoring-bodies.ts';
 
 const client = createFixtureClient(DECLARED_API);
 

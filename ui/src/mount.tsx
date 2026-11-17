@@ -1,4 +1,4 @@
-import { StubShell } from './StubShell';
+import { ObservatoryPage } from './observatory/ObservatoryPage';
 
 /**
  * Release entry. The Crew dashboard imports this module and renders the default export
@@ -6,5 +6,5 @@ import { StubShell } from './StubShell';
  * and 19, because the host supplies React and its major version is not pinned here.
  */
 export default function SpecterArenaApp() {
-  return <StubShell />;
+  return <ObservatoryPage />;
 }

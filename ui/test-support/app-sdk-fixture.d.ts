@@ -1,0 +1,7 @@
+// Test-only view of the aliased fixture SDK: the real host module exports only useAppApi.
+declare module '@kirocrew/app-sdk' {
+  export type ScenarioName = import('../fixtures/monitoring-bodies.ts').ScenarioName;
+  export function setFixtureScenario(name: ScenarioName | null): void;
+  export function rosterBody(name: ScenarioName): import('../src/contracts/types').RosterV1;
+  export function attemptsBody(name: ScenarioName, bindingId: string): import('../src/contracts/types').AttemptsV1 | null;
+}

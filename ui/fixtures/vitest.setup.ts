@@ -2,6 +2,7 @@
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { installHostModules } from './host-modules.ts';
+import { setFixtureScenario } from './monitoring-bodies.ts';
 
 let teardown: (() => void) | undefined;
 
@@ -11,7 +12,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (typeof window !== 'undefined') cleanup();
+  if (typeof window !== 'undefined') {
+    cleanup();
+    window.localStorage.clear();
+  }
+  setFixtureScenario(null);
   teardown?.();
   teardown = undefined;
 });
