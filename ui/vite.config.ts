@@ -23,6 +23,7 @@ export default defineConfig({
   test: {
     root: fromUi('.'),
     environment: 'jsdom',
+    css: { include: [/observatory\.css/] },
     alias: { '@kirocrew/app-sdk': fromUi('./fixtures/app-sdk.ts') },
     include: ['src/**/*.test.{ts,tsx}', 'fixtures/**/*.test.ts'],
     setupFiles: [fromUi('./fixtures/vitest.setup.ts')],
