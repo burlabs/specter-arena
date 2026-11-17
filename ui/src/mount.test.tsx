@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
+import { rosterBody } from '../fixtures/monitoring-bodies.ts';
 import * as entry from './mount';
 import SpecterArenaApp from './mount';
+import { ROSTER_PATH, attemptsPath, rosterPath } from './host/paths';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
@@ -10,6 +12,7 @@ vi.mock('@kirocrew/app-sdk', () => ({ useAppApi: () => client }));
 
 beforeEach(() => {
   client.get.mockReset();
+  client.post.mockReset();
 });
 
 describe('release entry', () => {
@@ -18,35 +21,29 @@ describe('release entry', () => {
     expect(Object.keys(entry)).toEqual(['default']);
   });
 
-  it('renders the stub shell before any check', () => {
+  it('renders the observatory heading and a loading status before the roster arrives', () => {
+    client.get.mockReturnValue(new Promise(() => undefined));
     render(<SpecterArenaApp />);
     expect(screen.getByRole('heading', { level: 1, name: 'Specter Arena' })).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'Specter Arena' }).textContent).toContain('No product features yet.');
-    expect(screen.getByRole('status').textContent).toBe('Backend connection not checked.');
+    expect(screen.getByRole('status').textContent).toBe('Loading bots…');
   });
 
-  it('shows the ping time when the backend answers', async () => {
-    client.get.mockResolvedValue({ ok: true, at: '2000-01-01T00:00:00Z' });
+  it('renders a roster read through the host client', async () => {
+    client.get.mockResolvedValue(new Response(JSON.stringify(rosterBody('default'))));
     render(<SpecterArenaApp />);
-    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
-    expect((await screen.findByRole('status')).textContent).toBe('Backend reachable at 2000-01-01T00:00:00Z.');
-    expect(client.get).toHaveBeenCalledWith('/apps/specter-arena/api/ping');
-    expect(isPathPermitted(DECLARED_API, '/apps/specter-arena/api/ping')).toBe(true);
+    expect(await screen.findByText('Atlas')).toBeTruthy();
+    expect(client.get).toHaveBeenCalledWith(rosterPath(200, null));
+    expect(client.post).not.toHaveBeenCalled();
   });
 
-  it('shows the error text when the check fails', async () => {
-    client.get.mockRejectedValue(new Error('app_not_enabled'));
+  it('shows the offline state when the host client rejects', async () => {
+    client.get.mockRejectedValue(new TypeError('Failed to fetch'));
     render(<SpecterArenaApp />);
-    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
-    expect((await screen.findByText(/Backend check failed/)).textContent).toBe(
-      'Backend check failed: app_not_enabled',
-    );
+    expect((await screen.findByRole('alert')).textContent).toContain('Could not reach the app backend');
   });
 
-  it('stringifies a non-Error rejection', async () => {
-    client.get.mockRejectedValue('plain failure');
-    render(<SpecterArenaApp />);
-    fireEvent.click(screen.getByRole('button', { name: 'Check backend connection' }));
-    expect((await screen.findByText(/Backend check failed/)).textContent).toBe('Backend check failed: plain failure');
+  it('only calls paths the manifest permits', () => {
+    expect(isPathPermitted(DECLARED_API, ROSTER_PATH)).toBe(true);
+    expect(isPathPermitted(DECLARED_API, attemptsPath('bnd_1').split('?')[0] ?? '')).toBe(true);
   });
 });

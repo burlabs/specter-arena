@@ -98,3 +98,11 @@ export const LEGEND: ReadonlyArray<{ term: string; meaning: string }> = [
   { term: 'Waiting on you', meaning: 'Not observable yet. Crew does not report this to apps, so the app does not guess it.' },
   { term: 'Blocked', meaning: 'Not observable yet. Crew does not report this to apps, so the app does not guess it.' },
 ];
+
+export const FAILURE_COPY = {
+  offline: { title: 'Could not reach the app backend', body: 'Check that the app is enabled in Crew, then retry.' },
+  expired: { title: 'Session expired', body: 'Reload the page to sign in to the app again.' },
+  'store-not-ready': { title: 'Collector store is not ready yet', body: 'The app is still starting. Retry in a moment.' },
+  'store-unavailable': { title: "The app's database is unavailable", body: 'Collection is not saving data. Retry, or restart the app.' },
+  unknown: { title: 'Unexpected reply from the app backend', body: 'Retry. If it persists, reload.' },
+} as const;
