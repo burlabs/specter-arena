@@ -71,6 +71,7 @@ def make_row(**overrides: object) -> RosterRow:
         last_observed_ms=1_760_000_000_500,
         workers_running=1,
         workers_seen=3,
+        workers_unknown=1,
     )
     return replace(base, **overrides)  # type: ignore[arg-type]
 
@@ -112,7 +113,7 @@ def test_item_maps_every_field_and_validates() -> None:
             "openGapCount": 0,
         },
         "lastObservedAtMs": 1_760_000_000_500,
-        "workers": {"running": 1, "seen": 3},
+        "workers": {"running": 1, "seen": 3, "unknown": 1},
     }
 
 

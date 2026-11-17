@@ -226,13 +226,13 @@ def test_rule_5_workers_count_only_while_covered_and_seen_in_the_interval(store:
     run(store, row(store, 1, T0 + 3, slot="chat-2", **worker))
     run(store, row(store, 1, T0 + 4, slot="chat-2", running=False, **worker))
     (only,) = page(store, T0 + 5).items
-    assert (only.workers_running, only.workers_seen) == (1, 2)
+    assert (only.workers_running, only.workers_seen, only.workers_unknown) == (1, 2, 0)
     run(store, CoverageMark("close", T0 + 6, "disconnect"))
     (gapped,) = page(store, T0 + 7).items
-    assert (gapped.workers_running, gapped.workers_seen) == (0, 2)
+    assert (gapped.workers_running, gapped.workers_seen, gapped.workers_unknown) == (0, 2, 1)
     run(store, CoverageMark("open-covered", T0 + 100))
     (reopened,) = page(store, T0 + 101).items
-    assert reopened.workers_running == 0
+    assert (reopened.workers_running, reopened.workers_unknown) == (0, 1)
 
 
 # Row content -----------------------------------------------------------------------------------

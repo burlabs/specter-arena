@@ -63,3 +63,7 @@ class InvalidCursor(StoreError, ValueError):
 
 class UnknownRun(StoreError):
     code = "unknown-run"
+
+
+class UnknownBinding(StoreError):
+    code = "unknown-binding"

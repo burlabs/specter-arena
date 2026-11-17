@@ -20,6 +20,7 @@ from .validate import is_time_ms
 
 CoverageState = Literal["covered", "gap", "unknown"]
 HEARTBEAT_STALE_REASON = "heartbeat-stale"
+NO_CUT = 2**62
 
 
 def roster_revision(store: Store) -> int:
@@ -28,7 +29,7 @@ def roster_revision(store: Store) -> int:
         return int(conn.execute("SELECT revision FROM collector_setting").fetchone()[0])
 
 
-class _Feed:
+class Feed:
     """The collector feed's coverage at `as_of_ms`, from its newest run (read rule 1)."""
 
     __slots__ = ("covered_since_ms", "open_gap_count", "reason", "since_ms", "state")
@@ -51,13 +52,13 @@ class _Feed:
         return CoverageView(self.state, self.reason, self.since_ms, self.open_gap_count)
 
 
-def _feed_coverage(conn: sqlite3.Connection, as_of_ms: int) -> _Feed:
+def feed_coverage(conn: sqlite3.Connection, as_of_ms: int) -> Feed:
     run = conn.execute(
         "SELECT run_id, last_heartbeat_ms, (SELECT count(*) FROM collector_run) FROM collector_run"
         " ORDER BY started_ms DESC, rowid DESC LIMIT 1"
     ).fetchone()
     if run is None:
-        return _Feed("unknown", None, None, 0, None)
+        return Feed("unknown", None, None, 0, None)
     run_id, heartbeat_ms, run_count = run
     covered = conn.execute(
         "SELECT start_ms FROM coverage_interval"
@@ -66,19 +67,26 @@ def _feed_coverage(conn: sqlite3.Connection, as_of_ms: int) -> _Feed:
     ).fetchone()
     if covered is not None:
         if as_of_ms - heartbeat_ms > HEARTBEAT_STALE_MS:
-            return _Feed("unknown", HEARTBEAT_STALE_REASON, heartbeat_ms, 0, None)
-        return _Feed("covered", None, covered[0], 0, covered[0])
+            return Feed("unknown", HEARTBEAT_STALE_REASON, heartbeat_ms, 0, None)
+        return Feed("covered", None, covered[0], 0, covered[0])
     gap = conn.execute(
         "SELECT start_ms, reason FROM coverage_interval"
         " WHERE run_id = ? AND state = 'gap' AND end_ms IS NULL",
         (run_id,),
     ).fetchone()
     if gap is not None:
-        return _Feed("gap", gap[1], gap[0], 1, None)
-    return _Feed("unknown", "restart" if run_count > 1 else None, None, 0, None)
+        return Feed("gap", gap[1], gap[0], 1, None)
+    return Feed("unknown", "restart" if run_count > 1 else None, None, 0, None)
 
 
-def _bot_coverage(feed: _Feed, last_seen_ms: int | None) -> CoverageView:
+def staleness_cut(feed: Feed) -> int:
+    """The oldest `slot_seen.last_seen_ms` that still counts as fresh; `NO_CUT` when none does."""
+    if feed.state == "covered" and feed.covered_since_ms is not None:
+        return feed.covered_since_ms
+    return NO_CUT
+
+
+def _bot_coverage(feed: Feed, last_seen_ms: int | None) -> CoverageView:
     """Read rules 2 and 3: a covered feed still has to have shown this bot's DM slot."""
     if feed.state != "covered" or feed.covered_since_ms is None:
         return feed.view()
@@ -111,7 +119,11 @@ SELECT b.binding_seq, b.binding_id,
   (SELECT count(*) FROM attempt a JOIN slot_seen k
        ON k.binding_id = a.binding_id AND k.slot_key = a.slot_key
      WHERE a.binding_id = b.binding_id AND a.kind = 'worker' AND a.running = 1
-       AND k.last_seen_ms >= ?)
+       AND k.last_seen_ms >= ?),
+  (SELECT count(*) FROM attempt a LEFT JOIN slot_seen k
+       ON k.binding_id = a.binding_id AND k.slot_key = a.slot_key
+     WHERE a.binding_id = b.binding_id AND a.kind = 'worker' AND a.running = 1
+       AND (k.last_seen_ms IS NULL OR k.last_seen_ms < ?))
 FROM bot_binding b LEFT JOIN bot_state s ON s.binding_id = b.binding_id
 WHERE b.binding_seq > ? ORDER BY b.binding_seq LIMIT ?
 """
@@ -167,11 +179,9 @@ def roster_page(store: Store, *, cursor: str | None, limit: int, as_of_ms: int) 
             raise InvalidCursor
         after = value
     with translate_errors(), store.read() as conn:
-        feed = _feed_coverage(conn, as_of_ms)
-        covered_since = feed.covered_since_ms if feed.state == "covered" else 2**62
-        fetched = [
-            tuple(row) for row in conn.execute(_ROSTER_SQL, (covered_since, after, size + 1))
-        ]
+        feed = feed_coverage(conn, as_of_ms)
+        cut = staleness_cut(feed)
+        fetched = [tuple(row) for row in conn.execute(_ROSTER_SQL, (cut, cut, after, size + 1))]
     rows = [
         RosterRow(
             binding_id=str(row[1]),
@@ -187,6 +197,7 @@ def roster_page(store: Store, *, cursor: str | None, limit: int, as_of_ms: int) 
             last_observed_ms=_last_observed(row),
             workers_running=int(row[22]) if feed.state == "covered" else 0,
             workers_seen=int(row[21]),
+            workers_unknown=int(row[23]),
         )
         for row in fetched
     ]

@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+from .attempts import (
+    ActivityWindow,
+    AttemptsResult,
+    AttemptState,
+    AttemptView,
+    attempt_state,
+    attempts_page,
+)
 from .backup import backup, restore
 from .bindings import get_binding, record_rebind
 from .dmkey import build_dm_key, parse_dm_key
@@ -17,6 +25,7 @@ from .errors import (
     StoreUnavailable,
     StoreUnconfigured,
     StoreUsageError,
+    UnknownBinding,
     UnknownRun,
 )
 from .ingest import ingest
@@ -61,7 +70,15 @@ from .records import (
     RosterRowIn,
     RunStart,
 )
-from .roster import recent_quarantine, roster_page, roster_revision
+from .roster import (
+    NO_CUT,
+    Feed,
+    feed_coverage,
+    recent_quarantine,
+    roster_page,
+    roster_revision,
+    staleness_cut,
+)
 from .runs import end_run, heartbeat, set_paused, start_run
 from .status import (
     StoreState,
@@ -75,6 +92,10 @@ from .store import Store, open_store
 from .validate import row_fact_digest
 
 __all__ = [
+    "ActivityWindow",
+    "AttemptState",
+    "AttemptView",
+    "AttemptsResult",
     "BackupError",
     "BindingRecord",
     "BindingRef",
@@ -88,6 +109,7 @@ __all__ = [
     "DmKey",
     "EVENT_PAYLOAD_KEYS",
     "EVENT_TYPES",
+    "Feed",
     "HEARTBEAT_STALE_MS",
     "IngestBatch",
     "IngestItem",
@@ -98,6 +120,7 @@ __all__ = [
     "MAX_BATCH_ITEMS",
     "MigrationError",
     "MigrationFileError",
+    "NO_CUT",
     "ObsKind",
     "ObservationIn",
     "Origin",
@@ -127,7 +150,10 @@ __all__ = [
     "StoreUnavailable",
     "StoreUnconfigured",
     "StoreUsageError",
+    "UnknownBinding",
     "UnknownRun",
+    "attempt_state",
+    "attempts_page",
     "backup",
     "build_dm_key",
     "build_page",
@@ -136,6 +162,7 @@ __all__ = [
     "disabled_status",
     "encode_cursor",
     "end_run",
+    "feed_coverage",
     "get_binding",
     "heartbeat",
     "ingest",
@@ -152,6 +179,7 @@ __all__ = [
     "roster_revision",
     "row_fact_digest",
     "set_paused",
+    "staleness_cut",
     "start_run",
     "status_for_error",
     "unconfigured_status",
