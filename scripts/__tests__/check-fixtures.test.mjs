@@ -167,24 +167,28 @@ describe('scanManifest', () => {
     assert.deepEqual(scanManifest(join(root, 'no-app.json')), []);
   });
 
-  it('allows exactly the own-namespace api entry in release permissions', () => {
-    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY] }, ui: { entry: 'dist/index.mjs' } }));
+  it('allows exactly the D-P9 grants in release permissions', () => {
+    const path = manifestFile(
+      JSON.stringify({ permissions: { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] }, ui: { entry: 'dist/index.mjs' } }),
+    );
     assert.deepEqual(scanManifest(path), []);
     assert.equal(OWN_API_ENTRY, '/apps/specter-arena/api/*');
   });
 
-  it('allows a manifest with no permissions section', () => {
+  it('allows the own-namespace entry alone and a manifest with no permissions section', () => {
+    assert.deepEqual(scanManifest(manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY] } }))), []);
     assert.deepEqual(scanManifest(manifestFile(JSON.stringify({ permissions: { api: [] } }))), []);
   });
 
-  it('flags any other api entry, including probe grants, next to the allowed one', () => {
-    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY, '/api/agents', '/apps/specter-arena/api/probe'] } }));
+  it('flags any other api entry, including the probe grants, next to the allowed ones', () => {
+    const grants = [OWN_API_ENTRY, '/api/agents', '/api/usage', '/api/sessions/usage', '/apps/specter-arena/api/probe'];
+    const path = manifestFile(JSON.stringify({ permissions: { api: grants } }));
     assert.deepEqual(
       scanManifest(path).map(({ reason }) => reason),
-      [
-        `release manifest permissions.api entry "/api/agents" is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
-        `release manifest permissions.api entry "/apps/specter-arena/api/probe" is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
-      ],
+      ['/api/usage', '/api/sessions/usage', '/apps/specter-arena/api/probe'].map(
+        (entry) =>
+          `release manifest permissions.api entry "${entry}" is not allowed; only ${OWN_API_ENTRY}, /api/agents, each once (probe permissions belong in probe/manifest-overlay.json)`,
+      ),
     );
   });
 
@@ -193,15 +197,26 @@ describe('scanManifest', () => {
     assert.equal(scanManifest(path).length, 2);
   });
 
-  it('flags permissions.events and any other permission key', () => {
-    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY], events: ['slots:user'], fs: [] } }));
+  it('flags any event other than slots:user, a duplicate, and a malformed events list', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { events: ['slots:user', 'subagent:user', 'slots:user'] } }));
     assert.deepEqual(
       scanManifest(path).map(({ reason }) => reason),
       [
-        'release manifest declares permissions.events (probe permissions belong in probe/manifest-overlay.json)',
-        'release manifest declares permissions.fs (probe permissions belong in probe/manifest-overlay.json)',
+        'release manifest permissions.events entry "subagent:user" is not allowed; only slots:user, each once (probe permissions belong in probe/manifest-overlay.json)',
+        'release manifest permissions.events entry "slots:user" is not allowed; only slots:user, each once (probe permissions belong in probe/manifest-overlay.json)',
       ],
     );
+    assert.deepEqual(
+      scanManifest(manifestFile(JSON.stringify({ permissions: { events: 'slots:user' } }))).map(({ reason }) => reason),
+      ['release manifest permissions.events is not an array'],
+    );
+  });
+
+  it('flags any other permission key', () => {
+    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY], fs: [] } }));
+    assert.deepEqual(scanManifest(path).map(({ reason }) => reason), [
+      'release manifest declares permissions.fs (probe permissions belong in probe/manifest-overlay.json)',
+    ]);
   });
 
   it('flags malformed permissions shapes', () => {
@@ -282,9 +297,9 @@ describe('scanReleaseTree', () => {
     const lines = [];
     const dir = bundle({ 'index.mjs': 'export default 1;' });
     const backendDir = bundle({ 'app.py': 'x = 1\n' });
-    const manifest = manifestFile(JSON.stringify({ permissions: { events: [] } }));
+    const manifest = manifestFile(JSON.stringify({ permissions: { events: ['subagent:user'] } }));
     assert.equal(run({ dir, backendDir, manifest, releaseRoots: [], log: (line) => lines.push(line) }), 1);
-    assert.match(lines[0] ?? '', /release manifest declares permissions\.events/);
+    assert.match(lines[0] ?? '', /permissions\.events entry "subagent:user" is not allowed/);
   });
 });
 

@@ -21,9 +21,11 @@ store = sorted(
     n for n in sys.modules
     if n == "backend.specter_arena.store" or n.startswith("backend.specter_arena.store.")
 )
+collector = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
 print(json.dumps({
     "paths": paths, "probe_modules": loaded, "store_modules": store,
     "sqlite3": "sqlite3" in sys.modules,
+    "collector_modules": collector, "websockets": "websockets" in sys.modules,
 }))
 """
 
@@ -69,6 +71,81 @@ def test_importing_the_release_app_loads_neither_the_store_nor_sqlite3(app_copy:
     for extra in ({}, {"SPECTER_PROBE": "1"}):
         graph = inspect_app(app_copy, **extra)
         assert (graph["store_modules"], graph["sqlite3"]) == ([], False), extra
+
+
+def test_importing_the_release_app_loads_no_collector_module_and_no_websockets(
+    app_copy: Path,
+) -> None:
+    for extra in ({}, {"SPECTER_PROBE": "1"}):
+        graph = inspect_app(app_copy, **extra)
+        assert (graph["collector_modules"], graph["websockets"]) == ([], False), extra
+
+
+def test_the_roster_route_is_mounted_with_the_release_routes(app_copy: Path) -> None:
+    assert "/api/roster" in inspect_app(app_copy)["paths"]
+
+
+LIFESPAN = """
+import asyncio, json, sys
+import backend.app as m
+
+async def main():
+    async with m.app.router.lifespan_context(m.app):
+        collector = m.app.state.collector
+        during = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
+    print(json.dumps({"collector": collector is None, "modules": during,
+                      "websockets": "websockets" in sys.modules,
+                      "store": [n for n in sys.modules if n == "backend.specter_arena.store"]}))
+
+asyncio.run(main())
+"""
+
+
+def run_lifespan(root: Path, **extra_env: str) -> dict[str, Any]:
+    deps_dir = str(Path(starlette.__file__).resolve().parents[1])
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("PYTHON", "SPECTER", "KIROCREW"))
+    }
+    env["PYTHONPATH"] = deps_dir
+    env.update(extra_env)
+    result = subprocess.run(
+        [sys.executable, "-s", "-c", LIFESPAN],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)  # type: ignore[no-any-return]
+
+
+def test_the_probe_switch_never_starts_the_collector_or_opens_the_store(
+    app_copy: Path, tmp_path: Path
+) -> None:
+    home = tmp_path / "home"
+    out = run_lifespan(
+        app_copy,
+        SPECTER_PROBE="1",
+        KIROCREW_HOME=str(home),
+        KIROCREW_APP_NAME="specter-arena",
+        KIROCREW_GATEWAY_ORIGIN="http://127.0.0.1:1",
+        KIROCREW_PROXY_SECRET="x",
+    )
+    assert out == {"collector": True, "modules": [], "websockets": False, "store": []}
+    assert not home.exists()
+
+
+def test_without_gateway_environment_the_store_opens_but_the_collector_does_not_start(
+    app_copy: Path, tmp_path: Path
+) -> None:
+    out = run_lifespan(
+        app_copy, KIROCREW_HOME=str(tmp_path / "home"), KIROCREW_APP_NAME="specter-arena"
+    )
+    assert out["collector"] is True and out["store"] != []
+    assert out["websockets"] is False
 
 
 def test_a_non_one_env_value_does_not_turn_the_probe_on(app_copy: Path) -> None:

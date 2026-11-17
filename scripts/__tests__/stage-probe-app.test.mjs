@@ -83,9 +83,9 @@ describe('the committed overlay', () => {
     assert.equal(realOverlay.version, '0.0.0-probe.2');
   });
 
-  it('is not reflected in the release manifest, which has no diagnostic reference or grants', () => {
+  it('is not reflected in the release manifest, which has no diagnostic reference and only the D-P9 grants', () => {
     assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
-    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY] });
+    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] });
     assert.equal(realManifest.backend.hooks, undefined);
   });
 });

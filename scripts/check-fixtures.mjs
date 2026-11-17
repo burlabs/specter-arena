@@ -5,6 +5,9 @@ import { pathToFileURL } from 'node:url';
 export const FIXTURE_MARKER = 'SPECTER-FIXTURE-ONLY';
 export const DIAGNOSTIC_MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
 export const OWN_API_ENTRY = '/apps/specter-arena/api/*';
+export const AGENTS_API_ENTRY = '/api/agents';
+export const RELEASE_API_ENTRIES = [OWN_API_ENTRY, AGENTS_API_ENTRY];
+export const RELEASE_EVENTS = ['slots:user'];
 export const DEFAULT_BUNDLE_DIR = 'ui/dist';
 export const DEFAULT_DIAGNOSTIC_DIR = 'ui/diagnostic-dist';
 export const DEFAULT_BACKEND_DIR = 'backend';
@@ -85,6 +88,29 @@ export function scanBackend(dir) {
 
 /**
  * @param {string} file
+ * @param {string} key permissions key, for the message
+ * @param {unknown} entries
+ * @param {string[]} allowed
+ * @returns {{ file: string, reason: string }[]}
+ */
+function scanEntries(file, key, entries, allowed) {
+  if (entries === undefined) return [];
+  if (!Array.isArray(entries)) return [{ file, reason: `release manifest permissions.${key} is not an array` }];
+  /** @type {{ file: string, reason: string }[]} */
+  const findings = [];
+  entries.forEach((entry, index) => {
+    if (!allowed.includes(entry) || entries.indexOf(entry) !== index) {
+      findings.push({
+        file,
+        reason: `release manifest permissions.${key} entry ${JSON.stringify(entry)} is not allowed; only ${allowed.join(', ')}, each once (probe permissions belong in probe/manifest-overlay.json)`,
+      });
+    }
+  });
+  return findings;
+}
+
+/**
+ * @param {string} file
  * @param {unknown} permissions
  * @returns {{ file: string, reason: string }[]}
  */
@@ -93,28 +119,20 @@ function scanPermissions(file, permissions) {
   if (typeof permissions !== 'object' || permissions === null || Array.isArray(permissions)) {
     return [{ file, reason: 'release manifest permissions is not an object' }];
   }
-  const { api, ...others } = /** @type {Record<string, unknown>} */ (permissions);
-  /** @type {{ file: string, reason: string }[]} */
-  const findings = Object.keys(others).map((key) => ({
-    file,
-    reason: `release manifest declares permissions.${key} (probe permissions belong in probe/manifest-overlay.json)`,
-  }));
-  if (api === undefined) return findings;
-  if (!Array.isArray(api)) return [...findings, { file, reason: 'release manifest permissions.api is not an array' }];
-  api.forEach((entry, index) => {
-    if (entry !== OWN_API_ENTRY || api.indexOf(entry) !== index) {
-      findings.push({
-        file,
-        reason: `release manifest permissions.api entry ${JSON.stringify(entry)} is not allowed; only ${OWN_API_ENTRY} once (probe permissions belong in probe/manifest-overlay.json)`,
-      });
-    }
-  });
-  return findings;
+  const { api, events, ...others } = /** @type {Record<string, unknown>} */ (permissions);
+  return [
+    ...Object.keys(others).map((key) => ({
+      file,
+      reason: `release manifest declares permissions.${key} (probe permissions belong in probe/manifest-overlay.json)`,
+    })),
+    ...scanEntries(file, 'api', api, RELEASE_API_ENTRIES),
+    ...scanEntries(file, 'events', events, RELEASE_EVENTS),
+  ];
 }
 
 /**
- * The release manifest may only point at the release bundle and declares one permission:
- * the app's own proxy namespace. Probe grants belong in probe/manifest-overlay.json.
+ * The release manifest may only point at the release bundle and declares only the D-P9 grants:
+ * the app's own proxy namespace, `/api/agents` and the `slots:user` event. Probe grants belong in probe/manifest-overlay.json.
  * @param {string} path app.json
  * @returns {{ file: string, reason: string }[]}
  */

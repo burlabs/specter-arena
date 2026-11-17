@@ -97,9 +97,11 @@ def test_read_grants_follows_the_staged_phase_manifest(
     assert (grants.beyond_own_entry, grants.basis) == (declared, "manifest")
 
 
-def test_read_grants_reads_the_release_manifest_as_no_grants() -> None:
+def test_read_grants_reads_the_release_manifest_as_the_d_p9_grants() -> None:
     grants = read_grants()
-    assert (grants.beyond_own_entry, grants.basis) == (False, "manifest")
+    assert (grants.beyond_own_entry, grants.basis) == (True, "manifest")
+    assert grants.api == {OWN_API_ENTRY, AGENTS_API_ENTRY}
+    assert grants.events == {"slots:user"}
 
 
 def test_read_grants_treats_missing_permission_keys_as_none_declared(tmp_path: Path) -> None:
@@ -204,12 +206,8 @@ def test_the_d_p9_manifest_has_no_missing_grant(tmp_path: Path) -> None:
     assert grants.missing() == ()
 
 
-def test_the_current_release_manifest_lacks_both_collector_grants() -> None:
-    # CI-8 adds the D-P9 grants to app.json and turns this into an assertion that none are missing.
-    assert read_grants(APP_ROOT / "app.json").missing() == (
-        "event:slots:user",
-        f"api:{AGENTS_API_ENTRY}",
-    )
+def test_the_release_manifest_declares_every_collector_grant() -> None:
+    assert read_grants(APP_ROOT / "app.json").missing() == ()
 
 
 def test_missing_names_each_absent_grant_separately() -> None:
