@@ -6,7 +6,7 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 
 - A requirement is defined once, as the first cell of a table row in a `requirements.md` (`FP02-REQ-01`), and an acceptance criterion is defined once as a bullet `- **FP-02-AC01:** ...` in the same file. Every other mention is a reference and must resolve to a definition.
 - A defined id's prefix must be registered below and its number must fall in the registered range.
-- A feature session that has several components writing the same spec folder infixes the component: `CI` crew-integration, `WL` work-ledger, `DEL` delivery. Acceptance criteria keep the id the intake gave them (`FP-02-AC01`).
+- A feature session that has several components writing the same spec folder infixes the component: `CI` crew-integration, `WL` work-ledger, `DEL` delivery. The id grammar has no infix for experience, so experience requirements use `REQ` (`FP04-REQ`). Acceptance criteria keep the id the intake gave them (`FP-02-AC01`).
 - Contract ids are `CT-<schema>-v<N>` and name a file in `contracts/schemas/`; `contracts/OWNERS.md` is their registry and `npm run check:schema` is their check.
 - Tracker issues cite ids; they never mint them.
 
@@ -24,3 +24,8 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP0203-CI` | FP-02+03 crew-integration requirements | crew-integration | 1-99 | open |
 | `FP0203-WL` | FP-02+03 work-ledger requirements | work-ledger | 1-99 | open |
 | `FP0203-DEL` | FP-02+03 delivery requirements | delivery | 1-99 | open |
+| `FP-04-AC` | FP-04 acceptance criteria | delivery | 1-99 | open |
+| `FP04-REQ` | FP-04 requirements: one per criterion, plus experience and cross-cutting rules | delivery | 1-99 | open |
+| `FP04-CI` | FP-04 crew-integration requirements | crew-integration | 1-99 | open |
+| `FP04-WL` | FP-04 work-ledger requirements | work-ledger | 1-99 | open |
+| `FP04-DEL` | FP-04 delivery requirements | delivery | 1-99 | open |

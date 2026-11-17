@@ -5,6 +5,11 @@ import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 import {
   API_ERROR_KEYS,
+  ATTEMPT_CONDITION_KEYS,
+  ATTEMPT_ITEM_KEYS,
+  ATTEMPTS_ACTIVITY_KEYS,
+  ATTEMPTS_KEYS,
+  ATTEMPTS_WINDOW_KEYS,
   PAGE_KEYS,
   READY_KEYS,
   ROSTER_AVATAR_KEYS,
@@ -17,7 +22,7 @@ import {
   ROSTER_SIGNALS_KEYS,
   ROSTER_WORKERS_KEYS,
 } from './types.ts';
-import type { ApiErrorV1, PageV1, ReadyV1, RosterItemV1, RosterV1 } from './types.ts';
+import type { ApiErrorV1, AttemptItemV1, AttemptsV1, PageV1, ReadyV1, RosterItemV1, RosterV1 } from './types.ts';
 
 // The wire schemas and their shared cases live outside ui/src and backend/specter_arena, so
 // neither coverage scope sees them. backend/tests/test_contracts.py runs the same cases.
@@ -102,6 +107,11 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'roster', path: [], keys: ROSTER_KEYS },
   { schema: 'roster', path: ['properties', 'collector'], keys: ROSTER_COLLECTOR_KEYS },
   { schema: 'roster', path: ['properties', 'notes', 'items'], keys: ROSTER_NOTE_KEYS },
+  { schema: 'attempt-item', path: [], keys: ATTEMPT_ITEM_KEYS },
+  { schema: 'attempt-item', path: ['properties', 'condition'], keys: ATTEMPT_CONDITION_KEYS },
+  { schema: 'attempts', path: [], keys: ATTEMPTS_KEYS },
+  { schema: 'attempts', path: ['properties', 'activity'], keys: ATTEMPTS_ACTIVITY_KEYS },
+  { schema: 'attempts', path: ['definitions', 'window'], keys: ATTEMPTS_WINDOW_KEYS },
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
 const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
@@ -146,7 +156,7 @@ describe('hand-written types', () => {
       },
       coverage: { state: 'unknown', sinceMs: null, reasonCode: null, openGapCount: 0 },
       lastObservedAtMs: null,
-      workers: { running: 0, seen: 0 },
+      workers: { running: 0, seen: 0, unknown: 0 },
     };
     const roster: RosterV1 = {
       contractVersion: 1,
@@ -156,7 +166,40 @@ describe('hand-written types', () => {
       collector: { state: 'running', reasonCode: null, sinceMs: null },
       notes: [{ code: 'cron-turns-not-observable', count: null }],
     };
-    for (const [name, value] of [['api-error', error], ['page', page], ['ready', ready], ['roster-item', item], ['roster', roster]] as const) {
+    const attempt: AttemptItemV1 = {
+      contractVersion: 1,
+      attemptId: 'att_0a1b2c3d4e5f60718293a4b5',
+      kind: 'worker',
+      startedMs: 1760000005000,
+      endedMs: null,
+      endSignal: null,
+      condition: { state: 'working', reasonCode: 'running' },
+    };
+    const window = {
+      fromMs: 0,
+      toMs: 86400000,
+      windowMs: 86400000,
+      observedFromMs: 0,
+      coveredMs: 0,
+      gapCount: 0,
+      botTurnsStarted: 0,
+      workersStarted: 1,
+      sampleSize: 1,
+      ended: 0,
+      stillOpen: 1,
+      unknown: 0,
+    };
+    const attempts: AttemptsV1 = {
+      contractVersion: 1,
+      bindingId: 'bnd_fake',
+      items: [attempt],
+      nextCursor: null,
+      rosterRevision: 0,
+      asOfMs: 86400000,
+      activity: { last24h: window, last7d: { ...window, fromMs: 0, windowMs: 604800000, toMs: 604800000 } },
+    };
+    const accepted = [['api-error', error], ['page', page], ['ready', ready], ['roster-item', item], ['roster', roster], ['attempt-item', attempt], ['attempts', attempts]] as const;
+    for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
   });

@@ -1,0 +1,124 @@
+[
+  {
+    "file": "valid/working-worker.json",
+    "valid": true
+  },
+  {
+    "file": "valid/ended-row-idle-bot-turn.json",
+    "valid": true
+  },
+  {
+    "file": "valid/ended-chat-done.json",
+    "valid": true
+  },
+  {
+    "file": "valid/unknown-feed-absent-worker.json",
+    "valid": true
+  },
+  {
+    "file": "valid/unknown-heartbeat-stale.json",
+    "valid": true
+  },
+  {
+    "file": "valid/kind-and-state-added-later.json",
+    "valid": true
+  },
+  {
+    "file": "valid/times-at-max-integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-condition.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/attempt-id-slot-key.json",
+    "valid": false,
+    "instancePath": "/attemptId"
+  },
+  {
+    "file": "invalid/attempt-id-uppercase-hex.json",
+    "valid": false,
+    "instancePath": "/attemptId"
+  },
+  {
+    "file": "invalid/attempt-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/attemptId"
+  },
+  {
+    "file": "invalid/kind-uppercase.json",
+    "valid": false,
+    "instancePath": "/kind"
+  },
+  {
+    "file": "invalid/kind-too-long.json",
+    "valid": false,
+    "instancePath": "/kind"
+  },
+  {
+    "file": "invalid/started-negative.json",
+    "valid": false,
+    "instancePath": "/startedMs"
+  },
+  {
+    "file": "invalid/started-fraction.json",
+    "valid": false,
+    "instancePath": "/startedMs"
+  },
+  {
+    "file": "invalid/started-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/ended-string.json",
+    "valid": false,
+    "instancePath": "/endedMs"
+  },
+  {
+    "file": "invalid/end-signal-stored-form.json",
+    "valid": false,
+    "instancePath": "/endSignal"
+  },
+  {
+    "file": "invalid/end-signal-free-text.json",
+    "valid": false,
+    "instancePath": "/endSignal"
+  },
+  {
+    "file": "invalid/end-signal-too-long.json",
+    "valid": false,
+    "instancePath": "/endSignal"
+  },
+  {
+    "file": "invalid/condition-state-uppercase.json",
+    "valid": false,
+    "instancePath": "/condition/state"
+  },
+  {
+    "file": "invalid/condition-reason-free-text.json",
+    "valid": false,
+    "instancePath": "/condition/reasonCode"
+  },
+  {
+    "file": "invalid/condition-extra-property.json",
+    "valid": false,
+    "instancePath": "/condition"
+  }
+]

@@ -293,9 +293,12 @@ def read_roster_item(value: object) -> dict[str, object]:
     _read_condition(item["condition"])
     _read_coverage(item["coverage"])
     _nullable_integer(item["lastObservedAtMs"], "lastObservedAtMs")
-    workers = _object(item["workers"], "workers", frozenset({"running", "seen"}), frozenset())
+    workers = _object(
+        item["workers"], "workers", frozenset({"running", "seen", "unknown"}), frozenset()
+    )
     _integer(workers["running"], "workers.running", 0, 1_000_000)
     _integer(workers["seen"], "workers.seen", 0, 1_000_000)
+    _integer(workers["unknown"], "workers.unknown", 0, 1_000_000)
     return item
 
 
