@@ -58,6 +58,7 @@ def row(
         last_observed_ms=1_760_000_000_500,
         workers_running=0,
         workers_seen=0,
+        workers_unknown=0,
     )
 
 

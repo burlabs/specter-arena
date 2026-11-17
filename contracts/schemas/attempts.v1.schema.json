@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:attempts:v1",
+  "title": "Attempts response v1",
+  "description": "Body of GET /api/roster/{bindingId}/attempts: one keyset page of one bot's attempts, newest startedMs first (at most 50), the revision of the projection it was read from, and server-computed activity over two rolling windows that end at asOfMs. Within a window: toMs - fromMs = windowMs; fromMs <= observedFromMs <= toMs, where observedFromMs is the later of fromMs and the time the collector first saw this bot; 0 <= coveredMs <= toMs - observedFromMs; sampleSize = botTurnsStarted + workersStarted = ended + stillOpen + unknown, where stillOpen counts attempts whose condition is working. coveredMs is the time the collector feed was covering inside [observedFromMs, toMs] (feed-level, not proof the bot was visible); coveredMs 0 means not collected, never zero activity. There is no success figure, duration, ranking or token count by design. Draft-07 cannot state the sums, so the producer test asserts them.",
+  "type": "object",
+  "definitions": {
+    "window": {
+      "type": "object",
+      "properties": {
+        "fromMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "toMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "windowMs": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "observedFromMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "coveredMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "gapCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "botTurnsStarted": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "workersStarted": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "sampleSize": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "ended": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "stillOpen": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+        "unknown": { "type": "integer", "minimum": 0, "maximum": 1000000000 }
+      },
+      "required": ["fromMs", "toMs", "windowMs", "observedFromMs", "coveredMs", "gapCount", "botTurnsStarted", "workersStarted", "sampleSize", "ended", "stillOpen", "unknown"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "bindingId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:attempt-item:v1" }, "maxItems": 50 },
+    "nextCursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$" },
+    "rosterRevision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "asOfMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "activity": {
+      "type": "object",
+      "properties": {
+        "last24h": { "$ref": "#/definitions/window" },
+        "last7d": { "$ref": "#/definitions/window" }
+      },
+      "required": ["last24h", "last7d"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["contractVersion", "bindingId", "items", "nextCursor", "rosterRevision", "asOfMs", "activity"],
+  "additionalProperties": false
+}

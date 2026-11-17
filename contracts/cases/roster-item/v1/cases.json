@@ -36,6 +36,10 @@
     "valid": true
   },
   {
+    "file": "valid/workers-unknown-positive.json",
+    "valid": true
+  },
+  {
     "file": "invalid/extra-property.json",
     "valid": false,
     "instancePath": ""
@@ -158,5 +162,15 @@
   {
     "file": "invalid/observed-nan.json",
     "valid": false
+  },
+  {
+    "file": "invalid/workers-unknown-missing.json",
+    "valid": false,
+    "instancePath": "/workers"
+  },
+  {
+    "file": "invalid/workers-unknown-negative.json",
+    "valid": false,
+    "instancePath": "/workers/unknown"
   }
 ]

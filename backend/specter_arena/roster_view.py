@@ -75,7 +75,11 @@ def roster_item_wire(row: RosterRow, as_of_ms: int) -> dict[str, object]:
             "openGapCount": row.coverage.open_gap_count,
         },
         "lastObservedAtMs": row.last_observed_ms,
-        "workers": {"running": row.workers_running, "seen": row.workers_seen},
+        "workers": {
+            "running": row.workers_running,
+            "seen": row.workers_seen,
+            "unknown": row.workers_unknown,
+        },
     }
 
 

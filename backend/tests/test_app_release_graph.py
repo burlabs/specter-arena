@@ -81,8 +81,12 @@ def test_importing_the_release_app_loads_no_collector_module_and_no_websockets(
         assert (graph["collector_modules"], graph["websockets"]) == ([], False), extra
 
 
-def test_the_roster_route_is_mounted_with_the_release_routes(app_copy: Path) -> None:
-    assert "/api/roster" in inspect_app(app_copy)["paths"]
+def test_the_roster_and_attempts_routes_are_mounted_with_the_release_routes(
+    app_copy: Path,
+) -> None:
+    paths = inspect_app(app_copy)["paths"]
+    assert "/api/roster" in paths
+    assert "/api/roster/{binding_id}/attempts" in paths
 
 
 LIFESPAN = """

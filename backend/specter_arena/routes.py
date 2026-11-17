@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import re
 import time
 from datetime import UTC, datetime
 
@@ -87,3 +88,51 @@ async def roster(request: Request) -> JSONResponse:
     except store_api.StoreError:
         return _error("store_unavailable", 503)
     return JSONResponse(view.roster_body(page, revision, request.app.state.collector, as_of_ms))
+
+
+_BINDING_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+@signed
+async def attempts(request: Request) -> JSONResponse:
+    """Signed attempts page for one bot: its tracked attempts and activity windows.
+
+    One outcome for a malformed and for an unknown id, so the route is no probe for which ids
+    exist. The revision comes from the same read transaction as the page.
+    """
+    runtime = request.app.state.store_runtime
+    store = None if runtime.probe_on else runtime.store
+    if store is None:
+        return _error("store_not_ready", 503)
+    binding_id = request.path_params["binding_id"]
+    if not _BINDING_ID.fullmatch(binding_id):
+        return _error("unknown_binding", 404)
+    # Lazy: keeps `import backend.app` free of sqlite3 and the store package.
+    store_api = importlib.import_module(".store", __package__)
+    view = importlib.import_module(".attempts_view", __package__)
+    raw_limit = request.query_params.get("limit")
+    try:
+        limit = store_api.clamp_limit(
+            int(raw_limit) if raw_limit is not None else None,
+            default=store_api.MAX_ATTEMPTS_PAGE,
+            maximum=store_api.MAX_ATTEMPTS_PAGE,
+        )
+    except ValueError:
+        return _error("invalid_limit", 400)
+    as_of_ms = int(time.time() * 1000)
+    try:
+        result = await asyncio.to_thread(
+            store_api.attempts_page,
+            store,
+            binding_id,
+            cursor=request.query_params.get("cursor"),
+            limit=limit,
+            as_of_ms=as_of_ms,
+        )
+    except store_api.InvalidCursor:
+        return _error("invalid_cursor", 400)
+    except store_api.UnknownBinding:
+        return _error("unknown_binding", 404)
+    except store_api.StoreError:
+        return _error("store_unavailable", 503)
+    return JSONResponse(view.attempts_body(result, as_of_ms))

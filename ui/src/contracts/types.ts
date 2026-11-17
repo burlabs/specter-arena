@@ -52,9 +52,11 @@ export interface RosterCoverageV1 {
   openGapCount: number;
 }
 
+/** running + unknown is the open worker count; unknown is never folded into running. */
 export interface RosterWorkersV1 {
   running: number;
   seen: number;
+  unknown: number;
 }
 
 export interface RosterItemV1 {
@@ -90,6 +92,54 @@ export interface RosterV1 {
   notes: RosterNoteV1[];
 }
 
+/** state is a documented token, not a closed list: working, ended, unknown today. */
+export interface AttemptConditionV1 {
+  state: string;
+  reasonCode: string;
+}
+
+/** attemptId is opaque. endedMs and endSignal are null while the attempt is open. */
+export interface AttemptItemV1 {
+  contractVersion: 1;
+  attemptId: string;
+  kind: string;
+  startedMs: number;
+  endedMs: number | null;
+  endSignal: string | null;
+  condition: AttemptConditionV1;
+}
+
+/** sampleSize = botTurnsStarted + workersStarted = ended + stillOpen + unknown. coveredMs 0 means not collected. */
+export interface AttemptsWindowV1 {
+  fromMs: number;
+  toMs: number;
+  windowMs: number;
+  observedFromMs: number;
+  coveredMs: number;
+  gapCount: number;
+  botTurnsStarted: number;
+  workersStarted: number;
+  sampleSize: number;
+  ended: number;
+  stillOpen: number;
+  unknown: number;
+}
+
+export interface AttemptsActivityV1 {
+  last24h: AttemptsWindowV1;
+  last7d: AttemptsWindowV1;
+}
+
+export interface AttemptsV1 {
+  contractVersion: 1;
+  bindingId: string;
+  items: AttemptItemV1[];
+  nextCursor: string | null;
+  rosterRevision: number;
+  asOfMs: number;
+  activity: AttemptsActivityV1;
+}
+
 // A Record over keyof T makes tsc reject a missing or an extra key, so the test can compare these
 // names with the schema's properties in both directions.
 export const API_ERROR_KEYS: Record<keyof ApiErrorV1, true> = { contractVersion: true, error: true };
@@ -99,8 +149,13 @@ export const ROSTER_AVATAR_KEYS: Record<keyof RosterAvatarV1, true> = { kind: tr
 export const ROSTER_SIGNALS_KEYS: Record<keyof RosterSignalsV1, true> = { needsInput: true, hasOptions: true, pendingApproval: true, waitingForInput: true };
 export const ROSTER_CONDITION_KEYS: Record<keyof RosterConditionV1, true> = { state: true, reasonCode: true, basis: true, sourceTimeMs: true, observedAtMs: true, signals: true };
 export const ROSTER_COVERAGE_KEYS: Record<keyof RosterCoverageV1, true> = { state: true, sinceMs: true, reasonCode: true, openGapCount: true };
-export const ROSTER_WORKERS_KEYS: Record<keyof RosterWorkersV1, true> = { running: true, seen: true };
+export const ROSTER_WORKERS_KEYS: Record<keyof RosterWorkersV1, true> = { running: true, seen: true, unknown: true };
 export const ROSTER_ITEM_KEYS: Record<keyof RosterItemV1, true> = { contractVersion: true, bindingId: true, displayName: true, avatar: true, presence: true, condition: true, coverage: true, lastObservedAtMs: true, workers: true };
 export const ROSTER_COLLECTOR_KEYS: Record<keyof RosterCollectorV1, true> = { state: true, reasonCode: true, sinceMs: true };
 export const ROSTER_NOTE_KEYS: Record<keyof RosterNoteV1, true> = { code: true, count: true };
 export const ROSTER_KEYS: Record<keyof RosterV1, true> = { contractVersion: true, items: true, nextCursor: true, rosterRevision: true, collector: true, notes: true };
+export const ATTEMPT_CONDITION_KEYS: Record<keyof AttemptConditionV1, true> = { state: true, reasonCode: true };
+export const ATTEMPT_ITEM_KEYS: Record<keyof AttemptItemV1, true> = { contractVersion: true, attemptId: true, kind: true, startedMs: true, endedMs: true, endSignal: true, condition: true };
+export const ATTEMPTS_WINDOW_KEYS: Record<keyof AttemptsWindowV1, true> = { fromMs: true, toMs: true, windowMs: true, observedFromMs: true, coveredMs: true, gapCount: true, botTurnsStarted: true, workersStarted: true, sampleSize: true, ended: true, stillOpen: true, unknown: true };
+export const ATTEMPTS_ACTIVITY_KEYS: Record<keyof AttemptsActivityV1, true> = { last24h: true, last7d: true };
+export const ATTEMPTS_KEYS: Record<keyof AttemptsV1, true> = { contractVersion: true, bindingId: true, items: true, nextCursor: true, rosterRevision: true, asOfMs: true, activity: true };

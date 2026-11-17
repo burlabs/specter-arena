@@ -112,6 +112,7 @@ def test_integer_fields_reject_nan_infinity_huge_floats_bools_and_nesting(bad: o
         (READERS["observation"], valid_chat_done(), ["sourceRef", "turn"]),
         (READERS["roster"], valid_roster(), ["rosterRevision"]),
         (READERS["roster"], valid_roster(), ["items", 0, "workers", "running"]),
+        (READERS["roster"], valid_roster(), ["items", 0, "workers", "unknown"]),
     ]
     for reader, base, path in targets:
         with pytest.raises(ContractViolation):

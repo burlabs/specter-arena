@@ -289,6 +289,7 @@ class RosterRow:
     last_observed_ms: int | None
     workers_running: int
     workers_seen: int
+    workers_unknown: int
 
 
 @dataclass(frozen=True, slots=True)

@@ -41,9 +41,11 @@ def schemas_without_a_producer(sources: dict[str, str], schema_ids: list[str]) -
     return missing
 
 
-def test_the_registry_lists_all_eight_schemas() -> None:
-    assert len(SCHEMA_IDS) == 8
+def test_the_registry_lists_all_ten_schemas() -> None:
+    assert len(SCHEMA_IDS) == 10
     assert "urn:specter-arena:contract:roster:v1" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:attempts:v1" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:attempt-item:v1" in SCHEMA_IDS
 
 
 def test_every_schema_is_validated_against_a_real_producer_body() -> None:

@@ -7,7 +7,7 @@ from starlette.routing import BaseRoute, Route
 # Package-relative on purpose: Crew never installs this repo, so `specter_arena` is only
 # importable as `backend.specter_arena` from the repo root that uvicorn puts on sys.path.
 from .specter_arena.config import probe_enabled
-from .specter_arena.routes import health, ping, ready, roster
+from .specter_arena.routes import attempts, health, ping, ready, roster
 from .specter_arena.store_runtime import StoreRuntime
 
 PROBE_ON = probe_enabled()
@@ -37,6 +37,7 @@ routes: list[BaseRoute] = [
     Route("/api/ping", ping, methods=["GET"]),
     Route("/api/ready", ready, methods=["GET"]),
     Route("/api/roster", roster, methods=["GET"]),
+    Route("/api/roster/{binding_id}/attempts", attempts, methods=["GET"]),
 ]
 if PROBE_ON:
     # Lazy: the release import graph must not contain the diagnostic-only probe package.
