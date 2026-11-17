@@ -27,7 +27,7 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   );
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' }>(
+export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'secondary' | 'ghost' }>(
   function Button({ children, variant = 'secondary', type = 'button', ...props }, ref) {
     return (
       <button ref={ref} type={type} className={`sa-button sa-button--${variant}`} {...props}>

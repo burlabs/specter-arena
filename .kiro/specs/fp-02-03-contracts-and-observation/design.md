@@ -1,6 +1,6 @@
 # FP-02+03 design
 
-Status: Pass 1 complete; Pass 2 planned. The three seed wire schemas are `FROZEN`; the five Pass 2 schemas are `DRAFT` in `contracts/OWNERS.md` until their first consumer merges.
+Status: Pass 1 and Pass 2 complete. The three seed wire schemas, `roster-item` and `roster` are `FROZEN` (the last two were frozen by FP-04 when its UI merged); `bot-binding`, `quarantine-record` and `observation` stay `DRAFT` in `contracts/OWNERS.md` until their first consumer merges.
 
 ## Shape of the work
 

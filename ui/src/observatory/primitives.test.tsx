@@ -73,13 +73,13 @@ describe('ui primitives', () => {
   it('renders a typed button with its variant, and a labelled panel', () => {
     render(
       <Panel label="Things">
-        <Button variant="primary">Go</Button>
+        <Button variant="ghost">Go</Button>
       </Panel>,
     );
     expect(screen.getByRole('region', { name: 'Things' })).toBeTruthy();
     const button = screen.getByRole('button', { name: 'Go' });
     expect(button.getAttribute('type')).toBe('button');
-    expect(button.className).toContain('sa-button--primary');
+    expect(button.className).toContain('sa-button--ghost');
   });
 
   it('renders the empty state with an action and the error state with retry', () => {

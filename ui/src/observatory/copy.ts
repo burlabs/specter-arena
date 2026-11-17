@@ -28,11 +28,23 @@ export const REASON_WORDS: Readonly<Record<string, string>> = {
   'internal-error': 'The collector hit an internal error and stopped.',
 };
 
-/** Words for a code. Never returns an empty string. */
-export function reasonWords(code: string): string {
+/** Words for a code; `kind` swaps the subject of `running` for an attempt. Never returns an empty string. */
+export function reasonWords(code: string, kind?: string): string {
+  if (code === 'running' && kind === 'worker') return "Crew reports this worker running, and the collector saw its chat recently.";
+  if (code === 'running' && kind === 'bot-turn') return "Crew reports this turn running, and the collector saw its chat recently.";
   return REASON_WORDS[code] ?? `Reason code: ${code}`;
 }
 
+
+export const attemptKindLabel = (kind: string): string => (kind === 'bot-turn' ? 'Bot turn' : kind === 'worker' ? 'Worker' : kind);
+
+const END_SIGNAL_WORDS: Readonly<Record<string, string>> = {
+  'row-idle': 'Row stopped running',
+  'chat-done': 'Turn-complete event',
+};
+
+export const endSignalLabel = (signal: string | null): string =>
+  signal === null ? 'Still open' : (END_SIGNAL_WORDS[signal] ?? `Signal: ${signal}`);
 
 const COLLECTOR_STATE_WORDS: Readonly<Record<string, string>> = {
   starting: 'Collector is starting.',
@@ -69,6 +81,15 @@ export const PRESENCE_WORDS: Readonly<Record<string, string>> = {
   unknown: 'Not confirmed',
 };
 
+export const SIGNAL_LABELS = [
+  ['needsInput', 'Needs input'],
+  ['hasOptions', 'Has options'],
+  ['pendingApproval', 'Pending approval'],
+  ['waitingForInput', 'Waiting for input'],
+] as const;
+
+export const signalWords = (value: boolean | null): string => (value === null ? 'Not seen' : value ? 'Yes' : 'No');
+
 export const COVERAGE_STATE_WORDS: Readonly<Record<string, string>> = {
   covered: 'Collected',
   gap: 'Gap in collection',
@@ -92,3 +113,12 @@ export const FAILURE_COPY = {
   'store-unavailable': { title: "The app's database is unavailable", body: 'Collection is not saving data. Retry, or restart the app.' },
   unknown: { title: 'Unexpected reply from the app backend', body: 'Retry. If it persists, reload.' },
 } as const;
+
+export const METRIC_DEFINITIONS: ReadonlyArray<{ term: string; meaning: string }> = [
+  { term: 'Window', meaning: 'A rolling span ending when the backend answered: 24 hours or 7 days. From and to are shown in the source details.' },
+  { term: 'Sample size', meaning: 'Attempts that first appeared in the window. Every count below is out of this number.' },
+  { term: 'Bot turns and workers started', meaning: 'Attempts split by kind. They add up to the sample size.' },
+  { term: 'Working, Ended, Unknown', meaning: 'The same attempts split by their condition now. They add up to the sample size. Ended says only that the attempt closed. It says nothing about the outcome.' },
+  { term: 'Collector covered', meaning: 'Time in the window when the collector was recording, from the time this bot was first seen. It measures coverage only.' },
+  { term: 'Duplicates', meaning: 'A reconnect replay does not create a second attempt for the same turn or worker.' },
+];

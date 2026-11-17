@@ -199,6 +199,34 @@ describe('selection, watching and search', () => {
   });
 });
 
+describe('detail and announcements', () => {
+  it('shows the attempts of the selected bot and announces its open attempts', async () => {
+    await open('two-concurrent');
+    selectRow('Atlas');
+    expect(await screen.findByText('Showing Atlas: Working, 2 open attempts')).toBeTruthy();
+    const tabs = screen.getByRole('tablist', { name: 'Bot detail sections' });
+    expect(within(tabs).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Attempts', 'Activity', 'Source details']);
+    expect(screen.getByRole('list', { name: 'Attempts, newest first' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByRole('region', { name: 'Last 24 hours' }).textContent).toContain('Sample size3');
+  });
+
+  it('resets to the Attempts tab when another bot is selected', async () => {
+    await open();
+    selectRow('Atlas');
+    fireEvent.click(await screen.findByRole('tab', { name: 'Source details' }));
+    selectRow('Brindle');
+    expect((await screen.findByRole('tab', { name: 'Attempts' })).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('says the bot is gone when its attempts return 404 but keeps the roster', async () => {
+    await open('attempt-gone');
+    selectRow('Atlas');
+    expect((await screen.findAllByText('This bot is no longer on the roster.')).length).toBeGreaterThan(0);
+    expect(rowNames()).toHaveLength(7);
+  });
+});
+
 describe('header, collector and notes', () => {
   it('shows the collector, both notes and a legend with two not-observable states', async () => {
     await open();

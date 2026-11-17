@@ -5,6 +5,9 @@ import { describe, expect, it } from 'vitest';
 import * as copy from './copy';
 import {
   COVERAGE_STATE_WORDS,
+  attemptKindLabel,
+  endSignalLabel,
+  signalWords,
   REASON_WORDS,
   collectorWords,
   noteWords,
@@ -49,6 +52,8 @@ describe('reason words tripwire', () => {
 
   it('words a running bot', () => {
     expect(reasonWords('running')).toContain('a turn running');
+    expect(reasonWords('running', 'worker')).toContain('this worker');
+    expect(reasonWords('running', 'bot-turn')).toContain('this turn');
   });
 });
 
@@ -70,6 +75,11 @@ describe('user-facing words', () => {
       noteWords('unsupported-store-less-bot', 2),
       noteWords('other', null),
       truncationWords(10),
+      ...['row-idle', 'chat-done', null, 'other'].map(endSignalLabel),
+      ...['bot-turn', 'worker'].map(attemptKindLabel),
+      ...[true, false, null].map(signalWords),
+      reasonWords('running', 'worker'),
+      reasonWords('running', 'bot-turn'),
     ];
     expect(sampled.length).toBeGreaterThan(60);
     expect(sampled.filter((text) => /\b(idle|done|finished|succeeded)\b/i.test(text))).toEqual([]);
@@ -96,6 +106,19 @@ describe('collector, note and other words', () => {
     expect(noteWords('unsupported-store-less-bot', null)).toBe('Note: unsupported-store-less-bot');
     expect(noteWords('other', 3)).toBe('Note: other');
     expect(truncationWords(2000)).toBe('Roster truncated: showing the first 2000 bots. Search narrows only what was loaded.');
+  });
+
+  it('labels attempt kinds, end signals and raw signals', () => {
+    expect(attemptKindLabel('bot-turn')).toBe('Bot turn');
+    expect(attemptKindLabel('worker')).toBe('Worker');
+    expect(attemptKindLabel('cron')).toBe('cron');
+    expect([endSignalLabel('row-idle'), endSignalLabel('chat-done'), endSignalLabel(null), endSignalLabel('other')]).toEqual([
+      'Row stopped running',
+      'Turn-complete event',
+      'Still open',
+      'Signal: other',
+    ]);
+    expect([signalWords(true), signalWords(false), signalWords(null)]).toEqual(['Yes', 'No', 'Not seen']);
   });
 
   it('labels coverage states', () => {

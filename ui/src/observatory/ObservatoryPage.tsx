@@ -1,12 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
-import { BotSummary } from './BotSummary';
+import { BotDetail } from './BotDetail';
 import { OperationalLegend } from './OperationalLegend';
 import { RosterList } from './RosterList';
+import { Tabs } from './Tabs';
 import { Time } from './Time';
 import { FAILURE_COPY, collectorWords, noteWords, truncationWords } from './copy';
-import { botCondition, matchesQuery, nameOf } from './model';
+import { botCondition, isOpen, matchesQuery, nameOf } from './model';
+import { useAttempts } from './useAttempts';
 import { useInjectedStyle } from './useInjectedStyle';
 import { useRoster } from './useRoster';
 import type { RosterData } from './useRoster';
@@ -28,43 +29,6 @@ function initialView(data: RosterData | null, watched: ReadonlySet<string>): Vie
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName));
-
-function ViewTabs({ view, panelId, tabId, onChange }: { view: ViewName; panelId: string; tabId: (name: ViewName) => string; onChange: (next: ViewName) => void }) {
-  const tabs = useRef(new Map<ViewName, HTMLButtonElement>());
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const index = VIEWS.findIndex((entry) => entry.name === view);
-    const next =
-      event.key === 'ArrowRight' ? (index + 1) % VIEWS.length : event.key === 'ArrowLeft' ? (index + VIEWS.length - 1) % VIEWS.length : event.key === 'Home' ? 0 : event.key === 'End' ? VIEWS.length - 1 : null;
-    const target = next === null ? undefined : VIEWS[next];
-    if (target === undefined) return;
-    event.preventDefault();
-    onChange(target.name);
-    tabs.current.get(target.name)?.focus();
-  };
-  return (
-    <div className="sa-tabs" role="tablist" aria-label="Which bots to show" onKeyDown={onKeyDown}>
-      {VIEWS.map((entry) => (
-        <button
-          key={entry.name}
-          type="button"
-          role="tab"
-          id={tabId(entry.name)}
-          aria-controls={panelId}
-          className="sa-tab"
-          aria-selected={view === entry.name}
-          tabIndex={view === entry.name ? 0 : -1}
-          ref={(element) => {
-            if (element) tabs.current.set(entry.name, element);
-            else tabs.current.delete(entry.name);
-          }}
-          onClick={() => onChange(entry.name)}
-        >
-          {entry.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function ObservatoryPage() {
   useInjectedStyle();
@@ -118,6 +82,8 @@ export function ObservatoryPage() {
   const visible = useMemo(() => inView.filter((item) => matchesQuery(item, query)), [inView, query]);
   const selected: RosterItemV1 | undefined = items.find((item) => item.bindingId === selectedId);
   const selectedCondition = selected === undefined ? null : botCondition(selected.condition);
+  const attempts = useAttempts(selected?.bindingId ?? null);
+  const openAttempts = attempts.state.status === 'ready' ? attempts.state.items.filter(isOpen).length : null;
 
   if (state.status === 'loading') {
     return (
@@ -205,7 +171,7 @@ export function ObservatoryPage() {
         <div className="sa-layout">
           <Panel label="Roster">
             <div className="sa-toolbar">
-              <ViewTabs view={view} panelId={panelId} tabId={tabId} onChange={setLatchedView} />
+              <Tabs label="Which bots to show" tabs={VIEWS} value={view} panelId={panelId} tabId={tabId} onChange={setLatchedView} />
               <label className="sa-search">
                 <Icon name="search" />
                 <span className="sa-visually-hidden">Search bots by name</span>
@@ -234,7 +200,15 @@ export function ObservatoryPage() {
 
           <Panel label="Bot detail">
             {selected !== undefined ? (
-              <BotSummary item={selected} />
+              <BotDetail
+                key={selected.bindingId}
+                item={selected}
+                collector={roster.collector}
+                rosterRevision={roster.rosterRevision}
+                attempts={attempts.state}
+                onLoadOlder={attempts.loadOlder}
+                onRetry={attempts.refresh}
+              />
             ) : departed || selectedId !== null ? (
               <p role="status">This bot is no longer on the roster.</p>
             ) : (
@@ -243,7 +217,9 @@ export function ObservatoryPage() {
           </Panel>
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
-          {selected !== undefined && selectedCondition !== null ? `Showing ${nameOf(selected)}: ${selectedCondition.label}` : ''}
+          {selected !== undefined && selectedCondition !== null
+            ? `Showing ${nameOf(selected)}: ${selectedCondition.label}${openAttempts === null ? '' : `, ${openAttempts} open ${openAttempts === 1 ? 'attempt' : 'attempts'}`}`
+            : ''}
         </p>
       </div>
     </div>
