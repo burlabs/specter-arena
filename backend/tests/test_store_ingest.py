@@ -348,6 +348,48 @@ def test_event_payload_shape_violations_are_rejected(
     assert reasons(run(bound, item)) == ["payload-shape"]
 
 
+@pytest.mark.parametrize("token", ["Upper", "1lead", "has space", "dot.ed", "a" * 49, "", "naïve"])
+def test_the_store_tokens_follow_the_wire_pattern(bound: Store, token: str) -> None:
+    for key in ("slotMode", "slotOrigin", "stopState"):
+        item = row(bound, {"running": True, key: token}, turn=None, turn_gen=None)
+        assert reasons(run(bound, item)) == ["payload-shape"], key
+
+
+@pytest.mark.parametrize("token", ["a", "user", "idle_now", "mode-2", "a" * 48])
+def test_wire_conforming_tokens_are_accepted(bound: Store, token: str) -> None:
+    payload = {"running": True, "slotMode": token, "slotOrigin": token, "stopState": token}
+    assert (
+        run(bound, row(bound, payload, turn=None, turn_gen=None)).counts["observation"].persisted
+        == 1
+    )
+
+
+@pytest.mark.parametrize("slot", ["has space", "a/b", "ünï", "semi;colon", "a" * 257, "", "x=y"])
+def test_slot_keys_follow_the_wire_character_set(bound: Store, slot: str) -> None:
+    created = row(bound, {"running": True, "createdBy": slot}, turn=None, turn_gen=None)
+    parent = row(bound, {"running": True, "parentKey": slot}, turn=None, turn_gen=None)
+    assert reasons(run(bound, created, parent)) == ["payload-shape"] * 2
+    assert reasons(run(bound, row(bound, slot_key=slot))) == ["bad-field"]
+
+
+@pytest.mark.parametrize("slot", ["chat-61-1794779966", "a:b.c_d-e", "A" * 256])
+def test_wire_conforming_slot_keys_are_accepted(bound: Store, slot: str) -> None:
+    worker = {"running": True, "createdBy": ALPHA_KEY}
+    item = row(bound, worker, slot_key=slot, turn=None, turn_gen=None)
+    assert run(bound, item).counts["observation"].persisted == 1
+
+
+@pytest.mark.parametrize("tool_call_id", ["has space", "a/b", "ünï", "a" * 129])
+def test_tool_call_ids_follow_the_wire_character_set(bound: Store, tool_call_id: str) -> None:
+    item = event(bound, "tool_call", payload={"isShell": True}, tool_call_id=tool_call_id)
+    assert reasons(run(bound, item)) == ["bad-field"]
+
+
+@pytest.mark.parametrize("key", ["has space", "a/b", "ünï", "semi;colon"])
+def test_dedup_keys_follow_the_wire_character_set(bound: Store, key: str) -> None:
+    assert reasons(run(bound, event(bound, dedup_key=key))) == ["bad-dedup"]
+
+
 def test_a_payload_that_is_not_a_mapping_or_not_json_is_rejected(bound: Store) -> None:
     assert reasons(run(bound, event(bound, payload=[1]))) == ["payload-shape"]
     assert reasons(run(bound, event(bound, payload={1: True}))) == ["payload-shape"]
@@ -473,6 +515,7 @@ def test_a_quarantine_item_defaults_its_first_time_and_coerces_an_unfit_frame_ty
         {"size_bytes": -1},
         {"size_bytes": 2**31 + 1},
         {"count": 0},
+        {"count": 2**31},
         {"count": 2**31 + 1},
         {"digest": "sha256:XYZ"},
         {"digest": "a" * 64},
@@ -487,7 +530,7 @@ def test_malformed_quarantine_items_are_rejected(store: Store, fields: dict[str,
 
 
 def test_quarantine_boundaries_are_accepted(store: Store) -> None:
-    item = QuarantineIn(T0, "r" * 40, "t" * 64, 2**31, count=2**31, first_received_at_ms=T0)
+    item = QuarantineIn(T0, "r" * 40, "t" * 64, 2**31, count=2**31 - 1, first_received_at_ms=T0)
     assert run(store, item).counts["quarantine"].quarantined == 1
 
 

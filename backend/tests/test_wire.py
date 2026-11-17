@@ -37,7 +37,7 @@ from backend.tests.contract_support import (
 
 REGISTRY = load_registry()
 WIRE_MODULE = Path(wire.__file__)
-NAMES = ("observation", "roster-item", "roster")
+NAMES = ("observation", "roster-item", "roster", "bot-binding", "quarantine-record")
 
 BOT = "member-bot-a-9d63166ee3a3.memory-member-bot-a-9d63166ee3a3-aa11"
 WORKER = "chat-61-1794779966"
@@ -68,7 +68,7 @@ def test_readers_agree_with_the_schema_on_every_shared_case(
             READERS[name](instance)
 
 
-def test_every_schema_in_the_crew_integration_set_has_a_reader() -> None:
+def test_every_schema_with_a_reader_is_covered_by_the_shared_cases() -> None:
     assert set(READERS) == set(NAMES)
 
 

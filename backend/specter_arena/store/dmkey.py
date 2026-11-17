@@ -6,7 +6,8 @@ from .records import DmKey
 
 MAX_DM_KEY_CHARS = 256
 MEMBER_ID_PATTERN = r"[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?"
-MEMORY_STORE_PATTERN = r"[A-Za-z0-9._-]{1,128}"
+# Crew 0.12.2 validate_memory_store_name (kiro_crew/memory_stores.py:88): no dot, no uppercase.
+MEMORY_STORE_PATTERN = r"[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?"
 
 _MEMBER_PREFIX = "member-"
 _STORE_INFIX = ".memory-"

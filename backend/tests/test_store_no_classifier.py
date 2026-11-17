@@ -126,3 +126,19 @@ def test_no_packaged_migration_uses_a_denied_word_in_any_identifier() -> None:
 def test_the_identifier_scan_catches_a_denied_word_outside_names_it_would_miss() -> None:
     sql = "CREATE INDEX rank_ix ON t (x); -- role in a comment is ignored\nSELECT 'tier';"
     assert sql_identifier_words(sql) & DENYLIST == {"rank"}
+
+
+def test_a_crew_shaped_class_key_is_a_payload_error_and_a_class_column_is_refused(
+    tmp_path: Path,
+) -> None:
+    from backend.specter_arena.store.records import EVENT_PAYLOAD_KEYS, ROW_FACT_KEYS
+
+    assert "stopClass" not in ROW_FACT_KEYS
+    assert all("stopClass" not in keys for keys in EVENT_PAYLOAD_KEYS.values())
+    conn = migrated(
+        tmp_path / "store.db", "CREATE TABLE stops (id INTEGER, stop_class TEXT) STRICT;"
+    )
+    try:
+        assert classifier_like_names(conn) == ["stops.stop_class"]
+    finally:
+        conn.close()

@@ -581,7 +581,8 @@ def test_binding_ids_are_opaque_and_unique(store: Store) -> None:
     [
         ("member-alpha", DmKey("alpha", "")),
         ("member-alpha-0123456789ab.memory-m1", DmKey("alpha-0123456789ab", "m1")),
-        ("member-a.memory-x.y_z-1", DmKey("a", "x.y_z-1")),
+        ("member-a.memory-x-y-1", DmKey("a", "x-y-1")),
+        ("member-a.memory-" + "a" * 80, DmKey("a", "a" * 80)),
     ],
 )
 def test_dm_keys_parse_and_build_back(key: str, expected: DmKey) -> None:
@@ -601,7 +602,12 @@ def test_dm_keys_parse_and_build_back(key: str, expected: DmKey) -> None:
         "member-a.memory-",
         "member-a.other-x",
         "member-a.memory-bad/slash",
-        "member-a.memory-" + "x" * 129,
+        "member-a.memory-dotted.store",
+        "member-a.memory-Upper",
+        "member-a.memory-under_score",
+        "member-a.memory--lead",
+        "member-a.memory-trail-",
+        "member-a.memory-" + "x" * 81,
         "member-" + "a" * 81,
         "member-a.memory-" + "x" * 250,
         "member-a b",
@@ -609,3 +615,44 @@ def test_dm_keys_parse_and_build_back(key: str, expected: DmKey) -> None:
 )
 def test_malformed_dm_keys_do_not_parse(key: str) -> None:
     assert parse_dm_key(key) is None
+
+
+@pytest.mark.parametrize(
+    "store_name,accepted",
+    [
+        ("a", True),
+        ("0", True),
+        ("a-b", True),
+        ("a" * 80, True),
+        ("a" * 81, False),
+        ("", False),
+        ("Upper", False),
+        ("dotted.store", False),
+        ("under_score", False),
+        ("-lead", False),
+        ("trail-", False),
+        ("sp ace", False),
+        ("ünï", False),
+        ("trailing-newline\n", False),
+    ],
+)
+def test_memory_store_names_follow_crew_0_12_2(
+    store: Store, store_name: str, accepted: bool
+) -> None:
+    seen = run(store, BindingSeen(DmKey("alpha-0123456789ab", store_name), T0))
+    polled = run(store, poll(T0 + 1, row(store_name)))
+    if accepted:
+        assert seen.rejections == () and polled.rejections == ()
+    else:
+        assert [r.reason for r in seen.rejections] in (["bad-dm-key"], ["store-less-bot"])
+        assert [r.reason for r in polled.rejections] in (["bad-roster-row"], [])
+
+
+@pytest.mark.parametrize("bad_store", ["dotted.store", "Upper"])
+def test_a_dotted_or_uppercase_store_is_bad_dm_key_and_bad_roster_row(
+    store: Store, bad_store: str
+) -> None:
+    seen = run(store, BindingSeen(DmKey("alpha-0123456789ab", bad_store), T0))
+    polled = run(store, poll(T0 + 1, row(bad_store)))
+    assert [r.reason for r in seen.rejections] == ["bad-dm-key"]
+    assert [r.reason for r in polled.rejections] == ["bad-roster-row"]

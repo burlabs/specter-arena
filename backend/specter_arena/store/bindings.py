@@ -6,7 +6,8 @@ import sqlite3
 from .dmkey import build_dm_key
 from .errors import StoreUsageError
 from .guard import translate_errors
-from .records import BindingRecord, BindingRef, DmKey, Presence, RosterPoll, RosterRowIn
+from .records import BindingRecord, BindingRef, DmKey, RosterPoll, RosterRowIn
+from .roster import binding_record
 from .store import Store
 
 MAX_REBIND_NOTE_CHARS = 200
@@ -129,28 +130,7 @@ def apply_roster_poll(
 
 def get_binding(store: Store, binding_id: str) -> BindingRecord | None:
     with translate_errors(), store.read() as conn:
-        row = conn.execute(
-            "SELECT installation_id, member_id, memory_store, first_seen_ms"
-            " FROM bot_binding WHERE binding_id = ?",
-            (binding_id,),
-        ).fetchone()
-        if row is None:
-            return None
-        revision = _newest_revision(conn, binding_id)
-        state = _newest_presence(conn, binding_id)
-    presence: Presence = (
-        "unknown" if state is None else ("present" if state == "present" else "absent")
-    )
-    return BindingRecord(
-        binding_id=binding_id,
-        installation_id=row[0],
-        member_id=row[1],
-        memory_store=row[2],
-        display_name=None if revision is None else revision[2],
-        presence=presence,
-        created_at_ms=row[3],
-        last_seen_ms=None,
-    )
+        return binding_record(conn, binding_id)
 
 
 def record_rebind(
