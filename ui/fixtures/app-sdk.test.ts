@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { createFixtureClient, useAppApi } from './app-sdk.ts';
-import { APP_API_PREFIX, PING_PATH, appApiPath } from '../src/host/paths.ts';
+import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, appApiPath, attemptsPath } from '../src/host/paths.ts';
+import { setFixtureScenario } from './monitoring-bodies.ts';
 
 describe('fixture SDK allowlist (mirrors the host matcher)', () => {
   it('lets /x/* cover /x and /x/...', () => {
@@ -48,5 +49,27 @@ describe('release manifest allowlist', () => {
     await expect(client.get('/api/usage')).rejects.toThrow('not permitted');
     await expect(client.get('/api/members')).rejects.toThrow('not permitted');
     await expect(client.get('/api/chat/slots')).rejects.toThrow('not permitted');
+  });
+});
+
+describe('monitoring routes', () => {
+  it('serves the roster and attempts as real Responses', async () => {
+    const client = useAppApi();
+    const roster = (await client.get(ROSTER_PATH)) as Response;
+    expect(roster.status).toBe(200);
+    expect(((await roster.json()) as { items: unknown[] }).items).toHaveLength(7);
+    const attempts = (await client.get(attemptsPath('bnd_aaaaaaaaaaaaaaaaaaaa0001'))) as Response;
+    expect(attempts.status).toBe(200);
+  });
+
+  it('rejects when the offline scenario is active, and still answers ping', async () => {
+    const client = useAppApi();
+    setFixtureScenario('offline');
+    await expect(client.get(ROSTER_PATH)).rejects.toThrow('Failed to fetch');
+    await expect(client.get(PING_PATH)).resolves.toMatchObject({ ok: true });
+  });
+
+  it('still rejects an undeclared path', async () => {
+    await expect(createFixtureClient([]).get(ROSTER_PATH)).rejects.toThrow('not permitted');
   });
 });

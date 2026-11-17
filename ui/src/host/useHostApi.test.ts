@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useHostApi } from './useHostApi';
+import { HostApiError, useHostApi } from './useHostApi';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
@@ -25,6 +25,30 @@ describe('useHostApi', () => {
     client.get.mockResolvedValue(response({ error: 'nope' }, 403));
     const { result } = renderHook(() => useHostApi());
     await expect(result.current.getJson('/apps/specter-arena/api/ping')).rejects.toThrow('Request failed with status 403');
+  });
+
+  it('carries the typed api-error code of a 503', async () => {
+    client.get.mockResolvedValue(response({ contractVersion: 1, error: 'store_not_ready' }, 503));
+    const { result } = renderHook(() => useHostApi());
+    const failure: unknown = await result.current.getJson('/apps/specter-arena/api/roster').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(HostApiError);
+    expect(failure).toMatchObject({ status: 503, error: 'store_not_ready', message: 'Request failed with status 503' });
+  });
+
+  it('reports no code when the error body is not JSON', async () => {
+    client.get.mockResolvedValue(new Response('<html>', { status: 502 }));
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.getJson('/x')).rejects.toMatchObject({ status: 502, error: null });
+  });
+
+  it('ignores a code outside the api-error pattern and a body without one', async () => {
+    client.get.mockResolvedValueOnce(response({ error: 'Not Allowed!' }, 400));
+    client.get.mockResolvedValueOnce(response(['x'], 400));
+    client.get.mockResolvedValueOnce(response({ error: 7 }, 400));
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.getJson('/x')).rejects.toMatchObject({ error: null });
+    await expect(result.current.getJson('/x')).rejects.toMatchObject({ error: null });
+    await expect(result.current.getJson('/x')).rejects.toMatchObject({ error: null });
   });
 
   it('returns already-parsed data unchanged', async () => {
