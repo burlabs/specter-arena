@@ -81,8 +81,6 @@ export const PRESENCE_WORDS: Readonly<Record<string, string>> = {
   unknown: 'Not confirmed',
 };
 
-export const BASIS_WORDS: Readonly<Record<string, string>> = { row: 'Crew chat row', event: 'Crew event' };
-
 export const SIGNAL_LABELS = [
   ['needsInput', 'Needs input'],
   ['hasOptions', 'Has options'],

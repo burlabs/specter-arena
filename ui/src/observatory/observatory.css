@@ -242,16 +242,6 @@
   font-weight: 650;
 }
 
-.specter-arena-root .sa-button--primary {
-  background: var(--violet);
-  border-color: #d0c0ff;
-  color: #1c132b;
-}
-
-.specter-arena-root .sa-button--primary:hover {
-  background: #c3adff;
-}
-
 .specter-arena-root .sa-button--secondary {
   background: var(--raised);
   border-color: #52436b;

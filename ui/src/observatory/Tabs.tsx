@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 
-export interface TabDefinition<Name extends string> {
+interface TabDefinition<Name extends string> {
   name: Name;
   label: string;
 }
