@@ -1,0 +1,16 @@
+{
+  "fixtureOnly": "SPECTER-FIXTURE-ONLY",
+  "slots": {
+    "full": ["botA", "botB", "workerExact", "nonBot"],
+    "partial": ["botA"],
+    "replacement": ["replacementOfA"],
+    "offByOneWorker": ["botA", "workerOffByOne"]
+  },
+  "events": {
+    "chat_done": {"turn": 1, "turn_gen": "a8b8767e", "continuing": false, "needs_input": false},
+    "chat_status": {},
+    "tool_call": {"tool_call_id": "tc_1", "is_shell": false, "kind": "bash"},
+    "tool_result": {"tool_call_id": "tc_1"},
+    "context_usage": {"used_tokens": 71806, "window_tokens": 1000000, "pct": 7.2}
+  }
+}
