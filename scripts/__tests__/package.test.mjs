@@ -239,9 +239,9 @@ describe('packageRelease content', () => {
     assert.deepEqual(readFileSync(tarballIn(first.out)), readFileSync(tarballIn(second.out)));
     const listing = execFileSync('tar', ['-tvzf', tarballIn(first.out)], { encoding: 'utf8' }).trim().split('\n');
     for (const line of listing) {
-      const columns = line.split(/\s+/).slice(0, 4).join(' ');
-      assert.match(columns, /\s0[ /]0$/, line);
-      assert.equal(columns.includes(userInfo().username), userInfo().username === 'root' ? true : false, line);
+      const columns = line.split(/\s+/).slice(0, 3).join(' ');
+      assert.match(columns, /^\S+ (?:0 0|0\/0)(?: |$)/, line);
+      assert.equal(columns.includes(userInfo().username), false, line);
     }
   });
 
