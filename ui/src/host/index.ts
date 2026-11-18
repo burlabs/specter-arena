@@ -25,4 +25,6 @@ export {
   xpHistoryPath,
 } from './paths';
 export { HostApiError, useHostApi } from './useHostApi';
-export type { HostApi } from './useHostApi';
+export type { HostApi, HostSourceMode } from './useHostApi';
+export { useSourceMode } from './useSourceMode';
+export type { SourceMode } from './useSourceMode';

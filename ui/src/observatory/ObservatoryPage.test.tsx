@@ -372,9 +372,9 @@ describe('sections', () => {
   const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
   const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
 
-  it('offers Roster, Specters and Work with Roster selected', async () => {
+  it('offers Roster, Specters, Work and Arena with Roster selected', async () => {
     await open();
-    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work']);
+    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work', 'Arena']);
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     expect(specterTab().getAttribute('aria-selected')).toBe('false');
     expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
@@ -387,7 +387,22 @@ describe('sections', () => {
     fireEvent.keyDown(specterTab(), { key: 'Home' });
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(rosterTab(), { key: 'End' });
+    expect(sections().getByRole('tab', { name: 'Arena' }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(sections().getByRole('tab', { name: 'Arena' }), { key: 'ArrowLeft' });
     expect(sections().getByRole('tab', { name: 'Work' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('opens the Arena tab as the fourth section with its mode badge, scoped style, and no poll before it is opened', async () => {
+    await open();
+    const get = vi.spyOn(useAppApi(), 'get');
+    expect(get.mock.calls.filter(([path]) => String(path).includes('state=open'))).toHaveLength(0);
+    expect(document.head.querySelectorAll('style[data-specter-arena-scene]')).toHaveLength(1);
+    fireEvent.click(sections().getByRole('tab', { name: 'Arena' }));
+    expect(await screen.findByRole('group', { name: 'Arena map' })).toBeTruthy();
+    expect(screen.getAllByText('FIXTURE — demo data, not Crew activity').length).toBeGreaterThan(0);
+    expect(get.mock.calls.filter(([path]) => String(path).includes('state=open')).length).toBeGreaterThan(0);
+    fireEvent.click(rosterTab());
+    expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
   });
 
   it('shows the Specters panel and hides the roster, then restores it unchanged', async () => {

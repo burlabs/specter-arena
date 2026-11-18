@@ -1,8 +1,9 @@
 // SPECTER-FIXTURE-ONLY: FIXTURE Specter routes for the preview harness and unit tests; never imported by ui/src.
 import { appApiPath } from '../src/host/paths.ts';
 import type { PortraitAssetV1, SpecterProfileV1, SpecterV1, SummoningV1 } from '../src/contracts/types.ts';
+import { PERF_SPECTER_NAMES, canonicalArenaScenario } from './arena-scenarios.ts';
 
-export const SPECTER_SCENARIO_NAMES = ['specters-none', 'specters', 'specters-empty', 'summon-failure', 'asset-failed', 'long-names'] as const;
+export const SPECTER_SCENARIO_NAMES = ['specters-none', 'specters', 'specters-empty', 'summon-failure', 'asset-failed', 'long-names', 'arena-perf-specters'] as const;
 export type SpecterScenarioName = (typeof SPECTER_SCENARIO_NAMES)[number];
 
 const FIXTURE_NOW_MS = 1794916800000;
@@ -148,7 +149,8 @@ const isSpecterScenario = (value: string | null): value is SpecterScenarioName =
 export function activeSpecterScenario(): SpecterScenarioName {
   if (override !== null) return override;
   const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('scenario');
-  return isSpecterScenario(requested) ? requested : 'specters-none';
+  const named = canonicalArenaScenario(requested, { arena: 'specters', perf: 'arena-perf-specters', stale: 'specters', empty: 'specters-none' });
+  return isSpecterScenario(named) ? named : 'specters-none';
 }
 
 const specterOf = (n: number, profile: SpecterProfileV1, portrait: StoredAsset | null): SpecterV1 => ({
@@ -178,6 +180,8 @@ function seed(scenario: SpecterScenarioName): SpecterV1[] {
       return [specterOf(1, profileOf('Vesper'), null)];
     case 'asset-failed':
       return [specterOf(1, profileOf('Vesper'), first)];
+    case 'arena-perf-specters':
+      return PERF_SPECTER_NAMES.map((name, index) => specterOf(index + 1, profileOf(name), null));
     case 'long-names':
       return [
         specterOf(1, profileOf('W'.repeat(40), { epithet: 'E'.repeat(60) }), null),

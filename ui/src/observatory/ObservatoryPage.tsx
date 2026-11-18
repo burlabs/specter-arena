@@ -15,6 +15,8 @@ import { useWatched } from './watched';
 import { SpectersView } from '../specters/SpectersView';
 import { useSpecterStyle } from '../specters/useSpecterStyle';
 import { useSpecters } from '../specters/useSpecters';
+import { ArenaView } from '../arena/ArenaView';
+import { useArenaStyle } from '../arena/useArenaStyle';
 import { WorkView } from '../work/WorkView';
 import { useWorkStyle } from '../work/useWorkStyle';
 import { useXp, xpViewOf } from '../work/useXp';
@@ -27,12 +29,13 @@ const VIEWS: ReadonlyArray<{ name: ViewName; label: string }> = [
   { name: 'all', label: 'All bots' },
 ];
 
-type SectionName = 'roster' | 'specters' | 'work';
+type SectionName = 'roster' | 'specters' | 'work' | 'arena';
 
 const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
   { name: 'roster', label: 'Roster' },
   { name: 'specters', label: 'Specters' },
   { name: 'work', label: 'Work' },
+  { name: 'arena', label: 'Arena' },
 ];
 
 function initialView(data: RosterData | null, watched: ReadonlySet<string>): ViewName | null {
@@ -48,6 +51,7 @@ export function ObservatoryPage() {
   useInjectedStyle();
   useSpecterStyle();
   useWorkStyle();
+  useArenaStyle();
   const { state, refresh } = useRoster();
   const specters = useSpecters();
   const xp = useXp();
@@ -254,6 +258,7 @@ export function ObservatoryPage() {
           </div>
           {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} />}
           {section === 'work' && <WorkView bots={items} complete={roster.complete} onLedgerChanged={xp.refresh} />}
+          {section === 'arena' && <ArenaView bots={items} complete={roster.complete} collector={roster.collector} specters={specters.byBinding} xp={xp.byBinding} />}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null

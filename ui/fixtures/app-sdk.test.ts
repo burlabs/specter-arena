@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
-import { createFixtureClient, useAppApi } from './app-sdk.ts';
+import { createFixtureClient, fixtureCalls, resetFixtureCalls, setArenaScenario, useAppApi } from './app-sdk.ts';
 import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, WORK_PATH, XP_PATH, appApiPath, attemptsPath, sceneAssetPath, workListPath } from '../src/host/paths.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 
@@ -100,5 +100,56 @@ describe('scene-asset route', () => {
     const unknown = (await client.get(sceneAssetPath('nope'))) as Response;
     expect(unknown.status).toBe(404);
     expect(await unknown.json()).toEqual({ contractVersion: 1, error: 'unknown_scene_asset' });
+  });
+});
+
+describe('fixture client mode seam and call log', () => {
+  it('reports FIXTURE and records every request, newest last, on the window for the preview harness', async () => {
+    const client = createFixtureClient(DECLARED_API);
+    expect(client.sourceMode).toBe('FIXTURE');
+    resetFixtureCalls();
+    await client.get(`${PING_PATH}?x=1`);
+    await client.post(appApiPath('/probe/run'), {});
+    expect(fixtureCalls).toEqual([
+      { method: 'GET', path: `${PING_PATH}?x=1` },
+      { method: 'POST', path: appApiPath('/probe/run') },
+    ]);
+    expect((window as unknown as { __specterFixtureCalls: unknown }).__specterFixtureCalls).toBe(fixtureCalls);
+    resetFixtureCalls();
+    expect(fixtureCalls).toEqual([]);
+  });
+
+  it('records a refused request too', async () => {
+    resetFixtureCalls();
+    await expect(createFixtureClient([]).get('/api/ping')).rejects.toThrow('not permitted');
+    expect(fixtureCalls).toEqual([{ method: 'GET', path: '/api/ping' }]);
+  });
+});
+
+describe('setArenaScenario', () => {
+  it('points the roster, work and Specter fixtures at one scenario and clears them on null', async () => {
+    const client = createFixtureClient(DECLARED_API);
+    setArenaScenario('arena-perf-1');
+    const roster = (await client.get(ROSTER_PATH)) as Response;
+    expect(((await roster.json()) as { items: unknown[] }).items).toHaveLength(20);
+    setArenaScenario('arena-empty');
+    const empty = (await client.get(ROSTER_PATH)) as Response;
+    expect(((await empty.json()) as { items: unknown[] }).items).toHaveLength(0);
+    setArenaScenario(null);
+    const back = (await client.get(ROSTER_PATH)) as Response;
+    expect(((await back.json()) as { items: unknown[] }).items).toHaveLength(7);
+  });
+
+  it('turns the scene assets off only for arena-no-art', async () => {
+    const client = createFixtureClient(DECLARED_API);
+    setArenaScenario('arena-no-art');
+    expect(((await client.get(sceneAssetPath('arena-map'))) as Response).status).toBe(404);
+    setArenaScenario('arena');
+    expect(((await client.get(sceneAssetPath('arena-map'))) as Response).status).toBe(200);
+    setArenaScenario(null);
+  });
+
+  it('refuses a name that is not an arena scenario', () => {
+    expect(() => setArenaScenario('nope' as never)).toThrow('Unknown arena scenario');
   });
 });

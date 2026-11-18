@@ -1,6 +1,7 @@
 // SPECTER-FIXTURE-ONLY: FIXTURE Work and XP routes for the preview harness and unit tests; never imported by ui/src.
 import type { WorkAttemptV1, WorkDecisionV1, WorkItemV1, XpEntryV1, XpSummaryV1 } from '../src/contracts/types.ts';
 import { appApiPath } from '../src/host/paths.ts';
+import { canonicalArenaScenario, perfItems } from './arena-scenarios.ts';
 import { FIXTURE_NOW_MS, activeScenario, attemptsBody, rosterBody } from './monitoring-bodies.ts';
 
 export const WORK_SCENARIO_NAMES = [
@@ -14,6 +15,8 @@ export const WORK_SCENARIO_NAMES = [
   'work-offline',
   'work-expired',
   'work-unsupported',
+  'arena-perf-work',
+  'arena-stale-work',
 ] as const;
 export type WorkScenarioName = (typeof WORK_SCENARIO_NAMES)[number];
 
@@ -138,7 +141,8 @@ const isWorkScenario = (value: string | null): value is WorkScenarioName => WORK
 export function activeWorkScenario(): WorkScenarioName {
   if (override !== null) return override;
   const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('scenario');
-  return isWorkScenario(requested) ? requested : 'work-none';
+  const named = canonicalArenaScenario(requested, { arena: 'work', perf: 'arena-perf-work', stale: 'arena-stale-work', empty: 'work-none' });
+  return isWorkScenario(named) ? named : 'work-none';
 }
 
 let store: FixtureState | null = null;
@@ -460,6 +464,37 @@ function seedWork(state: FixtureState): void {
   insertItem(state, 13, at(13), { title: 'Reconcile petty cash', attempts: [`att_${'e'.repeat(24)}`], decisions: [{ action: 'submit' }] });
 }
 
+const PERF_STEPS: Readonly<Record<string, readonly { action: string }[]>> = {
+  open: [],
+  'awaiting-review': [{ action: 'submit' }],
+  blocked: [{ action: 'block' }],
+  reopened: [{ action: 'submit' }, { action: 'accept' }, { action: 'reopen' }],
+  accepted: [{ action: 'submit' }, { action: 'accept' }],
+};
+
+/** arena-perf-1: open leaves link the monitoring fixture's real working attempts; every other row links an ended synthetic one. */
+function seedArenaPerf(state: FixtureState): void {
+  const used = new Map<number, number>();
+  const endedAttempt = (bot: number): string => {
+    const index = used.get(bot) ?? 0;
+    used.set(bot, index + 1);
+    const fact = syntheticFact(bot, index);
+    state.synthetic.set(fact.attemptId, fact);
+    return fact.attemptId;
+  };
+  const isContainer = (n: number): boolean => n <= 10;
+  for (const plan of perfItems()) {
+    const attempts = isContainer(plan.n) ? [] : plan.workingAttempt !== null ? [realAttempt(plan.workingAttempt[0], plan.workingAttempt[1])] : [endedAttempt(plan.bot)];
+    insertItem(state, plan.n, FIXTURE_NOW_MS - plan.ageMinutes * 60_000, {
+      title: plan.title,
+      parent: plan.parent ?? undefined,
+      attempts,
+      milestones: plan.milestones ? [{ label: 'Draft', done: true }, { label: 'Review', done: false }, { label: 'Ship', done: false }] : undefined,
+      decisions: PERF_STEPS[plan.state] ?? [],
+    });
+  }
+}
+
 const LONG_LINE = 'A long line of text that keeps going so the layout has to wrap it somewhere sensible. ';
 
 function seedLong(state: FixtureState): void {
@@ -496,7 +531,8 @@ function seedMany(state: FixtureState): void {
 
 function freshState(scenario: WorkScenarioName): FixtureState {
   const state: FixtureState = { scenario, items: new Map(), entries: [], synthetic: new Map(), decisionReplays: new Map(), failedOnce: new Set(), counter: 0, tick: 0 };
-  if (scenario === 'work' || scenario === 'work-stale' || scenario === 'work-conflict') seedWork(state);
+  if (scenario === 'work' || scenario === 'work-stale' || scenario === 'work-conflict' || scenario === 'arena-stale-work') seedWork(state);
+  if (scenario === 'arena-perf-work') seedArenaPerf(state);
   if (scenario === 'work-long') seedLong(state);
   if (scenario === 'work-many') seedMany(state);
   return state;
@@ -703,7 +739,7 @@ const routes: readonly Route[] = [
     method: 'GET',
     handle: (state, match) => {
       const item = findItem(state, safeDecode(match[1] ?? ''));
-      return item === null ? apiError(404, 'unknown_work') : json(viewOf(state, item));
+      return item === null || state.scenario === 'arena-stale-work' ? apiError(404, 'unknown_work') : json(viewOf(state, item));
     },
   },
   { pattern: new RegExp(`^${appApiPath('/work')}/${SEGMENT}/attempts$`), method: 'POST', handle: (state, match, body) => linkAttempt(state, safeDecode(match[1] ?? ''), body) },

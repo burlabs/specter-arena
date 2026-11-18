@@ -15,6 +15,20 @@ beforeEach(() => {
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
 
+describe('useHostApi mode', () => {
+  it('is LIVE for a client without the marker, with another value, and FIXTURE only for the exact marker', () => {
+    const modeOf = (extra: object) => {
+      Object.assign(client, extra);
+      return renderHook(() => useHostApi()).result.current.mode;
+    };
+    expect(modeOf({})).toBe('LIVE');
+    expect(modeOf({ sourceMode: 'LIVE' })).toBe('LIVE');
+    expect(modeOf({ sourceMode: 'fixture' })).toBe('LIVE');
+    expect(modeOf({ sourceMode: 'FIXTURE' })).toBe('FIXTURE');
+    delete (client as { sourceMode?: unknown }).sourceMode;
+  });
+});
+
 describe('useHostApi', () => {
   it('parses a successful Response from get', async () => {
     client.get.mockResolvedValue(response({ ok: true }));
@@ -78,9 +92,9 @@ describe('useHostApi', () => {
     await expect(result.current.getJson('/apps/specter-arena/api/ping')).rejects.toThrow('network down');
   });
 
-  it('exposes only the two JSON methods, never the client', () => {
+  it('exposes the mode and the two JSON methods, never the client', () => {
     const { result } = renderHook(() => useHostApi());
-    expect(Object.keys(result.current).sort()).toEqual(['getJson', 'postJson']);
+    expect(Object.keys(result.current).sort()).toEqual(['getJson', 'mode', 'postJson']);
   });
 
   it('keeps the same api object while the client is unchanged', () => {
