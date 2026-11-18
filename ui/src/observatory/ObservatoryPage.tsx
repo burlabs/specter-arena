@@ -13,6 +13,8 @@ import { useRoster } from './useRoster';
 import type { RosterData } from './useRoster';
 import { useWatched } from './watched';
 import { SpectersView } from '../specters/SpectersView';
+import { useSpecterStyle } from '../specters/useSpecterStyle';
+import { useSpecters } from '../specters/useSpecters';
 import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
 
 type ViewName = 'watched' | 'all';
@@ -40,7 +42,9 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 
 export function ObservatoryPage() {
   useInjectedStyle();
+  useSpecterStyle();
   const { state, refresh } = useRoster();
+  const specters = useSpecters();
   const data = state.data;
   const rosterIds = useMemo(
     () => (data === null ? null : { ids: new Set(data.items.map((item) => item.bindingId)), complete: data.complete }),
@@ -137,7 +141,15 @@ export function ObservatoryPage() {
       );
     }
     return (
-      <RosterList items={visible} selectedId={selectedId} watched={watched} watchListFull={full} onSelect={select} onToggleWatch={toggle} />
+      <RosterList
+        items={visible}
+        selectedId={selectedId}
+        watched={watched}
+        watchListFull={full}
+        specters={specters.byBinding}
+        onSelect={select}
+        onToggleWatch={toggle}
+      />
     );
   })();
 
@@ -233,7 +245,7 @@ export function ObservatoryPage() {
               </Panel>
             </div>
           </div>
-          {section === 'specters' && <SpectersView />}
+          {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} />}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null
