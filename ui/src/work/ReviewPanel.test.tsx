@@ -1,5 +1,5 @@
 import { useAppApi } from '@kirocrew/app-sdk';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POLL_MS } from '../observatory/usePolled';
 import { announced, click, detail, flush, openWork, selectItem } from './testHarness';
