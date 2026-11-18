@@ -383,3 +383,16 @@ def test_direct_ledger_writes_skip_zero_shares_and_refuse_nothing_else(
         )
         assert written == 0
     assert submitted.state == "awaiting-review"
+
+
+def test_reinstating_skips_a_contributor_whose_last_entry_is_not_a_correction(
+    ledger: tuple[Store, Seeded],
+) -> None:
+    store, seeded = ledger
+    accepted = submit_and_accept(store, make_work(store, [seeded.attempts[0][0]]), 1, at=T0 + 2000)
+    with store.write() as conn:
+        written = xp_module.write_reinstatements(
+            conn, work_id=accepted.work_id, decision_id="dec_" + "0" * 24, at_ms=T0 + 3000
+        )
+    assert written == 0
+    assert [r[2] for r in entries(store, accepted.work_id)] == ["award"]

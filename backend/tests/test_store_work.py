@@ -30,6 +30,7 @@ from backend.specter_arena.store import (
     WorkRecord,
     create_work,
     decide_work,
+    encode_cursor,
     get_work,
     link_attempt,
     list_work,
@@ -1133,7 +1134,14 @@ def test_list_work_clamps_the_limit_and_refuses_bad_cursors(ledger: tuple[Store,
     big = list_work(store, state=None, binding_id=None, cursor=None, limit=100)
     assert len(big.items) == 25 and big.next_cursor is not None
     assert len(list_work(store, state=None, binding_id=None, cursor=None, limit=0).items) == 1
-    for bad in ("not-a-cursor", "", "AAAA"):
+    for bad in (
+        "not-a-cursor",
+        "",
+        "AAAA",
+        encode_cursor([5, "wrk_nope"]),
+        encode_cursor([-1, "wrk_" + "a" * 24]),
+        encode_cursor(["5", "wrk_" + "a" * 24]),
+    ):
         with pytest.raises(InvalidCursor):
             list_work(store, state=None, binding_id=None, cursor=bad, limit=None)
 
