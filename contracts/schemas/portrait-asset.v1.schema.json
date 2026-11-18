@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:portrait-asset:v1",
+  "title": "Portrait asset v1",
+  "description": "One immutable portrait image the app owns. assetId is content addressed: ast_ plus the first 24 hex characters of the SHA-256 of the stored PNG bytes, so changing the pixels makes a new asset and an asset never changes. The stored bytes are always a PNG that passed the backend's PNG validator (8-bit RGB or RGBA, at most 1024 by 1024 pixels and 1 MiB): an upload is stored as the backend's own re-encoding with metadata dropped, and bundled art is stored byte for byte because its SHA-256 is pinned in code. origin is where the image came from, a provenance fact and not a character category: bundled art ships with the app, uploaded art was supplied by the user. dataBase64 is required and is null everywhere except the body of GET /api/assets/{assetId}, where it holds the PNG as standard base64; lists and embedded copies carry null. The label is shown to people and is read by assistive technology, so it names the picture and never claims what the picture is of beyond the user's own text.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "assetId": { "type": "string", "pattern": "^ast_[0-9a-f]{24}$" },
+    "mediaType": { "type": "string", "const": "image/png" },
+    "width": { "type": "integer", "minimum": 1, "maximum": 1024 },
+    "height": { "type": "integer", "minimum": 1, "maximum": 1024 },
+    "byteLength": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+    "origin": { "type": "string", "enum": ["bundled", "uploaded"] },
+    "label": { "type": "string", "pattern": "^[^\\u0000-\\u001f\\u007f<>]{1,80}$" },
+    "dataBase64": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9+/]*={0,2}$", "maxLength": 1398104 }
+  },
+  "required": ["contractVersion", "assetId", "mediaType", "width", "height", "byteLength", "origin", "label", "dataBase64"],
+  "additionalProperties": false
+}

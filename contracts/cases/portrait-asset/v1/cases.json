@@ -1,0 +1,127 @@
+[
+  {
+    "file": "valid/bundled-null-data.json",
+    "valid": true
+  },
+  {
+    "file": "valid/uploaded-with-data.json",
+    "valid": true
+  },
+  {
+    "file": "valid/largest-allowed.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-url-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-label.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-data-base64.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/data-base64-number.json",
+    "valid": false,
+    "instancePath": "/dataBase64"
+  },
+  {
+    "file": "invalid/media-type-jpeg.json",
+    "valid": false,
+    "instancePath": "/mediaType"
+  },
+  {
+    "file": "invalid/media-type-svg.json",
+    "valid": false,
+    "instancePath": "/mediaType"
+  },
+  {
+    "file": "invalid/asset-id-uppercase-hex.json",
+    "valid": false,
+    "instancePath": "/assetId"
+  },
+  {
+    "file": "invalid/asset-id-25-hex.json",
+    "valid": false,
+    "instancePath": "/assetId"
+  },
+  {
+    "file": "invalid/asset-id-path-traversal.json",
+    "valid": false,
+    "instancePath": "/assetId"
+  },
+  {
+    "file": "invalid/asset-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/assetId"
+  },
+  {
+    "file": "invalid/width-zero.json",
+    "valid": false,
+    "instancePath": "/width"
+  },
+  {
+    "file": "invalid/width-1025.json",
+    "valid": false,
+    "instancePath": "/width"
+  },
+  {
+    "file": "invalid/height-fraction.json",
+    "valid": false,
+    "instancePath": "/height"
+  },
+  {
+    "file": "invalid/byte-length-over-one-mib.json",
+    "valid": false,
+    "instancePath": "/byteLength"
+  },
+  {
+    "file": "invalid/origin-generated.json",
+    "valid": false,
+    "instancePath": "/origin"
+  },
+  {
+    "file": "invalid/label-empty.json",
+    "valid": false,
+    "instancePath": "/label"
+  },
+  {
+    "file": "invalid/label-markup.json",
+    "valid": false,
+    "instancePath": "/label"
+  },
+  {
+    "file": "invalid/label-81-chars.json",
+    "valid": false,
+    "instancePath": "/label"
+  },
+  {
+    "file": "invalid/data-not-base64.json",
+    "valid": false,
+    "instancePath": "/dataBase64"
+  },
+  {
+    "file": "invalid/data-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/dataBase64"
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/width-nan.json",
+    "valid": false
+  }
+]

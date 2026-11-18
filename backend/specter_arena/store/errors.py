@@ -67,3 +67,39 @@ class UnknownRun(StoreError):
 
 class UnknownBinding(StoreError):
     code = "unknown-binding"
+
+
+class VersionConflict(StoreError):
+    """The caller's expected Specter version is not the current one (0 means no active Specter)."""
+
+    code = "version-conflict"
+
+    def __init__(self, current_version: int) -> None:
+        super().__init__()
+        self.current_version = current_version
+
+
+class UnknownSpecter(StoreError):
+    code = "unknown-specter"
+
+
+class UnknownRequest(StoreError):
+    code = "unknown-request"
+
+
+class UnknownAsset(StoreError):
+    code = "unknown-asset"
+
+
+class GenerationInFlight(StoreError):
+    code = "generation-in-flight"
+
+
+class BudgetExhausted(StoreError):
+    code = "budget-exhausted"
+
+
+class NotReady(StoreError):
+    """Accept was asked for a request that is not `ready`."""
+
+    code = "not-ready"

@@ -12,6 +12,7 @@ import { useInjectedStyle } from './useInjectedStyle';
 import { useRoster } from './useRoster';
 import type { RosterData } from './useRoster';
 import { useWatched } from './watched';
+import { SpectersView } from '../specters/SpectersView';
 import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
 
 type ViewName = 'watched' | 'all';
@@ -19,6 +20,13 @@ type ViewName = 'watched' | 'all';
 const VIEWS: ReadonlyArray<{ name: ViewName; label: string }> = [
   { name: 'watched', label: 'Watched' },
   { name: 'all', label: 'All bots' },
+];
+
+type SectionName = 'roster' | 'specters';
+
+const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
+  { name: 'roster', label: 'Roster' },
+  { name: 'specters', label: 'Specters' },
 ];
 
 function initialView(data: RosterData | null, watched: ReadonlySet<string>): ViewName | null {
@@ -54,6 +62,10 @@ export function ObservatoryPage() {
   const tabsId = useId();
   const panelId = `${tabsId}-panel`;
   const tabId = (name: ViewName) => `${tabsId}-tab-${name}`;
+  const [section, setSection] = useState<SectionName>('roster');
+  const sectionsId = useId();
+  const sectionPanelId = `${sectionsId}-panel`;
+  const sectionTabId = (name: SectionName) => `${sectionsId}-tab-${name}`;
 
   const [departed, setDeparted] = useState(false);
   useEffect(() => {
@@ -70,12 +82,13 @@ export function ObservatoryPage() {
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return;
+      if (section !== 'roster' || searchRef.current === null) return;
       event.preventDefault();
-      searchRef.current?.focus();
+      searchRef.current.focus();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [section]);
 
   const items = data?.items ?? [];
   const inView = useMemo(() => (view === 'watched' ? items.filter((item) => watched.has(item.bindingId)) : items), [view, items, watched]);
@@ -168,6 +181,9 @@ export function ObservatoryPage() {
           <OperationalLegend open={legendOpen} onToggle={() => setLegendOpen((open) => !open)} />
         </header>
 
+        <Tabs label="Sections" tabs={SECTIONS} value={section} panelId={sectionPanelId} tabId={sectionTabId} onChange={setSection} />
+        <div role="tabpanel" id={sectionPanelId} aria-labelledby={sectionTabId(section)}>
+        <div hidden={section !== 'roster'}>
         <div className="sa-layout">
           <Panel label="Roster">
             <div className="sa-toolbar">
@@ -215,6 +231,9 @@ export function ObservatoryPage() {
               <p>Select a bot to see its condition and why.</p>
             )}
           </Panel>
+        </div>
+        </div>
+        {section === 'specters' && <SpectersView />}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null
