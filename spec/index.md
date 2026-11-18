@@ -26,6 +26,6 @@ Work is owned by five logical components. Details are in `docs/architecture/comp
 | FP-02+03 Domain contracts, durable state, and continuous observation | `.kiro/specs/fp-02-03-contracts-and-observation/` | Complete: Pass 1 (#38-#50 closed) and Pass 2 (bot binding, observation, coverage, collector, roster read route); acceptance sitting OA-1 passed 2026-11-16 |
 | FP-04 Bot roster and operational monitoring baseline | `.kiro/specs/fp-04-bot-roster/` | Complete when PR-3 merges: roster, attempts route, monitoring view; waiting and blocked deferred (FP4-D1) |
 | FP-06+07 Summoning, persistent Specters, and safe visuals | `.kiro/specs/fp-06-07-summoning-visuals/` | Complete: PR-A shell, contracts and store; PR-B generation and assets; PR-C UI; live generation owner step OA-3 open |
-| FP-08+09 Work encounters, acceptance and the XP ledger | `.kiro/specs/fp-08-09-work-encounters-xp/` | In progress: PR-A spec, contracts, store and policy (merged); PR-B service and routes (this PR); PR-C UI |
+| FP-08+09 Work encounters, acceptance and the XP ledger | `.kiro/specs/fp-08-09-work-encounters-xp/` | Complete with PR-C: PR-A spec, contracts, store and policy (merged); PR-B service and routes (merged); PR-C UI (this PR); live check of Work and XP on the installed app is an owner step (OA-4), open |
 
 Feature sessions add folders under `.kiro/specs/` and link them here.

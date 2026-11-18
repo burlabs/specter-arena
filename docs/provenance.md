@@ -31,8 +31,11 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 | FP-06+07 | `components/MotionPolicyContext.tsx` | `ui/src/specters/useMotionAllowed.ts` | idea only: reduced motion turns effects off; context and user pause removed |
 | FP-06+07 | `components/SpectersPage.tsx` | `ui/src/specters/SpectersView.tsx`, `SpecterDetail.tsx` | layout and interaction spec; rewritten against the `specter` and `specters` contracts; fixtures, XP and progression removed |
 | FP-06+07 | `components/SummoningPage.tsx` | `ui/src/specters/SummonPanel.tsx` | interaction spec; rewritten against the summoning route; mock generator removed |
+| FP-08+09 | `components/WorkReviewPanel.tsx` | `ui/src/work/ReviewPanel.tsx`, `reviewMachine.ts`, `WorkDetail.tsx` | review and accept interaction spec only; rewritten against the `work-item` contract; three states became seven; the campaign, attribution, evidence URL and session XP fields are cut; the `<dialog>` became an inline confirm form; fixtures removed; scoped classes |
+| FP-08+09 | `components/SpecterProgression.tsx` | `ui/src/work/XpMeter.tsx`, `XpCards.tsx`, `ProgressionPanel.tsx` | level and XP display idea; the fixed 100 XP constant and the session scope are replaced by the `levels-1` fields of `xp-summary`; the bar width is computed from XP fields only; scoped classes |
+| FP-08+09 | `workflow/model.ts` (acceptance parts only) | none | vocabulary reference only; nothing ported; the contracts win |
 
-Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04 or FP-06+07. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
+Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04, FP-06+07 or FP-08+09. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
 
 ## Bundled art: A01 approved roster
 
