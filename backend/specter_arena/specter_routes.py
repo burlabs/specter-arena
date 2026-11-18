@@ -4,7 +4,6 @@ import asyncio
 import functools
 import importlib
 import json
-import re
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -17,7 +16,6 @@ from .proxy_auth import CONTRACT_VERSION, signed
 MAX_BODY_BYTES = 1_572_864
 NOSNIFF = {"X-Content-Type-Options": "nosniff"}
 _ASSETS_PATH = "/api/assets"
-_SCENE_KEY = re.compile(r"[a-z][a-z0-9-]{0,63}")
 UNKNOWN_SCENE_ASSET = "unknown_scene_asset"
 Handler = Callable[[Request], Awaitable[Response]]
 
@@ -200,11 +198,7 @@ def _scene_art() -> Any:
 async def get_scene_asset(request: Request) -> Response:
     """A bundled scene raster as `scene-asset.v1`. Static bytes: no store, no service, no write."""
     key = _p(request, "key")
-    body = (
-        await asyncio.to_thread(_scene_art().get_scene_asset, key)
-        if _SCENE_KEY.fullmatch(key)
-        else None
-    )
+    body = await asyncio.to_thread(_scene_art().get_scene_asset, key)
     if body is None:
         return _error(UNKNOWN_SCENE_ASSET, 404)
     return JSONResponse(body, headers=NOSNIFF)

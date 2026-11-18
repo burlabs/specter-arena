@@ -60,13 +60,8 @@ def test_unsigned_is_401_and_other_methods_are_405(client: TestClient) -> None:
     "key", ["nope", "arena-map.png", "Arena-Map", "a" * 65, "%20", "a..b", "1map", "-map"]
 )
 def test_an_unknown_or_malformed_key_is_404_unknown_scene_asset(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch, key: str
+    client: TestClient, key: str
 ) -> None:
-    def refuse(_: str) -> dict[str, Any] | None:
-        raise AssertionError("the loader must not run for a malformed key")
-
-    if key in {"Arena-Map", "a" * 65, "%20", "a..b", "1map", "-map", "arena-map.png"}:
-        monkeypatch.setattr(scene_art, "get_scene_asset", refuse)
     response = Api(client).get(f"/api/scene-assets/{key}")
     assert response.status_code == 404
     assert response.json() == {"contractVersion": 1, "error": "unknown_scene_asset"}

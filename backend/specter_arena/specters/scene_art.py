@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import functools
 import hashlib
-import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +14,6 @@ from .profile import CONTRACT_VERSION
 SCENE_DIR: Final = Path(__file__).with_name("scene")
 SCENE_MAX_BYTES: Final = 4_194_304  # 4 MiB; the portrait limit is 1 MiB
 SCENE_MAX_SIDE: Final = 4096  # the portrait limit is 1024
-SCENE_KEY: Final = re.compile(r"[a-z][a-z0-9-]{0,63}")
 
 
 @dataclass(frozen=True, slots=True)
