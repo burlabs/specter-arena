@@ -34,7 +34,7 @@ AssetOrigin = Literal["bundled", "uploaded"]
 
 SUMMONING_TAG = "summoning"
 PROFILE_CONTRACT_VERSION = 1
-# The eight prose fields of specter-profile.v1 (SC6-3). `contractVersion` is the ninth key.
+# The eight prose fields of specter-profile.v1. `contractVersion` is the ninth key.
 PROFILE_FIELDS: tuple[str, ...] = (
     "name",
     "epithet",
@@ -161,9 +161,6 @@ def new_specter_id() -> str:
     return "spc_" + secrets.token_hex(12)
 
 
-# --- validation helpers ------------------------------------------------------------------------
-
-
 def _need_id(pattern: re.Pattern[str], value: object, what: str) -> str:
     if not isinstance(value, str) or pattern.fullmatch(value) is None:
         raise StoreUsageError(what)
@@ -225,8 +222,6 @@ def _keep_names(keep: Sequence[str]) -> list[str]:
         raise StoreUsageError("keep names a field the profile does not have")
     return names
 
-
-# --- row mapping -------------------------------------------------------------------------------
 
 _ASSET_COLUMNS = (
     "a.asset_id, a.sha256, a.media_type, a.width, a.height, a.byte_length, a.origin, a.label,"
@@ -462,9 +457,6 @@ def _check_expected(active: _Active | None, expected_version: int) -> None:
         raise VersionConflict(current)
 
 
-# --- generation requests -----------------------------------------------------------------------
-
-
 def _budget(
     conn: sqlite3.Connection,
     binding_id: str,
@@ -698,9 +690,6 @@ def sweep_interrupted(store: Store, now_ms: int, *, older_than_ms: int | None = 
             (now_ms, older_than_ms, now_ms, older_than_ms or 0),
         )
         return swept.rowcount
-
-
-# --- specters ----------------------------------------------------------------------------------
 
 
 def get_specter(store: Store, binding_id: str) -> SpecterRecord | None:
@@ -979,9 +968,6 @@ def list_revisions(
     return build_page(records, size, lambda record: (record.revision_no,))
 
 
-# --- assets ------------------------------------------------------------------------------------
-
-
 def insert_asset(
     store: Store,
     *,
@@ -1045,9 +1031,6 @@ def list_assets(store: Store) -> tuple[AssetRecord, ...]:
             (MAX_LISTED_ASSETS,),
         ).fetchall()
         return tuple(_asset(row) for row in rows)
-
-
-# --- brief input -------------------------------------------------------------------------------
 
 
 def bot_display_name(store: Store, binding_id: str) -> str | None:

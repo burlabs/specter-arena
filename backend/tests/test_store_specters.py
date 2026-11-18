@@ -111,9 +111,6 @@ def ready(opened: Store, binding: str, n: int, at: int = T0, **kw: Any) -> str:
     return req(n)
 
 
-# --- requests ----------------------------------------------------------------------------------
-
-
 def test_create_request_queues_a_tagged_request_and_a_repeat_returns_it(store: Store) -> None:
     binding = bind(store)
     first = create(store, binding, 1, keep=("name", "appearance", "name"))
@@ -261,9 +258,6 @@ def test_sweep_fails_what_a_previous_process_left_in_flight(store: Store) -> Non
     assert first is not None and first.status == "ready"
 
 
-# --- budget ------------------------------------------------------------------------------------
-
-
 def test_budget_counts_requests_that_reached_running_in_a_rolling_window(store: Store) -> None:
     binding = bind(store)
     budget = sp.get_budget(store, binding, T0, **LIMITS)
@@ -345,9 +339,6 @@ def test_a_repeat_of_a_spent_request_is_still_idempotent(store: Store) -> None:
     for n in range(1, 6):
         ready(store, binding, n, at=T0 + n * 10)
     assert create(store, binding, 5, at=T0 + 100).created is False
-
-
-# --- accept ------------------------------------------------------------------------------------
 
 
 def test_accept_creates_the_first_specter_and_marks_the_request(store: Store) -> None:
@@ -447,9 +438,6 @@ def test_the_first_accept_ignores_keep_because_there_is_nothing_to_keep(store: S
     done = ready(store, binding, 1, keep=("name",), candidate=profile("Fresh"))
     made = sp.accept_request(store, done, expected_version=0, now_ms=T0 + 10)
     assert made.profile["name"] == "Fresh"
-
-
-# --- manual, rename, portrait, archive ---------------------------------------------------------
 
 
 def test_manual_save_is_labelled_manual_and_never_generation(store: Store) -> None:
@@ -583,9 +571,6 @@ def test_every_write_bumps_the_version_by_one_with_a_matching_revision(store: St
     assert rows(store, "SELECT version FROM specter") == [(5,)]
 
 
-# --- reads and paging --------------------------------------------------------------------------
-
-
 def test_list_specters_orders_oldest_first_and_is_capped(
     store: Store, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -639,9 +624,6 @@ def test_bot_display_name_reads_the_newest_display_revision(store: Store) -> Non
     assert sp.bot_display_name(store, binding) == "plain-name"
     with pytest.raises(UnknownBinding):
         sp.bot_display_name(store, "bnd_" + "0" * 24)
-
-
-# --- assets ------------------------------------------------------------------------------------
 
 
 def test_insert_asset_is_content_addressed_and_idempotent(store: Store) -> None:
@@ -709,9 +691,6 @@ def test_list_assets_puts_bundled_first_without_bytes(store: Store) -> None:
     assert all(a.data is None for a in listed)
 
 
-# --- shape checks ------------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "bad",
     [
@@ -759,9 +738,6 @@ def test_a_profile_of_the_wrong_shape_is_refused_everywhere(store: Store, bad: A
 def test_bad_arguments_are_usage_errors_not_data_errors(store: Store, call: Any) -> None:
     with pytest.raises(StoreUsageError):
         call(store)
-
-
-# --- concurrency -------------------------------------------------------------------------------
 
 
 def run_threads(*targets: Any) -> list[Any]:
@@ -820,9 +796,6 @@ def test_a_rename_and_an_accept_race_on_one_version(store: Store) -> None:
     assert sorted(type(r).__name__ for r in results) == ["SpecterRecord", "VersionConflict"]
     active = sp.get_specter(store, binding)
     assert active is not None and active.version == 2
-
-
-# --- module hygiene ----------------------------------------------------------------------------
 
 
 def test_the_specter_store_module_imports_no_clock_network_or_event_loop() -> None:

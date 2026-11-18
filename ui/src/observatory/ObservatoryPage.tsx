@@ -183,57 +183,57 @@ export function ObservatoryPage() {
 
         <Tabs label="Sections" tabs={SECTIONS} value={section} panelId={sectionPanelId} tabId={sectionTabId} onChange={setSection} />
         <div role="tabpanel" id={sectionPanelId} aria-labelledby={sectionTabId(section)}>
-        <div hidden={section !== 'roster'}>
-        <div className="sa-layout">
-          <Panel label="Roster">
-            <div className="sa-toolbar">
-              <Tabs label="Which bots to show" tabs={VIEWS} value={view} panelId={panelId} tabId={tabId} onChange={setLatchedView} />
-              <label className="sa-search">
-                <Icon name="search" />
-                <span className="sa-visually-hidden">Search bots by name</span>
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  placeholder="Search bots by name"
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && query !== '') setQuery('');
-                  }}
-                />
-              </label>
-              {view === 'watched' && watched.size > 0 && (
-                <Button variant="ghost" onClick={() => { clear(); setLatchedView('all'); }}>
-                  Unwatch all
-                </Button>
-              )}
-            </div>
-            <div role="tabpanel" id={panelId} aria-labelledby={tabId(view)}>
-              <p className="sa-result-count">{`${visible.length} of ${items.length} bots`}</p>
-              {list}
-            </div>
-          </Panel>
+          <div hidden={section !== 'roster'}>
+            <div className="sa-layout">
+              <Panel label="Roster">
+                <div className="sa-toolbar">
+                  <Tabs label="Which bots to show" tabs={VIEWS} value={view} panelId={panelId} tabId={tabId} onChange={setLatchedView} />
+                  <label className="sa-search">
+                    <Icon name="search" />
+                    <span className="sa-visually-hidden">Search bots by name</span>
+                    <input
+                      ref={searchRef}
+                      type="search"
+                      value={query}
+                      placeholder="Search bots by name"
+                      onChange={(event) => setQuery(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape' && query !== '') setQuery('');
+                      }}
+                    />
+                  </label>
+                  {view === 'watched' && watched.size > 0 && (
+                    <Button variant="ghost" onClick={() => { clear(); setLatchedView('all'); }}>
+                      Unwatch all
+                    </Button>
+                  )}
+                </div>
+                <div role="tabpanel" id={panelId} aria-labelledby={tabId(view)}>
+                  <p className="sa-result-count">{`${visible.length} of ${items.length} bots`}</p>
+                  {list}
+                </div>
+              </Panel>
 
-          <Panel label="Bot detail">
-            {selected !== undefined ? (
-              <BotDetail
-                key={selected.bindingId}
-                item={selected}
-                collector={roster.collector}
-                rosterRevision={roster.rosterRevision}
-                attempts={attempts.state}
-                onLoadOlder={attempts.loadOlder}
-                onRetry={attempts.refresh}
-              />
-            ) : departed || selectedId !== null ? (
-              <p role="status">This bot is no longer on the roster.</p>
-            ) : (
-              <p>Select a bot to see its condition and why.</p>
-            )}
-          </Panel>
-        </div>
-        </div>
-        {section === 'specters' && <SpectersView />}
+              <Panel label="Bot detail">
+                {selected !== undefined ? (
+                  <BotDetail
+                    key={selected.bindingId}
+                    item={selected}
+                    collector={roster.collector}
+                    rosterRevision={roster.rosterRevision}
+                    attempts={attempts.state}
+                    onLoadOlder={attempts.loadOlder}
+                    onRetry={attempts.refresh}
+                  />
+                ) : departed || selectedId !== null ? (
+                  <p role="status">This bot is no longer on the roster.</p>
+                ) : (
+                  <p>Select a bot to see its condition and why.</p>
+                )}
+              </Panel>
+            </div>
+          </div>
+          {section === 'specters' && <SpectersView />}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null

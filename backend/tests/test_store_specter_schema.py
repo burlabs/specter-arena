@@ -33,9 +33,6 @@ def normalised(conn: sqlite3.Connection) -> list[tuple[str, str, str]]:
     return [(a, b, " ".join((c or "").split())) for a, b, c in conn.execute(query)]
 
 
-# --- fresh, upgrade, downgrade -----------------------------------------------------------------
-
-
 def test_a_fresh_store_has_the_specter_tables_and_indexes(tmp_path: Path) -> None:
     opened = open_store(tmp_path / "data")
     try:
@@ -121,9 +118,6 @@ def test_code_that_knows_only_schema_four_refuses_a_version_five_store(tmp_path:
         open_store(data_dir, migrations=load_migrations()[:4])
     assert db.read_bytes() == before
     assert not (data_dir / "store" / "backups").exists()
-
-
-# --- constraints -------------------------------------------------------------------------------
 
 
 @pytest.fixture

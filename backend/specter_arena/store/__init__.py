@@ -257,6 +257,6 @@ __all__ = [
     "start_run",
     "status_for_error",
     "sweep_interrupted",
-    "window_usage",
     "unconfigured_status",
+    "window_usage",
 ]

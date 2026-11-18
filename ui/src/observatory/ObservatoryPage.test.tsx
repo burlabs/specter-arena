@@ -359,7 +359,7 @@ describe('sections', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
   });
 
-  it('leaves the slash key alone while the search box is not mounted', async () => {
+  it('leaves the slash key alone while the Specters section is open', async () => {
     await open();
     fireEvent.click(specterTab());
     expect(fireEvent.keyDown(document.body, { key: '/' })).toBe(true);
