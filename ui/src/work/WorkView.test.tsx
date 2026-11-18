@@ -186,3 +186,23 @@ describe('create and review journey (WV-6..WV-8, K-8)', () => {
     expect(announced()).toContain('Milestone marked: Check the totals.');
   });
 });
+
+describe('reopen and accept again (FP-09-AC03)', () => {
+  it('returns to the same XP after a reopen and re-accept, with no net gain', async () => {
+    const onLedger = vi.fn();
+    await openWork('work', { onLedgerChanged: onLedger });
+    await selectItem('Draft the vendor onboarding email');
+    const xp = async () => ((await (await useAppApi().get('/apps/specter-arena/api/xp')) as Response).json() as Promise<{ items: Array<{ bindingId: string; totalXp: number }> }>).then((body) => body.items.find((item) => item.bindingId === bots[0]?.bindingId)?.totalXp);
+    expect(await xp()).toBe(150);
+    await click('Reopen…');
+    await click('Reopen work');
+    expect(await xp()).toBe(50);
+    await click('Submit for review');
+    await click('Accept…');
+    fireEvent.click(within(detail()).getByRole('checkbox', { name: 'I reviewed the evidence above and accept this work' }));
+    await click('Accept work');
+    expect(within(detail()).getByText('Accepted', { selector: '.sa-work-badge' })).toBeTruthy();
+    expect(await xp()).toBe(150);
+    expect(onLedger).toHaveBeenCalledTimes(2);
+  });
+});

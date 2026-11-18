@@ -35,7 +35,6 @@ export function reasonWords(code: string, kind?: string): string {
   return REASON_WORDS[code] ?? `Reason code: ${code}`;
 }
 
-
 export const attemptKindLabel = (kind: string): string => (kind === 'bot-turn' ? 'Bot turn' : kind === 'worker' ? 'Worker' : kind);
 
 const END_SIGNAL_WORDS: Readonly<Record<string, string>> = {
@@ -95,7 +94,6 @@ export const COVERAGE_STATE_WORDS: Readonly<Record<string, string>> = {
   gap: 'Gap in collection',
   unknown: 'Not known',
 };
-
 
 export const LEGEND: ReadonlyArray<{ term: string; meaning: string }> = [
   { term: 'Working', meaning: 'Crew reports a turn running and the collector saw the chat recently.' },

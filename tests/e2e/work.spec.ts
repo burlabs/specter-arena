@@ -303,3 +303,42 @@ test('E-14 older pages add the missing rows without duplicates', async ({ page }
   await expect(entries).toHaveCount(60);
   expect(new Set(await entries.locator('.sa-work-ledger__title').allTextContents()).size).toBe(60);
 });
+
+test('E-15 reopen then accept again restores the same XP, and the ledger shows Award, Correction and Reinstated with no net gain', async ({ page }) => {
+  await openWork(page, 'work');
+  await selectWork(page, 'Draft the vendor onboarding email');
+  await expect(badge(page)).toHaveText('Accepted');
+
+  await sectionTab(page, 'Roster').click();
+  await selectBot(page, 'Atlas');
+  await expect(card(page, 'XP')).toContainText('150 XP from accepted work');
+
+  await sectionTab(page, 'Work').click();
+  await selectWork(page, 'Draft the vendor onboarding email');
+  await detail(page).getByRole('button', { name: 'Reopen…' }).click();
+  await detail(page).getByRole('button', { name: 'Reopen work' }).click();
+  await expect(badge(page)).toHaveText('Reopened');
+  await sectionTab(page, 'Roster').click();
+  await expect(card(page, 'XP')).toContainText('50 XP from accepted work');
+
+  await sectionTab(page, 'Work').click();
+  await selectWork(page, 'Draft the vendor onboarding email');
+  await detail(page).getByRole('button', { name: 'Submit for review' }).click();
+  await detail(page).getByRole('button', { name: 'Accept…' }).click();
+  await detail(page).getByRole('checkbox', { name: ACK }).check();
+  await detail(page).getByRole('button', { name: 'Accept work' }).click();
+  await expect(badge(page)).toHaveText('Accepted');
+
+  await sectionTab(page, 'Roster').click();
+  await expect(card(page, 'XP')).toContainText('150 XP from accepted work');
+  await botDetail(page).getByRole('tab', { name: 'Progression' }).click();
+  const entries = botDetail(page).getByRole('list', { name: 'XP entries, newest first' }).getByRole('listitem');
+  const onboarding = entries.filter({ hasText: 'Draft the vendor onboarding email' });
+  await expect(onboarding).toHaveCount(3);
+  await expect(onboarding.nth(0)).toContainText('Reinstated');
+  await expect(onboarding.nth(0)).toContainText('+100 XP');
+  await expect(onboarding.nth(1)).toContainText('Correction (reopened)');
+  await expect(onboarding.nth(1)).toContainText('-100 XP');
+  await expect(onboarding.nth(2)).toContainText('Award');
+  await expect(onboarding.nth(2)).toContainText('+100 XP');
+});
