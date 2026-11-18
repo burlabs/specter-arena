@@ -119,3 +119,16 @@ No probe sitting was held for Pass 2, and OA-1 did not exercise these:
 - Cron-origin (scheduled) turns are not delivered under `slots:user`, so they are invisible. Every roster response carries the standing note `cron-turns-not-observable`.
 - A bot whose DM thread was never opened has no slot and is not on the roster (OA-1 saw this for two such bots, as designed).
 - Whether reinstalling shows a consent screen for the new grants was not reported.
+
+## Generation grant, not monitoring (FP-06+07)
+
+Added 2026-11-18 under Eric's approval of grant A. The status header and every decision above are unchanged.
+
+FP-06+07 adds one grant for summoning a Specter: `permissions.api` gains `/api/chat`, and the manifest lists one app agent, `specter-arena-summoner` (file `agents/specter-summoner.json`), with no tools, no MCP servers, no `.mcp.json` and the `auto` model. It adds no event, `spawn`, `jobs`, `network` or `sessionApproval`. The app uses it only to start its own chat slot, send one prompt and read that slot's reply.
+
+- This is generation, not monitoring. It reads nothing about any bot. The app still monitors through `slots:user` and `GET /api/agents` only, and the three-part product scope (name, tokens, tasks or spawned work) is not widened.
+- Slots the app creates are app-owned. The `slots:user` collector receives user-origin slots, so it does not receive these, and they never become attempts, observations or coverage. Each request is also recorded as `internal: summoning` in `generation_request`, so a later XP feature must exclude it.
+- The host matches a bare grant entry against its child paths, so `/api/chat` also matches `/api/chat/slots/...`. Crew confines an app token to slots it owns, and the probe cell `user-chat-slots-api` (the all-user slot list) stays DENIED. The app must not call `GET /api/chat/slots` and must not read any slot it did not create. A backend test pins the paths the summoner uses.
+- Not proven on a live install: that the host still refuses `GET /api/chat/slots` once `/api/chat` is granted. The owner step OA-3 records the answer. Until then nothing depends on that refusal.
+- Updating an installed app stages the added grant until the owner approves it. Without approval, generation reports `generation_unavailable` and monitoring keeps working.
+

@@ -1,24 +1,23 @@
-"""FP-02-AC04 producer test for the five Specter contracts, over the real store.
+"""FP-02-AC04 producer test: real `SpecterService` bodies validated against the five Specter
+contracts with the same validator the case runner uses, over the real store."""
 
-The wire bodies are built here from what the store returns, so the store record shapes are proved
-to fit the schemas. The domain service that will own the mapping lands in a later PR; it replaces
-the local mappers with its own bodies.
-"""
-
+import asyncio
 import base64
-from collections.abc import Iterator
+from collections.abc import Callable, Coroutine, Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from backend.specter_arena.specters.service import SpecterService
 from backend.specter_arena.store import Store, open_store
-from backend.specter_arena.store import specters as sp
 
 from .contract_support import compile_schema, load_registry
-from .test_store_specters import LIMITS, PNG, T0, bind, profile, req
+from .png_support import png
+from .specter_fakes import ALPHA, FakeClock, ScriptedSummoner, bind, good_reply
 
 REGISTRY = load_registry()
+
 
 IDS = {
     "specter-profile": "urn:specter-arena:contract:specter-profile:v1",
@@ -33,57 +32,6 @@ def check(schema: str, body: Any) -> None:
     compile_schema(IDS[schema], REGISTRY)(body)
 
 
-def asset_body(record: sp.AssetRecord, data_base64: str | None = None) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "assetId": record.asset_id,
-        "mediaType": record.media_type,
-        "width": record.width,
-        "height": record.height,
-        "byteLength": record.byte_length,
-        "origin": record.origin,
-        "label": record.label,
-        "dataBase64": data_base64,
-    }
-
-
-def specter_body(record: sp.SpecterRecord) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "specterId": record.specter_id,
-        "bindingId": record.binding_id,
-        "version": record.version,
-        "profile": dict(record.profile),
-        "portrait": None if record.portrait is None else asset_body(record.portrait),
-        "source": record.source,
-        "promptVersion": record.prompt_version,
-        "createdAtMs": record.created_ms,
-        "updatedAtMs": record.updated_ms,
-    }
-
-
-def summoning_body(record: sp.RequestRecord, budget: sp.Budget) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "requestId": record.request_id,
-        "bindingId": record.binding_id,
-        "status": record.status,
-        "candidate": None if record.candidate is None else dict(record.candidate),
-        "error": record.error_code,
-        "promptVersion": record.prompt_version,
-        "keep": list(record.keep),
-        "createdAtMs": record.created_ms,
-        "finishedAtMs": record.finished_ms,
-        "budget": {
-            "bindingRemaining": budget.binding_remaining,
-            "bindingLimit": budget.binding_limit,
-            "installRemaining": budget.install_remaining,
-            "installLimit": budget.install_limit,
-            "windowMs": budget.window_ms,
-        },
-    }
-
-
 @pytest.fixture
 def store(tmp_path: Path) -> Iterator[Store]:
     opened = open_store(tmp_path / "data")
@@ -93,51 +41,45 @@ def store(tmp_path: Path) -> Iterator[Store]:
         opened.close()
 
 
-def test_every_body_built_from_store_records_matches_its_contract(store: Store) -> None:
-    binding = bind(store)
-    check("specters", {"contractVersion": 1, "items": []})
+def run[T](scenario: Callable[[], Coroutine[Any, Any, T]]) -> T:
+    return asyncio.run(scenario())
 
-    created = sp.create_request(
-        store,
-        request_id=req(1),
-        binding_id=binding,
-        keep=("name",),
-        prompt_version="summon-1",
-        now_ms=T0,
-        **LIMITS,
-    )
-    budget = sp.get_budget(store, binding, T0, **LIMITS)
-    check("summoning", summoning_body(created.record, budget))
 
-    assert sp.mark_running(store, req(1), T0 + 1)
-    assert sp.complete_request(
-        store, req(1), candidate=profile(), model_label="auto", attempts=1, now_ms=T0 + 2
-    )
-    ready = sp.get_request(store, req(1))
-    assert ready is not None
-    check("summoning", summoning_body(ready, sp.get_budget(store, binding, T0 + 3, **LIMITS)))
-    check("specter-profile", dict(ready.candidate or {}))
+def test_every_body_the_service_produces_matches_its_contract(store: Store) -> None:
+    async def scenario() -> None:
+        binding = bind(store, ALPHA, "Probe Bot")
+        service = SpecterService(store, ScriptedSummoner(good_reply()), clock=FakeClock())
+        await service.start()
+        empty = await service.list_specters()
+        check("specters", empty)
+        request = "req_" + "1" * 24
+        _status, queued = await service.start_summoning(binding, {"requestId": request})
+        check("summoning", queued)
+        for _ in range(400):
+            ready = await service.get_summoning(request)
+            if ready["status"] == "ready":
+                break
+            await asyncio.sleep(0.005)
+        check("summoning", ready)
+        assert ready["candidate"] is not None
+        check("specter-profile", ready["candidate"])
+        specter = await service.accept(request, 0)
+        check("specter", specter)
+        check("summoning", await service.get_summoning(request))
+        gallery = (await service.list_portraits())["items"]
+        for item in gallery:
+            check("portrait-asset", item)
+        uploaded = await service.upload_asset(
+            {"mediaType": "image/png", "dataBase64": base64.b64encode(png()).decode()}
+        )
+        check("portrait-asset", uploaded)
+        served = await service.get_asset(uploaded["assetId"])
+        check("portrait-asset", served)
+        assert isinstance(served["dataBase64"], str)
+        with_portrait = await service.set_portrait(binding, 1, uploaded["assetId"])
+        check("specter", with_portrait)
+        listed = await service.list_specters()
+        check("specters", listed)
+        assert listed["items"][0]["portrait"]["dataBase64"] is None
 
-    accepted = sp.accept_request(store, req(1), expected_version=0, now_ms=T0 + 4)
-    check("specter", specter_body(accepted))
-
-    inserted = sp.insert_asset(
-        store, data=PNG, width=1, height=1, origin="uploaded", label="Lantern", now_ms=T0 + 5
-    )
-    check("portrait-asset", asset_body(inserted.record))
-    with_data = sp.get_asset(store, inserted.record.asset_id)
-    assert with_data is not None and with_data.data is not None
-    check("portrait-asset", asset_body(with_data, base64.b64encode(with_data.data).decode()))
-
-    with_portrait = sp.set_portrait(
-        store,
-        accepted.binding_id,
-        asset_id=inserted.record.asset_id,
-        expected_version=accepted.version,
-        now_ms=T0 + 6,
-    )
-    check("specter", specter_body(with_portrait))
-    check(
-        "specters",
-        {"contractVersion": 1, "items": [specter_body(s) for s in sp.list_specters(store)]},
-    )
+    run(scenario)

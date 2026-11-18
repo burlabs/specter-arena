@@ -83,9 +83,9 @@ describe('the committed overlay', () => {
     assert.equal(realOverlay.version, '0.0.0-probe.2');
   });
 
-  it('is not reflected in the release manifest, which has no diagnostic reference and only the D-P9 grants', () => {
+  it('is not reflected in the release manifest, which has no diagnostic reference and only the release grants', () => {
     assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
-    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] });
+    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents', '/api/chat'], events: ['slots:user'] });
     assert.equal(realManifest.backend.hooks, undefined);
   });
 });
@@ -150,6 +150,13 @@ describe('mergeManifest', () => {
     assert.equal(merged.ui.entry, 'diagnostic-dist/index.mjs');
     assert.deepEqual(merged.ui.pages, realOverlay.ui.pages);
     assert.deepEqual(merged.permissions, realOverlay.permissions);
+  });
+
+  it('drops the release agents list, because the staged probe copies no agents directory', () => {
+    assert.deepEqual(realManifest.agents, ['agents/specter-summoner.json']);
+    for (const phase of ['v0', 'v1', 'v2']) {
+      assert.equal('agents' in mergeManifest(realManifest, overlayForPhase(realOverlay, phase)), false, phase);
+    }
   });
 
   it('merges only the own-namespace entry for v0', () => {
