@@ -2,7 +2,7 @@
 
 ## Original work
 
-All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with one exception: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here.
+All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with two exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here, and the three portraits listed under "Bundled art: A01 approved roster" are user-supplied art.
 
 ## Reference only: Dragonboat
 
@@ -29,6 +29,18 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 | FP-04 | `observatory/model.ts` | `ui/src/observatory/model.ts` | rewritten from the contracts; only the export's vocabulary was a reference |
 
 Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
+
+## Bundled art: A01 approved roster
+
+Three portraits ship in `backend/specter_arena/specters/art/` as selectable gallery images. They are original art supplied by Eric from the A01 pack (`A01-approved-roster-assets`, `data/a01.assets.json`, derived non-generatively from the user-supplied `approved-roster.png`, source sha256 `f8c9f81e132f00d4e712c336fb4853d1ee88d2e7e892f06f41aff98b6dc3905f`). They are not tied to any bot or character category. The pack's own note says no licensing determination is implied by inclusion. Rights confirmation for the MIT release and the human art review (FP-07 human decision) are both open and belong to Eric.
+
+| File in this repository | A01 file | Size | sha256 |
+|---|---|---|---|
+| `art/vell.png` | `characters/vell/portrait.png` | 256 x 256 RGBA | `268d5b2f0e068017002941afafe15d5c30375f2cf80ff144eec1c07b9c18dcf0` |
+| `art/stitch.png` | `characters/stitch/portrait.png` | 256 x 256 RGBA | `4aaf7e40efe11d627ffbfdf4eb3ca83b331026b99ab023088c803196c519d561` |
+| `art/reeve.png` | `characters/reeve/portrait.png` | 256 x 256 RGBA | `b6c7934853cf7c0a5e15653ce6fc7992d2b838b3724e95505b4d7a55c5c35cc7` |
+
+The 96 px thumbnails and 512 px sprites of the pack are not shipped. Uploaded PNGs are re-encoded by the app and stored by content hash; they are the uploader's own work and are not listed here.
 
 ## External development tooling
 

@@ -22,8 +22,13 @@ store = sorted(
     if n == "backend.specter_arena.store" or n.startswith("backend.specter_arena.store.")
 )
 collector = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
+generation = sorted(
+    n for n in sys.modules
+    if n.startswith(("backend.specter_arena.specters", "backend.specter_arena.summoner"))
+)
 print(json.dumps({
-    "paths": paths, "probe_modules": loaded, "store_modules": store,
+    "paths": paths, "generation_modules": generation,
+    "probe_modules": loaded, "store_modules": store,
     "sqlite3": "sqlite3" in sys.modules,
     "collector_modules": collector, "websockets": "websockets" in sys.modules,
 }))
@@ -81,6 +86,34 @@ def test_importing_the_release_app_loads_no_collector_module_and_no_websockets(
         assert (graph["collector_modules"], graph["websockets"]) == ([], False), extra
 
 
+def test_importing_the_release_app_loads_no_specter_or_summoner_module(app_copy: Path) -> None:
+    for extra in ({}, {"SPECTER_PROBE": "1"}):
+        assert inspect_app(app_copy, **extra)["generation_modules"] == [], extra
+
+
+SPECTER_PATHS = frozenset(
+    {
+        "/api/specters",
+        "/api/specters/{binding_id}",
+        "/api/specters/{binding_id}/summonings",
+        "/api/specters/{binding_id}/manual",
+        "/api/specters/{binding_id}/name",
+        "/api/specters/{binding_id}/portrait",
+        "/api/specters/{binding_id}/archive",
+        "/api/summonings/{request_id}",
+        "/api/summonings/{request_id}/cancel",
+        "/api/summonings/{request_id}/accept",
+        "/api/portraits",
+        "/api/assets",
+        "/api/assets/{asset_id}",
+    }
+)
+
+
+def test_the_thirteen_specter_routes_are_mounted(app_copy: Path) -> None:
+    assert set(inspect_app(app_copy)["paths"]) >= SPECTER_PATHS
+
+
 def test_the_roster_and_attempts_routes_are_mounted_with_the_release_routes(
     app_copy: Path,
 ) -> None:
@@ -96,9 +129,11 @@ import backend.app as m
 async def main():
     async with m.app.router.lifespan_context(m.app):
         collector = m.app.state.collector
+        specters = m.app.state.specters
         during = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
     print(json.dumps({"collector": collector is None, "modules": during,
                       "websockets": "websockets" in sys.modules,
+                      "specters": specters is not None,
                       "store": [n for n in sys.modules if n == "backend.specter_arena.store"]}))
 
 asyncio.run(main())
@@ -138,7 +173,13 @@ def test_the_probe_switch_never_starts_the_collector_or_opens_the_store(
         KIROCREW_GATEWAY_ORIGIN="http://127.0.0.1:1",
         KIROCREW_PROXY_SECRET="x",
     )
-    assert out == {"collector": True, "modules": [], "websockets": False, "store": []}
+    assert out == {
+        "collector": True,
+        "modules": [],
+        "websockets": False,
+        "specters": False,
+        "store": [],
+    }
     assert not home.exists()
 
 
@@ -150,6 +191,7 @@ def test_without_gateway_environment_the_store_opens_but_the_collector_does_not_
     )
     assert out["collector"] is True and out["store"] != []
     assert out["websockets"] is False
+    assert out["specters"] is True
 
 
 def test_a_non_one_env_value_does_not_turn_the_probe_on(app_copy: Path) -> None:

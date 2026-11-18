@@ -50,6 +50,14 @@ React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Cr
 | `httpx2` | 2.16.0 | BSD-3-Clause | Transport for `starlette.testclient` |
 | `fastjsonschema` | 2.22.3 | BSD-3-Clause | Validates `contracts/schemas/` (draft-07) in the pytest contract runner; no dependencies; dev group only, so `requirements.txt` is unchanged |
 
+## Bundled assets (not packages)
+
+| Asset | Where | License or rights | Used for |
+|---|---|---|---|
+| A01 portraits `vell.png`, `stitch.png`, `reeve.png` | `backend/specter_arena/specters/art/` | User-supplied original art; no third-party license is claimed and rights confirmation for release is open. Hashes and source in `docs/provenance.md` | Selectable gallery portraits for Specters |
+
+FP-06+07 adds no package to any manifest or lockfile.
+
 ## Preview infrastructure (`infra/`, separate npm project, never shipped)
 
 | Package | Version | License | Used for |

@@ -37,8 +37,8 @@ describe('fixture SDK allowlist (mirrors the host matcher)', () => {
 });
 
 describe('release manifest allowlist', () => {
-  it('declares the own-namespace entry the page calls through and the D-P9 agents grant', () => {
-    expect(DECLARED_API).toEqual([`${APP_API_PREFIX}/*`, '/api/agents']);
+  it('declares the own-namespace entry the page calls through and the agents and summoning grants', () => {
+    expect(DECLARED_API).toEqual([`${APP_API_PREFIX}/*`, '/api/agents', '/api/chat']);
   });
 
   it('permits the ping path and the probe paths, and rejects the rest of the gateway namespace', async () => {
@@ -48,7 +48,8 @@ describe('release manifest allowlist', () => {
     await expect(client.get('/api/ping')).rejects.toThrow('not permitted to access /api/ping');
     await expect(client.get('/api/usage')).rejects.toThrow('not permitted');
     await expect(client.get('/api/members')).rejects.toThrow('not permitted');
-    await expect(client.get('/api/chat/slots')).rejects.toThrow('not permitted');
+    await expect(client.get('/api/spawn')).rejects.toThrow('not permitted');
+    await expect(client.get('/api/jobs')).rejects.toThrow('not permitted');
   });
 });
 

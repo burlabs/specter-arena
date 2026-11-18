@@ -8,6 +8,7 @@ from starlette.routing import BaseRoute, Route
 # importable as `backend.specter_arena` from the repo root that uvicorn puts on sys.path.
 from .specter_arena.config import probe_enabled
 from .specter_arena.routes import attempts, health, ping, ready, roster
+from .specter_arena.specter_routes import specter_routes
 from .specter_arena.store_runtime import StoreRuntime
 
 PROBE_ON = probe_enabled()
@@ -19,14 +20,21 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
     store_runtime: StoreRuntime = started.state.store_runtime
     await store_runtime.open()
     started.state.collector = None
+    started.state.specters = None
     if not store_runtime.probe_on and store_runtime.store is not None:
         # Lazy: `import backend.app` loads neither the collector nor `websockets`.
         from .specter_arena.collector.boot import boot_collector
 
+        # Lazy: `import backend.app` loads no specters, summoner or store module.
+        from .specter_arena.summoner.boot import boot_specters
+
         started.state.collector = await boot_collector(store_runtime.store)
+        started.state.specters = await boot_specters(store_runtime.store)
     try:
         yield
     finally:
+        if started.state.specters is not None:
+            await started.state.specters.close()
         if started.state.collector is not None:
             await started.state.collector.stop()
         await store_runtime.close()
@@ -38,6 +46,7 @@ routes: list[BaseRoute] = [
     Route("/api/ready", ready, methods=["GET"]),
     Route("/api/roster", roster, methods=["GET"]),
     Route("/api/roster/{binding_id}/attempts", attempts, methods=["GET"]),
+    *specter_routes(),
 ]
 if PROBE_ON:
     # Lazy: the release import graph must not contain the diagnostic-only probe package.
@@ -48,3 +57,4 @@ if PROBE_ON:
 app = Starlette(routes=routes, lifespan=lifespan)
 app.state.store_runtime = runtime
 app.state.collector = None
+app.state.specters = None

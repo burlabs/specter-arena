@@ -56,7 +56,7 @@ export function overlayForPhase(overlay, phase) {
 /**
  * Scalar overlay keys replace, `ui` keys replace (the 0.12.0 dashboard router gives a third-party
  * app the single route `/apps/:name`, so the probe page takes over the release page's route),
- * `permissions` are added.
+ * `permissions` are added, and the release `agents` list is dropped.
  * @param {Record<string, unknown>} base release app.json
  * @param {Record<string, unknown>} overlay
  * @returns {Record<string, any>}
@@ -64,12 +64,16 @@ export function overlayForPhase(overlay, phase) {
 export function mergeManifest(base, overlay) {
   const { ui: overlayUi, permissions, ...scalars } = overlay;
   const baseUi = isRecord(base.ui) ? base.ui : {};
-  return {
+  /** @type {Record<string, any>} */
+  const merged = {
     ...base,
     ...scalars,
     ...(permissions === undefined ? {} : { permissions }),
     ui: { ...baseUi, ...(isRecord(overlayUi) ? overlayUi : {}) },
   };
+  // The staged probe copies no `agents/` directory and never summons, so the release agent list stays behind.
+  delete merged.agents;
+  return merged;
 }
 
 /**

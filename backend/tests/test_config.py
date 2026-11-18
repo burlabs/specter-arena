@@ -97,10 +97,10 @@ def test_read_grants_follows_the_staged_phase_manifest(
     assert (grants.beyond_own_entry, grants.basis) == (declared, "manifest")
 
 
-def test_read_grants_reads_the_release_manifest_as_the_d_p9_grants() -> None:
+def test_read_grants_reads_the_release_manifest_grants() -> None:
     grants = read_grants()
     assert (grants.beyond_own_entry, grants.basis) == (True, "manifest")
-    assert grants.api == {OWN_API_ENTRY, AGENTS_API_ENTRY}
+    assert grants.api == {OWN_API_ENTRY, AGENTS_API_ENTRY, "/api/chat"}
     assert grants.events == {"slots:user"}
 
 
