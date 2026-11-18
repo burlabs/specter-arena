@@ -9,6 +9,7 @@ import type {
   RosterSignalsV1,
   RosterV1,
 } from '../src/contracts/types.ts';
+import { canonicalArenaScenario, perfBots } from './arena-scenarios.ts';
 
 export const SCENARIO_NAMES = [
   'default',
@@ -23,6 +24,8 @@ export const SCENARIO_NAMES = [
   'expired',
   'attempt-gone',
   'not-collected',
+  'arena-perf-roster',
+  'arena-stale-roster',
 ] as const;
 
 export type ScenarioName = (typeof SCENARIO_NAMES)[number];
@@ -72,7 +75,7 @@ interface AttemptSpec {
   endSignal?: string;
 }
 
-interface BotSpec {
+export interface BotSpec {
   n: number;
   name: string | null;
   state: string;
@@ -262,6 +265,8 @@ function scenarioData(name: ScenarioName): ScenarioData {
       return { bots: [], collector: { state: 'unavailable', reasonCode: 'collector-not-started', sinceMs: null }, notes: [CRON_NOTE] };
     case 'not-collected':
       return { bots: [NOT_COLLECTED_BOT], collector: RUNNING_COLLECTOR, notes: [CRON_NOTE] };
+    case 'arena-perf-roster':
+      return { bots: perfBots(), collector: RUNNING_COLLECTOR, notes: [CRON_NOTE] };
     default:
       return { bots: DEFAULT_BOTS, collector: RUNNING_COLLECTOR, notes: [CRON_NOTE, STORE_LESS_NOTE] };
   }
@@ -299,8 +304,12 @@ export function attemptsBody(name: ScenarioName, bindingId: string): AttemptsV1 
 
 let override: ScenarioName | null = null;
 
+/** Reads of the roster since the scenario was set; `arena-stale` loses one binding after the first read. */
+let rosterReads = 0;
+
 export function setFixtureScenario(name: ScenarioName | null): void {
   override = name;
+  rosterReads = 0;
 }
 
 const isScenario = (value: string | null): value is ScenarioName => SCENARIO_NAMES.some((name) => name === value);
@@ -309,7 +318,8 @@ const isScenario = (value: string | null): value is ScenarioName => SCENARIO_NAM
 export function activeScenario(): ScenarioName {
   if (override !== null) return override;
   const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('scenario');
-  return isScenario(requested) ? requested : 'default';
+  const named = canonicalArenaScenario(requested, { arena: 'default', perf: 'arena-perf-roster', stale: 'arena-stale-roster', empty: 'empty' });
+  return isScenario(named) ? named : 'default';
 }
 
 const json = (body: unknown, status = 200): Response =>
@@ -341,7 +351,11 @@ export function monitoringResponse(pathname: string): Promise<Response> | null {
   const name = activeScenario();
   const failure = failureResponse(name);
   if (failure !== null) return failure;
-  if (attemptsMatch === null) return Promise.resolve(json(rosterBody(name)));
+  if (attemptsMatch === null) {
+    const body = rosterBody(name);
+    rosterReads += 1;
+    return Promise.resolve(json(name === 'arena-stale-roster' && rosterReads > 1 ? { ...body, items: body.items.slice(0, -1) } : body));
+  }
   const body = name === 'attempt-gone' ? null : attemptsBody(name, safeDecode(attemptsMatch[1] ?? ''));
   return Promise.resolve(body === null ? apiError(404, 'unknown_binding') : json(body));
 }

@@ -9,9 +9,9 @@ Shared single-writer files change in one open PR at a time. FP-10+11 changes non
 - [x] T4 crew-integration: `GET /api/scene-assets/{key}` route, `ApiError` mapping, fixture SDK scene assets (FP1011-CI-01, FP1011-CI-02, FP1011-CI-04, FP1011-CI-05)
 
 ## PR-B: the arena
-- [ ] T5 experience: scene view model, effect map, scene, rail, minimap, list view, minions, cue layer, Arena tab, scoped `arena.css`, marks (FP1011-REQ-01 to FP1011-REQ-08, FP1011-REQ-12, FP1011-REQ-15)
-- [ ] T6 crew-integration: arena fixture scenarios incl. `arena-perf-1`, fixture call log (FP1011-CI-02)
-- [ ] T7 delivery: Figma Make rows, measured bundle budget and raster guard, `tests/e2e/arena.spec.ts` smoke part (FP1011-DEL-05, FP1011-DEL-08, FP1011-DEL-09)
+- [x] T5 experience: scene view model, effect map, scene, rail, minimap, list view, minions, cue layer, Arena tab, scoped `arena.css`, marks (FP1011-REQ-01 to FP1011-REQ-08, FP1011-REQ-12, FP1011-REQ-15)
+- [x] T6 crew-integration: arena fixture scenarios incl. `arena-perf-1`, fixture call log (FP1011-CI-02)
+- [x] T7 delivery: Figma Make rows, measured bundle budget and raster guard, `tests/e2e/arena.spec.ts` smoke part (FP1011-DEL-05, FP1011-DEL-08, FP1011-DEL-09)
 
 ## PR-C: the inspector, handoffs and the performance record
 - [ ] T8 experience: inspector, handoffs, diagnostic summary, celebrations and re-baseline, mode labels (FP1011-REQ-05, FP1011-REQ-09 to FP1011-REQ-14)

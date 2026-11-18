@@ -1,0 +1,44 @@
+// @vitest-environment node
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
+const dir = fileURLToPath(new URL('.', import.meta.url));
+const sources = readdirSync(dir)
+  .filter((file) => /\.(tsx?|css)$/.test(file) && !/\.test\.tsx?$/.test(file))
+  .map((file) => ({ file, text: readFileSync(`${dir}${file}`, 'utf8') }));
+
+const FORBIDDEN: ReadonlyArray<[string, RegExp]> = [
+  ['requestAnimationFrame', /requestAnimationFrame/],
+  ['Math.random', /Math\.random/],
+  ['postJson', /postJson/],
+  ['.post(', /\.post\(/],
+  ['fetch(', /\bfetch\(/],
+  ['XMLHttpRequest', /XMLHttpRequest/],
+  ['localStorage', /localStorage/],
+  ['sessionStorage', /sessionStorage/],
+  ['waiting on you', /waiting on you/i],
+  ['tailwind', /tailwind/i],
+  ['dangerouslySetInnerHTML', /dangerouslySetInnerHTML/],
+  ['!important outside CSS', /!important/],
+];
+
+describe('arena source guards', () => {
+  it('reads the arena folder', () => {
+    expect(sources.length).toBeGreaterThan(20);
+  });
+
+  it.each(FORBIDDEN)('contains no %s', (name, pattern) => {
+    const hits = sources.filter(({ file, text }) => (name === '!important outside CSS' && file.endsWith('.css') ? false : pattern.test(text))).map(({ file }) => file);
+    expect(hits).toEqual([]);
+  });
+
+  it('imports nothing from the fixtures and nothing that writes', () => {
+    const hits = sources.filter(({ text }) => /from '\.\.\/\.\.\/fixtures|useWorkActions|useSummoning|workDecisionsPath|workAttemptsPath|workMilestonesPath|specterActionPath/.test(text)).map(({ file }) => file);
+    expect(hits).toEqual([]);
+  });
+
+  it('never passes the work-decision path or any write path to a request', () => {
+    expect(sources.filter(({ text }) => /\bpost\b/i.test(text.replace(/\/\/.*$/gm, ''))).map(({ file }) => file).filter((file) => file !== 'copy.ts')).toEqual([]);
+  });
+});

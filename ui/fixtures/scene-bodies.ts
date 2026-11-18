@@ -46,6 +46,9 @@ export const SCENE_ASSET_KEYS_SERVED: readonly string[] = [...SCENE_ASSETS.keys(
 
 let failing = false;
 
+const requestedScenario = (): string | null =>
+  typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('scenario');
+
 export function setSceneAssetsFailing(value: boolean): void {
   failing = value;
 }
@@ -59,6 +62,6 @@ export function sceneAssetResponse(pathname: string, method: 'GET' | 'POST'): Pr
   const match = SCENE_PATH.exec(pathname);
   if (match === null) return null;
   if (method !== 'GET') return Promise.resolve(apiError(405, 'invalid_body'));
-  const asset = failing ? undefined : SCENE_ASSETS.get(decodeURIComponent(match[1] ?? ''));
+  const asset = failing || requestedScenario() === 'arena-no-art' ? undefined : SCENE_ASSETS.get(decodeURIComponent(match[1] ?? ''));
   return Promise.resolve(asset === undefined ? apiError(404, UNKNOWN_SCENE_ASSET_CODE) : json(asset));
 }

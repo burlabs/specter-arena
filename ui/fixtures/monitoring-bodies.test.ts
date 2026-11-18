@@ -23,8 +23,8 @@ const validateRoster = ajv.getSchema('urn:specter-arena:contract:roster:v1');
 const validateAttempts = ajv.getSchema('urn:specter-arena:contract:attempts:v1');
 
 describe('fixture scenarios', () => {
-  it('lists the twelve scenarios', () => {
-    expect(SCENARIO_NAMES).toHaveLength(12);
+  it('lists the fourteen scenarios, two of them internal to the arena scenarios', () => {
+    expect(SCENARIO_NAMES).toHaveLength(14);
   });
 
   describe.each(SCENARIO_NAMES)('%s', (scenario) => {

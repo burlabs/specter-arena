@@ -1,8 +1,12 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { useMemo } from 'react';
 
+/** What the host seam can tell: the installed host is LIVE; only the fixture SDK reports FIXTURE. */
+export type HostSourceMode = 'LIVE' | 'FIXTURE';
+
 /** Plain-data view of the host API; the SDK client itself never leaves this module. */
 export interface HostApi {
+  readonly mode: HostSourceMode;
   getJson<T>(path: string): Promise<T>;
   postJson<T>(path: string, body: unknown): Promise<T>;
 }
@@ -79,6 +83,7 @@ export function useHostApi(): HostApi {
   const client = useAppApi();
   return useMemo(
     () => ({
+      mode: client.sourceMode === 'FIXTURE' ? ('FIXTURE' as const) : ('LIVE' as const),
       getJson: <T>(path: string) => unwrap<T>(client.get(path)),
       postJson: <T>(path: string, body: unknown) => unwrap<T>(client.post(path, body)),
     }),

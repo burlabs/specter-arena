@@ -5,8 +5,8 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
-// Measured bundle length at this PR's last commit (153,337 characters), times 1.25, rounded up to the next 1,000.
-const BUNDLE_BUDGET_CHARS = 192_000;
+// Measured bundle length at this PR's last commit (218,254 characters; 153,337 before FP-10+11), times 1.25, rounded up to the next 1,000.
+const BUNDLE_BUDGET_CHARS = 273_000;
 
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
@@ -59,9 +59,17 @@ describe('library build', () => {
     expect(bundle.length).toBeLessThan(BUNDLE_BUDGET_CHARS);
   });
 
+  it('inlines no raster art', () => {
+    // The bundle holds the bare data-URL prefix (the asset caches build a URL at run time); a payload or a PNG header would be art.
+    expect(bundle).not.toMatch(/data:image\/[a-z.+-]+;base64,[A-Za-z0-9+/=]{64}/);
+    expect(bundle).not.toContain('iVBORw0KGgo');
+    expect(bundle).not.toMatch(/["'`][\w./-]+\.(?:png|jpe?g|gif|webp)["'`]/);
+  });
+
   it('ships its scoped stylesheet as a string and no CSS import', () => {
     expect(bundle).toContain('data-specter-arena');
     expect(bundle).toContain('data-specter-arena-work');
+    expect(bundle).toContain('data-specter-arena-scene');
     expect(bundle).toContain('.specter-arena-root');
     expect(bundle).not.toContain('@import');
   });
@@ -70,5 +78,7 @@ describe('library build', () => {
     expect(bundle).not.toContain('SPECTER-FIXTURE-ONLY');
     expect(bundle).not.toContain('SPECTER-DIAGNOSTIC-ONLY');
     expect(bundle).not.toContain('work-bodies');
+    expect(bundle).not.toContain('arena-scenarios');
+    expect(bundle).not.toContain('__specterFixtureCalls');
   });
 });

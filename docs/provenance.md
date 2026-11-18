@@ -2,7 +2,7 @@
 
 ## Original work
 
-All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with three exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here; the raster images listed under "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" were supplied by Eric Jeffers; and the vector scene art described under "Scene vector art" was authored in the Figma Make project and is ported as code.
+All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with three exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here; the raster images listed under "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" were supplied by Eric Jeffers; and the vector scene art described under "Figma Make-authored vector code, ported as TSX" was authored in the Figma Make project and is ported as code.
 
 ## Reference only: Dragonboat
 
@@ -34,8 +34,18 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 | FP-08+09 | `components/WorkReviewPanel.tsx` | `ui/src/work/ReviewPanel.tsx`, `reviewMachine.ts`, `WorkDetail.tsx` | review and accept interaction spec only; rewritten against the `work-item` contract; three states became seven; the campaign, attribution, evidence URL and session XP fields are cut; the `<dialog>` became an inline confirm form; fixtures removed; scoped classes |
 | FP-08+09 | `components/SpecterProgression.tsx` | `ui/src/work/XpMeter.tsx`, `XpCards.tsx`, `ProgressionPanel.tsx` | level and XP display idea; the fixed 100 XP constant and the session scope are replaced by the `levels-1` fields of `xp-summary`; the bar width is computed from XP fields only; scoped classes |
 | FP-08+09 | `workflow/model.ts` (acceptance parts only) | none | vocabulary reference only; nothing ported; the contracts win |
+| FP-10+11 | `components/BattlefieldScene.tsx` | `ui/src/arena/BattlefieldScene.tsx` | layout and interaction spec; reads the scene view model instead of the export's fixture dataset; calibration, download and dev-tool code removed; neutral placement instead of team positions; scoped classes |
+| FP-10+11 | `components/ArenaRail.tsx` | `ui/src/arena/ArenaRail.tsx` | rewritten against the scene view model; role labels, progression and replay fields removed |
+| FP-10+11 | `components/ArenaMinimap.tsx` | `ui/src/arena/ArenaMinimap.tsx` | rewritten against the scene view model; lane names and classes removed |
+| FP-10+11 | `components/ArenaListView.tsx` | `ui/src/arena/ArenaListView.tsx` | the always-available operational view; lists every Specter and every enemy of the scene view model |
+| FP-10+11 | `components/AnimatedMinion.tsx`, `motion/minionAnimation.ts` | `ui/src/arena/AnimatedMinion.tsx` | decorative animation only, off under reduced motion; no state inputs; timings kept |
+| FP-10+11 | `components/PresentationCueLayer.tsx`, `motion/model.ts` (cue scheduler only) | `ui/src/arena/PresentationCueLayer.tsx` | one cue card for an accepted outcome; reward values come from the work item; the scheduler is ported, the rest of the motion model is not |
+| FP-10+11 | `public/assets/scene/marker-blocked.svg`, `marker-evidence.svg`, `marker-coverage-unknown.svg`, `marker-outcome-accepted.svg`, `marker-assistance.svg`, `structure-milestone-standing.svg`, `structure-milestone-cleared.svg`, `enemy-task-creature.svg`, `enemy-objective-creature.svg` | `ui/src/arena/SceneSvgs.tsx` | nine SVG files became nine TSX components with the path data unchanged; the accessible name is a prop; gradient ids are unique per instance. `marker-awaiting-approval.svg` is not ported because it names a Crew state this app cannot observe; the sanctum, citadel and jungle-camp drawings are baked into the map art |
+| FP-10+11 | `map/layout.ts`, `map/geometry.ts` | `ui/src/arena/mapLayout.ts`, `ui/src/arena/geometry.ts` | normalized anchors kept and renamed without role or lane names; the viewport transform is ported unchanged in behavior; calibration checks removed |
+| FP-10+11 | `arena/model.ts`, `arena/team.ts` | none | vocabulary reference only; `sceneModel.ts` is written from the contracts |
+| FP-10+11 | `src/index.css` (arena, battlefield, minion and cue rules) | `ui/src/arena/arena.css` | no Tailwind; every selector is scoped under the app root; one trailing reduced-motion block |
 
-Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04, FP-06+07 or FP-08+09. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
+Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04, FP-06+07 or FP-08+09. FP-10+11 loads its images through the scene-asset route (see "Art" below) and ports nine vector drawings as code (see "Figma Make-authored vector code, ported as TSX"). Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
 
 ## Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation
 
@@ -73,9 +83,21 @@ Each shipped raster has one row below with its repo path and sha256. The check f
 | `backend/specter_arena/specters/scene/minion-patchling-portrait.png` | `minion-patchling-portrait.png` | 256 x 256 RGBA | 72210 | `f540745966dc68bbea76e4168cc3cc50880f82c5384c3838d42dae8fe07d6be6` | Patchling minion portrait |
 | `backend/specter_arena/specters/scene/minion-patchbrute-portrait.png` | `minion-patchbrute-portrait.png` | 256 x 256 RGBA | 87269 | `08f4a47e140262cb2cfc5a5630618fea51c6021187a44bc10436463df8543e88` | Patchbrute minion portrait |
 
-## Scene vector art: authored in the Figma Make project, ported as code
+## Figma Make-authored vector code, ported as TSX
 
-This is not ChatGPT image output, and the statement above does not cover it. The small SVG files in the export's `public/assets/scene/` (structures and markers) were authored as vector markup inside the Figma Make project. The export's own catalog labels them "Original vector prototype authored for Specters of the Abyss" (`src/data/sceneAssets.ts`, field `source`). They fall under "Generated code: Figma Make export" above and ship only as TSX components in the UI bundle, never as image files, so the image check does not list them. The PR that ports a file adds its row to the Figma Make table above.
+This is not ChatGPT image output, and the statement above does not cover it. The small SVG files in the export's `public/assets/scene/` (markers, two milestone structures and two enemy drawings) were authored as vector markup inside the Figma Make project. The export's own catalog labels them "Original vector prototype authored for Specters of the Abyss" (`src/data/sceneAssets.ts`, field `source`). They fall under "Generated code: Figma Make export" above and are covered by the same Figma terms check that is scheduled before the MIT release (FP-15). They ship only as TSX components in `ui/src/arena/SceneSvgs.tsx`, never as image files, so the image check does not list them. Four files of the export are not ported: `marker-awaiting-approval.svg` (it names a Crew state this app cannot observe), `structure-sanctum.svg`, `structure-abyssal-citadel.svg` and `structure-jungle-camp.svg` (their subjects are baked into the map art).
+
+| File in the export (`public/assets/scene/`) | Bytes | sha256 | Ported as |
+|---|---|---|---|
+| `marker-blocked.svg` | 332 | `5bad8e4cbe94a27ffa037c7019376b2ca451e92e72fccb8fcb15d58f866b2978` | `MarkerBlockedSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `marker-evidence.svg` | 561 | `881d57b7641370d350c41284b232f875801f0f97822bda7a174ac978493d150a` | `MarkerEvidenceSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `marker-coverage-unknown.svg` | 575 | `3e3f2b552ec8b0ff635e95e52bad566cefad71c0625f0c6c3e6f525acc22a761` | `MarkerCoverageUnknownSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `marker-outcome-accepted.svg` | 393 | `92f131df6c389a06dd2f344d4c27bd76ab7470919f6045615680da20fd3df50e` | `MarkerOutcomeAcceptedSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `marker-assistance.svg` | 424 | `a0cd19c9bc30d1d409b8adf14ddef060ee95938e9e895d23f9e6ddf99c038607` | `MarkerAssistanceSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `structure-milestone-standing.svg` | 1309 | `dd21bcb2223589e5d724e7a5059372ecbdc5499b5fafe14a40872682fe291d6e` | `MilestoneStandingSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `structure-milestone-cleared.svg` | 1217 | `1b8c7152e3398c0caad04b7f0af12c1e87200eb0edfbec847d1a3f631b4cd5f2` | `MilestoneClearedSvg` in `ui/src/arena/SceneSvgs.tsx` |
+| `enemy-task-creature.svg` | 1371 | `87f58ba344e642836be54c98f0b69d70e324a76f6fe1f64fb8fa7b92a11da67b` | `EnemyTaskSvg` in `ui/src/arena/SceneSvgs.tsx`, the drawing shown while the sprite loads or fails |
+| `enemy-objective-creature.svg` | 1686 | `b5ec483cf5939188a3a5a5676679d448993bb07838486783207ada964108e4cb` | `EnemyObjectiveSvg` in `ui/src/arena/SceneSvgs.tsx`, the drawing shown while the sprite loads or fails |
 
 ## External development tooling
 
