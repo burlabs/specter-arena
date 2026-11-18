@@ -74,7 +74,7 @@ function progressOf(item: WorkItemV1): Progress {
 }
 
 /** Net of corrections already written by the ledger. Containers and unrewarded items carry no XP. */
-const committedXpOf = (item: WorkItemV1): number | null =>
+export const committedXpOf = (item: WorkItemV1): number | null =>
   !item.rewardable || item.childCount > 0 ? null : item.contributors.reduce((sum, contributor) => sum + contributor.xpNet, 0);
 
 function addTo(map: Map<string, Set<string>>, key: string, value: string): void {

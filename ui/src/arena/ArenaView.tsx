@@ -3,18 +3,19 @@ import type { RosterCollectorV1, RosterItemV1, SpecterV1, XpSummaryV1 } from '..
 import { useSourceMode } from '../host';
 import { Time } from '../observatory/Time';
 import { collectorWords } from '../observatory/copy';
-import { Button, EmptyState, ErrorState, Panel } from '../observatory/ui';
+import { Button, EmptyState, ErrorState } from '../observatory/ui';
 import { PARTIAL_ROSTER } from '../work/copy';
+import { ArenaInspector } from './ArenaInspector';
 import { ArenaListView } from './ArenaListView';
 import { ArenaRail } from './ArenaRail';
 import { BattlefieldScene } from './BattlefieldScene';
 import { ModeBadge } from './ModeBadge';
-import { SelectionSummary } from './SelectionSummary';
 import { ARENA } from './copy';
 import { MARKS, mark } from './marks';
 import { buildSceneModel } from './sceneModel';
 import type { ArenaSelection } from './selection';
 import { useArenaMotion } from './useArenaMotion';
+import { useArenaScene } from './useArenaScene';
 import { useArenaWork } from './useArenaWork';
 import type { ArenaWorkFailure, ArenaWorkSnapshot } from './useArenaWork';
 
@@ -22,8 +23,11 @@ interface Props {
   bots: readonly RosterItemV1[];
   complete: boolean;
   collector: RosterCollectorV1;
+  rosterRevision: number;
   specters: ReadonlyMap<string, SpecterV1>;
   xp: ReadonlyMap<string, XpSummaryV1>;
+  /** Called after the in-app decision flow changes the ledger, so the XP numbers elsewhere refresh. */
+  onLedgerChanged: () => void;
 }
 
 const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: string }>> = {
@@ -38,7 +42,7 @@ const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: str
  * The Arena tab: a read-only projection of the roster, the Specters, the XP ledger and the work list. It starts
  * its own work poll while mounted, so leaving the tab stops the poll and returning is a fresh baseline.
  */
-export function ArenaView({ bots, complete, collector, specters, xp }: Props) {
+export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, onLedgerChanged }: Props) {
   const mode = useSourceMode();
   const { state, refresh } = useArenaWork();
   const motion = useArenaMotion();
@@ -71,17 +75,21 @@ export function ArenaView({ bots, complete, collector, specters, xp }: Props) {
     };
     return { scene: buildSceneModel(inputs), list: buildSceneModel(inputs, Infinity) };
   }, [snapshot, mode, bots, specters, xp]);
+  const celebrations = useArenaScene(models?.scene ?? null, snapshot?.receivedAtMs ?? null, motion.animate);
   const items = useMemo(() => new Map((snapshot?.items ?? []).map((item) => [item.workId, item])), [snapshot]);
   const drawn = useMemo(() => new Set(models?.scene.enemies.map((enemy) => enemy.workId) ?? []), [models]);
 
   const selectedSpecter = selection?.kind === 'specter' ? (models?.list.specters.find((s) => s.bindingId === selection.bindingId) ?? null) : null;
   const selectedEnemy = selection?.kind === 'work' ? (models?.list.enemies.find((e) => e.workId === selection.workId) ?? null) : null;
+  const selectedTitle = selection?.kind === 'work' ? (selectedEnemy?.title ?? items.get(selection.workId)?.title ?? null) : null;
   const announcement =
     selectedSpecter !== null
       ? ARENA.selected(selectedSpecter.specterName ?? selectedSpecter.displayName, ARENA.linked(selectedSpecter.openAttemptIds.length))
       : selectedEnemy !== null
         ? ARENA.selected(selectedEnemy.title, selectedEnemy.defeated ? 'Defeated' : selectedEnemy.state)
-        : '';
+        : selectedTitle !== null
+          ? ARENA.selected(selectedTitle, 'not on the field')
+          : '';
 
   const header = (
     <header className="sa-arena-header">
@@ -130,10 +138,21 @@ export function ArenaView({ bots, complete, collector, specters, xp }: Props) {
         )}
         <div className="sa-arena-layout">
           <ArenaRail model={models.scene} bots={bots} specters={specters} selection={selection} onSelect={setSelection} />
-          <BattlefieldScene model={models.scene} specters={specters} selection={selection} onSelect={setSelection} motion={motion} />
-          <Panel label={ARENA.selectionLabel}>
-            <SelectionSummary specter={selectedSpecter} enemy={selectedEnemy} bots={bots} items={items} gone={selection !== null} />
-          </Panel>
+          <BattlefieldScene model={models.scene} specters={specters} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} />
+          <ArenaInspector
+            selection={selection}
+            list={models.list}
+            bots={bots}
+            collector={collector}
+            rosterRevision={rosterRevision}
+            specters={specters}
+            xp={xp}
+            items={items}
+            onSelect={setSelection}
+            onClose={() => setSelection(null)}
+            onLedgerChanged={onLedgerChanged}
+            onWorkChanged={refresh}
+          />
         </div>
         <ArenaListView model={models.list} bots={bots} items={items} drawn={drawn} selection={selection} onSelect={setSelection} />
       </>

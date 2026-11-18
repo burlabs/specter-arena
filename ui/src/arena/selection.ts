@@ -1,4 +1,4 @@
-export type ArenaSelection = { kind: 'specter'; bindingId: string } | { kind: 'work'; workId: string };
+export type ArenaSelection = { kind: 'specter'; bindingId: string } | { kind: 'work'; workId: string; decisionId?: string };
 
 export const selectionId = (selection: ArenaSelection): string => (selection.kind === 'specter' ? selection.bindingId : selection.workId);
 

@@ -24,8 +24,6 @@ import { useSceneAsset } from './useSceneAsset';
 import { Button } from '../observatory/ui';
 
 const ZOOM_STEP = 0.25;
-const NO_CUES: readonly PresentationCue[] = [];
-const noop = (): void => undefined;
 
 interface Props {
   model: SceneModel;
@@ -33,6 +31,11 @@ interface Props {
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
   motion: ArenaMotion;
+  /** Celebrations to play, from `useArenaScene`. */
+  cues: readonly PresentationCue[];
+  /** Work ids whose defeat animation is playing right now. */
+  celebrating: ReadonlySet<string>;
+  onCueComplete: (id: string) => void;
 }
 
 function MarkerIcon({ kind }: { kind: MarkerKind }) {
@@ -115,13 +118,14 @@ interface EnemyTokenProps {
   selected: boolean;
   roving: boolean;
   animate: boolean;
+  celebrating: boolean;
   spriteReady: boolean;
   facing: 'left' | 'right';
   onSelect: () => void;
   register: (element: HTMLButtonElement | null) => void;
 }
 
-function EnemyToken({ enemy, position, selected, roving, animate, spriteReady, facing, onSelect, register }: EnemyTokenProps) {
+function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, onSelect, register }: EnemyTokenProps) {
   const effect = enemyEffect(enemy);
   const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
   return (
@@ -140,7 +144,7 @@ function EnemyToken({ enemy, position, selected, roving, animate, spriteReady, f
     >
       <AnimatedMinion
         minionType={enemy.size === 'encounter' ? 'patchbrute' : 'patchling'}
-        animation={effect.pose === 'engaged' ? 'engaged' : 'idle'}
+        animation={celebrating ? 'defeat' : effect.pose === 'engaged' ? 'engaged' : 'idle'}
         animate={animate}
         spriteReady={spriteReady}
         defeated={enemy.defeated}
@@ -177,7 +181,7 @@ const cssUrl = (url: string): string => `url("${url}")`;
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model, specters, selection, onSelect, motion }: Props) {
+export function BattlefieldScene({ model, specters, selection, onSelect, motion, cues, celebrating, onCueComplete }: Props) {
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
   const patchbrute = useSceneAsset('minion-patchbrute-sprite');
@@ -340,7 +344,8 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion 
               position={placement.enemies.get(enemy.workId) ?? { x: 0.5, y: 0.5 }}
               selected={isSelected(selection, 'work', enemy.workId)}
               roving={activeId === enemy.workId}
-              animate={motion.animate && !enemy.defeated}
+              animate={motion.animate && (!enemy.defeated || celebrating.has(enemy.workId))}
+              celebrating={celebrating.has(enemy.workId)}
               spriteReady={(enemy.size === 'encounter' ? patchbrute : patchling).status === 'ready'}
               facing={engagementFacing(enemy, placement)}
               onSelect={() => onSelect({ kind: 'work', workId: enemy.workId })}
@@ -349,7 +354,7 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion 
           ))}
         </div>
         {mapArt.status === 'failed' && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
-        <PresentationCueLayer cues={NO_CUES} onComplete={noop} />
+        <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
       </div>
       <ArenaMinimap placement={placement} view={view} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
     </section>

@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setSceneAssetsFailing } from '@kirocrew/app-sdk';
 import { BattlefieldScene } from './BattlefieldScene';
+import type { PresentationCue } from './PresentationCueLayer';
 import { clearSceneArtCache } from './sceneAssetCache';
 import { buildSceneModel } from './sceneModel';
 import type { ArenaSelection } from './selection';
@@ -23,7 +24,7 @@ const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specter
 const specters = new Map([[atlas.bindingId, specterOf(atlas, 'Vesper')]]);
 const motion = { animate: true, paused: false, togglePause: vi.fn() };
 
-function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSelection) => void; animate?: boolean; paused?: boolean; toggle?: () => void } = {}) {
+function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSelection) => void; animate?: boolean; paused?: boolean; toggle?: () => void; cues?: PresentationCue[]; celebrating?: Set<string>; onCueComplete?: (id: string) => void } = {}) {
   return render(
     <BattlefieldScene
       model={model}
@@ -31,6 +32,9 @@ function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSe
       selection={props.selection ?? null}
       onSelect={props.onSelect ?? vi.fn()}
       motion={{ animate: props.animate ?? true, paused: props.paused ?? false, togglePause: props.toggle ?? motion.togglePause }}
+      cues={props.cues ?? []}
+      celebrating={props.celebrating ?? new Set()}
+      onCueComplete={props.onCueComplete ?? vi.fn()}
     />,
   );
 }
@@ -174,7 +178,7 @@ describe('camera and controls', () => {
     expect(container.querySelector('.sa-arena-scene')?.className).toContain('sa-is-animated');
     fireEvent.click(screen.getByRole('button', { name: 'Pause animation' }));
     expect(toggle).toHaveBeenCalledTimes(1);
-    rerender(<BattlefieldScene model={model} specters={specters} selection={null} onSelect={vi.fn()} motion={{ animate: false, paused: true, togglePause: toggle }} />);
+    rerender(<BattlefieldScene model={model} specters={specters} selection={null} onSelect={vi.fn()} motion={{ animate: false, paused: true, togglePause: toggle }} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Resume animation' }).getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.sa-arena-scene')?.className).toContain('sa-is-static');
   });
@@ -240,8 +244,36 @@ describe('reduced motion', () => {
 describe('empty model', () => {
   it('draws only the map when there is nothing to show', () => {
     const empty = buildSceneModel(inputsOf());
-    const { container } = render(<BattlefieldScene model={empty} specters={new Map()} selection={null} onSelect={vi.fn()} motion={motion} />);
+    const { container } = render(<BattlefieldScene model={empty} specters={new Map()} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
     expect(container.querySelectorAll('[data-scene-node]')).toHaveLength(0);
     expect(screen.getByRole('group', { name: 'Arena map' })).toBeTruthy();
+  });
+});
+
+describe('celebration', () => {
+  const shipped = model.enemies.find((enemy) => enemy.title === 'Shipped')!;
+  const cue: PresentationCue = { id: 'c1', workId: shipped.workId, title: 'Shipped', committedXp: 100, durationMs: 1_800 };
+
+  it('plays the defeat animation on the celebrating enemy only, and shows the cue', () => {
+    const { container } = show({ cues: [cue], celebrating: new Set([shipped.workId]) });
+    expect(container.querySelectorAll('.sa-minion.sa-is-defeat.sa-is-animated')).toHaveLength(1);
+    expect(container.querySelector(`[data-token="${shipped.workId}"] .sa-is-defeat`)).not.toBeNull();
+    expect(container.querySelector('[data-cue]')?.textContent).toContain('Shipped · +100 XP');
+  });
+
+  it('keeps every defeated enemy a still, labelled pose when nothing is celebrating', () => {
+    const { container } = show();
+    expect(container.querySelectorAll('.sa-is-defeat')).toHaveLength(0);
+    expect(container.querySelector(`[data-token="${shipped.workId}"] .sa-is-defeated`)).not.toBeNull();
+    expect(container.querySelector('[data-cue]')).toBeNull();
+  });
+
+  it('reports completion of a cue to its owner', () => {
+    vi.useFakeTimers();
+    const onCueComplete = vi.fn();
+    show({ cues: [cue], celebrating: new Set([shipped.workId]), onCueComplete });
+    act(() => void vi.advanceTimersByTime(1_800));
+    expect(onCueComplete).toHaveBeenCalledExactlyOnceWith('c1');
+    vi.useRealTimers();
   });
 });

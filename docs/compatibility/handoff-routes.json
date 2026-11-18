@@ -1,0 +1,60 @@
+{
+  "hostVersion": "0.12.2",
+  "dashboardBuildId": "1.0.0-b659923",
+  "method": "static read of the installed dashboard bundle; no live click",
+  "checkedOn": "2026-11-18",
+  "routes": [
+    {
+      "id": "open-bots",
+      "path": "/members",
+      "state": "allowed",
+      "evidence": "assets/App-B9URHfh3.js offset 2205779; assets/MembersPage-BUaw6kpn.js",
+      "liveClick": "untested"
+    },
+    {
+      "id": "open-sessions",
+      "path": "/sessions",
+      "state": "allowed",
+      "evidence": "assets/App-B9URHfh3.js offset 2205405; not offered, it adds nothing the Bots page does not",
+      "liveClick": "untested"
+    },
+    {
+      "id": "open-bot-chat",
+      "path": "/chat?sid=<slotKey>",
+      "state": "unsupported",
+      "evidence": "contracts/schemas/roster-item.v1.schema.json: a binding id is never a Crew id or slot key"
+    },
+    {
+      "id": "open-bot-by-name",
+      "path": "/members?member=<name>",
+      "state": "denied",
+      "evidence": "docs/compatibility/monitoring-scope.md D-P10 rule 2: never join by name"
+    },
+    {
+      "id": "open-approval",
+      "path": null,
+      "state": "unsupported",
+      "evidence": "no approvals route in the dashboard router table; capability cell user-signal-approval is UNTESTED"
+    },
+    {
+      "id": "open-session",
+      "path": null,
+      "state": "unsupported",
+      "evidence": "the sessions route takes no session id, and this app holds no Crew session id"
+    }
+  ],
+  "navigation": [
+    {
+      "id": "host-useNavigate",
+      "state": "allowed",
+      "evidence": "assets/App-B9URHfh3.js offset 1003058; the SDK exports useNavigate",
+      "liveClick": "untested"
+    },
+    {
+      "id": "plain-link",
+      "state": "allowed",
+      "evidence": "dashboard/token_auth_paths.py lines 225-240: the SPA shell answers non-api paths; a full page load",
+      "liveClick": "untested"
+    }
+  ]
+}

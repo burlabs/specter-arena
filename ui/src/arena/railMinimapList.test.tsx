@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { ArenaListView } from './ArenaListView';
 import { ArenaMinimap } from './ArenaMinimap';
 import { ArenaRail } from './ArenaRail';
-import { SelectionSummary } from './SelectionSummary';
 import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
 import { NOW, attemptOf, botOf, inputsOf, specterOf, workOf, xpOf } from './testData';
@@ -140,41 +139,5 @@ describe('ArenaListView', () => {
     render(<ArenaListView model={model} bots={[]} items={new Map()} drawn={drawn} selection={null} onSelect={vi.fn()} />);
     expect(rowsOf('Work')).toHaveLength(5);
     expect(screen.getAllByText('No XP').length).toBeGreaterThan(0);
-  });
-});
-
-describe('SelectionSummary', () => {
-  const none = { specter: null, enemy: null, bots, items };
-
-  it('says what to do when nothing is selected, and when the selection left the field', () => {
-    const { rerender } = render(<SelectionSummary {...none} gone={false} />);
-    expect(screen.getByText(/Select a Specter or an enemy/)).toBeTruthy();
-    rerender(<SelectionSummary {...none} gone />);
-    expect(screen.getByText('This item is no longer on the field.')).toBeTruthy();
-  });
-
-  it('summarises a Specter from the model', () => {
-    render(<SelectionSummary {...none} specter={model.specters[0]!} gone={false} />);
-    expect(screen.getByRole('heading', { name: 'Vesper' })).toBeTruthy();
-    expect(screen.getByText('for Atlas')).toBeTruthy();
-    expect(screen.getByText('Lv. 2 · 100 XP committed')).toBeTruthy();
-  });
-
-  it('summarises a bot with no Specter by its name', () => {
-    render(<SelectionSummary {...none} specter={model.specters[1]!} gone={false} />);
-    expect(screen.getByRole('heading', { name: 'Brindle' })).toBeTruthy();
-    expect(screen.queryByText(/^for /)).toBeNull();
-  });
-
-  it('summarises a defeated enemy with its committed XP and a container with its parts', () => {
-    const shipped = model.enemies.find((enemy) => enemy.title === 'Shipped')!;
-    const { unmount } = render(<SelectionSummary {...none} enemy={shipped} gone={false} />);
-    expect(screen.getByText('100 XP committed')).toBeTruthy();
-    expect(screen.getByText(/Contributors:/).textContent).toContain('Atlas');
-    unmount();
-    const close = model.enemies.find((enemy) => enemy.title === 'Quarter close')!;
-    render(<SelectionSummary {...none} enemy={close} gone={false} />);
-    expect(screen.getByText('0 of 1 part accepted')).toBeTruthy();
-    expect(screen.getByText(/No bots linked/)).toBeTruthy();
   });
 });

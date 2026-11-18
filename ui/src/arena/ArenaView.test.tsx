@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 function view(props: { bots?: RosterItemV1[]; complete?: boolean } = {}) {
-  return render(<ArenaView bots={props.bots ?? bots} complete={props.complete ?? true} collector={collector} specters={new Map()} xp={new Map()} />);
+  return render(<ArenaView bots={props.bots ?? bots} complete={props.complete ?? true} collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
 }
 
 const settle = () => screen.findByRole('group', { name: 'Arena map' });
@@ -57,10 +57,10 @@ describe('ready', () => {
     const live = () => screen.getAllByRole('status').map((node) => node.textContent).join('|');
     fireEvent.click(within(screen.getByRole('table', { name: 'Work' })).getAllByRole('button')[0]!);
     await waitFor(() => expect(live()).toMatch(/Selected /));
-    const panel = screen.getByRole('region', { name: 'Selection' });
-    expect(within(panel).getByRole('heading', { level: 3 })).toBeTruthy();
+    const inspector = screen.getByRole('complementary', { name: 'Encounter inspector' });
+    expect(await within(inspector).findByRole('heading', { level: 2 })).toBeTruthy();
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Specters' })).getAllByRole('button')[1]!);
-    expect(within(panel).getByText(/open attempt/)).toBeTruthy();
+    expect(await within(inspector).findByText(/Open work/)).toBeTruthy();
     expect(live()).toMatch(/open attempts?/);
   });
 
@@ -77,13 +77,13 @@ describe('ready', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it('puts the selection on a gone state when the item leaves the model', async () => {
+  it('shows the no-longer-available fallback when the selected bot leaves the roster', async () => {
     setArenaScenario('arena');
     const { rerender } = view();
     await settle();
     fireEvent.click(within(screen.getByRole('table', { name: 'Specters' })).getAllByRole('button')[0]!);
-    rerender(<ArenaView bots={bots.slice(1)} complete collector={collector} specters={new Map()} xp={new Map()} />);
-    expect(screen.getByText('This item is no longer on the field.')).toBeTruthy();
+    rerender(<ArenaView bots={bots.slice(1)} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'This item is no longer available' })).toBeTruthy();
   });
 });
 
@@ -173,8 +173,43 @@ describe('performance marks', () => {
 describe('with Specters', () => {
   it('names a Specter and its bot', async () => {
     setArenaScenario('arena');
-    render(<ArenaView bots={bots} complete collector={collector} specters={new Map([[bots[0]!.bindingId, specterOf(bots[0]!, 'Vesper')]])} xp={new Map()} />);
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map([[bots[0]!.bindingId, specterOf(bots[0]!, 'Vesper')]])} xp={new Map()} onLedgerChanged={vi.fn()} />);
     await settle();
     expect(screen.getByRole('button', { name: /^Vesper for Atlas/ })).toBeTruthy();
+  });
+});
+
+describe('celebrations', () => {
+  const inspector = () => screen.getByRole('complementary', { name: 'Encounter inspector' });
+
+  it('plays nothing on first load, even though accepted items are already on the field', async () => {
+    setArenaScenario('arena');
+    const { container } = view();
+    await settle();
+    expect(container.querySelectorAll('[data-cue]')).toHaveLength(0);
+    expect(container.querySelectorAll('.sa-is-defeat')).toHaveLength(0);
+    expect(screen.getAllByText('Defeated').length).toBeGreaterThan(0);
+  });
+
+  it('plays exactly one cue with the committed XP when an item the user was watching is accepted, and none after a remount', async () => {
+    setArenaScenario('arena');
+    const first = view();
+    await settle();
+    fireEvent.click(within(screen.getByRole('table', { name: 'Work' })).getByRole('button', { name: /^Migrate the nightly report/ }));
+    await within(inspector()).findByRole('heading', { level: 2, name: 'Migrate the nightly report' });
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Accept…' }));
+    fireEvent.click(await within(inspector()).findByRole('checkbox', { name: /I reviewed the evidence above/ }));
+    fireEvent.click(within(inspector()).getByRole('button', { name: 'Accept work' }));
+    await waitFor(() => expect(first.container.querySelectorAll('[data-cue]')).toHaveLength(1));
+    const cue = first.container.querySelector('[data-cue]');
+    expect(cue?.textContent).toMatch(/Outcome accepted/);
+    expect(cue?.textContent).toMatch(/Migrate the nightly report · \+\d+ XP/);
+    expect(first.container.querySelectorAll('.sa-minion.sa-is-defeat')).toHaveLength(1);
+
+    first.unmount();
+    const again = view();
+    await settle();
+    expect(again.container.querySelectorAll('[data-cue]')).toHaveLength(0);
+    expect(screen.getAllByText('Defeated').length).toBeGreaterThan(0);
   });
 });

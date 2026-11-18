@@ -44,6 +44,7 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 | FP-10+11 | `map/layout.ts`, `map/geometry.ts` | `ui/src/arena/mapLayout.ts`, `ui/src/arena/geometry.ts` | normalized anchors kept and renamed without role or lane names; the viewport transform is ported unchanged in behavior; calibration checks removed |
 | FP-10+11 | `arena/model.ts`, `arena/team.ts` | none | vocabulary reference only; `sceneModel.ts` is written from the contracts |
 | FP-10+11 | `src/index.css` (arena, battlefield, minion and cue rules) | `ui/src/arena/arena.css` | no Tailwind; every selector is scoped under the app root; one trailing reduced-motion block |
+| FP-10+11 | `components/ArenaInspector.tsx` | none | not ported; the inspector (`ui/src/arena/ArenaInspector.tsx`, `WorkInspector.tsx`, `SpecterInspector.tsx`) is written against the `work-item`, `roster-item`, `attempts` and `xp-history` contracts and reuses this repository's `ReviewPanel` and roster panels; the export was not read for it |
 
 Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04, FP-06+07 or FP-08+09. FP-10+11 loads its images through the scene-asset route (see "Art" below) and ports nine vector drawings as code (see "Figma Make-authored vector code, ported as TSX"). Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
 
