@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { createFixtureClient, useAppApi } from './app-sdk.ts';
-import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, appApiPath, attemptsPath } from '../src/host/paths.ts';
+import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, WORK_PATH, XP_PATH, appApiPath, attemptsPath, workListPath } from '../src/host/paths.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 
 describe('fixture SDK allowlist (mirrors the host matcher)', () => {
@@ -72,5 +72,21 @@ describe('monitoring routes', () => {
 
   it('still rejects an undeclared path', async () => {
     await expect(createFixtureClient([]).get(ROSTER_PATH)).rejects.toThrow('not permitted');
+  });
+});
+
+describe('work routes', () => {
+  it('serves the work list with its query string and the xp list as real Responses', async () => {
+    const client = useAppApi();
+    const work = (await client.get(workListPath('open', 25, null))) as Response;
+    expect(work.status).toBe(200);
+    expect(((await work.json()) as { items: unknown[] }).items).toEqual([]);
+    const xp = (await client.get(XP_PATH)) as Response;
+    expect(xp.status).toBe(200);
+  });
+
+  it('still answers a foreign path with the canned body and rejects an undeclared work path', async () => {
+    await expect(useAppApi().get(appApiPath('/elsewhere'))).resolves.toMatchObject({ ok: true });
+    await expect(createFixtureClient([]).get(WORK_PATH)).rejects.toThrow('not permitted');
   });
 });

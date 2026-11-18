@@ -4,6 +4,7 @@ import { afterEach, beforeEach } from 'vitest';
 import { installHostModules } from './host-modules.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 import { resetSpecterFixtures } from './specter-bodies.ts';
+import { resetWorkFixtures } from './work-bodies.ts';
 
 let teardown: (() => void) | undefined;
 
@@ -19,6 +20,7 @@ afterEach(() => {
   }
   setFixtureScenario(null);
   resetSpecterFixtures();
+  resetWorkFixtures();
   teardown?.();
   teardown = undefined;
 });
