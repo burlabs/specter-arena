@@ -1,22 +1,28 @@
 """FP-02-AC04 producer test for the five work and XP contracts.
 
-Bodies are built by local mappers from real store records (the real `Store`, real ingest, real
-decisions) and validated with the same validator the case runner uses. The mappers follow the
-field table in the work-ledger changeset; the PR that adds the service replaces them with the
-service's own bodies. A constant dictionary here would prove nothing about the store.
+Bodies come from the real wire builders over real store records (the real `Store`, real ingest,
+real decisions) and, for the service tests below, from the real `WorkService` and the signed
+routes. Each body is validated with the same validator the case runner uses. A constant
+dictionary here would prove nothing about the service.
 """
 
+import re
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import fastjsonschema
 import pytest
+from starlette.testclient import TestClient
 
-from backend.specter_arena.attempts_view import end_signal_wire
 from backend.specter_arena.store import (
+    Page,
     Store,
+    WorkDecisionView,
     WorkRecord,
+    WorkReview,
+    XpEntryView,
     XpHistory,
     XpSummary,
     create_work,
@@ -27,8 +33,10 @@ from backend.specter_arena.store import (
     xp_summaries,
     xp_summary,
 )
+from backend.specter_arena.work import wire
 
 from .contract_support import compile_schema, load_registry
+from .work_api_fakes import SIGNING_VALUE, Api, WorkRig, build_rig, run
 from .work_fakes import (
     T0,
     Seeded,
@@ -52,119 +60,28 @@ IDS = {
 AS_OF = T0 + 90_000
 
 
-def check(schema: str, body: Any) -> None:
-    compile_schema(IDS[schema], REGISTRY)(body)
-
-
 def work_item_body(record: WorkRecord) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "workId": record.work_id,
-        "parentId": record.parent_id,
-        "title": record.title,
-        "acceptanceCondition": record.acceptance_condition,
-        "rewardable": record.rewardable,
-        "bountyXp": record.bounty_xp,
-        "policyVersion": record.policy_version,
-        "state": record.state,
-        "version": record.version,
-        "createdAtMs": record.created_ms,
-        "updatedAtMs": record.updated_ms,
-        "attempts": [
-            {
-                "attemptId": a.attempt_id,
-                "bindingId": a.binding_id,
-                "kind": a.kind,
-                "startedMs": a.started_ms,
-                "endedMs": a.ended_ms,
-                "endSignal": end_signal_wire(a.end_signal),
-                "ended": a.ended,
-                "present": a.present,
-            }
-            for a in record.attempts
-        ],
-        "contributors": [
-            {"bindingId": c.binding_id, "attemptCount": c.attempt_count, "xpNet": c.xp_net}
-            for c in record.contributors
-        ],
-        "milestones": [
-            {"position": m.position, "label": m.label, "doneAtMs": m.done_ms}
-            for m in record.milestones
-        ],
-        "progress": (
-            None
-            if record.progress is None
-            else {"done": record.progress.done, "total": record.progress.total}
-        ),
-        "evidenceRevision": record.evidence_revision,
-        "childCount": record.child_count,
-        "childrenAccepted": record.children_accepted,
-        "review": {"canAccept": record.review.can_accept, "blockers": list(record.review.blockers)},
-        "decisions": [
-            {
-                "decisionId": d.decision_id,
-                "seq": d.seq,
-                "action": d.action,
-                "fromState": d.from_state,
-                "toState": d.to_state,
-                "actor": d.actor,
-                "atMs": d.at_ms,
-                "note": d.note,
-                "evidenceRevision": d.evidence_revision,
-            }
-            for d in record.decisions
-        ],
-    }
+    return cast(dict[str, Any], wire.work_item_wire(record))
 
 
-def work_items_body(items: tuple[WorkRecord, ...], next_cursor: str | None) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "items": [work_item_body(r) for r in items],
-        "nextCursor": next_cursor,
-        "asOfMs": AS_OF,
-    }
+def work_items_body(page: Page[WorkRecord], as_of_ms: int) -> dict[str, Any]:
+    return cast(dict[str, Any], wire.work_items_wire(page, as_of_ms))
 
 
 def xp_summary_body(summary: XpSummary) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "bindingId": summary.binding_id,
-        "totalXp": summary.total_xp,
-        "level": summary.level,
-        "levelTableVersion": summary.level_table_version,
-        "levelFloorXp": summary.level_floor_xp,
-        "nextLevelXp": summary.next_level_xp,
-        "acceptedWorkCount": summary.accepted_work_count,
-        "policyVersion": summary.policy_version,
-    }
+    return cast(dict[str, Any], wire.xp_summary_wire(summary))
 
 
-def xp_summaries_body(items: tuple[XpSummary, ...]) -> dict[str, Any]:
-    return {"contractVersion": 1, "items": [xp_summary_body(s) for s in items], "asOfMs": AS_OF}
+def xp_summaries_body(items: tuple[XpSummary, ...], as_of_ms: int) -> dict[str, Any]:
+    return cast(dict[str, Any], wire.xp_summaries_wire(items, as_of_ms))
 
 
-def xp_history_body(history: XpHistory) -> dict[str, Any]:
-    return {
-        "contractVersion": 1,
-        "bindingId": history.summary.binding_id,
-        "summary": xp_summary_body(history.summary),
-        "items": [
-            {
-                "entryId": e.entry_id,
-                "workId": e.work_id,
-                "workTitle": e.work_title,
-                "kind": e.kind,
-                "amount": e.amount,
-                "policyVersion": e.policy_version,
-                "decisionId": e.decision_id,
-                "createdAtMs": e.created_ms,
-            }
-            for e in history.page.items
-        ],
-        "nextCursor": history.page.next_cursor,
-        "asOfMs": AS_OF,
-    }
+def xp_history_body(history: XpHistory, as_of_ms: int) -> dict[str, Any]:
+    return cast(dict[str, Any], wire.xp_history_wire(history, as_of_ms))
+
+
+def check(schema: str, body: Any) -> None:
+    compile_schema(IDS[schema], REGISTRY)(body)
 
 
 @pytest.fixture
@@ -202,12 +119,12 @@ def test_a_reopened_item_with_a_negative_history_entry_matches(
     reopened = decide(store, accepted, "reopen", 3, at=T0 + 3000, note="The notes missed a step.")
     check("work-item", work_item_body(reopened))
     history = xp_history(store, seeded.bindings[0], cursor=None, limit=None)
-    body = xp_history_body(history)
+    body = xp_history_body(history, AS_OF)
     check("xp-history", body)
     assert [e["amount"] for e in body["items"]] == [-100, 100]
     again = submit_and_accept(store, reopened, 4, at=T0 + 4000)
     check("work-item", work_item_body(again))
-    after = xp_history_body(xp_history(store, seeded.bindings[0], cursor=None, limit=None))
+    after = xp_history_body(xp_history(store, seeded.bindings[0], cursor=None, limit=None), AS_OF)
     check("xp-history", after)
     assert [e["kind"] for e in after["items"]] == ["reinstatement", "correction", "award"]
 
@@ -301,34 +218,34 @@ def test_not_rewardable_items_and_the_list_page_match(ledger: tuple[Store, Seede
     submit_and_accept(store, tracked, 1, at=T0 + 3000)
     page = list_work(store, state=None, binding_id=None, cursor=None, limit=1)
     assert page.next_cursor is not None
-    check("work-items", work_items_body(page.items, page.next_cursor))
+    check("work-items", work_items_body(page, AS_OF))
     last = list_work(store, state=None, binding_id=None, cursor=page.next_cursor, limit=25)
-    check("work-items", work_items_body(last.items, last.next_cursor))
+    check("work-items", work_items_body(last, AS_OF))
     empty = list_work(store, state="rejected", binding_id=None, cursor=None, limit=None)
-    check("work-items", work_items_body(empty.items, empty.next_cursor))
+    check("work-items", work_items_body(empty, AS_OF))
     assert work_item_body(get_work(store, tracked.work_id))["bountyXp"] == 0
 
 
 def test_summaries_and_history_pages_match(ledger: tuple[Store, Seeded]) -> None:
     store, seeded = ledger
-    check("xp-summaries", xp_summaries_body(xp_summaries(store)))
+    check("xp-summaries", xp_summaries_body(xp_summaries(store), AS_OF))
     for number in range(1, 4):
         record = make_work(store, [seeded.attempts[0][number], seeded.attempts[1][number]], number)
         submit_and_accept(store, record, number, at=T0 + 2000 * number)
     listed = xp_summaries(store)
-    body = xp_summaries_body(listed)
+    body = xp_summaries_body(listed, AS_OF)
     check("xp-summaries", body)
     assert len(body["items"]) == 2
     for item in listed:
         check("xp-summary", xp_summary_body(item))
     check("xp-summary", xp_summary_body(xp_summary(store, seeded.bindings[8])))
     first = xp_history(store, seeded.bindings[0], cursor=None, limit=2)
-    check("xp-history", xp_history_body(first))
+    check("xp-history", xp_history_body(first, AS_OF))
     assert first.page.next_cursor is not None
     second = xp_history(store, seeded.bindings[0], cursor=first.page.next_cursor, limit=2)
-    check("xp-history", xp_history_body(second))
+    check("xp-history", xp_history_body(second, AS_OF))
     empty = xp_history(store, seeded.bindings[8], cursor=None, limit=None)
-    check("xp-history", xp_history_body(empty))
+    check("xp-history", xp_history_body(empty, AS_OF))
 
 
 def test_every_replayed_decision_body_matches(ledger: tuple[Store, Seeded]) -> None:
@@ -372,7 +289,7 @@ def test_every_replayed_decision_body_matches(ledger: tuple[Store, Seeded]) -> N
     assert work_item_body(replay.record) == work_item_body(first.record)
 
 
-def test_the_validator_would_refuse_a_body_the_mappers_got_wrong(
+def test_the_validator_would_refuse_a_body_the_builders_got_wrong(
     ledger: tuple[Store, Seeded],
 ) -> None:
     store, seeded = ledger
@@ -384,3 +301,238 @@ def test_the_validator_would_refuse_a_body_the_mappers_got_wrong(
     summary = xp_summary_body(xp_summary(store, seeded.bindings[0]))
     with pytest.raises(fastjsonschema.JsonSchemaException):
         check("xp-summary", {**summary, "totalXp": -1})
+
+
+@pytest.fixture
+def rig(tmp_path: Path) -> Iterator[WorkRig]:
+    made = build_rig(tmp_path)
+    try:
+        yield made
+    finally:
+        made.store.close()
+
+
+def service_bodies(made: WorkRig) -> dict[str, list[dict[str, Any]]]:
+    """Every body the service produces over one accepted, reopened and re-accepted item."""
+    first, second = made.seeded.attempts[0][0], made.seeded.attempts[1][0]
+    _, item = run(
+        made.service.create_work(
+            {
+                "requestId": token("create", 1),
+                "title": "Write the release notes",
+                "acceptanceCondition": "The owner read them.\nAnd agrees.",
+                "rewardable": True,
+                "attemptIds": [first, second],
+                "milestones": ["Outline", "Draft"],
+            }
+        )
+    )
+    bodies: dict[str, list[dict[str, Any]]] = {"work-item": [item]}
+    for n, action in enumerate(("submit", "accept", "reopen", "submit", "accept"), start=1):
+        current = bodies["work-item"][-1]
+        needs = action == "accept"
+        request: dict[str, Any] = {
+            "requestId": token(action, n),
+            "expectedVersion": current["version"],
+            "action": action,
+        }
+        if needs:
+            request["evidenceRevision"] = current["evidenceRevision"]
+        made.clock.now += 10
+        bodies["work-item"].append(run(made.service.decide(item["workId"], request)))
+    bodies["work-items"] = [
+        run(made.service.list_work(state=None, binding_id=None, cursor=None, limit=None))
+    ]
+    bodies["xp-summaries"] = [run(made.service.xp_summaries())]
+    bodies["xp-summary"] = bodies["xp-summaries"][0]["items"]
+    bodies["xp-history"] = [
+        run(made.service.xp_history(binding, cursor=None, limit=None))
+        for binding in made.seeded.bindings
+    ]
+    return bodies
+
+
+def test_every_body_the_service_returns_matches_its_contract(rig: WorkRig) -> None:
+    bodies = service_bodies(rig)
+    for name, produced in bodies.items():
+        assert produced, name
+        for body in produced:
+            check(name, body)
+    assert [b["state"] for b in bodies["work-item"]][-1] == "accepted"
+    assert [e["kind"] for e in bodies["xp-history"][0]["items"]] == [
+        "reinstatement",
+        "correction",
+        "award",
+    ]
+
+
+def test_a_route_error_body_matches_api_error(
+    rig: WorkRig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("KIROCREW_PROXY_SECRET", SIGNING_VALUE)
+    with TestClient(rig.app) as client:
+        api = Api(client)
+        for response in (
+            api.get("/api/work/wrk_" + "f" * 24),
+            api.get("/api/work?state=nope"),
+            api.post("/api/work", {"nope": 1}),
+            api.call("GET", "/api/xp", sign=False),
+        ):
+            assert response.status_code >= 400
+            compile_schema("urn:specter-arena:contract:api-error:v1", REGISTRY)(response.json())
+
+
+def test_the_emitted_keys_are_exactly_the_contract_keys_and_no_denied_word(rig: WorkRig) -> None:
+    denied = {"class", "classes", "archetype", "species", "category", "taxonomy"}
+    denied |= {"tier", "rank", "rarity", "role", "score", "percent", "percentage"}
+    for name, produced in service_bodies(rig).items():
+        schema_keys = set(REGISTRY[IDS[name]]["properties"])
+        for body in produced:
+            assert set(body) == schema_keys, name
+            for key in all_keys(body):
+                assert not denied & {word.lower() for word in re.findall(r"[A-Z]?[a-z]+", key)}
+
+
+def all_keys(value: Any) -> Iterator[str]:
+    if isinstance(value, dict):
+        for key, inner in value.items():
+            yield key
+            yield from all_keys(inner)
+    elif isinstance(value, list):
+        for inner in value:
+            yield from all_keys(inner)
+
+
+def record_of(rig: WorkRig) -> WorkRecord:
+    return make_work(rig.store, [rig.seeded.attempts[0][0]], 1, milestones=["One", "Two"])
+
+
+def test_a_missing_attempt_has_no_times_and_is_never_ended(rig: WorkRig) -> None:
+    record = record_of(rig)
+    ghost = replace(
+        record.attempts[0],
+        present=False,
+        started_ms=5,
+        ended_ms=9,
+        end_signal="row-idle",
+        ended=True,
+    )
+    wire = work_item_body(replace(record, attempts=(ghost,)))
+    assert wire["attempts"] == [
+        {
+            "attemptId": ghost.attempt_id,
+            "bindingId": ghost.binding_id,
+            "kind": ghost.kind,
+            "startedMs": None,
+            "endedMs": None,
+            "endSignal": None,
+            "ended": False,
+            "present": False,
+        }
+    ]
+    check("work-item", wire)
+
+
+def test_a_value_that_does_not_match_its_pattern_becomes_unknown(rig: WorkRig) -> None:
+    record = record_of(rig)
+    odd_attempt = replace(record.attempts[0], kind="Bad Kind!", end_signal="free text")
+    decision = WorkDecisionView(
+        "dec_" + "a" * 24, 1, "Do It", "Open!", "x" * 40, "app-owner", 5, None, None
+    )
+    wire = work_item_body(
+        replace(record, state="Awaiting Review", attempts=(odd_attempt,), decisions=(decision,))
+    )
+    assert wire["state"] == "unknown"
+    attempt = wire["attempts"][0]
+    assert (attempt["kind"], attempt["endSignal"]) == ("unknown", None)
+    shown = wire["decisions"][0]
+    assert (shown["action"], shown["fromState"], shown["toState"]) == ("unknown",) * 3
+    entry = XpEntryView(
+        "xpe_" + "a" * 24, record.work_id, "t", "Odd Kind", 5, "xp-policy-1", "dec_x", 1
+    )
+    history = XpHistory(
+        XpSummary("bnd_" + "a" * 24, 5, 1, 0, 100, 1, "xp-policy-1", "levels-1"),
+        Page((entry,), None),
+    )
+    assert xp_history_body(history, AS_OF)["items"][0]["kind"] == "unknown"
+
+
+def test_can_accept_needs_the_store_flag_and_an_empty_blocker_list(rig: WorkRig) -> None:
+    record = record_of(rig)
+    cases = [
+        (WorkReview(True, ()), True, []),
+        (WorkReview(False, ("wrong-state",)), False, ["wrong-state"]),
+        (WorkReview(True, ("Bad Blocker",)), False, []),
+        (WorkReview(False, ("Bad Blocker", "no-evidence")), False, ["no-evidence"]),
+        (
+            WorkReview(False, tuple(f"blocker-{n}" for n in range(12))),
+            False,
+            [f"blocker-{n}" for n in range(8)],
+        ),
+    ]
+    for review, can_accept, blockers in cases:
+        wire = work_item_body(replace(record, review=review))
+        assert wire["review"] == {"canAccept": can_accept, "blockers": blockers}
+        check("work-item", wire)
+
+
+def test_progress_is_null_without_milestones_and_never_a_percentage(rig: WorkRig) -> None:
+    record = record_of(rig)
+    assert work_item_body(replace(record, milestones=(), progress=None))["progress"] is None
+    wire = work_item_body(record)
+    assert wire["progress"] == {"done": 0, "total": 2}
+    assert "percent" not in str(wire).lower()
+
+
+def test_decisions_over_fifty_keep_the_newest_fifty_oldest_first(rig: WorkRig) -> None:
+    record = record_of(rig)
+    many = tuple(
+        WorkDecisionView(f"dec_{n:024x}", n, "block", "open", "blocked", "app-owner", n, None, None)
+        for n in range(1, 61)
+    )
+    wire = work_item_body(replace(record, decisions=many))
+    seqs = [d["seq"] for d in wire["decisions"]]
+    assert seqs == list(range(11, 61))
+    check("work-item", wire)
+
+
+LEVELS = [
+    (0, 1, 0, 100),
+    (99, 1, 0, 100),
+    (100, 2, 100, 250),
+    (249, 2, 100, 250),
+    (250, 3, 250, 450),
+    (999, 5, 700, 1000),
+    (1000, 6, 1000, 1400),
+    (3199, 9, 2500, 3200),
+    (3200, 10, 3200, None),
+    (10000, 10, 3200, None),
+]
+
+
+@pytest.mark.parametrize(("total", "level", "floor", "following"), LEVELS)
+def test_level_boundaries(total: int, level: int, floor: int, following: int | None) -> None:
+    from backend.specter_arena.store.xp_policy import LEVEL_TABLE_VERSION, POLICY_VERSION, level_for
+
+    got_level, got_floor, got_next = level_for(total)
+    summary = XpSummary(
+        "bnd_" + "a" * 24,
+        total,
+        got_level,
+        got_floor,
+        got_next,
+        1,
+        POLICY_VERSION,
+        LEVEL_TABLE_VERSION,
+    )
+    wire = xp_summary_body(summary)
+    assert (wire["level"], wire["levelFloorXp"], wire["nextLevelXp"]) == (level, floor, following)
+    check("xp-summary", wire)
+
+
+def test_a_summary_page_and_a_work_page_keep_the_stores_cursor(rig: WorkRig) -> None:
+    items = tuple(make_work(rig.store, [], n) for n in range(1, 4))
+    page = Page(items, "cursor-token")
+    wire = work_items_body(page, AS_OF)
+    assert wire["nextCursor"] == "cursor-token" and len(wire["items"]) == 3
+    assert xp_summaries_body((), AS_OF)["items"] == []

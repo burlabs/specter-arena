@@ -132,3 +132,14 @@ FP-06+07 adds one grant for summoning a Specter: `permissions.api` gains `/api/c
 - Not proven on a live install: that the host still refuses `GET /api/chat/slots` once `/api/chat` is granted. The owner step OA-3 records the answer. Until then nothing depends on that refusal.
 - Updating an installed app stages the added grant until the owner approves it. Without approval, generation reports `generation_unavailable` and monitoring keeps working.
 
+## Acceptance and XP are app-owned (FP-08+09)
+
+Added 2026-11-18. The status header and every decision above are unchanged.
+
+FP-08+09 adds WorkItems, human acceptance and an XP ledger. It adds no manifest grant: `app.json` and `agents/` are not edited, and the release grants stay exactly those in D-P9 and the generation paragraph above.
+
+- Acceptance and XP are records this app keeps about its own work items. They are not read from Crew. The inputs are the attempts the collector already projects (a bot's own turn or a worker session whose `created_by` is the bot's slot key) and what the app owner types. Bot goals, key results, ledger items, activity and notes stay DENIED and are not used to define a WorkItem.
+- An ended attempt is not success. A WorkItem is accepted only by a decision the app owner makes through a signed route. The host gives an app no per-user identity, so the recorded actor is the constant `app-owner`; no bot, collector or observation path can reach acceptance.
+- Tokens are never XP (FD-29). No token, tool-call, retry, time or generation-job count is read by the XP code.
+- Summoning and other app-owned slots never become attempts, so they cannot be linked to a WorkItem and earn nothing.
+- Nothing here widens the three-part product scope (bot name, tokens as an operational stat if ever proven, tasks or spawned work) or the untested items in decision 1.
