@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:xp-history:v1",
+  "title": "XP history v1",
+  "description": "Body of GET /api/roster/{bindingId}/xp: the bot's current xp-summary and one keyset page of its XP entries, newest first, at most 50 per page. nextCursor is an opaque cursor for the next page, or null on the last page. Each entry belongs to one WorkItem and one decision of the app owner. kind is a documented lower-case token, not a closed list: award is the first credit for an item, correction is the negative entry written when an accepted item is reopened (its amount is minus the credit it takes back), and reinstatement is the positive entry written when the same item is accepted again (the original amount, never more). So the net for one item is only ever 0 or its original award. policyVersion is the policy applied when the entry was written; a later policy never rewrites it. workTitle is the item's title, repeated so the history stays readable. asOfMs is the server time the page was read.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "bindingId": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+    "summary": { "$ref": "urn:specter-arena:contract:xp-summary:v1" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entryId": { "type": "string", "pattern": "^xpe_[0-9a-f]{24}$" },
+          "workId": { "type": "string", "pattern": "^wrk_[0-9a-f]{24}$" },
+          "workTitle": { "type": "string", "pattern": "^[^\\u0000-\\u001f\\u007f]{1,120}$" },
+          "kind": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+          "amount": { "type": "integer", "minimum": -1000000, "maximum": 1000000 },
+          "policyVersion": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+          "decisionId": { "type": "string", "pattern": "^dec_[0-9a-f]{24}$" },
+          "createdAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+        },
+        "required": ["entryId", "workId", "workTitle", "kind", "amount", "policyVersion", "decisionId", "createdAtMs"],
+        "additionalProperties": false
+      },
+      "maxItems": 50
+    },
+    "nextCursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$" },
+    "asOfMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+  },
+  "required": ["contractVersion", "bindingId", "summary", "items", "nextCursor", "asOfMs"],
+  "additionalProperties": false
+}

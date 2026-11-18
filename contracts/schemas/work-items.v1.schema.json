@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:work-items:v1",
+  "title": "Work items list v1",
+  "description": "Body of GET /api/work: one keyset page of WorkItems, newest created first, at most 25 per page, optionally filtered by state or by a bot's bindingId. nextCursor is an opaque cursor for the next page, or null on the last page. asOfMs is the server time the page was read. It repeats the contractVersion, items and nextCursor members of page.v1 with a typed item, because a closed schema cannot be composed with allOf. An observed attempt that no item links is not listed here: it stays in the attempts list and is never reward eligible.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:work-item:v1" }, "maxItems": 25 },
+    "nextCursor": { "type": ["string", "null"], "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_-]+$" },
+    "asOfMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+  },
+  "required": ["contractVersion", "items", "nextCursor", "asOfMs"],
+  "additionalProperties": false
+}

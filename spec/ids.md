@@ -35,3 +35,9 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP0607-CI` | FP-06+07 crew-integration requirements | crew-integration | 1-99 | open |
 | `FP0607-WL` | FP-06+07 work-ledger requirements | work-ledger | 1-99 | open |
 | `FP0607-DEL` | FP-06+07 delivery requirements | delivery | 1-99 | open |
+| `FP-08-AC` | FP-08 acceptance criteria | delivery | 1-99 | open |
+| `FP-09-AC` | FP-09 acceptance criteria | delivery | 1-99 | open |
+| `FP0809-REQ` | FP-08+09 requirements: one per criterion, plus experience and cross-cutting rules | delivery | 1-99 | open |
+| `FP0809-CI` | FP-08+09 crew-integration requirements | crew-integration | 1-99 | open |
+| `FP0809-WL` | FP-08+09 work-ledger requirements | work-ledger | 1-99 | open |
+| `FP0809-DEL` | FP-08+09 delivery requirements | delivery | 1-99 | open |

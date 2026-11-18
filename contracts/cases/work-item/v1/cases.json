@@ -1,0 +1,452 @@
+[
+  {
+    "file": "valid/awaiting-review-one-bot.json",
+    "valid": true
+  },
+  {
+    "file": "valid/open-no-milestones-progress-unknown.json",
+    "valid": true
+  },
+  {
+    "file": "valid/accepted-two-bots-split.json",
+    "valid": true
+  },
+  {
+    "file": "valid/reopened-after-accept-net-zero.json",
+    "valid": true
+  },
+  {
+    "file": "valid/missing-attempt-projection-rebuilt.json",
+    "valid": true
+  },
+  {
+    "file": "valid/container-with-children-no-attempts.json",
+    "valid": true
+  },
+  {
+    "file": "valid/child-of-a-container.json",
+    "valid": true
+  },
+  {
+    "file": "valid/tracked-no-xp-not-rewardable.json",
+    "valid": true
+  },
+  {
+    "file": "valid/state-and-action-added-later.json",
+    "valid": true
+  },
+  {
+    "file": "valid/times-at-max-integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "valid/sixteen-attempts-eight-contributors.json",
+    "valid": true
+  },
+  {
+    "file": "valid/eight-milestones-all-done.json",
+    "valid": true
+  },
+  {
+    "file": "valid/multi-line-condition-and-note.json",
+    "valid": true
+  },
+  {
+    "file": "valid/text-with-angle-brackets-and-unicode.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-percent-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-health-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-progress.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-review.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/work-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/workId"
+  },
+  {
+    "file": "invalid/work-id-uppercase-hex.json",
+    "valid": false,
+    "instancePath": "/workId"
+  },
+  {
+    "file": "invalid/work-id-is-an-attempt-id.json",
+    "valid": false,
+    "instancePath": "/workId"
+  },
+  {
+    "file": "invalid/parent-id-empty-string.json",
+    "valid": false,
+    "instancePath": "/parentId"
+  },
+  {
+    "file": "invalid/parent-id-number.json",
+    "valid": false,
+    "instancePath": "/parentId"
+  },
+  {
+    "file": "invalid/title-empty.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/title-121-chars.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/title-bell-char.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/title-newline.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/title-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/condition-empty.json",
+    "valid": false,
+    "instancePath": "/acceptanceCondition"
+  },
+  {
+    "file": "invalid/condition-281-chars.json",
+    "valid": false,
+    "instancePath": "/acceptanceCondition"
+  },
+  {
+    "file": "invalid/condition-carriage-return.json",
+    "valid": false,
+    "instancePath": "/acceptanceCondition"
+  },
+  {
+    "file": "invalid/rewardable-string.json",
+    "valid": false,
+    "instancePath": "/rewardable"
+  },
+  {
+    "file": "invalid/rewardable-number.json",
+    "valid": false,
+    "instancePath": "/rewardable"
+  },
+  {
+    "file": "invalid/bounty-negative.json",
+    "valid": false,
+    "instancePath": "/bountyXp"
+  },
+  {
+    "file": "invalid/bounty-fraction.json",
+    "valid": false,
+    "instancePath": "/bountyXp"
+  },
+  {
+    "file": "invalid/bounty-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/policy-version-uppercase.json",
+    "valid": false,
+    "instancePath": "/policyVersion"
+  },
+  {
+    "file": "invalid/state-uppercase.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/state-underscore.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/state-empty.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/version-zero.json",
+    "valid": false,
+    "instancePath": "/version"
+  },
+  {
+    "file": "invalid/created-negative.json",
+    "valid": false,
+    "instancePath": "/createdAtMs"
+  },
+  {
+    "file": "invalid/updated-over-max-integer.json",
+    "valid": false,
+    "instancePath": "/updatedAtMs"
+  },
+  {
+    "file": "invalid/attempts-seventeen.json",
+    "valid": false,
+    "instancePath": "/attempts"
+  },
+  {
+    "file": "invalid/attempts-not-array.json",
+    "valid": false,
+    "instancePath": "/attempts"
+  },
+  {
+    "file": "invalid/attempt-extra-property.json",
+    "valid": false,
+    "instancePath": "/attempts/0"
+  },
+  {
+    "file": "invalid/attempt-id-slot-key.json",
+    "valid": false,
+    "instancePath": "/attempts/0/attemptId"
+  },
+  {
+    "file": "invalid/attempt-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/attempts/0/attemptId"
+  },
+  {
+    "file": "invalid/attempt-binding-id-empty.json",
+    "valid": false,
+    "instancePath": "/attempts/0/bindingId"
+  },
+  {
+    "file": "invalid/attempt-binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/attempts/0/bindingId"
+  },
+  {
+    "file": "invalid/attempt-kind-uppercase.json",
+    "valid": false,
+    "instancePath": "/attempts/0/kind"
+  },
+  {
+    "file": "invalid/attempt-started-string.json",
+    "valid": false,
+    "instancePath": "/attempts/0/startedMs"
+  },
+  {
+    "file": "invalid/attempt-ended-fraction.json",
+    "valid": false,
+    "instancePath": "/attempts/0/endedMs"
+  },
+  {
+    "file": "invalid/attempt-missing-ended-key.json",
+    "valid": false,
+    "instancePath": "/attempts/0"
+  },
+  {
+    "file": "invalid/attempt-end-signal-stored-form.json",
+    "valid": false,
+    "instancePath": "/attempts/0/endSignal"
+  },
+  {
+    "file": "invalid/attempt-present-number.json",
+    "valid": false,
+    "instancePath": "/attempts/0/present"
+  },
+  {
+    "file": "invalid/contributors-nine.json",
+    "valid": false,
+    "instancePath": "/contributors"
+  },
+  {
+    "file": "invalid/contributor-attempt-count-zero.json",
+    "valid": false,
+    "instancePath": "/contributors/0/attemptCount"
+  },
+  {
+    "file": "invalid/contributor-xp-negative.json",
+    "valid": false,
+    "instancePath": "/contributors/0/xpNet"
+  },
+  {
+    "file": "invalid/contributor-extra-share-property.json",
+    "valid": false,
+    "instancePath": "/contributors/0"
+  },
+  {
+    "file": "invalid/milestones-nine.json",
+    "valid": false,
+    "instancePath": "/milestones"
+  },
+  {
+    "file": "invalid/milestone-position-zero.json",
+    "valid": false,
+    "instancePath": "/milestones/0/position"
+  },
+  {
+    "file": "invalid/milestone-position-nine.json",
+    "valid": false,
+    "instancePath": "/milestones/0/position"
+  },
+  {
+    "file": "invalid/milestone-label-empty.json",
+    "valid": false,
+    "instancePath": "/milestones/0/label"
+  },
+  {
+    "file": "invalid/milestone-label-81-chars.json",
+    "valid": false,
+    "instancePath": "/milestones/0/label"
+  },
+  {
+    "file": "invalid/milestone-done-string.json",
+    "valid": false,
+    "instancePath": "/milestones/0/doneAtMs"
+  },
+  {
+    "file": "invalid/progress-total-zero.json",
+    "valid": false,
+    "instancePath": "/progress/total"
+  },
+  {
+    "file": "invalid/progress-total-nine.json",
+    "valid": false,
+    "instancePath": "/progress/total"
+  },
+  {
+    "file": "invalid/progress-percent-property.json",
+    "valid": false,
+    "instancePath": "/progress"
+  },
+  {
+    "file": "invalid/progress-string.json",
+    "valid": false,
+    "instancePath": "/progress"
+  },
+  {
+    "file": "invalid/progress-fraction.json",
+    "valid": false,
+    "instancePath": "/progress/done"
+  },
+  {
+    "file": "invalid/evidence-revision-uppercase.json",
+    "valid": false,
+    "instancePath": "/evidenceRevision"
+  },
+  {
+    "file": "invalid/evidence-revision-25-hex.json",
+    "valid": false,
+    "instancePath": "/evidenceRevision"
+  },
+  {
+    "file": "invalid/evidence-revision-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/evidenceRevision"
+  },
+  {
+    "file": "invalid/child-count-negative.json",
+    "valid": false,
+    "instancePath": "/childCount"
+  },
+  {
+    "file": "invalid/children-accepted-string.json",
+    "valid": false,
+    "instancePath": "/childrenAccepted"
+  },
+  {
+    "file": "invalid/review-missing-blockers.json",
+    "valid": false,
+    "instancePath": "/review"
+  },
+  {
+    "file": "invalid/review-can-accept-string.json",
+    "valid": false,
+    "instancePath": "/review/canAccept"
+  },
+  {
+    "file": "invalid/blockers-nine.json",
+    "valid": false,
+    "instancePath": "/review/blockers"
+  },
+  {
+    "file": "invalid/blocker-uppercase.json",
+    "valid": false,
+    "instancePath": "/review/blockers/0"
+  },
+  {
+    "file": "invalid/blocker-free-text.json",
+    "valid": false,
+    "instancePath": "/review/blockers/0"
+  },
+  {
+    "file": "invalid/decision-actor-other-user.json",
+    "valid": false,
+    "instancePath": "/decisions/0/actor"
+  },
+  {
+    "file": "invalid/decision-actor-bot.json",
+    "valid": false,
+    "instancePath": "/decisions/0/actor"
+  },
+  {
+    "file": "invalid/decision-id-wrong-prefix.json",
+    "valid": false,
+    "instancePath": "/decisions/0/decisionId"
+  },
+  {
+    "file": "invalid/decision-seq-zero.json",
+    "valid": false,
+    "instancePath": "/decisions/0/seq"
+  },
+  {
+    "file": "invalid/decision-action-uppercase.json",
+    "valid": false,
+    "instancePath": "/decisions/0/action"
+  },
+  {
+    "file": "invalid/decision-note-281-chars.json",
+    "valid": false,
+    "instancePath": "/decisions/0/note"
+  },
+  {
+    "file": "invalid/decision-note-empty-string.json",
+    "valid": false,
+    "instancePath": "/decisions/0/note"
+  },
+  {
+    "file": "invalid/decision-evidence-revision-short.json",
+    "valid": false,
+    "instancePath": "/decisions/0/evidenceRevision"
+  },
+  {
+    "file": "invalid/decision-missing-actor.json",
+    "valid": false,
+    "instancePath": "/decisions/0"
+  },
+  {
+    "file": "invalid/decision-extra-user-id-property.json",
+    "valid": false,
+    "instancePath": "/decisions/0"
+  }
+]

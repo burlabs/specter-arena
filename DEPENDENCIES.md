@@ -56,7 +56,7 @@ React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Cr
 |---|---|---|---|
 | A01 portraits `vell.png`, `stitch.png`, `reeve.png` | `backend/specter_arena/specters/art/` | User-supplied original art; no third-party license is claimed and rights confirmation for release is open. Hashes and source in `docs/provenance.md` | Selectable gallery portraits for Specters |
 
-FP-06+07 adds no package to any manifest or lockfile.
+FP-06+07 and FP-08+09 add no package to any manifest or lockfile, and FP-08+09 adds no bundled asset.
 
 ## Preview infrastructure (`infra/`, separate npm project, never shipped)
 

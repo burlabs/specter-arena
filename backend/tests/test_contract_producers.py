@@ -41,12 +41,14 @@ def schemas_without_a_producer(sources: dict[str, str], schema_ids: list[str]) -
     return missing
 
 
-def test_the_registry_lists_all_fifteen_schemas() -> None:
-    assert len(SCHEMA_IDS) == 15
+def test_the_registry_lists_all_twenty_schemas() -> None:
+    assert len(SCHEMA_IDS) == 20
     assert "urn:specter-arena:contract:roster:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempts:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempt-item:v1" in SCHEMA_IDS
     for name in ("specter-profile", "specter", "specters", "summoning", "portrait-asset"):
+        assert f"urn:specter-arena:contract:{name}:v1" in SCHEMA_IDS
+    for name in ("work-item", "work-items", "xp-summary", "xp-summaries", "xp-history"):
         assert f"urn:specter-arena:contract:{name}:v1" in SCHEMA_IDS
 
 
