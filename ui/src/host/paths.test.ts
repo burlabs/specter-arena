@@ -4,6 +4,8 @@ import {
   PORTRAITS_PATH,
   ROSTER_PATH,
   SPECTERS_PATH,
+  WORK_PATH,
+  XP_PATH,
   assetPath,
   attemptsPath,
   rosterPath,
@@ -12,6 +14,12 @@ import {
   summoningActionPath,
   summoningPath,
   summoningsPath,
+  workAttemptsPath,
+  workDecisionsPath,
+  workListPath,
+  workMilestonesPath,
+  workPath,
+  xpHistoryPath,
 } from './paths';
 
 describe('roster and attempts paths', () => {
@@ -52,5 +60,29 @@ describe('specter paths', () => {
     expect(summoningPath('a/b')).toBe('/apps/specter-arena/api/summonings/a%2Fb');
     expect(summoningActionPath('a/b', 'cancel')).toBe('/apps/specter-arena/api/summonings/a%2Fb/cancel');
     expect(assetPath('a/b')).toBe('/apps/specter-arena/api/assets/a%2Fb');
+  });
+});
+
+describe('work and xp paths', () => {
+  it('names the two collection paths', () => {
+    expect(WORK_PATH).toBe('/apps/specter-arena/api/work');
+    expect(XP_PATH).toBe('/apps/specter-arena/api/xp');
+  });
+
+  it('omits a null state and cursor and encodes a cursor', () => {
+    expect(workListPath(null, 25, null)).toBe(`${WORK_PATH}?limit=25`);
+    expect(workListPath('awaiting-review', 25, 'a b/c')).toBe(`${WORK_PATH}?state=awaiting-review&limit=25&cursor=a%20b%2Fc`);
+  });
+
+  it('encodes the work id in every item path', () => {
+    expect(workPath('a/b')).toBe(`${WORK_PATH}/a%2Fb`);
+    expect(workAttemptsPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/attempts`);
+    expect(workMilestonesPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/milestones`);
+    expect(workDecisionsPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/decisions`);
+  });
+
+  it('builds the xp history path with a default limit and an encoded id and cursor', () => {
+    expect(xpHistoryPath('a/b')).toBe('/apps/specter-arena/api/roster/a%2Fb/xp?limit=50');
+    expect(xpHistoryPath('bnd_1', 10, 'c 1')).toBe('/apps/specter-arena/api/roster/bnd_1/xp?limit=10&cursor=c%201');
   });
 });

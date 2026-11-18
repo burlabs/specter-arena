@@ -5,8 +5,8 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
-// Measured bundle length at this PR's last commit (92,586 characters), times 1.25, rounded up to the next 1,000.
-const BUNDLE_BUDGET_CHARS = 116_000;
+// Measured bundle length at this PR's last commit (153,337 characters), times 1.25, rounded up to the next 1,000.
+const BUNDLE_BUDGET_CHARS = 192_000;
 
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
@@ -61,6 +61,7 @@ describe('library build', () => {
 
   it('ships its scoped stylesheet as a string and no CSS import', () => {
     expect(bundle).toContain('data-specter-arena');
+    expect(bundle).toContain('data-specter-arena-work');
     expect(bundle).toContain('.specter-arena-root');
     expect(bundle).not.toContain('@import');
   });
@@ -68,5 +69,6 @@ describe('library build', () => {
   it('carries no fixture or diagnostic marker', () => {
     expect(bundle).not.toContain('SPECTER-FIXTURE-ONLY');
     expect(bundle).not.toContain('SPECTER-DIAGNOSTIC-ONLY');
+    expect(bundle).not.toContain('work-bodies');
   });
 });

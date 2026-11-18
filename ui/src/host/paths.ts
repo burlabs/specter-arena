@@ -35,3 +35,14 @@ export const summoningPath = (requestId: string): string => appApiPath(`/summoni
 export const summoningActionPath = (requestId: string, action: 'cancel' | 'accept'): string =>
   appApiPath(`/summonings/${enc(requestId)}/${action}`);
 export const assetPath = (assetId: string): string => appApiPath(`/assets/${enc(assetId)}`);
+
+export const WORK_PATH = appApiPath('/work');
+export const XP_PATH = appApiPath('/xp');
+
+export const workListPath = (state: string | null, limit: number, cursor: string | null): string => withQuery(WORK_PATH, { state, limit, cursor });
+export const workPath = (workId: string): string => appApiPath(`/work/${enc(workId)}`);
+export const workAttemptsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/attempts`);
+export const workMilestonesPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/milestones`);
+export const workDecisionsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/decisions`);
+export const xpHistoryPath = (bindingId: string, limit = 50, cursor: string | null = null): string =>
+  withQuery(appApiPath(`/roster/${enc(bindingId)}/xp`), { limit, cursor });

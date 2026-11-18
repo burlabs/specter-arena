@@ -1,7 +1,7 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody, setFixtureScenario, setSpecterScenario } from '@kirocrew/app-sdk';
+import { rosterBody, setFixtureScenario, setSpecterScenario, setWorkScenario } from '@kirocrew/app-sdk';
 import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
 import { WATCHED_KEY, writeWatched } from './watched';
@@ -208,7 +208,7 @@ describe('detail and announcements', () => {
     selectRow('Atlas');
     expect(await screen.findByText('Showing Atlas: Working, 2 open attempts')).toBeTruthy();
     const tabs = screen.getByRole('tablist', { name: 'Bot detail sections' });
-    expect(within(tabs).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Attempts', 'Activity', 'Source details']);
+    expect(within(tabs).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Source details']);
     expect(screen.getByRole('list', { name: 'Attempts, newest first' })).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(screen.getByRole('region', { name: 'Last 24 hours' }).textContent).toContain('Sample size3');
@@ -315,13 +315,55 @@ describe('what the page never does', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it('shows XP, level and accepted work as unavailable, with no figure, and no idle, healthy or available label', async () => {
-    await open('all-reasons');
-    selectRow('Reason not-running');
-    const detail = screen.getByRole('region', { name: 'Bot detail' });
-    expect(detail.textContent).toContain('Unavailable until accepted-work tracking ships');
-    for (const card of detail.querySelectorAll('.sa-card')) expect(card.textContent).not.toMatch(/\d/);
+  it('shows XP, level and accepted work from the ledger, with no idle, healthy or available label', async () => {
+    setWorkScenario('work');
+    await open();
+    selectRow('Atlas');
+    const detail = await screen.findByRole('region', { name: 'Bot detail' });
+    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
+    const card = (title: string) => within(detail).getByRole('heading', { name: title }).parentElement;
+    expect(card('Accepted work')?.textContent).toBe('Accepted work2');
+    expect(card('Level')?.textContent).toContain('Level 2');
+    expect(card('Level')?.textContent).toContain('50 of 150 XP toward level 3');
     expect(document.body.textContent ?? '').not.toMatch(/\b(idle|healthy|available)\b/i);
+  });
+
+  it('shows 0 XP and Level 1 for a bot with no ledger entry', async () => {
+    await open();
+    selectRow('Atlas');
+    const detail = await screen.findByRole('region', { name: 'Bot detail' });
+    await waitFor(() => expect(detail.textContent).toContain('0 XP from accepted work'));
+    expect(detail.textContent).toContain('Level 1');
+  });
+
+  it('keeps the roster usable and never shows 0 when XP cannot be loaded', async () => {
+    setWorkScenario('work-failure');
+    await open();
+    selectRow('Atlas');
+    expect(rowNames()).toContain('Atlas');
+    const detail = await screen.findByRole('region', { name: 'Bot detail' });
+    await waitFor(() => expect(detail.textContent).toContain('Could not load. It retries automatically.'));
+    expect(within(detail).getByRole('heading', { name: 'XP' }).parentElement?.textContent).not.toMatch(/\d/);
+  });
+
+  it('says XP is not supported by an older backend', async () => {
+    setWorkScenario('work-unsupported');
+    await open();
+    selectRow('Atlas');
+    const detail = await screen.findByRole('region', { name: 'Bot detail' });
+    await waitFor(() => expect(detail.textContent).toContain('Not supported by this backend'));
+  });
+
+  it('leaves the XP card unchanged when a Specter is renamed, because XP is keyed by binding', async () => {
+    setWorkScenario('work');
+    setSpecterScenario('specters');
+    await open();
+    selectRow('Atlas');
+    const detail = await screen.findByRole('region', { name: 'Bot detail' });
+    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
+    await useAppApi().post('/apps/specter-arena/api/specters/bnd_aaaaaaaaaaaaaaaaaaaa0001/name', { expectedVersion: 1, name: 'Renamed', epithet: null });
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
   });
 });
 
@@ -330,8 +372,9 @@ describe('sections', () => {
   const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
   const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
 
-  it('offers Roster and Specters with Roster selected', async () => {
+  it('offers Roster, Specters and Work with Roster selected', async () => {
     await open();
+    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work']);
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     expect(specterTab().getAttribute('aria-selected')).toBe('false');
     expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
@@ -344,7 +387,7 @@ describe('sections', () => {
     fireEvent.keyDown(specterTab(), { key: 'Home' });
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(rosterTab(), { key: 'End' });
-    expect(specterTab().getAttribute('aria-selected')).toBe('true');
+    expect(sections().getByRole('tab', { name: 'Work' }).getAttribute('aria-selected')).toBe('true');
   });
 
   it('shows the Specters panel and hides the roster, then restores it unchanged', async () => {

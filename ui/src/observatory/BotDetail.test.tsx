@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { attemptsBody, rosterBody } from '@kirocrew/app-sdk';
+import type { XpView } from '../work/useXp';
 import { BotDetail } from './BotDetail';
 import type { AttemptsState } from './useAttempts';
 
@@ -12,9 +13,11 @@ if (data === null) throw new Error('fixture');
 const ready: AttemptsState = { status: 'ready', data, items: data.items, hasOlder: true, loadingOlder: false, olderFailed: false, failure: null };
 
 function view(attempts: AttemptsState = ready, handlers = { onLoadOlder: vi.fn(), onRetry: vi.fn() }) {
-  render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={attempts} {...handlers} />);
+  render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={attempts} xp={XP_NONE} {...handlers} />);
   return handlers;
 }
+
+const XP_NONE: XpView = { status: 'ready', summary: null };
 
 const tab = (name: string) => screen.getByRole('tab', { name });
 
@@ -80,5 +83,31 @@ describe('BotDetail', () => {
   it('renders an empty panel when idle', () => {
     view({ status: 'idle' });
     expect(screen.getByRole('tabpanel').textContent).toBe('');
+  });
+
+  it('offers four tabs in order, with Progression between Activity and Source details (BD-1)', () => {
+    view();
+    expect(within(screen.getByRole('tablist')).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Source details']);
+  });
+
+  it('shows the ledger on Progression while attempts are loading or gone (BD-2)', async () => {
+    view({ status: 'loading' });
+    fireEvent.click(tab('Progression'));
+    expect(await screen.findByText('No XP entries yet. XP comes only from work you accept.')).toBeTruthy();
+    expect(screen.getByText('Policy xp-policy-1 · Level table levels-1')).toBeTruthy();
+    expect(screen.queryByText('Loading attempts…')).toBeNull();
+  });
+
+  it('wraps the arrow keys over four tabs and End still lands on Source details (BD-3)', () => {
+    view();
+    fireEvent.keyDown(tab('Attempts'), { key: 'ArrowRight' });
+    fireEvent.keyDown(tab('Activity'), { key: 'ArrowRight' });
+    expect(tab('Progression').getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tab('Progression'), { key: 'ArrowRight' });
+    expect(tab('Source details').getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tab('Source details'), { key: 'ArrowRight' });
+    expect(tab('Attempts').getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tab('Attempts'), { key: 'End' });
+    expect(tab('Source details').getAttribute('aria-selected')).toBe('true');
   });
 });

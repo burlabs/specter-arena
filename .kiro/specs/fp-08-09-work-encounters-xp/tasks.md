@@ -13,6 +13,6 @@ Shared single-writer files change in one open PR at a time. FP-08+09 changes non
 - [x] T6 delivery: monitoring-scope paragraph, doc upkeep (FP0809-DEL-06, FP0809-DEL-07)
 
 ## PR-C: UI
-- [ ] T7 experience: `ui/src/work/`, Work tab entry, XP in roster detail, Progression panel, types, fixtures, scoped CSS (FP0809-REQ-15 to FP0809-REQ-17, FP0809-DEL-11)
-- [ ] T8 delivery: provenance rows, bundle budget, `tests/e2e/work.spec.ts`, doc upkeep (FP0809-DEL-08 to FP0809-DEL-10, FP0809-DEL-07)
-- [ ] T9 work-ledger: FROZEN flips and the `TYPED` rows, last commit (FP0809-REQ-18, FP0809-DEL-05)
+- [x] T7 experience: `ui/src/work/`, Work tab entry, XP in roster detail, Progression panel, types, fixtures, scoped CSS (FP0809-REQ-15 to FP0809-REQ-17, FP0809-DEL-11)
+- [x] T8 delivery: provenance rows, bundle budget, `tests/e2e/work.spec.ts`, doc upkeep (FP0809-DEL-08 to FP0809-DEL-10, FP0809-DEL-07)
+- [x] T9 work-ledger: FROZEN flips and the `TYPED` rows, last commit (FP0809-REQ-18, FP0809-DEL-05)

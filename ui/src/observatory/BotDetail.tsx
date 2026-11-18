@@ -5,13 +5,17 @@ import { AttemptsList, AttemptsStatus } from './AttemptsList';
 import { BotSummary } from './BotSummary';
 import { SourcePanel } from './SourcePanel';
 import { Tabs } from './Tabs';
+import { ProgressionPanel } from '../work/ProgressionPanel';
+import type { XpView } from '../work/useXp';
+import { nameOf } from './model';
 import type { AttemptsState } from './useAttempts';
 
-type DetailTab = 'attempts' | 'activity' | 'source';
+type DetailTab = 'attempts' | 'activity' | 'progression' | 'source';
 
 const DETAIL_TABS: ReadonlyArray<{ name: DetailTab; label: string }> = [
   { name: 'attempts', label: 'Attempts' },
   { name: 'activity', label: 'Activity' },
+  { name: 'progression', label: 'Progression' },
   { name: 'source', label: 'Source details' },
 ];
 
@@ -20,12 +24,13 @@ interface Props {
   collector: RosterCollectorV1;
   rosterRevision: number;
   attempts: AttemptsState;
+  xp: XpView;
   onLoadOlder: () => void;
   onRetry: () => void;
 }
 
 /** Keyed by bindingId in the page, so the selected tab resets when the selection changes. */
-export function BotDetail({ item, collector, rosterRevision, attempts, onLoadOlder, onRetry }: Props) {
+export function BotDetail({ item, collector, rosterRevision, attempts, xp, onLoadOlder, onRetry }: Props) {
   const [tab, setTab] = useState<DetailTab>('attempts');
   const id = useId();
   const panelId = `${id}-panel`;
@@ -34,6 +39,8 @@ export function BotDetail({ item, collector, rosterRevision, attempts, onLoadOld
   let panel = null;
   if (tab === 'source') {
     panel = <SourcePanel item={item} collector={collector} rosterRevision={rosterRevision} attempts={attemptsData} />;
+  } else if (tab === 'progression') {
+    panel = <ProgressionPanel bindingId={item.bindingId} botName={nameOf(item)} />;
   } else if (attempts.status !== 'ready') {
     panel = attempts.status === 'idle' ? null : <AttemptsStatus state={attempts} onRetry={onRetry} />;
   } else if (tab === 'activity') {
@@ -52,7 +59,7 @@ export function BotDetail({ item, collector, rosterRevision, attempts, onLoadOld
 
   return (
     <div className="sa-detail">
-      <BotSummary item={item} />
+      <BotSummary item={item} xp={xp} />
       <Tabs label="Bot detail sections" tabs={DETAIL_TABS} value={tab} panelId={panelId} tabId={(name) => `${id}-tab-${name}`} onChange={setTab} />
       <div role="tabpanel" id={panelId} aria-labelledby={`${id}-tab-${tab}`} tabIndex={0}>
         {panel}

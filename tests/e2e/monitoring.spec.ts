@@ -5,7 +5,7 @@ test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 const FORBIDDEN = /\b(idle|healthy|available)\b/i;
 
-const detailPanel = (page: Page) => page.getByRole('tabpanel', { name: /^(Attempts|Activity|Source details)$/ });
+const detailPanel = (page: Page) => page.getByRole('tabpanel', { name: /^(Attempts|Activity|Progression|Source details)$/ });
 
 const selectBot = (page: Page, name: string) => page.getByRole('list', { name: 'Bots' }).getByRole('button', { name: new RegExp(`^${name}`) }).click();
 

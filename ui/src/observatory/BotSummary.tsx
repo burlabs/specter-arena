@@ -1,13 +1,13 @@
 import { useId } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
-import { COVERAGE_STATE_WORDS, PRESENCE_WORDS, UNAVAILABLE_TEXT, reasonWords } from './copy';
+import { XpCards } from '../work/XpCards';
+import type { XpView } from '../work/useXp';
+import { COVERAGE_STATE_WORDS, PRESENCE_WORDS, reasonWords } from './copy';
 import { ConditionBadge } from './ConditionBadge';
 import { Time } from './Time';
 import { botCondition, nameOf, workerChips } from './model';
 
-const UNAVAILABLE_CARDS = ['Accepted work', 'XP', 'Level'] as const;
-
-export function BotSummary({ item }: { item: RosterItemV1 }) {
+export function BotSummary({ item, xp }: { item: RosterItemV1; xp: XpView }) {
   const headingId = useId();
   const condition = botCondition(item.condition);
   const { coverage } = item;
@@ -43,14 +43,7 @@ export function BotSummary({ item }: { item: RosterItemV1 }) {
           Last observed <Time ms={item.lastObservedAtMs} />
         </p>
       </div>
-      <div className="sa-cards">
-        {UNAVAILABLE_CARDS.map((title) => (
-          <div key={title} className="sa-card">
-            <h3>{title}</h3>
-            <p>{UNAVAILABLE_TEXT}</p>
-          </div>
-        ))}
-      </div>
+      <XpCards xp={xp} />
     </section>
   );
 }
