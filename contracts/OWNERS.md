@@ -21,11 +21,11 @@ Status `DRAFT` means the shape may still change in place. `FROZEN` means it chan
 | `specter` | 1 | specter-identity | FROZEN | One bot's active Specter (`GET /api/specters/{bindingId}` and every accept, rename, portrait and manual route); references the bot only through `bot-binding#/definitions/bindingId`; consumed by the FP-06+07 PR-C UI (`ui/src/specters/`); frozen by FP-06+07 |
 | `specters` | 1 | specter-identity | FROZEN | `GET /api/specters`; consumed by the FP-06+07 PR-C UI (`ui/src/specters/`); frozen by FP-06+07 |
 | `summoning` | 1 | specter-identity | FROZEN | One generation request and its budget (`POST /api/specters/{bindingId}/summonings`, `GET /api/summonings/{requestId}`, cancel); consumed by the FP-06+07 PR-C UI (`ui/src/specters/`); frozen by FP-06+07 |
-| `work-item` | 1 | work-ledger | DRAFT | One WorkItem: the objective, its linked attempts, milestones, contributors, review advice and decisions (`GET /api/work/{workId}` and every work route); embedded by `work-items`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`); FROZEN in the last commit of PR-C |
-| `work-items` | 1 | work-ledger | DRAFT | `GET /api/work`, one keyset page of `work-item`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`); FROZEN in the last commit of PR-C |
-| `xp-summary` | 1 | work-ledger | DRAFT | One bot binding's derived total, level and next-level floor; embedded by `xp-summaries` and `xp-history`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`, roster detail); FROZEN in the last commit of PR-C |
-| `xp-summaries` | 1 | work-ledger | DRAFT | `GET /api/xp`, the summary of every bot binding with an XP entry; consumed by the FP-08+09 PR-C UI (`ui/src/work/`, roster rows and detail); FROZEN in the last commit of PR-C |
-| `xp-history` | 1 | work-ledger | DRAFT | `GET /api/roster/{bindingId}/xp`, the summary and one keyset page of XP entries (award, correction, reinstatement); consumed by the FP-08+09 PR-C UI (`ui/src/work/`, Progression panel); FROZEN in the last commit of PR-C |
+| `work-item` | 1 | work-ledger | FROZEN | One WorkItem: the objective, its linked attempts, milestones, contributors, review advice and decisions (`GET /api/work/{workId}` and every work route); embedded by `work-items`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`); frozen by FP-08+09 |
+| `work-items` | 1 | work-ledger | FROZEN | `GET /api/work`, one keyset page of `work-item`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`); frozen by FP-08+09 |
+| `xp-summary` | 1 | work-ledger | FROZEN | One bot binding's derived total, level and next-level floor; embedded by `xp-summaries` and `xp-history`; consumed by the FP-08+09 PR-C UI (`ui/src/work/`, roster detail); frozen by FP-08+09 |
+| `xp-summaries` | 1 | work-ledger | FROZEN | `GET /api/xp`, the summary of every bot binding with an XP entry; consumed by the FP-08+09 PR-C UI (`ui/src/work/`, roster rows and detail); frozen by FP-08+09 |
+| `xp-history` | 1 | work-ledger | FROZEN | `GET /api/roster/{bindingId}/xp`, the summary and one keyset page of XP entries (award, correction, reinstatement); consumed by the FP-08+09 PR-C UI (`ui/src/work/`, Progression panel); frozen by FP-08+09 |
 
 ## Rules for schema authors
 
