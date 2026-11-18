@@ -12,4 +12,4 @@ Product rules that hold from the first session:
 - Fixtures never stand in for live data. The preview harness is labelled FIXTURE and is never shipped in the production bundle.
 - Unknown progress stays indeterminate. The UI does not invent percentages.
 
-FP-00 contains no gameplay. The UI is a stub shell and the backend answers only `/health`.
+The app ships as one Crew app: a roster of the user's Kiro Crew bots, a Specter for each, work items that the user accepts, XP derived from accepted work, a read-only arena and an evidence inspector. Gameplay never decides acceptance; only a human click does.

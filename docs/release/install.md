@@ -130,6 +130,33 @@ To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. T
 cp -R ~/.kiro/crew/apps/specter-arena/data BACKUP-FOLDER
 ```
 
+## 11. Building the artifact (maintainers)
+
+Install the locked dependencies, then build from a commit:
+
+```sh
+npm ci
+npm run package -- --commit COMMIT
+```
+
+`--commit` defaults to `HEAD`. The commit must be reachable from a branch or tag of the repository. The output goes to `.release/`, which git ignores: `specter-arena-VERSION-SHA12.tar.gz` and its `.sha256` sidecar. `--out DIR` writes elsewhere, outside the repository.
+
+The script clones the commit with `git clone --no-local` into a temporary directory, runs `npm ci` and `npm run build` there, and packs only the files git tracks at that commit plus the built `ui/dist/index.mjs`. Uncommitted, untracked and ignored files in your working tree cannot enter the artifact. It needs the Node major in `.nvmrc`, and `app.json` and `package.json` must carry the same x.y.z version.
+
+The build fails with exit code 1, and writes no file, when it finds any of these:
+
+- an env file other than `.env.example`, a probe artifact (`.probe-*`), a `data/` directory or a database file;
+- a QA art file (light/dark check images, reference crops, roster reference sheets, `-master.png` files);
+- preview or diagnostic build output, CDK output, a previous `.release/` output;
+- a dependency, cache or report directory (`node_modules`, `.venv`, `.deps`, `coverage`, `playwright-report`, `test-results`, `__pycache__`, tool caches), a `.pyc`, `.coverage` or `.DS_Store` file;
+- a credential-shaped file name (`id_rsa*`, `.pem`, `.key`, `.p12`);
+- a symlink, a submodule, or a path that is not plain ASCII or is too long for the tar format;
+- a fixture or diagnostic marker in the build, the probe switch file in the release tree, or any file in `ui/dist` other than `index.mjs`.
+
+The tarball is deterministic for one commit and one toolchain: sorted entries, fixed owner 0/0 with no names, commit time as modification time. Do not rely on identical bytes across machines, because a different Vite or npm version can change `index.mjs`. `RELEASE-MANIFEST.txt` inside the artifact lists the commit, version, Node and npm versions and one line per file in the form `64-hex-sha256`, two spaces, `path`, which the check in section 3 reads. The `.sha256` sidecar covers the uploaded file.
+
+The script never tags, uploads or publishes. Eric alone tags the release, uploads the artifact and submits.
+
 ## 12. Building from a git clone instead
 
 ```sh
