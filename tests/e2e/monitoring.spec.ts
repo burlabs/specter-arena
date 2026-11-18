@@ -59,8 +59,9 @@ test('a keyboard-only journey reaches the detail tabs', async ({ page }) => {
 test('every reason has words and none says idle, healthy or available', async ({ page }) => {
   await page.goto('./?scenario=all-reasons');
   const list = page.getByRole('list', { name: 'Bots' });
+  // The list fills after the first poll; wait for all 21 rows before reading the count (B11).
+  await expect(list.getByRole('listitem')).toHaveCount(21);
   const count = await list.getByRole('listitem').count();
-  expect(count).toBe(21);
   for (let index = 0; index < count; index += 1) {
     await list.getByRole('listitem').nth(index).getByRole('button').first().click();
     const detail = page.getByRole('region', { name: 'Bot detail' });

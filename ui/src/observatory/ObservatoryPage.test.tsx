@@ -40,11 +40,12 @@ describe('first load', () => {
 
   it('ties each view tab to one tabpanel labelled by the selected tab', async () => {
     await open();
-    const panel = screen.getByRole('tabpanel');
-    for (const tab of screen.getAllByRole('tab')) expect(tab.getAttribute('aria-controls')).toBe(panel.id);
-    expect(panel.getAttribute('aria-labelledby')).toBe(screen.getByRole('tab', { name: 'All bots' }).id);
-    fireEvent.click(screen.getByRole('tab', { name: 'Watched' }));
-    expect(panel.getAttribute('aria-labelledby')).toBe(screen.getByRole('tab', { name: 'Watched' }).id);
+    const panel = screen.getByRole('tabpanel', { name: 'All bots' });
+    const views = within(screen.getByRole('tablist', { name: 'Which bots to show' }));
+    for (const tab of views.getAllByRole('tab')) expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+    expect(panel.getAttribute('aria-labelledby')).toBe(views.getByRole('tab', { name: 'All bots' }).id);
+    fireEvent.click(views.getByRole('tab', { name: 'Watched' }));
+    expect(panel.getAttribute('aria-labelledby')).toBe(views.getByRole('tab', { name: 'Watched' }).id);
   });
 
   it('opens on Watched when a watched bot is on the roster, and stays there after a refresh', async () => {
@@ -319,5 +320,50 @@ describe('what the page never does', () => {
     expect(detail.textContent).toContain('Unavailable until accepted-work tracking ships');
     for (const card of detail.querySelectorAll('.sa-card')) expect(card.textContent).not.toMatch(/\d/);
     expect(document.body.textContent ?? '').not.toMatch(/\b(idle|healthy|available)\b/i);
+  });
+});
+
+describe('sections', () => {
+  const sections = () => within(screen.getByRole('tablist', { name: 'Sections' }));
+  const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
+  const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
+
+  it('offers Roster and Specters with Roster selected', async () => {
+    await open();
+    expect(rosterTab().getAttribute('aria-selected')).toBe('true');
+    expect(specterTab().getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
+  });
+
+  it('moves between sections with the arrow, Home and End keys', async () => {
+    await open();
+    fireEvent.keyDown(rosterTab(), { key: 'ArrowRight' });
+    expect(specterTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(specterTab(), { key: 'Home' });
+    expect(rosterTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(rosterTab(), { key: 'End' });
+    expect(specterTab().getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('shows the placeholder on Specters and hides the roster, then restores it unchanged', async () => {
+    await open();
+    selectRow('Atlas');
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'atl' } });
+    fireEvent.click(specterTab());
+    expect(screen.getByRole('tabpanel', { name: 'Specters' })).toBeTruthy();
+    expect(screen.getByText('Specters are not part of this build yet')).toBeTruthy();
+    expect(screen.queryByRole('list', { name: 'Bots' })).toBeNull();
+    fireEvent.click(rosterTab());
+    expect(screen.queryByText('Specters are not part of this build yet')).toBeNull();
+    expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('atl');
+    expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
+  });
+
+  it('leaves the slash key alone while the Specters section is open', async () => {
+    await open();
+    fireEvent.click(specterTab());
+    expect(fireEvent.keyDown(document.body, { key: '/' })).toBe(true);
+    fireEvent.click(rosterTab());
+    expect(fireEvent.keyDown(document.body, { key: '/' })).toBe(false);
   });
 });

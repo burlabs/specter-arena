@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:specter-profile:v1",
+  "title": "Specter profile v1",
+  "description": "The creative identity of one Specter as prose: a name, an optional epithet, personality, freeform appearance, a mannerism, an optional signature flourish, why this character was matched to this bot, and a brief for an artist. Every field is free text a human reads; none is a category, selector or score, and the contract has no class, archetype, species, role, tier or rank. signatureAction is fictional flavor and never claims an operational event or capability. The same shape is what the generator returns, what a candidate holds, what the user may type by hand, and what an accepted revision stores. Text is NFC-normalised and trimmed by the writer; newlines are allowed only in the longer fields. The writer also rejects invisible and bidirectional formatting characters, which a pattern cannot express. Bounds count Unicode code points.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "name": { "type": "string", "pattern": "^[^\\u0000-\\u001f\\u007f<>]{1,40}$" },
+    "epithet": { "type": ["string", "null"], "pattern": "^[^\\u0000-\\u001f\\u007f<>]{1,60}$" },
+    "personality": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,400}$" },
+    "appearance": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,400}$" },
+    "mannerism": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,200}$" },
+    "signatureAction": { "type": ["string", "null"], "pattern": "^[^\\u0000-\\u001f\\u007f]{1,200}$" },
+    "assignmentRationale": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,300}$" },
+    "artBrief": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,400}$" }
+  },
+  "required": ["contractVersion", "name", "epithet", "personality", "appearance", "mannerism", "signatureAction", "assignmentRationale", "artBrief"],
+  "additionalProperties": false
+}

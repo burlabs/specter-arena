@@ -1,0 +1,1 @@
+{"contractVersion":1,"requestId":"req_0123456789abcdef01234567","bindingId":"bnd_0a1b2c3d4e5f60718293a4b5","status":"ready","candidate":"a raw model reply","error":null,"promptVersion":"summon-1","keep":["name"],"createdAtMs":1760000000000,"finishedAtMs":1760000012000,"budget":{"bindingRemaining":4,"bindingLimit":5,"installRemaining":19,"installLimit":20,"windowMs":86400000}}

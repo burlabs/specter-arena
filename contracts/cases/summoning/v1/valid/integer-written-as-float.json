@@ -1,0 +1,1 @@
+{"contractVersion":1,"requestId":"req_0123456789abcdef01234567","bindingId":"bnd_0a1b2c3d4e5f60718293a4b5","status":"queued","candidate":null,"error":null,"promptVersion":"summon-1","keep":[],"createdAtMs":1760000000000.0,"finishedAtMs":null,"budget":{"bindingRemaining":5.0,"bindingLimit":5,"installRemaining":20,"installLimit":20,"windowMs":86400000}}
