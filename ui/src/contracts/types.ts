@@ -238,3 +238,136 @@ export const SPECTER_KEYS: Record<keyof SpecterV1, true> = { contractVersion: tr
 export const SPECTERS_KEYS: Record<keyof SpectersV1, true> = { contractVersion: true, items: true };
 export const SUMMONING_BUDGET_KEYS: Record<keyof SummoningBudgetV1, true> = { bindingRemaining: true, bindingLimit: true, installRemaining: true, installLimit: true, windowMs: true };
 export const SUMMONING_KEYS: Record<keyof SummoningV1, true> = { contractVersion: true, requestId: true, bindingId: true, status: true, candidate: true, error: true, promptVersion: true, keep: true, createdAtMs: true, finishedAtMs: true, budget: true };
+
+/** startedMs, endedMs and endSignal are null for an attempt that is no longer in the attempts record (present: false). */
+export interface WorkAttemptV1 {
+  attemptId: string;
+  bindingId: string;
+  kind: string;
+  startedMs: number | null;
+  endedMs: number | null;
+  endSignal: string | null;
+  ended: boolean;
+  present: boolean;
+}
+
+export interface WorkContributorV1 {
+  bindingId: string;
+  attemptCount: number;
+  xpNet: number;
+}
+
+export interface WorkMilestoneV1 {
+  position: number;
+  label: string;
+  doneAtMs: number | null;
+}
+
+/** null on the item means progress is unknown. There is no percentage anywhere. */
+export interface WorkProgressV1 {
+  done: number;
+  total: number;
+}
+
+/** blockers are tokens: no-evidence, attempts-not-ended, attempt-missing, children-not-accepted, wrong-state. */
+export interface WorkReviewV1 {
+  canAccept: boolean;
+  blockers: string[];
+}
+
+/** action, fromState and toState are documented tokens, not closed lists. actor is always app-owner. */
+export interface WorkDecisionV1 {
+  decisionId: string;
+  seq: number;
+  action: string;
+  fromState: string;
+  toState: string;
+  actor: 'app-owner';
+  atMs: number;
+  note: string | null;
+  evidenceRevision: string | null;
+}
+
+export interface WorkItemV1 {
+  contractVersion: 1;
+  workId: string;
+  parentId: string | null;
+  title: string;
+  acceptanceCondition: string;
+  rewardable: boolean;
+  bountyXp: number;
+  policyVersion: string;
+  /** A documented token, not a closed list: open, awaiting-review, blocked, rejected, cancelled, accepted, reopened. */
+  state: string;
+  version: number;
+  createdAtMs: number;
+  updatedAtMs: number;
+  attempts: WorkAttemptV1[];
+  contributors: WorkContributorV1[];
+  milestones: WorkMilestoneV1[];
+  progress: WorkProgressV1 | null;
+  evidenceRevision: string;
+  childCount: number;
+  childrenAccepted: number;
+  review: WorkReviewV1;
+  decisions: WorkDecisionV1[];
+}
+
+export interface WorkItemsV1 {
+  contractVersion: 1;
+  items: WorkItemV1[];
+  nextCursor: string | null;
+  asOfMs: number;
+}
+
+export interface XpSummaryV1 {
+  contractVersion: 1;
+  bindingId: string;
+  totalXp: number;
+  level: number;
+  levelTableVersion: string;
+  levelFloorXp: number;
+  nextLevelXp: number | null;
+  acceptedWorkCount: number;
+  policyVersion: string;
+}
+
+export interface XpSummariesV1 {
+  contractVersion: 1;
+  items: XpSummaryV1[];
+  asOfMs: number;
+}
+
+/** kind is a documented token: award, correction, reinstatement. amount is negative for a correction. */
+export interface XpEntryV1 {
+  entryId: string;
+  workId: string;
+  workTitle: string;
+  kind: string;
+  amount: number;
+  policyVersion: string;
+  decisionId: string;
+  createdAtMs: number;
+}
+
+export interface XpHistoryV1 {
+  contractVersion: 1;
+  bindingId: string;
+  summary: XpSummaryV1;
+  items: XpEntryV1[];
+  nextCursor: string | null;
+  asOfMs: number;
+}
+
+export const WORK_ATTEMPT_KEYS: Record<keyof WorkAttemptV1, true> = { attemptId: true, bindingId: true, kind: true, startedMs: true, endedMs: true, endSignal: true, ended: true, present: true };
+export const WORK_CONTRIBUTOR_KEYS: Record<keyof WorkContributorV1, true> = { bindingId: true, attemptCount: true, xpNet: true };
+export const WORK_MILESTONE_KEYS: Record<keyof WorkMilestoneV1, true> = { position: true, label: true, doneAtMs: true };
+export const WORK_PROGRESS_KEYS: Record<keyof WorkProgressV1, true> = { done: true, total: true };
+export const WORK_REVIEW_KEYS: Record<keyof WorkReviewV1, true> = { canAccept: true, blockers: true };
+export const WORK_DECISION_KEYS: Record<keyof WorkDecisionV1, true> = { decisionId: true, seq: true, action: true, fromState: true, toState: true, actor: true, atMs: true, note: true, evidenceRevision: true };
+export const WORK_ITEM_KEYS: Record<keyof WorkItemV1, true> = { contractVersion: true, workId: true, parentId: true, title: true, acceptanceCondition: true, rewardable: true, bountyXp: true, policyVersion: true, state: true, version: true, createdAtMs: true, updatedAtMs: true, attempts: true, contributors: true, milestones: true, progress: true, evidenceRevision: true, childCount: true, childrenAccepted: true, review: true, decisions: true };
+export const WORK_ITEMS_KEYS: Record<keyof WorkItemsV1, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
+export const XP_SUMMARY_KEYS: Record<keyof XpSummaryV1, true> = { contractVersion: true, bindingId: true, totalXp: true, level: true, levelTableVersion: true, levelFloorXp: true, nextLevelXp: true, acceptedWorkCount: true, policyVersion: true };
+export const XP_SUMMARIES_KEYS: Record<keyof XpSummariesV1, true> = { contractVersion: true, items: true, asOfMs: true };
+export const XP_ENTRY_KEYS: Record<keyof XpEntryV1, true> = { entryId: true, workId: true, workTitle: true, kind: true, amount: true, policyVersion: true, decisionId: true, createdAtMs: true };
+export const XP_HISTORY_KEYS: Record<keyof XpHistoryV1, true> = { contractVersion: true, bindingId: true, summary: true, items: true, nextCursor: true, asOfMs: true };

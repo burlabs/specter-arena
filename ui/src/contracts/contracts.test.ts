@@ -27,6 +27,18 @@ import {
   SPECTERS_KEYS,
   SUMMONING_BUDGET_KEYS,
   SUMMONING_KEYS,
+  WORK_ATTEMPT_KEYS,
+  WORK_CONTRIBUTOR_KEYS,
+  WORK_DECISION_KEYS,
+  WORK_ITEMS_KEYS,
+  WORK_ITEM_KEYS,
+  WORK_MILESTONE_KEYS,
+  WORK_PROGRESS_KEYS,
+  WORK_REVIEW_KEYS,
+  XP_ENTRY_KEYS,
+  XP_HISTORY_KEYS,
+  XP_SUMMARIES_KEYS,
+  XP_SUMMARY_KEYS,
 } from './types.ts';
 import type {
   ApiErrorV1,
@@ -41,6 +53,11 @@ import type {
   SpecterV1,
   SpectersV1,
   SummoningV1,
+  WorkItemV1,
+  WorkItemsV1,
+  XpHistoryV1,
+  XpSummariesV1,
+  XpSummaryV1,
 } from './types.ts';
 
 // The wire schemas and their shared cases live outside ui/src and backend/specter_arena, so
@@ -137,9 +154,21 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'specters', path: [], keys: SPECTERS_KEYS },
   { schema: 'summoning', path: [], keys: SUMMONING_KEYS },
   { schema: 'summoning', path: ['properties', 'budget'], keys: SUMMONING_BUDGET_KEYS },
+  { schema: 'work-item', path: [], keys: WORK_ITEM_KEYS },
+  { schema: 'work-item', path: ['properties', 'attempts', 'items'], keys: WORK_ATTEMPT_KEYS },
+  { schema: 'work-item', path: ['properties', 'contributors', 'items'], keys: WORK_CONTRIBUTOR_KEYS },
+  { schema: 'work-item', path: ['properties', 'milestones', 'items'], keys: WORK_MILESTONE_KEYS },
+  { schema: 'work-item', path: ['properties', 'progress'], keys: WORK_PROGRESS_KEYS },
+  { schema: 'work-item', path: ['properties', 'review'], keys: WORK_REVIEW_KEYS },
+  { schema: 'work-item', path: ['properties', 'decisions', 'items'], keys: WORK_DECISION_KEYS },
+  { schema: 'work-items', path: [], keys: WORK_ITEMS_KEYS },
+  { schema: 'xp-summary', path: [], keys: XP_SUMMARY_KEYS },
+  { schema: 'xp-summaries', path: [], keys: XP_SUMMARIES_KEYS },
+  { schema: 'xp-history', path: [], keys: XP_HISTORY_KEYS },
+  { schema: 'xp-history', path: ['properties', 'items', 'items'], keys: XP_ENTRY_KEYS },
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
-const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record', 'work-item', 'work-items', 'xp-summary', 'xp-summaries', 'xp-history'];
+const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
 
 describe('hand-written types', () => {
   const nested = (entry: TypedSchema): { properties: Record<string, unknown>; required: string[] } =>
@@ -271,6 +300,61 @@ describe('hand-written types', () => {
       finishedAtMs: 1760000006000,
       budget: { bindingRemaining: 4, bindingLimit: 5, installRemaining: 19, installLimit: 20, windowMs: 86400000 },
     };
+    const bindingId = 'bnd_0a1b2c3d4e5f60718293a4b5';
+    const workItem: WorkItemV1 = {
+      contractVersion: 1,
+      workId: 'wrk_0a1b2c3d4e5f60718293a4b5',
+      parentId: null,
+      title: 'Migrate the nightly report',
+      acceptanceCondition: 'The report runs on the new host.',
+      rewardable: true,
+      bountyXp: 100,
+      policyVersion: 'xp-policy-1',
+      state: 'awaiting-review',
+      version: 3,
+      createdAtMs: 1760000005000,
+      updatedAtMs: 1760000006000,
+      attempts: [
+        { attemptId: 'att_0a1b2c3d4e5f60718293a4b5', bindingId, kind: 'worker', startedMs: 1760000000000, endedMs: 1760000004000, endSignal: 'row-idle', ended: true, present: true },
+      ],
+      contributors: [{ bindingId, attemptCount: 1, xpNet: 0 }],
+      milestones: [
+        { position: 1, label: 'Copy the query', doneAtMs: 1760000004000 },
+        { position: 2, label: 'Check the totals', doneAtMs: null },
+      ],
+      progress: { done: 1, total: 2 },
+      evidenceRevision: '0a1b2c3d4e5f60718293a4b5',
+      childCount: 0,
+      childrenAccepted: 0,
+      review: { canAccept: true, blockers: [] },
+      decisions: [
+        { decisionId: 'dec_0a1b2c3d4e5f60718293a4b5', seq: 1, action: 'submit', fromState: 'open', toState: 'awaiting-review', actor: 'app-owner', atMs: 1760000006000, note: null, evidenceRevision: null },
+      ],
+    };
+    const unknownProgress: WorkItemV1 = { ...workItem, milestones: [], progress: null };
+    const workItems: WorkItemsV1 = { contractVersion: 1, items: [workItem, unknownProgress], nextCursor: null, asOfMs: 1760000007000 };
+    const xpSummary: XpSummaryV1 = {
+      contractVersion: 1,
+      bindingId,
+      totalXp: 150,
+      level: 2,
+      levelTableVersion: 'levels-1',
+      levelFloorXp: 100,
+      nextLevelXp: 250,
+      acceptedWorkCount: 2,
+      policyVersion: 'xp-policy-1',
+    };
+    const xpSummaries: XpSummariesV1 = { contractVersion: 1, items: [xpSummary], asOfMs: 1760000007000 };
+    const xpHistory: XpHistoryV1 = {
+      contractVersion: 1,
+      bindingId,
+      summary: xpSummary,
+      items: [
+        { entryId: 'xpe_0a1b2c3d4e5f60718293a4b5', workId: workItem.workId, workTitle: workItem.title, kind: 'correction', amount: -100, policyVersion: 'xp-policy-1', decisionId: 'dec_0a1b2c3d4e5f60718293a4b5', createdAtMs: 1760000008000 },
+      ],
+      nextCursor: null,
+      asOfMs: 1760000009000,
+    };
     const accepted = [
       ['api-error', error],
       ['page', page],
@@ -284,6 +368,12 @@ describe('hand-written types', () => {
       ['specter', specter],
       ['specters', specters],
       ['summoning', summoning],
+      ['work-item', workItem],
+      ['work-item', unknownProgress],
+      ['work-items', workItems],
+      ['xp-summary', xpSummary],
+      ['xp-summaries', xpSummaries],
+      ['xp-history', xpHistory],
     ] as const;
     for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);

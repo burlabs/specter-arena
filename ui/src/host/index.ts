@@ -5,6 +5,8 @@ export {
   PORTRAITS_PATH,
   ROSTER_PATH,
   SPECTERS_PATH,
+  WORK_PATH,
+  XP_PATH,
   appApiPath,
   assetPath,
   attemptsPath,
@@ -14,6 +16,12 @@ export {
   summoningActionPath,
   summoningPath,
   summoningsPath,
+  workAttemptsPath,
+  workDecisionsPath,
+  workListPath,
+  workMilestonesPath,
+  workPath,
+  xpHistoryPath,
 } from './paths';
 export { HostApiError, useHostApi } from './useHostApi';
 export type { HostApi } from './useHostApi';
