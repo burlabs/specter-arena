@@ -15,6 +15,9 @@ import { useWatched } from './watched';
 import { SpectersView } from '../specters/SpectersView';
 import { useSpecterStyle } from '../specters/useSpecterStyle';
 import { useSpecters } from '../specters/useSpecters';
+import { WorkView } from '../work/WorkView';
+import { useWorkStyle } from '../work/useWorkStyle';
+import { useXp, xpViewOf } from '../work/useXp';
 import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
 
 type ViewName = 'watched' | 'all';
@@ -24,11 +27,12 @@ const VIEWS: ReadonlyArray<{ name: ViewName; label: string }> = [
   { name: 'all', label: 'All bots' },
 ];
 
-type SectionName = 'roster' | 'specters';
+type SectionName = 'roster' | 'specters' | 'work';
 
 const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
   { name: 'roster', label: 'Roster' },
   { name: 'specters', label: 'Specters' },
+  { name: 'work', label: 'Work' },
 ];
 
 function initialView(data: RosterData | null, watched: ReadonlySet<string>): ViewName | null {
@@ -43,8 +47,10 @@ const isTypingTarget = (target: EventTarget | null): boolean =>
 export function ObservatoryPage() {
   useInjectedStyle();
   useSpecterStyle();
+  useWorkStyle();
   const { state, refresh } = useRoster();
   const specters = useSpecters();
+  const xp = useXp();
   const data = state.data;
   const rosterIds = useMemo(
     () => (data === null ? null : { ids: new Set(data.items.map((item) => item.bindingId)), complete: data.complete }),
@@ -234,6 +240,7 @@ export function ObservatoryPage() {
                     collector={roster.collector}
                     rosterRevision={roster.rosterRevision}
                     attempts={attempts.state}
+                    xp={xpViewOf(xp, selected.bindingId)}
                     onLoadOlder={attempts.loadOlder}
                     onRetry={attempts.refresh}
                   />
@@ -246,6 +253,7 @@ export function ObservatoryPage() {
             </div>
           </div>
           {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} />}
+          {section === 'work' && <WorkView bots={items} complete={roster.complete} onLedgerChanged={xp.refresh} />}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null

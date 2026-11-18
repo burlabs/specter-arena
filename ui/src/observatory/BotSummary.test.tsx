@@ -1,14 +1,30 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { rosterBody } from '@kirocrew/app-sdk';
+import type { XpSummaryV1 } from '../contracts/types';
+import type { XpView } from '../work/useXp';
 import { BotSummary } from './BotSummary';
+
+const XP_NONE: XpView = { status: 'ready', summary: null };
+const SUMMARY: XpSummaryV1 = {
+  contractVersion: 1,
+  bindingId: 'bnd_aaaaaaaaaaaaaaaaaaaa0001',
+  totalXp: 150,
+  level: 2,
+  levelTableVersion: 'levels-1',
+  levelFloorXp: 100,
+  nextLevelXp: 250,
+  acceptedWorkCount: 2,
+  policyVersion: 'xp-policy-1',
+};
+const card = (title: string) => screen.getByRole('heading', { name: title }).parentElement;
 
 const [atlas, , cinder, , ember] = rosterBody('default').items;
 if (atlas === undefined || cinder === undefined || ember === undefined) throw new Error('fixture');
 
 describe('BotSummary', () => {
   it('names the bot, its condition and the reason in words', () => {
-    render(<BotSummary item={atlas} />);
+    render(<BotSummary item={atlas} xp={XP_NONE} />);
     expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
     expect(screen.getByText('Working')).toBeTruthy();
     expect(screen.getByText(/Crew reports a turn running/)).toBeTruthy();
@@ -16,29 +32,52 @@ describe('BotSummary', () => {
     expect(screen.getByText('1 worker unknown')).toBeTruthy();
   });
 
-  it('shows the three unavailable cards with no number', () => {
-    render(<BotSummary item={atlas} />);
-    for (const title of ['Accepted work', 'XP', 'Level']) {
-      const card = screen.getByRole('heading', { name: title }).parentElement;
-      expect(card?.textContent).toBe(`${title}Unavailable until accepted-work tracking ships`);
-    }
+  it('keeps the three cards and shows 0, 0 XP and Level 1 for a bot with no ledger entry (BS-1)', () => {
+    render(<BotSummary item={atlas} xp={XP_NONE} />);
+    expect(card('Accepted work')?.textContent).toBe('Accepted work0');
+    expect(card('XP')?.textContent).toBe('XP0 XP from accepted work');
+    expect(card('Level')?.textContent).toContain('Level 1');
+    expect(card('Level')?.textContent).toContain('Level reflects accepted work, not ability or current condition.');
+  });
+
+  it('shows the figures, the level meter and the level note from a summary (BS-2, BS-4)', () => {
+    render(<BotSummary item={atlas} xp={{ status: 'ready', summary: SUMMARY }} />);
+    expect(card('Accepted work')?.textContent).toBe('Accepted work2');
+    expect(card('XP')?.textContent).toBe('XP150 XP from accepted work');
+    expect(card('Level')?.textContent).toContain('Level 2');
+    expect(card('Level')?.textContent).toContain('50 of 150 XP toward level 3');
+    expect(screen.getByRole('progressbar', { name: '50 of 150 XP toward level 3' }).getAttribute('aria-valuenow')).toBe('50');
+  });
+
+  it('says so in words, never 0, while XP loads or when it fails (BS-3)', () => {
+    const { rerender } = render(<BotSummary item={atlas} xp={{ status: 'loading' }} />);
+    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not loaded yet`);
+    rerender(<BotSummary item={atlas} xp={{ status: 'failed', failure: 'unsupported' }} />);
+    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not supported by this backend`);
+    rerender(<BotSummary item={atlas} xp={{ status: 'failed', failure: 'offline' }} />);
+    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Could not load. It retries automatically.`);
+  });
+
+  it('puts no condition badge or health word in the level card (BS-5)', () => {
+    render(<BotSummary item={atlas} xp={{ status: 'ready', summary: SUMMARY }} />);
+    expect(card('Level')?.textContent).not.toMatch(/Working|Settled|health|success/i);
   });
 
   it('reads coverage state, reason, gaps and a bot never observed', () => {
-    const { rerender } = render(<BotSummary item={{ ...atlas, coverage: { state: 'gap', sinceMs: 1_000, reasonCode: 'paused', openGapCount: 2 } }} />);
+    const { rerender } = render(<BotSummary item={{ ...atlas, coverage: { state: 'gap', sinceMs: 1_000, reasonCode: 'paused', openGapCount: 2 } }} xp={XP_NONE} />);
     expect(screen.getByText(/Gap in collection\. Collection was paused/)).toBeTruthy();
     expect(screen.getByText('2 open gaps')).toBeTruthy();
-    rerender(<BotSummary item={{ ...atlas, coverage: { state: 'gap', sinceMs: null, reasonCode: null, openGapCount: 1 } }} />);
+    rerender(<BotSummary item={{ ...atlas, coverage: { state: 'gap', sinceMs: null, reasonCode: null, openGapCount: 1 } }} xp={XP_NONE} />);
     expect(screen.getByText('1 open gap')).toBeTruthy();
-    rerender(<BotSummary item={cinder} />);
+    rerender(<BotSummary item={cinder} xp={XP_NONE} />);
     expect(screen.getByText(/Collection is running, but this bot's chat has not appeared/)).toBeTruthy();
     expect(screen.getByText('Not recorded')).toBeTruthy();
   });
 
   it('says a bot Crew no longer lists is absent and falls back on an unknown presence token', () => {
-    const { rerender } = render(<BotSummary item={ember} />);
+    const { rerender } = render(<BotSummary item={ember} xp={XP_NONE} />);
     expect(screen.getByText('No longer listed by Crew')).toBeTruthy();
-    rerender(<BotSummary item={{ ...ember, presence: 'odd' as never, coverage: { ...ember.coverage, state: 'odd' as never } }} />);
+    rerender(<BotSummary item={{ ...ember, presence: 'odd' as never, coverage: { ...ember.coverage, state: 'odd' as never } }} xp={XP_NONE} />);
     expect(screen.getByText('odd')).toBeTruthy();
   });
 });

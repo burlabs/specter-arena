@@ -96,7 +96,6 @@ export const COVERAGE_STATE_WORDS: Readonly<Record<string, string>> = {
   unknown: 'Not known',
 };
 
-export const UNAVAILABLE_TEXT = 'Unavailable until accepted-work tracking ships';
 
 export const LEGEND: ReadonlyArray<{ term: string; meaning: string }> = [
   { term: 'Working', meaning: 'Crew reports a turn running and the collector saw the chat recently.' },
