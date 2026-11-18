@@ -1,14 +1,47 @@
-import { describe, expect, it } from 'vitest';
-import { ARENA_INTRINSIC, ARENA_LAYOUT } from './mapLayout';
-import { SLOT_COUNT, assignSlots, enemySlots, placeScene, pointAlongPath, slotIdsOf } from './sceneLayout';
+import { setArenaScenario, useAppApi } from '@kirocrew/app-sdk';
+import { afterEach, describe, expect, it } from 'vitest';
+import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import { rosterPath, workListPath } from '../host/paths';
+import { ARENA_INTRINSIC } from './mapLayout';
+import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
+import type { Point } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
 import { attemptOf, botOf, inputsOf, workOf } from './testData';
 
+afterEach(() => setArenaScenario(null));
+
+const apart = (a: Point, b: Point, cell: { x: number; y: number }): boolean => Math.abs(a.x - b.x) >= cell.x - 1e-9 || Math.abs(a.y - b.y) >= cell.y - 1e-9;
+
+function pairsTooClose(points: readonly Point[], cell: { x: number; y: number }): number[][] {
+  const bad: number[][] = [];
+  for (let i = 0; i < points.length; i += 1) for (let j = i + 1; j < points.length; j += 1) if (!apart(points[i] as Point, points[j] as Point, cell)) bad.push([i, j]);
+  return bad;
+}
+
+const FIXTURE_NOW_MS = 1794916800000;
+const client = useAppApi();
+const read = async <T>(path: string): Promise<T> => (await ((await client.get(path)) as Response).json()) as T;
+
+async function modelOf(scenario: 'arena' | 'arena-perf-1') {
+  setArenaScenario(scenario);
+  const roster = (await read<{ items: RosterItemV1[] }>(rosterPath(100, null))).items;
+  const work: WorkItemV1[] = [];
+  for (const state of ['open', 'awaiting-review', 'blocked', 'reopened', 'accepted']) {
+    let cursor: string | null = null;
+    do {
+      const page: { items: WorkItemV1[]; nextCursor: string | null } = await read(workListPath(state, 25, cursor));
+      work.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor !== null);
+  }
+  return buildSceneModel(inputsOf({ nowMs: FIXTURE_NOW_MS, roster, work }));
+}
+
 describe('slots', () => {
-  it('offers 84 distinct points inside the map margins', () => {
+  it('offers 85 distinct lattice points inside the margins, none closer than one enemy cell', () => {
     const slots = enemySlots();
     expect(slots).toHaveLength(SLOT_COUNT);
-    expect(new Set(slots.map((p) => `${p.x.toFixed(4)},${p.y.toFixed(4)}`)).size).toBe(SLOT_COUNT);
+    expect(pairsTooClose(slots, ENEMY_CELL)).toEqual([]);
     for (const p of slots) {
       expect(p.x).toBeGreaterThanOrEqual(0.03);
       expect(p.x).toBeLessThanOrEqual(0.97);
@@ -46,90 +79,60 @@ describe('slots', () => {
   });
 });
 
-describe('pointAlongPath', () => {
-  it('walks a polyline by length and survives degenerate input', () => {
-    const line = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }];
-    expect(pointAlongPath(line, 0)).toEqual({ x: 0, y: 0 });
-    expect(pointAlongPath(line, 0.5)).toEqual({ x: 1, y: 0 });
-    expect(pointAlongPath(line, 1)).toEqual({ x: 1, y: 1 });
-    expect(pointAlongPath(line, 7)).toEqual({ x: 1, y: 1 });
-    expect(pointAlongPath([], 0.5)).toEqual({ x: 0.5, y: 0.5 });
-    expect(pointAlongPath([{ x: 0.2, y: 0.2 }], 0.5)).toEqual({ x: 0.2, y: 0.2 });
-    expect(pointAlongPath([{ x: 0.2, y: 0.2 }, { x: 0.2, y: 0.2 }], 0.5)).toEqual({ x: 0.2, y: 0.2 });
+describe('staging', () => {
+  it('gives the first Specters a full row of seven, then the next row up', () => {
+    const first = specterSlot(0);
+    expect(specterSlot(6).y).toBe(first.y);
+    expect(specterSlot(7).y).toBeCloseTo(first.y - SPECTER_CELL.y);
+    expect(specterSlot(7).x).toBe(first.x);
+    expect(pairsTooClose(Array.from({ length: 21 }, (_, i) => specterSlot(i)), SPECTER_CELL)).toEqual([]);
   });
 });
 
-describe('nested and cyclic parents', () => {
-  const rootId = workOf(3).workId;
-  const childId = workOf(2).workId;
-  const nested = buildSceneModel(inputsOf({ work: [workOf(1, { parentId: childId }), workOf(2, { parentId: rootId }), workOf(3)] }));
-
-  it('rings a grandchild around its parent even when the grandchild sorts first', () => {
-    const placement = placeScene(nested, assignSlots(new Map(), slotIdsOf(nested)));
-    const child = placement.enemies.get(childId)!;
-    const grandchild = placement.enemies.get(workOf(1).workId)!;
-    expect(Math.hypot(grandchild.x - child.x, (grandchild.y - child.y) / 1.4)).toBeCloseTo(0.035, 2);
+describe('placeScene on the demo scenarios', () => {
+  it.each(['arena', 'arena-perf-1'] as const)('%s: no two Specters and no two enemies are closer than their cell, and enemies stay above the staging rows', async (scenario) => {
+    const model = await modelOf(scenario);
+    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model)));
+    expect(placement.specters.size).toBe(model.specters.length);
+    expect(placement.enemies.size).toBe(model.enemies.length);
+    expect(pairsTooClose([...placement.specters.values()], SPECTER_CELL)).toEqual([]);
+    expect(pairsTooClose([...placement.enemies.values()], ENEMY_CELL)).toEqual([]);
+    const lowestEnemy = Math.max(...[...placement.enemies.values()].map((p) => p.y));
+    const highestSpecter = Math.min(...[...placement.specters.values()].map((p) => p.y));
+    expect(highestSpecter - lowestEnemy).toBeGreaterThanOrEqual(0.12);
+    for (const p of [...placement.specters.values(), ...placement.enemies.values()]) {
+      expect(p.x).toBeGreaterThanOrEqual(0.03);
+      expect(p.x).toBeLessThanOrEqual(0.97);
+      expect(p.y).toBeGreaterThanOrEqual(0.03);
+      expect(p.y).toBeLessThanOrEqual(0.97);
+    }
   });
 
-  it('survives data where two items name each other as parent', () => {
-    const cycle = buildSceneModel(inputsOf({ work: [workOf(1, { parentId: workOf(2).workId }), workOf(2, { parentId: workOf(1).workId })] }));
-    expect(placeScene(cycle, assignSlots(new Map(), slotIdsOf(cycle))).enemies.size).toBe(2);
+  it('draws 20 Specters and 80 enemies for arena-perf-1', async () => {
+    const model = await modelOf('arena-perf-1');
+    expect(model.specters).toHaveLength(20);
+    expect(model.enemies).toHaveLength(80);
   });
 });
 
 describe('placeScene', () => {
   const bots = [botOf(1, { state: 'working' }), botOf(2, { state: 'working' }), botOf(3)];
-  const work = [
-    workOf(1, { childCount: 2, attempts: [attemptOf(bots[0]!, 1), attemptOf(bots[1]!, 2)] }),
-    workOf(2, { parentId: workOf(1).workId }),
-    workOf(3, { parentId: workOf(1).workId, attempts: [attemptOf(bots[0]!, 3)] }),
-    workOf(4),
-  ];
+  const work = [workOf(1, { childCount: 1, attempts: [attemptOf(bots[0]!, 1), attemptOf(bots[1]!, 2)] }), workOf(2, { parentId: workOf(1).workId }), workOf(3)];
   const model = buildSceneModel(inputsOf({ roster: bots, work }));
   const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model)));
 
-  it('gives every specter and enemy one position inside the margins', () => {
-    expect(placement.specters.size).toBe(3);
-    expect(placement.enemies.size).toBe(4);
-    for (const p of [...placement.specters.values(), ...placement.enemies.values()]) {
-      expect(p.x).toBeGreaterThanOrEqual(0.03);
-      expect(p.y).toBeLessThanOrEqual(0.97);
-    }
+  it('keeps a Specter on its own staging cell whether or not it is engaged', () => {
+    expect([...placement.specters.values()]).toEqual([specterSlot(0), specterSlot(1), specterSlot(2)]);
   });
 
-  it('gives slots only to enemies whose parent is not on the field', () => {
-    expect(slotIdsOf(model)).toEqual([work[0]!.workId, work[3]!.workId].sort());
+  it('gives every enemy a slot, children included', () => {
+    expect(slotIdsOf(model)).toEqual(model.enemies.map((enemy) => enemy.workId));
+    expect(placement.enemies.size).toBe(3);
   });
 
-  it('rings children around their parent', () => {
-    const parent = placement.enemies.get(work[0]!.workId)!;
-    const child = placement.enemies.get(work[1]!.workId)!;
-    expect(Math.hypot(child.x - parent.x, (child.y - parent.y) / 1.4)).toBeCloseTo(0.035, 2);
-  });
-
-  it('stands an engaged specter short of its enemy and fans out specters sharing one', () => {
-    const target = placement.enemies.get(model.specters[0]!.engagedWorkIds[0]!)!;
-    const a = placement.specters.get(bots[0]!.bindingId)!;
-    const b = placement.specters.get(bots[1]!.bindingId)!;
-    expect(Math.hypot(a.x - target.x, a.y - target.y)).toBeGreaterThan(0.02);
-    expect(a).not.toEqual(b);
-  });
-
-  it('stages specters with no engagement on a grid at the allied base', () => {
-    const rest = placement.specters.get(bots[2]!.bindingId)!;
-    expect(Math.abs(rest.x - ARENA_LAYOUT.alliedBase.x)).toBeLessThan(0.15);
-  });
-
-  it('falls back to the centre for an enemy that has no slot, and a child whose parent has none', () => {
-    const lonely = placeScene(model, new Map());
-    expect(lonely.enemies.get(work[3]!.workId)).toEqual({ x: 0.5, y: 0.5 });
-    const outOfRange = placeScene(model, new Map([[work[3]!.workId, 9999]]));
-    expect(outOfRange.enemies.get(work[3]!.workId)).toEqual({ x: 0.5, y: 0.5 });
-  });
-
-  it('stages specters of a model with no enemies', () => {
-    const empty = placeScene(buildSceneModel(inputsOf({ roster: bots })), new Map());
-    expect(empty.specters.size).toBe(3);
+  it('falls back to the centre for an enemy that has no slot or a slot out of range', () => {
+    expect(placeScene(model, new Map()).enemies.get(work[2]!.workId)).toEqual({ x: 0.5, y: 0.5 });
+    expect(placeScene(model, new Map([[work[2]!.workId, 9999]])).enemies.get(work[2]!.workId)).toEqual({ x: 0.5, y: 0.5 });
   });
 
   it('is deterministic', () => {

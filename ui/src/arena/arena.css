@@ -220,7 +220,7 @@
 
 .specter-arena-root .sa-token__label,
 .specter-arena-root .sa-token__meta {
-  max-width: 9rem;
+  max-width: 5.25rem;
   overflow: hidden;
   padding: 0 4px;
   border-radius: 4px;
@@ -233,6 +233,63 @@
 
 .specter-arena-root .sa-token__meta {
   color: var(--muted);
+}
+
+.specter-arena-root .sa-token--specter .sa-token__badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  padding: 0 4px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.specter-arena-root .sa-token--enemy {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__label,
+.specter-arena-root .sa-token--enemy .sa-token__meta,
+.specter-arena-root .sa-token--enemy .sa-token__xp {
+  position: absolute;
+  left: 50%;
+  z-index: 7;
+  display: none;
+  max-width: 14rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__label {
+  top: 100%;
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__meta {
+  top: calc(100% + 18px);
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__xp {
+  top: calc(100% + 38px);
+}
+
+.specter-arena-root .sa-token--enemy:hover,
+.specter-arena-root .sa-token--enemy:focus-visible,
+.specter-arena-root .sa-token--enemy.sa-is-selected {
+  z-index: 6;
+}
+
+.specter-arena-root .sa-token--enemy:hover .sa-token__label,
+.specter-arena-root .sa-token--enemy:hover .sa-token__meta,
+.specter-arena-root .sa-token--enemy:hover .sa-token__xp,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__label,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__meta,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__xp,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__label,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__meta,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__xp {
+  display: block;
 }
 
 .specter-arena-root .sa-token__badge,
@@ -251,10 +308,10 @@
 
 .specter-arena-root .sa-token__marker {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 20px;
-  height: 20px;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
 }
 
 .specter-arena-root .sa-token__placeholder {
@@ -293,14 +350,14 @@
 .specter-arena-root .sa-minion {
   position: relative;
   display: block;
-  width: 56px;
-  height: 56px;
+  width: 28px;
+  height: 28px;
   transform-origin: 53% 90%;
 }
 
 .specter-arena-root .sa-token--encounter .sa-minion {
-  width: 84px;
-  height: 84px;
+  width: 34px;
+  height: 34px;
   transform-origin: 56% 90%;
 }
 

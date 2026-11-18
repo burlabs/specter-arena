@@ -5,7 +5,7 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
-// Measured bundle length at this PR's last commit (218,254 characters; 153,337 before FP-10+11), times 1.25, rounded up to the next 1,000.
+// Measured bundle length at this PR's last commit (218,265 characters; 153,337 before FP-10+11), times 1.25, rounded up to the next 1,000.
 const BUNDLE_BUDGET_CHARS = 273_000;
 
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));

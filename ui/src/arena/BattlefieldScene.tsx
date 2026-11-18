@@ -99,9 +99,6 @@ function SpecterToken({ specter, record, position, selected, roving, onSelect, r
       <span className="sa-token__label" aria-hidden="true">
         {specter.specterName ?? specter.displayName}
       </span>
-      <span className="sa-token__meta" aria-hidden="true">
-        {ARENA.level(specter.level)}
-      </span>
       {specter.openAttemptIds.length > 1 && (
         <span className="sa-token__badge" aria-hidden="true">
           {ARENA.attemptsBadge(specter.openAttemptIds.length)}

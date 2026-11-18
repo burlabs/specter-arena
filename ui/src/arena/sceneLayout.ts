@@ -5,62 +5,64 @@ import type { SceneModel } from './sceneModel';
 
 export type Point = NormalizedPoint;
 
-export const SLOT_COUNT = 84;
-const SAMPLES_PER_PATH = 26;
-/** Coprime with 26, so the first few enemies spread along each path instead of bunching at its start. */
-const SAMPLE_STRIDE = 9;
+/**
+ * Minimum spacing between two tokens of one kind, in 0..1 map units. At the default fit (a map about 700 px
+ * wide and 400 px high) these are about 91 x 64 px for a Specter and 35 x 38 px for an enemy sprite, which is
+ * the room each token and its always-visible text needs.
+ */
+export const SPECTER_CELL = { x: 0.135, y: 0.16 } as const;
+export const ENEMY_CELL = { x: 0.05, y: 0.095 } as const;
+
+const SPECTER_COLUMNS = 7;
+const SPECTER_BASE_X = 0.06;
+const SPECTER_BASE_Y = 0.95;
+const ENEMY_COLUMNS = 17;
+const ENEMY_ROWS = 5;
+const ENEMY_BASE_X = 0.08;
+const ENEMY_BASE_Y = 0.08;
 const EDGE_MIN = 0.03;
 const EDGE_MAX = 0.97;
-const RING_RADIUS = 0.035;
-const ENGAGE_GAP = 0.055;
-const ENGAGE_SPREAD = 0.03;
-const STAGING_COLUMNS = 4;
-const STAGING_STEP_X = 0.037;
-const STAGING_STEP_Y = 0.052;
+
+export const SLOT_COUNT = ENEMY_COLUMNS * ENEMY_ROWS;
 
 const clampPoint = (point: Point): Point => ({ x: clamp(point.x, EDGE_MIN, EDGE_MAX), y: clamp(point.y, EDGE_MIN, EDGE_MAX) });
 
-/** The point at fraction `t` of the polyline's length. */
-export function pointAlongPath(points: readonly Point[], t: number): Point {
-  const first = points[0];
-  if (first === undefined) return { x: 0.5, y: 0.5 };
-  const lengths: number[] = [];
-  let total = 0;
-  for (let index = 1; index < points.length; index += 1) {
-    const from = points[index - 1] as Point;
-    const to = points[index] as Point;
-    const length = Math.hypot(to.x - from.x, to.y - from.y);
-    lengths.push(length);
-    total += length;
-  }
-  let remaining = clamp(t, 0, 1) * total;
-  for (let index = 0; index < lengths.length; index += 1) {
-    const length = lengths[index] as number;
-    if (remaining <= length || index === lengths.length - 1) {
-      const from = points[index] as Point;
-      const to = points[index + 1] as Point;
-      const fraction = length === 0 ? 0 : clamp(remaining / length, 0, 1);
-      return { x: from.x + (to.x - from.x) * fraction, y: from.y + (to.y - from.y) * fraction };
+function distanceToSegment(point: Point, from: Point, to: Point): number {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared === 0 ? 0 : clamp(((point.x - from.x) * dx + (point.y - from.y) * dy) / lengthSquared, 0, 1);
+  return Math.hypot(point.x - (from.x + t * dx), point.y - (from.y + t * dy));
+}
+
+function distanceToPaths(point: Point): number {
+  let nearest = Infinity;
+  for (const path of ARENA_LAYOUT.paths) {
+    for (let index = 1; index < path.points.length; index += 1) {
+      nearest = Math.min(nearest, distanceToSegment(point, path.points[index - 1] as Point, path.points[index] as Point));
     }
-    remaining -= length;
   }
-  return first;
+  return nearest;
 }
 
 let cachedSlots: readonly Point[] | null = null;
 
-/** 3 paths x 26 samples (0.10 to 0.90), taken in a spread order and interleaved round-robin, then the three clearings and the three crossings. */
+/**
+ * A lattice above the Specter staging rows, ordered by distance to the map's paths so the first enemies stand
+ * on or beside a path. Every point is at least ENEMY_CELL away from every other.
+ */
 export function enemySlots(): readonly Point[] {
   if (cachedSlots !== null) return cachedSlots;
-  const slots: Point[] = [];
-  for (let step = 0; step < SAMPLES_PER_PATH; step += 1) {
-    const sample = (step * SAMPLE_STRIDE) % SAMPLES_PER_PATH;
-    const t = 0.1 + (0.8 * sample) / (SAMPLES_PER_PATH - 1);
-    for (const path of ARENA_LAYOUT.paths) slots.push(clampPoint(pointAlongPath(path.points, t)));
+  const lattice: Point[] = [];
+  for (let row = 0; row < ENEMY_ROWS; row += 1) {
+    for (let column = 0; column < ENEMY_COLUMNS; column += 1) {
+      lattice.push({ x: ENEMY_BASE_X + column * ENEMY_CELL.x, y: ENEMY_BASE_Y + row * ENEMY_CELL.y });
+    }
   }
-  for (const site of [...ARENA_LAYOUT.clearings, ...ARENA_LAYOUT.crossings]) slots.push(clampPoint(site));
-  cachedSlots = slots;
-  return slots;
+  const ranked = lattice.map((point, index) => ({ point, index, distance: distanceToPaths(point) }));
+  ranked.sort((a, b) => a.distance - b.distance || a.index - b.index);
+  cachedSlots = ranked.map((entry) => clampPoint(entry.point));
+  return cachedSlots;
 }
 
 /** Existing assignments survive; new ids take the lowest free slot; ids that left free theirs. Pure. */
@@ -85,10 +87,9 @@ export function assignSlots(previous: ReadonlyMap<string, number>, workIds: read
   return next;
 }
 
-/** Enemies that take a map slot: everything whose parent is not itself on the field. */
+/** Every enemy takes a lattice slot, so none stands on another. */
 export function slotIdsOf(model: SceneModel): string[] {
-  const onField = new Set(model.enemies.map((enemy) => enemy.workId));
-  return model.enemies.filter((enemy) => enemy.parentId === null || !onField.has(enemy.parentId)).map((enemy) => enemy.workId);
+  return model.enemies.map((enemy) => enemy.workId);
 }
 
 export interface Placement {
@@ -96,75 +97,26 @@ export interface Placement {
   enemies: Map<string, Point>;
 }
 
-/** Specters standing on staging are placed row by row up from the allied base. */
-function stagingPoint(index: number): Point {
-  const column = index % STAGING_COLUMNS;
-  const row = Math.floor(index / STAGING_COLUMNS);
-  return clampPoint({
-    x: ARENA_LAYOUT.alliedBase.x + column * STAGING_STEP_X - 0.04,
-    y: ARENA_LAYOUT.alliedBase.y - row * STAGING_STEP_Y,
-  });
+/** The staging cell of the nth Specter: rows of seven from the bottom of the map upwards. */
+export function specterSlot(index: number): Point {
+  const column = index % SPECTER_COLUMNS;
+  const row = Math.floor(index / SPECTER_COLUMNS);
+  return clampPoint({ x: SPECTER_BASE_X + column * SPECTER_CELL.x, y: SPECTER_BASE_Y - row * SPECTER_CELL.y });
 }
 
-/** Where every Specter and enemy stands. One position per Specter; nothing here reads a role or a lane. */
+/**
+ * Where every Specter and enemy stands. Each Specter keeps its own staging cell whatever it is doing, and an
+ * engagement is shown by a line to the enemy, so one position per Specter and nothing here reads a role or a lane.
+ */
 export function placeScene(model: SceneModel, slots: ReadonlyMap<string, number>): Placement {
   const slotPoints = enemySlots();
   const center: Point = { x: 0.5, y: 0.5 };
   const enemies = new Map<string, Point>();
-  const onField = new Set(model.enemies.map((enemy) => enemy.workId));
-  const siblings = new Map<string, number>();
   for (const enemy of model.enemies) {
-    const parentOnField = enemy.parentId !== null && onField.has(enemy.parentId);
-    if (!parentOnField) {
-      const slot = slots.get(enemy.workId);
-      enemies.set(enemy.workId, slot === undefined ? center : (slotPoints[slot] ?? center));
-    }
+    const slot = slots.get(enemy.workId);
+    enemies.set(enemy.workId, slot === undefined ? center : (slotPoints[slot] ?? center));
   }
-  const parentOf = new Map(model.enemies.map((enemy) => [enemy.workId, enemy.parentId]));
-  const depthOf = (workId: string): number => {
-    let depth = 0;
-    let cursor = parentOf.get(workId) ?? null;
-    while (cursor !== null && onField.has(cursor) && depth <= model.enemies.length) {
-      depth += 1;
-      cursor = parentOf.get(cursor) ?? null;
-    }
-    return depth;
-  };
-  const children = model.enemies.filter((enemy) => enemy.parentId !== null && onField.has(enemy.parentId)).sort((a, b) => depthOf(a.workId) - depthOf(b.workId));
-  for (const enemy of children) {
-    if (enemy.parentId === null) continue;
-    const parent = enemies.get(enemy.parentId) ?? center;
-    const index = siblings.get(enemy.parentId) ?? 0;
-    siblings.set(enemy.parentId, index + 1);
-    const angle = (index * Math.PI * 2) / 6 + Math.PI / 6;
-    enemies.set(enemy.workId, clampPoint({ x: parent.x + Math.cos(angle) * RING_RADIUS, y: parent.y + Math.sin(angle) * RING_RADIUS * 1.4 }));
-  }
-
   const specters = new Map<string, Point>();
-  const rankByTarget = new Map<string, number>();
-  let stagingIndex = 0;
-  for (const specter of model.specters) {
-    const target = specter.engagedWorkIds.find((id) => enemies.has(id));
-    const targetPoint = target === undefined ? undefined : enemies.get(target);
-    if (target === undefined || targetPoint === undefined) {
-      specters.set(specter.bindingId, stagingPoint(stagingIndex));
-      stagingIndex += 1;
-      continue;
-    }
-    const rank = rankByTarget.get(target) ?? 0;
-    rankByTarget.set(target, rank + 1);
-    const dx = ARENA_LAYOUT.alliedBase.x - targetPoint.x;
-    const dy = ARENA_LAYOUT.alliedBase.y - targetPoint.y;
-    const length = Math.hypot(dx, dy) || 1;
-    const ux = dx / length;
-    const uy = dy / length;
-    specters.set(
-      specter.bindingId,
-      clampPoint({
-        x: targetPoint.x + ux * ENGAGE_GAP - uy * rank * ENGAGE_SPREAD,
-        y: targetPoint.y + uy * ENGAGE_GAP + ux * rank * ENGAGE_SPREAD,
-      }),
-    );
-  }
+  model.specters.forEach((specter, index) => specters.set(specter.bindingId, specterSlot(index)));
   return { specters, enemies };
 }
