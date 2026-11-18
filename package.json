@@ -24,7 +24,8 @@
     "probe:check": "node scripts/check-matrix.mjs && node scripts/check-recorded.mjs",
     "probe:stage": "node scripts/stage-probe-app.mjs",
     "check:schema": "node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs",
-    "dev": "node scripts/dev.mjs"
+    "dev": "node scripts/dev.mjs",
+    "package": "node scripts/package.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

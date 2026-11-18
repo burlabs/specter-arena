@@ -4,7 +4,7 @@ Guidance for coding agents working in `burlabs/specter-arena`.
 
 ## Project
 
-Specter Arena is a Kiro Crew app (slug `specter-arena`). It will have a React UI mounted by the Crew dashboard and a Starlette backend that Crew starts on its bundled Python 3.12. The repository is being built in planned feature sessions (FP-00 onward). FP-00 lays the foundation only: toolchain, checks, CI, docs, a backend liveness probe, a UI stub, and a preview path. No gameplay or data model exists yet.
+Specter Arena is a Kiro Crew app (slug `specter-arena`). It has a React UI mounted by the Crew dashboard and a Starlette backend that Crew starts on its bundled Python 3.12, with a SQLite store in the app's Crew data directory. The repository is built in planned feature sessions (FP-00 onward); the specs are under `.kiro/specs/`. Release packaging and install steps are in `docs/release/`.
 
 ## Read first
 

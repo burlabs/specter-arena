@@ -27,7 +27,7 @@ export const PROVENANCE_DOC = 'docs/provenance.md';
 /** Every shipped raster needs a row in PROVENANCE_DOC naming its repo path and sha256. */
 const RASTER = /\.(?:png|jpe?g|gif|webp)$/i;
 /** QA artifacts of the art pack, never shipped (FP-10+11 SC10-3). */
-const QA_ART = /-light-dark-[a-z-]*check\.jpe?g$|(?:^|\/)reference-crops\/|(?:^|\/)roster-reference\.[a-z]+$|-master\.png$/i;
+export const QA_ART = /-light-dark-[a-z-]*check\.jpe?g$|(?:^|\/)reference-crops\/|(?:^|\/)roster-reference\.[a-z]+$|-master\.png$/i;
 /** Wording the art release replaced (B13); it must not come back in the docs. */
 export const RETIRED_ART_WORDING = [
   { pattern: /derived non-generatively/i, label: 'retired art wording "derived non-generatively"' },

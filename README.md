@@ -1,6 +1,8 @@
 # Specter Arena
 
-A Kiro Crew app, built in the open for Kiroween 2026. This repository is at its foundation stage (FP-00): toolchain, checks, CI, and docs. There is no gameplay yet.
+A Kiro Crew app, built in the open for Kiroween 2026. Specter Arena watches the Kiro Crew bots you choose, gives each one a named Specter, turns the work items you accept into XP, and shows the result in a small read-only arena with an evidence inspector. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).
+
+Status: a proof of concept. Known limits are in `docs/submission/known-limitations.md`. The summoning step bills your Kiro plan and was not yet verified live when this text was written (see `docs/release/install.md`).
 
 ## Prerequisites
 
@@ -37,8 +39,13 @@ npm run coverage
 | `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2`) for the owner to install; prints the install command, never installs |
 | `npm run check:schema` | Offline validation of the contract schemas, their cases and owner table, the FP-02-AC06 denylist, and the spec-id registry |
 | `npm run dev` | Serves the FIXTURE preview harness with Vite's dev server (no backend) |
+| `npm run package -- --commit <sha>` | Builds the release artifact from that commit in a clean temporary clone and writes `.release/specter-arena-<version>-<sha12>.tar.gz` plus its `.sha256`; fails on denied paths or fixture/diagnostic markers; never publishes |
 
 Run `npm ci && npm run build` before installing this repo into Crew from a local path: a local-path install copies the folder without building it, and Crew loads `ui/dist/index.mjs`.
+
+## Install a release
+
+Judges and users install a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
 
 ## Documentation
 
@@ -52,6 +59,8 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 - `docs/ops/crew-probe-runbook.md`: the live probe runbook
 - `docs/development/probe-slice1-runbook.md`: the FP-02+03 slice-1 owner sitting
 - `docs/provenance.md` and `DEPENDENCIES.md`: where things come from
+- `docs/release/install.md`, `docs/release/judge-access.md`: install, update, uninstall and judge access
+- `docs/submission/`: write-up drafts, rules checklist and demo script
 
 ## License
 

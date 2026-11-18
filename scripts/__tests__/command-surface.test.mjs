@@ -87,6 +87,11 @@ describe('package.json command surface', () => {
     assert.equal(scripts['probe:check'], 'node scripts/check-matrix.mjs && node scripts/check-recorded.mjs');
   });
 
+  it('declares the FP-15 packaging command and ignores its output', () => {
+    assert.equal(scripts.package, 'node scripts/package.mjs');
+    assert.match(read('.gitignore'), /^\.release\/$/m);
+  });
+
   it('enforces 90% line coverage on scripts/', () => {
     assert.match(scripts.coverage ?? '', /--test-coverage-lines=90\b/);
     assert.match(scripts.coverage ?? '', /--test-coverage-include=scripts\/\*\.mjs/);

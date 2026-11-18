@@ -20,4 +20,5 @@ __pycache__/
 .DS_Store
 playwright-report/
 test-results/
+.release/
 # .kiro/ is tracked on purpose: it holds the project's steering and spec entry points.
