@@ -2,7 +2,7 @@
 
 ## Original work
 
-All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with two exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here, and the three portraits listed under "Bundled art: A01 approved roster" are user-supplied art.
+All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with three exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here; the raster images listed under "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" were supplied by Eric Jeffers; and the vector scene art described under "Scene vector art" was authored in the Figma Make project and is ported as code.
 
 ## Reference only: Dragonboat
 
@@ -37,17 +37,45 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 
 Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04, FP-06+07 or FP-08+09. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
 
-## Bundled art: A01 approved roster
+## Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation
 
-Three portraits ship in `backend/specter_arena/specters/art/` as selectable gallery images. They are original art supplied by Eric from the A01 pack (`A01-approved-roster-assets`, `data/a01.assets.json`, derived non-generatively from the user-supplied `approved-roster.png`, source sha256 `f8c9f81e132f00d4e712c336fb4853d1ee88d2e7e892f06f41aff98b6dc3905f`). They are not tied to any bot or character category. The pack's own note says no licensing determination is implied by inclusion. Rights confirmation for the MIT release and the human art review (FP-07 human decision) are both open and belong to Eric.
+Every raster image this repository ships was created by Eric Jeffers using ChatGPT (OpenAI) image generation. That is Eric's statement of 2026-11-18 (the program decisions log, "Art release") and it is recorded here as given. The files are not tied to any bot, role or character category: the portraits are a gallery any Specter can use, and the arena map, the two minion sprites and the two minion portraits are scene art.
 
-| File in this repository | A01 file | Size | sha256 |
-|---|---|---|---|
-| `art/vell.png` | `characters/vell/portrait.png` | 256 x 256 RGBA | `268d5b2f0e068017002941afafe15d5c30375f2cf80ff144eec1c07b9c18dcf0` |
-| `art/stitch.png` | `characters/stitch/portrait.png` | 256 x 256 RGBA | `4aaf7e40efe11d627ffbfdf4eb3ca83b331026b99ab023088c803196c519d561` |
-| `art/reeve.png` | `characters/reeve/portrait.png` | 256 x 256 RGBA | `b6c7934853cf7c0a5e15653ce6fc7992d2b838b3724e95505b4d7a55c5c35cc7` |
+How the files in each group were made, as recorded in the metadata of the Figma Make export (`public/assets/*.json`, read 2026-11-18):
 
-The 96 px thumbnails and 512 px sprites of the pack are not shipped. Uploaded PNGs are re-encoded by the app and stored by content hash; they are the uploader's own work and are not listed here.
+- A01, A02 and A03 portraits (vell, stitch, reeve, ember, rattle, shard, lume, moss, tide). The export's own metadata states that the pixels were cut out of one generated ten-character roster sheet (1536 x 1024, sha256 `f8c9f81e132f00d4e712c336fb4853d1ee88d2e7e892f06f41aff98b6dc3905f`), with an estimated alpha matte and a resize, and that no further image generation or redesign was used. The sheet is not shipped.
+- bur, Patchling and Patchbrute. The export's metadata calls them newly generated isolated artwork. Only the 256 px portraits (bur and the two minions) and the 512 px minion sprites listed below ship; the full-size masters do not.
+- poly. The export carries no metadata file for poly. The same roster sheet is named "Poly Spotlight", so poly most likely comes from it, but this is not stated anywhere in the export. Eric's statement above covers the file; the processing detail is unconfirmed.
+- Arena map. Supplied as one painted image and used unchanged by the export (`src/map/layout.ts`, mode `static-art`).
+
+This replaces the earlier wording for the three A01 portraits, which described them as derived from a supplied sheet and disclaimed any rights finding (blocker B13). Eric's statement is now the recorded origin. It is not a legal opinion: OpenAI's output terms have not been rechecked yet, and that recheck is scheduled before the MIT release (FP-15), together with the Figma terms check above.
+
+Not shipped, by design: the light/dark check JPGs (`a02-light-dark-anchor-check.jpg`, `minion-patchwork-light-dark-check.jpg`), `reference-crops/`, `roster-reference.png`, every `*-master.png`, every 96 px thumbnail, and the 512 px character sprites. `npm run check:provenance` fails if any of them is tracked.
+
+Each shipped raster has one row below with its repo path and sha256. The check fails when a tracked image has no row with its exact path and hash, so a file cannot change without this table changing. Portraits are stored byte for byte; the app serves them through the portrait gallery (`GET /api/portraits`, `GET /api/assets/{assetId}`). Scene rasters are served by `GET /api/scene-assets/{key}` from a hash-pinned list and are never inlined into `ui/dist`.
+
+| File in this repository | File in the export (`public/assets/`) | Pixels | Bytes | sha256 | Use |
+|---|---|---|---|---|---|
+| `backend/specter_arena/specters/art/vell.png` | `a01-vell-portrait.png` | 256 x 256 RGBA | 58471 | `268d5b2f0e068017002941afafe15d5c30375f2cf80ff144eec1c07b9c18dcf0` | gallery portrait (A01) |
+| `backend/specter_arena/specters/art/stitch.png` | `a01-stitch-portrait.png` | 256 x 256 RGBA | 64520 | `4aaf7e40efe11d627ffbfdf4eb3ca83b331026b99ab023088c803196c519d561` | gallery portrait (A01) |
+| `backend/specter_arena/specters/art/reeve.png` | `a01-reeve-portrait.png` | 256 x 256 RGBA | 80063 | `b6c7934853cf7c0a5e15653ce6fc7992d2b838b3724e95505b4d7a55c5c35cc7` | gallery portrait (A01) |
+| `backend/specter_arena/specters/art/ember.png` | `a02-ember-portrait.png` | 256 x 256 RGBA | 51734 | `8c6f9437ff40e1b1ae2ab55b861e90c8c09e9f26875270bc606a980f0f267d3f` | gallery portrait (A02) |
+| `backend/specter_arena/specters/art/rattle.png` | `a02-rattle-portrait.png` | 256 x 256 RGBA | 69631 | `86751f4a614d65e76750cdeadfd5c867b964fedc7508a52bf48749b56ce8f927` | gallery portrait (A02) |
+| `backend/specter_arena/specters/art/shard.png` | `a02-shard-portrait.png` | 256 x 256 RGBA | 55635 | `2576bd49227ead05907c2accd1b3713c44f96417b998fca67377a0d7fe0ad214` | gallery portrait (A02) |
+| `backend/specter_arena/specters/art/lume.png` | `a03-lume-portrait.png` | 256 x 256 RGBA | 68248 | `f9c206f6b911e62d087dbf786995ec9b9e928c56e002d5f2f19a8d1b7ba85cff` | gallery portrait (A03) |
+| `backend/specter_arena/specters/art/moss.png` | `a03-moss-portrait.png` | 256 x 256 RGBA | 60824 | `0c4524e864e9a12ecefc134e1181bfe47da5b926ab251c588fb73dec8af14abd` | gallery portrait (A03) |
+| `backend/specter_arena/specters/art/tide.png` | `a03-tide-portrait.png` | 256 x 256 RGBA | 64764 | `59fcffd06949711f7df0f821f602548420abc7d3d7875a69076e51bbc91977ea` | gallery portrait (A03) |
+| `backend/specter_arena/specters/art/bur.png` | `bur-portrait.png` | 256 x 256 RGBA | 73785 | `f5c5c7bec8d2a890905c3b6a9531e1ceb84126cfb88efff78ccd512490b608a4` | gallery portrait (bur) |
+| `backend/specter_arena/specters/art/poly.png` | `poly-portrait.png` | 256 x 256 RGBA | 69472 | `5e932feb493e778ea81a97e8abcbbe4fac17b34c61bbcd21a01083a804d28c51` | gallery portrait (poly) |
+| `backend/specter_arena/specters/scene/arena-map.png` | `arena-map.png` | 1672 x 941 RGB | 2096047 | `58cac8daa5aa13448f075e203648f43c677cec5ef69e55b2638d7c7340565f7d` | arena map |
+| `backend/specter_arena/specters/scene/minion-patchling-sprite.png` | `minion-patchling-sprite.png` | 512 x 512 RGBA | 166244 | `e64f5a3de03b5df6f608871fded48f9ae8b91f719271fbdac4c6e3eae3826d6a` | Patchling minion sprite |
+| `backend/specter_arena/specters/scene/minion-patchbrute-sprite.png` | `minion-patchbrute-sprite.png` | 512 x 512 RGBA | 237354 | `e3dd138466d66a4fb3dddda64987366fd0b91a83e41f882619b0aa5abde254c9` | Patchbrute minion sprite |
+| `backend/specter_arena/specters/scene/minion-patchling-portrait.png` | `minion-patchling-portrait.png` | 256 x 256 RGBA | 72210 | `f540745966dc68bbea76e4168cc3cc50880f82c5384c3838d42dae8fe07d6be6` | Patchling minion portrait |
+| `backend/specter_arena/specters/scene/minion-patchbrute-portrait.png` | `minion-patchbrute-portrait.png` | 256 x 256 RGBA | 87269 | `08f4a47e140262cb2cfc5a5630618fea51c6021187a44bc10436463df8543e88` | Patchbrute minion portrait |
+
+## Scene vector art: authored in the Figma Make project, ported as code
+
+This is not ChatGPT image output, and the statement above does not cover it. The small SVG files in the export's `public/assets/scene/` (structures and markers) were authored as vector markup inside the Figma Make project. The export's own catalog labels them "Original vector prototype authored for Specters of the Abyss" (`src/data/sceneAssets.ts`, field `source`). They fall under "Generated code: Figma Make export" above and ship only as TSX components in the UI bundle, never as image files, so the image check does not list them. The PR that ports a file adds its row to the Figma Make table above.
 
 ## External development tooling
 

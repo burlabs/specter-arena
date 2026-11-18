@@ -3,6 +3,7 @@
 // this file never reaches ui/dist.
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { monitoringResponse } from './monitoring-bodies.ts';
+import { sceneAssetResponse } from './scene-bodies.ts';
 import { specterResponse } from './specter-bodies.ts';
 import { workResponse } from './work-bodies.ts';
 
@@ -27,6 +28,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
       monitoringResponse(pathname) ??
       specterResponse(pathname, method, body) ??
       workResponse(pathname, method, body, search) ??
+      sceneAssetResponse(pathname, method) ??
       Promise.resolve(CANNED_RESPONSE)
     );
   };
@@ -36,6 +38,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
 export { DECLARED_API, isPathPermitted };
 export { attemptsBody, rosterBody, setFixtureScenario } from './monitoring-bodies.ts';
 export type { ScenarioName } from './monitoring-bodies.ts';
+export { setSceneAssetsFailing } from './scene-bodies.ts';
 export { setSpecterScenario } from './specter-bodies.ts';
 export type { SpecterScenarioName } from './specter-bodies.ts';
 export { setWorkScenario } from './work-bodies.ts';

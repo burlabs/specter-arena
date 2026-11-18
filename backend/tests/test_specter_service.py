@@ -626,7 +626,7 @@ def test_start_sweeps_interrupted_requests_and_installs_bundled_art_once(store: 
         assert sorted(i["label"] for i in items) == sorted(a.label for a in BUNDLED)
         assert all(i["origin"] == "bundled" and i["dataBase64"] is None for i in items)
         assert sorted(i["assetId"] for i in items) == sorted(
-            "ast_" + a.a01_sha256[:24] for a in BUNDLED
+            "ast_" + a.sha256[:24] for a in BUNDLED
         )
 
     run(scenario)

@@ -36,8 +36,11 @@ def _invalid(reason: str) -> ImageRejected:
     return ImageRejected("invalid_image", reason)
 
 
-def reencode_png(data: bytes) -> ReencodedPng:
-    if len(data) > MAX_INPUT_BYTES:
+def reencode_png(
+    data: bytes, *, max_bytes: int = MAX_INPUT_BYTES, max_side: int = MAX_DIMENSION
+) -> ReencodedPng:
+    """The limits default to the portrait rules (1 MiB, 1024 px); scene art passes its own."""
+    if len(data) > max_bytes:
         raise ImageRejected("asset_too_large", "input-size")
     if not data.startswith(SIGNATURE):
         raise ImageRejected("unsupported_media", "signature")
@@ -67,7 +70,7 @@ def reencode_png(data: bytes) -> ReencodedPng:
             if kind != b"IHDR" or length != 13:
                 raise _invalid("ihdr-first")
             width, height, depth, ctype, comp, filt, interlace = struct.unpack(">IIBBBBB", body)
-            if not (1 <= width <= MAX_DIMENSION and 1 <= height <= MAX_DIMENSION):
+            if not (1 <= width <= max_side and 1 <= height <= max_side):
                 raise _invalid("dimensions")
             if depth != 8 or ctype not in _CHANNELS:
                 raise _invalid("colour-type")
@@ -118,6 +121,6 @@ def reencode_png(data: bytes) -> ReencodedPng:
         + _chunk(b"IDAT", zlib.compress(raw, 6))
         + _chunk(b"IEND", b"")
     )
-    if len(out) > MAX_INPUT_BYTES:
+    if len(out) > max_bytes:
         raise _invalid("reencoded-too-large")
     return ReencodedPng(out, width, height, hashlib.sha256(out).hexdigest())

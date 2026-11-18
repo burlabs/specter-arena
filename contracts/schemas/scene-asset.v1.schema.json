@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:scene-asset:v1",
+  "title": "Scene asset v1",
+  "description": "One read-only raster the live arena draws from the backend instead of inlining it into the UI bundle: the painted arena map and the minion sprites and portraits. It is not a portrait and never appears in the portrait gallery. key names the file in a fixed allowlist shipped with the app (the schema does not list the keys; a key outside the list answers 404 unknown_scene_asset). The bytes are always a PNG that passed the backend's PNG validator with the scene limits (8-bit RGB or RGBA, at most 4096 by 4096 pixels and 4 MiB) and whose SHA-256 is pinned in code; they are served byte for byte, so sha256 is the digest of exactly the bytes in dataBase64 and byteLength is their length. dataBase64 is the PNG as standard base64 and is always present. There is no list route, no upload and no storage.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$"
+    },
+    "mediaType": {
+      "type": "string",
+      "const": "image/png"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "byteLength": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4194304
+    },
+    "dataBase64": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]+={0,2}$",
+      "maxLength": 5592408
+    }
+  },
+  "required": [
+    "contractVersion",
+    "key",
+    "mediaType",
+    "width",
+    "height",
+    "sha256",
+    "byteLength",
+    "dataBase64"
+  ],
+  "additionalProperties": false
+}

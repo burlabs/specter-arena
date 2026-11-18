@@ -1,5 +1,7 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAttempts } from '../observatory/useAttempts';
+import { useWorkItem } from '../work/useWorkItem';
 import { HostApiError, useHostApi } from './useHostApi';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
@@ -86,5 +88,66 @@ describe('useHostApi', () => {
     const first = result.current;
     rerender();
     expect(result.current).toBe(first);
+  });
+});
+
+const apiError = (status: unknown, body?: unknown) => Object.assign(new Error('ApiError'), { status, body });
+
+const flush = () =>
+  act(async () => {
+    for (let turn = 0; turn < 6; turn += 1) await Promise.resolve();
+  });
+
+describe('useHostApi with the installed SDK, which throws ApiError', () => {
+  it('turns a thrown status and JSON body into a HostApiError with the api-error code', async () => {
+    client.get.mockRejectedValue(apiError(404, '{"contractVersion":1,"error":"unknown_work"}'));
+    const { result } = renderHook(() => useHostApi());
+    const failure: unknown = await result.current.getJson('/x').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(HostApiError);
+    expect(failure).toMatchObject({ status: 404, error: 'unknown_work' });
+  });
+
+  it('maps a thrown post the same way', async () => {
+    client.post.mockRejectedValue(apiError(409, '{"contractVersion":1,"error":"stale_evidence"}'));
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.postJson('/x', {})).rejects.toMatchObject({ status: 409, error: 'stale_evidence' });
+  });
+
+  it('reports no code when the thrown body is not JSON, not a string or has no code', async () => {
+    const { result } = renderHook(() => useHostApi());
+    for (const body of ['<html>', undefined, 7, '{"error":"Not Allowed!"}']) {
+      client.get.mockRejectedValueOnce(apiError(502, body));
+      await expect(result.current.getJson('/x')).rejects.toMatchObject({ status: 502, error: null });
+    }
+  });
+
+  it('rethrows an existing HostApiError unchanged', async () => {
+    const original = new HostApiError(503, 'store_not_ready');
+    client.get.mockRejectedValue(original);
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.getJson('/x')).rejects.toBe(original);
+  });
+
+  it('rethrows an error without a usable HTTP status unchanged', async () => {
+    const { result } = renderHook(() => useHostApi());
+    const unchanged: unknown[] = [apiError(99), apiError(600), apiError(404.5), apiError('404'), new Error('Missing permissions'), 'boom', null];
+    for (const error of unchanged) {
+      client.get.mockRejectedValueOnce(error);
+      await expect(result.current.getJson('/x')).rejects.toBe(error);
+    }
+  });
+
+  it('reaches the gone branch of useWorkItem on a thrown 404 unknown_work', async () => {
+    client.get.mockRejectedValue(apiError(404, '{"contractVersion":1,"error":"unknown_work"}'));
+    const { result } = renderHook(() => useWorkItem('wrk_1'));
+    await flush();
+    expect(result.current.state).toEqual({ status: 'gone' });
+  });
+
+  it('reaches the gone branch of useAttempts on a thrown 404', async () => {
+    client.get.mockRejectedValue(apiError(404, '{"contractVersion":1,"error":"no_binding"}'));
+    const { result } = renderHook(() => useAttempts('bnd_aaaaaaaaaaaaaaaaaaaa0001'));
+    await flush();
+    expect(result.current.state).toEqual({ status: 'gone' });
   });
 });

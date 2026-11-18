@@ -165,6 +165,18 @@ export interface PortraitAssetV1 {
   dataBase64: string | null;
 }
 
+/** One read-only scene raster from GET /api/scene-assets/{key}; `key` names a file in the backend's fixed allowlist, not a closed list in the schema. */
+export interface SceneAssetV1 {
+  contractVersion: 1;
+  key: string;
+  mediaType: 'image/png';
+  width: number;
+  height: number;
+  sha256: string;
+  byteLength: number;
+  dataBase64: string;
+}
+
 /** `source` is a documented token ('generated' or 'manual'), not a closed list. */
 export interface SpecterV1 {
   contractVersion: 1;
@@ -234,6 +246,7 @@ export const ATTEMPTS_ACTIVITY_KEYS: Record<keyof AttemptsActivityV1, true> = { 
 export const ATTEMPTS_KEYS: Record<keyof AttemptsV1, true> = { contractVersion: true, bindingId: true, items: true, nextCursor: true, rosterRevision: true, asOfMs: true, activity: true };
 export const SPECTER_PROFILE_KEYS: Record<keyof SpecterProfileV1, true> = { contractVersion: true, name: true, epithet: true, personality: true, appearance: true, mannerism: true, signatureAction: true, assignmentRationale: true, artBrief: true };
 export const PORTRAIT_ASSET_KEYS: Record<keyof PortraitAssetV1, true> = { contractVersion: true, assetId: true, mediaType: true, width: true, height: true, byteLength: true, origin: true, label: true, dataBase64: true };
+export const SCENE_ASSET_KEYS: Record<keyof SceneAssetV1, true> = { contractVersion: true, key: true, mediaType: true, width: true, height: true, sha256: true, byteLength: true, dataBase64: true };
 export const SPECTER_KEYS: Record<keyof SpecterV1, true> = { contractVersion: true, specterId: true, bindingId: true, version: true, profile: true, portrait: true, source: true, promptVersion: true, createdAtMs: true, updatedAtMs: true };
 export const SPECTERS_KEYS: Record<keyof SpectersV1, true> = { contractVersion: true, items: true };
 export const SUMMONING_BUDGET_KEYS: Record<keyof SummoningBudgetV1, true> = { bindingRemaining: true, bindingLimit: true, installRemaining: true, installLimit: true, windowMs: true };

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -22,6 +23,17 @@ export const DENYLIST = [
 ];
 
 const SELF = 'scripts/check-provenance.mjs';
+export const PROVENANCE_DOC = 'docs/provenance.md';
+/** Every shipped raster needs a row in PROVENANCE_DOC naming its repo path and sha256. */
+const RASTER = /\.(?:png|jpe?g|gif|webp)$/i;
+/** QA artifacts of the art pack, never shipped (FP-10+11 SC10-3). */
+const QA_ART = /-light-dark-[a-z-]*check\.jpe?g$|(?:^|\/)reference-crops\/|(?:^|\/)roster-reference\.[a-z]+$|-master\.png$/i;
+/** Wording the art release replaced (B13); it must not come back in the docs. */
+export const RETIRED_ART_WORDING = [
+  { pattern: /derived non-generatively/i, label: 'retired art wording "derived non-generatively"' },
+  { pattern: /no licensing determination/i, label: 'retired art wording "no licensing determination"' },
+];
+export const ART_STATEMENT = 'created by Eric Jeffers using ChatGPT (OpenAI) image generation';
 const ALLOWED_ENV_FILES = new Set(['.env.example']);
 
 /**
@@ -43,14 +55,70 @@ function isEnvFile(path) {
  *   trackedFiles: string[],
  *   readFile: (path: string) => string,
  *   isIgnored: (path: string) => boolean,
+ *   readBytes?: (path: string) => Uint8Array,
  * }} Repo
  */
+
+/**
+ * Art rows: every tracked raster has a QA-free path and a row in docs/provenance.md that names its
+ * repo path and its sha256, and the doc carries the creation statement and none of the retired wording.
+ * @param {Repo} repo
+ * @returns {string[]} problems found
+ */
+export function checkArt({ trackedFiles, readFile, readBytes }) {
+  /** @type {string[]} */
+  const problems = [];
+  const rasters = trackedFiles.filter((path) => RASTER.test(path));
+  for (const path of rasters) if (QA_ART.test(path)) problems.push(`${path}: QA art file must not ship`);
+  if (rasters.length === 0 || readBytes === undefined) return problems;
+  let doc;
+  try {
+    doc = readFile(PROVENANCE_DOC);
+  } catch {
+    return [...problems, `${PROVENANCE_DOC} is missing but ${rasters.length} raster file(s) are tracked`];
+  }
+  if (!doc.includes(ART_STATEMENT)) problems.push(`${PROVENANCE_DOC} lacks the statement "${ART_STATEMENT}"`);
+  for (const { pattern, label } of RETIRED_ART_WORDING) if (pattern.test(doc)) problems.push(`${PROVENANCE_DOC}: ${label}`);
+  const rows = doc.split('\n').filter((line) => line.startsWith('|'));
+  for (const path of rasters) {
+    if (QA_ART.test(path)) continue;
+    const sha256 = createHash('sha256').update(readBytes(path)).digest('hex');
+    if (!rows.some((row) => row.includes(`\`${path}\``) && row.includes(`\`${sha256}\``))) {
+      problems.push(`${path}: no row in ${PROVENANCE_DOC} with this path and sha256 ${sha256}`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * A Figma Make row (first cell starts `FP-`) names the files it was adapted into; each `ui/src/` path
+ * in it must be a tracked file, so a renamed or dropped port cannot leave a stale row behind.
+ * @param {Repo} repo
+ * @returns {string[]} problems found
+ */
+export function checkPortedRows({ trackedFiles, readFile }) {
+  let doc;
+  try {
+    doc = readFile(PROVENANCE_DOC);
+  } catch {
+    return [];
+  }
+  const tracked = new Set(trackedFiles);
+  /** @type {string[]} */
+  const problems = [];
+  for (const row of doc.split('\n').filter((line) => line.startsWith('| FP-'))) {
+    for (const [, path = ''] of row.matchAll(/`(ui\/src\/[^`]+)`/g)) {
+      if (!tracked.has(path)) problems.push(`${PROVENANCE_DOC}: row names ${path}, which is not a tracked file`);
+    }
+  }
+  return problems;
+}
 
 /**
  * @param {Repo} repo
  * @returns {string[]} problems found; empty means the tree is clean
  */
-export function checkRepository({ trackedFiles, readFile, isIgnored }) {
+export function checkRepository({ trackedFiles, readFile, isIgnored, readBytes }) {
   /** @type {string[]} */
   const problems = [];
   const kiroFiles = trackedFiles.filter((path) => path.startsWith('.kiro/'));
@@ -67,6 +135,8 @@ export function checkRepository({ trackedFiles, readFile, isIgnored }) {
     }
     for (const label of findDenylisted(text)) problems.push(`${path}: ${label}`);
   }
+  problems.push(...checkArt({ trackedFiles, readFile, isIgnored, readBytes }));
+  problems.push(...checkPortedRows({ trackedFiles, readFile, isIgnored, readBytes }));
   return problems;
 }
 
@@ -75,6 +145,7 @@ export function gitRepo() {
   return {
     trackedFiles: execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean),
     readFile: (path) => readFileSync(path, 'utf8'),
+    readBytes: (path) => readFileSync(path),
     isIgnored: (path) => {
       try {
         execFileSync('git', ['check-ignore', '-q', '--no-index', path]);

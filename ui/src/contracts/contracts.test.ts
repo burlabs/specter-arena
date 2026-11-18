@@ -22,6 +22,7 @@ import {
   ROSTER_NOTE_KEYS,
   ROSTER_SIGNALS_KEYS,
   ROSTER_WORKERS_KEYS,
+  SCENE_ASSET_KEYS,
   SPECTER_KEYS,
   SPECTER_PROFILE_KEYS,
   SPECTERS_KEYS,
@@ -46,6 +47,7 @@ import type {
   AttemptsV1,
   PageV1,
   PortraitAssetV1,
+  SceneAssetV1,
   ReadyV1,
   RosterItemV1,
   RosterV1,
@@ -150,6 +152,7 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'attempts', path: ['definitions', 'window'], keys: ATTEMPTS_WINDOW_KEYS },
   { schema: 'specter-profile', path: [], keys: SPECTER_PROFILE_KEYS },
   { schema: 'portrait-asset', path: [], keys: PORTRAIT_ASSET_KEYS },
+  { schema: 'scene-asset', path: [], keys: SCENE_ASSET_KEYS },
   { schema: 'specter', path: [], keys: SPECTER_KEYS },
   { schema: 'specters', path: [], keys: SPECTERS_KEYS },
   { schema: 'summoning', path: [], keys: SUMMONING_KEYS },
@@ -274,6 +277,16 @@ describe('hand-written types', () => {
       label: 'A pale figure',
       dataBase64: null,
     };
+    const sceneAsset: SceneAssetV1 = {
+      contractVersion: 1,
+      key: 'arena-map',
+      mediaType: 'image/png',
+      width: 1672,
+      height: 941,
+      sha256: '58cac8daa5aa13448f075e203648f43c677cec5ef69e55b2638d7c7340565f7d',
+      byteLength: 70,
+      dataBase64: 'iVBORw0KGgo=',
+    };
     const specter: SpecterV1 = {
       contractVersion: 1,
       specterId: 'spc_0a1b2c3d4e5f60718293a4b5',
@@ -365,6 +378,7 @@ describe('hand-written types', () => {
       ['attempts', attempts],
       ['specter-profile', profile],
       ['portrait-asset', asset],
+      ['scene-asset', sceneAsset],
       ['specter', specter],
       ['specters', specters],
       ['summoning', summoning],
