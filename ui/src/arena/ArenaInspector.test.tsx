@@ -145,6 +145,34 @@ describe('Specter selection', () => {
   });
 });
 
+describe('Specter handoff and open work', () => {
+  it('copies a Specter summary with the binding id and condition and no name', async () => {
+    setArenaScenario('arena');
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    open();
+    await settle();
+    fireEvent.click(specterRow('Atlas'));
+    fireEvent.click(await within(inspector()).findByRole('button', { name: 'Copy diagnostic summary' }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    const text = writeText.mock.calls[0]?.[0] as string;
+    expect(text).toContain('selection: specter');
+    expect(text).toMatch(/bindingId: bnd_/);
+    expect(text).toContain('condition: ');
+    expect(text).not.toContain('Atlas');
+    vi.unstubAllGlobals();
+  });
+
+  it('lists several open work items in a stable order', async () => {
+    setArenaScenario('arena-perf-1');
+    render(<ArenaView bots={rosterBody('arena-perf-roster').items} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    await settle();
+    fireEvent.click(within(screen.getByRole('table', { name: 'Specters' })).getAllByRole('button')[0]!);
+    const region = await within(inspector()).findByRole('region', { name: 'Open work' });
+    await waitFor(() => expect(within(region).getAllByRole('button').length).toBeGreaterThan(1));
+  });
+});
+
 describe('focus and keys', () => {
   it('returns focus to the opener on Escape and on Close', async () => {
     setArenaScenario('arena');
