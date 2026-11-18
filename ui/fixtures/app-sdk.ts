@@ -3,6 +3,7 @@
 // this file never reaches ui/dist.
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { monitoringResponse } from './monitoring-bodies.ts';
+import { specterResponse } from './specter-bodies.ts';
 
 export const FIXTURE_SDK_LABEL = 'SPECTER-FIXTURE-ONLY: fixture app-sdk, not the Crew host';
 
@@ -14,21 +15,23 @@ export interface FixtureApiClient {
 const CANNED_RESPONSE = { ok: true, at: '2000-01-01T00:00:00Z', source: FIXTURE_SDK_LABEL };
 
 export function createFixtureClient(declared: readonly string[]): FixtureApiClient {
-  const guard = (path: string) => {
+  const guard = (path: string, method: 'GET' | 'POST', body?: unknown) => {
     const { pathname } = new URL(path, 'http://localhost');
     if (!isPathPermitted(declared, pathname)) {
       return Promise.reject(
         new Error(`[app-sdk] App "specter-arena" not permitted to access ${pathname}. Declared: [${declared.join(', ')}]`),
       );
     }
-    return monitoringResponse(pathname) ?? Promise.resolve(CANNED_RESPONSE);
+    return monitoringResponse(pathname) ?? specterResponse(pathname, method, body) ?? Promise.resolve(CANNED_RESPONSE);
   };
-  return { get: (path) => guard(path), post: (path) => guard(path) };
+  return { get: (path) => guard(path, 'GET'), post: (path, body) => guard(path, 'POST', body) };
 }
 
 export { DECLARED_API, isPathPermitted };
 export { attemptsBody, rosterBody, setFixtureScenario } from './monitoring-bodies.ts';
 export type { ScenarioName } from './monitoring-bodies.ts';
+export { setSpecterScenario } from './specter-bodies.ts';
+export type { SpecterScenarioName } from './specter-bodies.ts';
 
 const client = createFixtureClient(DECLARED_API);
 

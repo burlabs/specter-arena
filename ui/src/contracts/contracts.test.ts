@@ -11,6 +11,7 @@ import {
   ATTEMPTS_KEYS,
   ATTEMPTS_WINDOW_KEYS,
   PAGE_KEYS,
+  PORTRAIT_ASSET_KEYS,
   READY_KEYS,
   ROSTER_AVATAR_KEYS,
   ROSTER_COLLECTOR_KEYS,
@@ -21,8 +22,26 @@ import {
   ROSTER_NOTE_KEYS,
   ROSTER_SIGNALS_KEYS,
   ROSTER_WORKERS_KEYS,
+  SPECTER_KEYS,
+  SPECTER_PROFILE_KEYS,
+  SPECTERS_KEYS,
+  SUMMONING_BUDGET_KEYS,
+  SUMMONING_KEYS,
 } from './types.ts';
-import type { ApiErrorV1, AttemptItemV1, AttemptsV1, PageV1, ReadyV1, RosterItemV1, RosterV1 } from './types.ts';
+import type {
+  ApiErrorV1,
+  AttemptItemV1,
+  AttemptsV1,
+  PageV1,
+  PortraitAssetV1,
+  ReadyV1,
+  RosterItemV1,
+  RosterV1,
+  SpecterProfileV1,
+  SpecterV1,
+  SpectersV1,
+  SummoningV1,
+} from './types.ts';
 
 // The wire schemas and their shared cases live outside ui/src and backend/specter_arena, so
 // neither coverage scope sees them. backend/tests/test_contracts.py runs the same cases.
@@ -112,9 +131,15 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'attempts', path: [], keys: ATTEMPTS_KEYS },
   { schema: 'attempts', path: ['properties', 'activity'], keys: ATTEMPTS_ACTIVITY_KEYS },
   { schema: 'attempts', path: ['definitions', 'window'], keys: ATTEMPTS_WINDOW_KEYS },
+  { schema: 'specter-profile', path: [], keys: SPECTER_PROFILE_KEYS },
+  { schema: 'portrait-asset', path: [], keys: PORTRAIT_ASSET_KEYS },
+  { schema: 'specter', path: [], keys: SPECTER_KEYS },
+  { schema: 'specters', path: [], keys: SPECTERS_KEYS },
+  { schema: 'summoning', path: [], keys: SUMMONING_KEYS },
+  { schema: 'summoning', path: ['properties', 'budget'], keys: SUMMONING_BUDGET_KEYS },
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
-const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record', 'portrait-asset', 'specter', 'specter-profile', 'specters', 'summoning'];
+const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
 
 describe('hand-written types', () => {
   const nested = (entry: TypedSchema): { properties: Record<string, unknown>; required: string[] } =>
@@ -198,7 +223,68 @@ describe('hand-written types', () => {
       asOfMs: 86400000,
       activity: { last24h: window, last7d: { ...window, fromMs: 0, windowMs: 604800000, toMs: 604800000 } },
     };
-    const accepted = [['api-error', error], ['page', page], ['ready', ready], ['roster-item', item], ['roster', roster], ['attempt-item', attempt], ['attempts', attempts]] as const;
+    const profile: SpecterProfileV1 = {
+      contractVersion: 1,
+      name: 'Lanternwick',
+      epithet: null,
+      personality: 'Patient and dry.',
+      appearance: 'A tall figure in a pale coat.',
+      mannerism: 'Hums while waiting.',
+      signatureAction: null,
+      assignmentRationale: 'Matches the careful way this bot works.',
+      artBrief: 'A lantern held low.',
+    };
+    const asset: PortraitAssetV1 = {
+      contractVersion: 1,
+      assetId: 'ast_0a1b2c3d4e5f60718293a4b5',
+      mediaType: 'image/png',
+      width: 8,
+      height: 8,
+      byteLength: 70,
+      origin: 'uploaded',
+      label: 'A pale figure',
+      dataBase64: null,
+    };
+    const specter: SpecterV1 = {
+      contractVersion: 1,
+      specterId: 'spc_0a1b2c3d4e5f60718293a4b5',
+      bindingId: 'bnd_0a1b2c3d',
+      version: 1,
+      profile,
+      portrait: asset,
+      source: 'generated',
+      promptVersion: 'summon-1',
+      createdAtMs: 1760000005000,
+      updatedAtMs: 1760000005000,
+    };
+    const specters: SpectersV1 = { contractVersion: 1, items: [specter] };
+    const summoning: SummoningV1 = {
+      contractVersion: 1,
+      requestId: 'req_0a1b2c3d4e5f60718293a4b5',
+      bindingId: 'bnd_0a1b2c3d',
+      status: 'ready',
+      candidate: profile,
+      error: null,
+      promptVersion: 'summon-1',
+      keep: ['name'],
+      createdAtMs: 1760000005000,
+      finishedAtMs: 1760000006000,
+      budget: { bindingRemaining: 4, bindingLimit: 5, installRemaining: 19, installLimit: 20, windowMs: 86400000 },
+    };
+    const accepted = [
+      ['api-error', error],
+      ['page', page],
+      ['ready', ready],
+      ['roster-item', item],
+      ['roster', roster],
+      ['attempt-item', attempt],
+      ['attempts', attempts],
+      ['specter-profile', profile],
+      ['portrait-asset', asset],
+      ['specter', specter],
+      ['specters', specters],
+      ['summoning', summoning],
+    ] as const;
     for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
