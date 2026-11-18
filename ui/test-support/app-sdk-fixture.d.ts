@@ -4,4 +4,6 @@ declare module '@kirocrew/app-sdk' {
   export function setFixtureScenario(name: ScenarioName | null): void;
   export function rosterBody(name: ScenarioName): import('../src/contracts/types').RosterV1;
   export function attemptsBody(name: ScenarioName, bindingId: string): import('../src/contracts/types').AttemptsV1 | null;
+  export type SpecterScenarioName = import('../fixtures/specter-bodies.ts').SpecterScenarioName;
+  export function setSpecterScenario(name: SpecterScenarioName | null): void;
 }

@@ -1,7 +1,7 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody, setFixtureScenario } from '@kirocrew/app-sdk';
+import { rosterBody, setFixtureScenario, setSpecterScenario } from '@kirocrew/app-sdk';
 import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
 import { WATCHED_KEY, writeWatched } from './watched';
@@ -9,6 +9,8 @@ import { WATCHED_KEY, writeWatched } from './watched';
 const ATLAS = 'bnd_aaaaaaaaaaaaaaaaaaaa0001';
 
 afterEach(() => vi.restoreAllMocks());
+
+const rosterResponse = () => new Response(JSON.stringify(rosterBody('default')));
 
 async function open(scenario: ScenarioName = 'default') {
   setFixtureScenario(scenario);
@@ -345,16 +347,16 @@ describe('sections', () => {
     expect(specterTab().getAttribute('aria-selected')).toBe('true');
   });
 
-  it('shows the placeholder on Specters and hides the roster, then restores it unchanged', async () => {
+  it('shows the Specters panel and hides the roster, then restores it unchanged', async () => {
     await open();
     selectRow('Atlas');
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'atl' } });
     fireEvent.click(specterTab());
     expect(screen.getByRole('tabpanel', { name: 'Specters' })).toBeTruthy();
-    expect(screen.getByText('Specters are not part of this build yet')).toBeTruthy();
+    expect(await screen.findByRole('list', { name: 'Bots with Specters' })).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Bots' })).toBeNull();
     fireEvent.click(rosterTab());
-    expect(screen.queryByText('Specters are not part of this build yet')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Bots with Specters' })).toBeNull();
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('atl');
     expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
   });
@@ -365,5 +367,40 @@ describe('sections', () => {
     expect(fireEvent.keyDown(document.body, { key: '/' })).toBe(true);
     fireEvent.click(rosterTab());
     expect(fireEvent.keyDown(document.body, { key: '/' })).toBe(false);
+  });
+});
+
+describe('Specters in the roster rows', () => {
+  it('shows a portrait or token and the Specter name beside the bot, and keeps the row name stable', async () => {
+    setSpecterScenario('specters');
+    await open();
+    await waitFor(() => expect(screen.getByText(/Specter: Vesper/)).toBeTruthy());
+    expect(screen.getByText(/Specter: Wren/).textContent).toContain('placeholder token, not a portrait');
+    expect(screen.getByRole('button', { name: /^Atlas/ })).toBeTruthy();
+    expect(rowNames()).toEqual(['Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Unnamed bot']);
+    await waitFor(() => expect(document.querySelectorAll('.sa-row img.sa-portrait__img')).toHaveLength(2));
+    const sources = [...document.querySelectorAll('.sa-row img.sa-portrait__img')].map((image) => image.getAttribute('src'));
+    expect(new Set(sources).size).toBe(2);
+  });
+
+  it('keeps the roster rows when Specters fail to load', async () => {
+    setSpecterScenario('specters');
+    const get = vi.spyOn(useAppApi(), 'get');
+    get.mockImplementation(async (path: string) => {
+      if (path.includes('/specters')) throw new TypeError('down');
+      return rosterResponse();
+    });
+    await open();
+    expect(rowNames()).toHaveLength(7);
+    expect(screen.queryByText(/Specter:/)).toBeNull();
+  });
+
+  it('opens the Specters tab with the bot list and its own style element', async () => {
+    setSpecterScenario('specters');
+    await open();
+    expect(document.head.querySelectorAll('style[data-specter-arena]')).toHaveLength(1);
+    expect(document.head.querySelectorAll('style[data-specter-arena-specters]')).toHaveLength(1);
+    fireEvent.click(within(screen.getByRole('tablist', { name: 'Sections' })).getByRole('tab', { name: 'Specters' }));
+    expect(await screen.findByRole('list', { name: 'Bots with Specters' })).toBeTruthy();
   });
 });

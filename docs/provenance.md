@@ -27,8 +27,12 @@ Figma's terms for generated code have not been checked yet. That check is schedu
 | FP-04 | `components/OperationalMarker.tsx` | `ui/src/observatory/ConditionBadge.tsx` | markers follow the approved condition vocabulary; artwork replaced by CSS shapes |
 | FP-04 | `components/ui.tsx` | `ui/src/observatory/ui.tsx` | primitives only, with scoped classes |
 | FP-04 | `observatory/model.ts` | `ui/src/observatory/model.ts` | rewritten from the contracts; only the export's vocabulary was a reference |
+| FP-06+07 | `components/SpecterArtwork.tsx` | `ui/src/specters/SpecterPortrait.tsx` | image with a failure state and a labelled fallback token; fixture lookup, anchors and the ghost drawing removed; scoped classes |
+| FP-06+07 | `components/MotionPolicyContext.tsx` | `ui/src/specters/useMotionAllowed.ts` | idea only: reduced motion turns effects off; context and user pause removed |
+| FP-06+07 | `components/SpectersPage.tsx` | `ui/src/specters/SpectersView.tsx`, `SpecterDetail.tsx` | layout and interaction spec; rewritten against the `specter` and `specters` contracts; fixtures, XP and progression removed |
+| FP-06+07 | `components/SummoningPage.tsx` | `ui/src/specters/SummonPanel.tsx` | interaction spec; rewritten against the summoning route; mock generator removed |
 
-Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
+Ported CSS has no Tailwind and every selector is scoped under the app root. No images or fonts from the export are used in FP-04 or FP-06+07. Each later session that ports files adds its rows here. `DEPENDENCIES.md` lists packages, and Figma Make is a generator rather than a dependency, so it has no entry there.
 
 ## Bundled art: A01 approved roster
 

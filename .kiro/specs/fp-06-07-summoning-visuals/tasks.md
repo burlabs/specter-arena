@@ -14,9 +14,9 @@ Shared single-writer files change in one open PR at a time. FP-06+07 changes non
 - [x] T7 delivery: check-fixtures grant and agent guard, probe staging, monitoring-scope paragraph, provenance and dependency disclosure (FP0607-DEL-04, FP0607-DEL-05, FP0607-DEL-06, FP0607-DEL-09)
 
 ## PR-C: UI
-- [ ] T8 experience: `ui/src/specters/`, roster portraits, fixtures, types, scoped CSS (FP0607-REQ-07, FP0607-REQ-08, FP0607-REQ-11, FP0607-REQ-15)
-- [ ] T9 delivery: bundle budget, `tests/e2e/specters.spec.ts`, provenance rows for the Figma Make files, doc upkeep (FP0607-DEL-06, FP0607-DEL-08, FP0607-DEL-11, FP0607-DEL-12)
-- [ ] T10 specter-identity: FROZEN flips, last commit (FP0607-REQ-16)
+- [x] T8 experience: `ui/src/specters/`, roster portraits, fixtures, types, scoped CSS (FP0607-REQ-07, FP0607-REQ-08, FP0607-REQ-11, FP0607-REQ-15)
+- [x] T9 delivery: bundle budget, `tests/e2e/specters.spec.ts`, provenance rows for the Figma Make files, doc upkeep (FP0607-DEL-06, FP0607-DEL-08, FP0607-DEL-11, FP0607-DEL-12)
+- [x] T10 specter-identity: FROZEN flips, last commit (FP0607-REQ-16)
 
 ## Owner step
 - [ ] OA-3: approve the staged grant update on the installed app and run one live summoning (FP0607-REQ-01). Crew stages added grants until the owner approves them.

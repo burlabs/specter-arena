@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterItemV1 } from '../contracts/types';
+import type { RosterItemV1, SpecterV1 } from '../contracts/types';
 import { ConditionBadge } from './ConditionBadge';
 import { Initials } from './Initials';
+import { ROW_TOKEN_NOTE, SPECTER_ROW_PREFIX } from '../specters/copy';
+import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { botCondition, nameOf, workerChips } from './model';
 
 interface Props {
@@ -10,11 +12,12 @@ interface Props {
   selectedId: string | null;
   watched: ReadonlySet<string>;
   watchListFull: boolean;
+  specters?: ReadonlyMap<string, SpecterV1>;
   onSelect: (bindingId: string) => void;
   onToggleWatch: (bindingId: string) => void;
 }
 
-function targetIndex(key: string, index: number, last: number): number | null {
+export function targetIndex(key: string, index: number, last: number): number | null {
   if (key === 'ArrowDown') return Math.min(last, index + 1);
   if (key === 'ArrowUp') return Math.max(0, index - 1);
   if (key === 'Home') return 0;
@@ -22,7 +25,7 @@ function targetIndex(key: string, index: number, last: number): number | null {
   return null;
 }
 
-export function RosterList({ items, selectedId, watched, watchListFull, onSelect, onToggleWatch }: Props) {
+export function RosterList({ items, selectedId, watched, watchListFull, specters, onSelect, onToggleWatch }: Props) {
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const [rovingId, setRovingId] = useState<string | null>(null);
   const has = (id: string | null) => id !== null && items.some((item) => item.bindingId === id);
@@ -43,6 +46,7 @@ export function RosterList({ items, selectedId, watched, watchListFull, onSelect
       {items.map((item) => {
         const isActive = item.bindingId === activeId;
         const isWatched = watched.has(item.bindingId);
+        const specter = specters?.get(item.bindingId);
         return (
           <li key={item.bindingId} className="sa-row">
             <button
@@ -57,6 +61,7 @@ export function RosterList({ items, selectedId, watched, watchListFull, onSelect
               onFocus={() => setRovingId(item.bindingId)}
               onClick={() => onSelect(item.bindingId)}
             >
+              {specter !== undefined && <SpecterPortrait specter={specter} size="sm" decorative active={item.condition.state === 'working'} />}
               <Initials item={item} />
               <span className="sa-row__copy">
                 <strong>{nameOf(item)}</strong>
@@ -68,6 +73,13 @@ export function RosterList({ items, selectedId, watched, watchListFull, onSelect
                     </span>
                   ))}
                 </span>
+                {specter !== undefined && (
+                  <span className="sa-row__specter">
+                    {SPECTER_ROW_PREFIX}
+                    {specter.profile.name}
+                    {specter.portrait === null && <span className="sa-visually-hidden">{ROW_TOKEN_NOTE}</span>}
+                  </span>
+                )}
               </span>
             </button>
             <button

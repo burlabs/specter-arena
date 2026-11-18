@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { rosterBody } from '@kirocrew/app-sdk';
-import { RosterList } from './RosterList';
+import { specterOf } from '../specters/testData';
+import { RosterList, targetIndex } from './RosterList';
 
 const items = rosterBody('default').items;
 
@@ -86,5 +87,39 @@ describe('RosterList', () => {
     setup({ items: [] });
     fireEvent.keyDown(screen.getByRole('list', { name: 'Bots' }), { key: 'ArrowDown' });
     expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  });
+});
+
+describe('RosterList with Specters', () => {
+  const atlas = items[0];
+  const withSpecter = (portrait: boolean) =>
+    new Map([[atlas?.bindingId ?? '', specterOf({ bindingId: atlas?.bindingId ?? '', portrait: portrait ? { contractVersion: 1, assetId: 'ast_000000000000000000000001', mediaType: 'image/png', width: 8, height: 8, byteLength: 1, origin: 'bundled', label: 'x', dataBase64: null } : null })]]);
+
+  it('adds a decorative portrait and the Specter name after the chips, leaving the bot name first', () => {
+    setup({ specters: withSpecter(false) });
+    const row = screen.getAllByRole('listitem')[0] as HTMLElement;
+    expect(row.querySelector('.sa-portrait')?.getAttribute('aria-hidden')).toBe('true');
+    expect(row.querySelector('strong')?.textContent).toBe('Atlas');
+    expect(row.querySelector('.sa-row__specter')?.textContent).toBe('Specter: Lanternwick (placeholder token, not a portrait)');
+    expect(screen.getByRole('button', { name: /^Atlas/ })).toBeTruthy();
+  });
+
+  it('omits the token note when the Specter has a portrait', () => {
+    setup({ specters: withSpecter(true) });
+    const row = screen.getAllByRole('listitem')[0] as HTMLElement;
+    expect(row.querySelector('.sa-row__specter')?.textContent).toBe('Specter: Lanternwick');
+  });
+
+  it('leaves bots without a Specter exactly as before', () => {
+    setup({ specters: withSpecter(false) });
+    const row = screen.getAllByRole('listitem')[1] as HTMLElement;
+    expect(row.querySelector('.sa-portrait')).toBeNull();
+    expect(row.querySelector('.sa-row__specter')).toBeNull();
+  });
+
+  it('exports the shared arrow-key target rule', () => {
+    expect(targetIndex('ArrowDown', 0, 3)).toBe(1);
+    expect(targetIndex('End', 0, 3)).toBe(3);
+    expect(targetIndex('q', 0, 3)).toBeNull();
   });
 });

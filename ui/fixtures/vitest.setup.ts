@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
 import { installHostModules } from './host-modules.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
+import { resetSpecterFixtures } from './specter-bodies.ts';
 
 let teardown: (() => void) | undefined;
 
@@ -17,6 +18,7 @@ afterEach(() => {
     window.localStorage.clear();
   }
   setFixtureScenario(null);
+  resetSpecterFixtures();
   teardown?.();
   teardown = undefined;
 });
