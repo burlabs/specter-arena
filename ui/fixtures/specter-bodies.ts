@@ -46,16 +46,21 @@ function chunk(type: string, data: readonly number[]): number[] {
   return [...be32(data.length), ...body, ...be32(crc32(body))];
 }
 
-/** A valid, uncompressed 8 x 8 RGBA PNG of one colour, built in code so no binary literal sits in a source file. */
-function solidPng(red: number, green: number, blue: number): string {
-  const size = 8;
-  const row = [0, ...Array.from({ length: size }, () => [red, green, blue, 255]).flat()];
-  const raw = Array.from({ length: size }, () => row).flat();
+/**
+ * A valid, uncompressed RGBA PNG of one colour, built in code so no binary literal sits in a source file.
+ * One stored deflate block holds at most 65,535 bytes, so `height * (width * 4 + 1)` must stay below it.
+ */
+export function solidPng(red: number, green: number, blue: number, width = 8, height = width): string {
+  const row = [0, ...Array.from({ length: width }, () => [red, green, blue, 255]).flat()];
+  const raw = Array.from({ length: height }, () => row).flat();
   const length = raw.length;
+  if (length > 0xffff) throw new RangeError(`solidPng: ${width} x ${height} does not fit one stored deflate block`);
   const stored = [0x78, 0x01, 0x01, length & 0xff, length >> 8, ~length & 0xff, (~length >> 8) & 0xff, ...raw, ...be32(adler32(raw))];
-  const header = [...be32(size), ...be32(size), 8, 6, 0, 0, 0];
+  const header = [...be32(width), ...be32(height), 8, 6, 0, 0, 0];
   const bytes = [...PNG_SIGNATURE, ...chunk('IHDR', header), ...chunk('IDAT', stored), ...chunk('IEND', [])];
-  return btoa(String.fromCharCode(...bytes));
+  let binary = '';
+  for (let start = 0; start < bytes.length; start += 8192) binary += String.fromCharCode(...bytes.slice(start, start + 8192));
+  return btoa(binary);
 }
 
 const hashHex = (text: string): string => {

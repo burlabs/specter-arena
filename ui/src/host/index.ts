@@ -11,6 +11,7 @@ export {
   assetPath,
   attemptsPath,
   rosterPath,
+  sceneAssetPath,
   specterActionPath,
   specterPath,
   summoningActionPath,

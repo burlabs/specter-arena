@@ -54,7 +54,7 @@ React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Cr
 
 | Asset | Where | License or rights | Used for |
 |---|---|---|---|
-| A01 portraits `vell.png`, `stitch.png`, `reeve.png` | `backend/specter_arena/specters/art/` | User-supplied original art; no third-party license is claimed and rights confirmation for release is open. Hashes and source in `docs/provenance.md` | Selectable gallery portraits for Specters |
+| Gallery portraits (11) and scene rasters (5: arena map, two minion sprites, two minion portraits) | `backend/specter_arena/specters/art/`, `backend/specter_arena/specters/scene/` | Created by Eric Jeffers using ChatGPT (OpenAI) image generation; no third-party license is claimed. Row per file with sha256 in `docs/provenance.md`; OpenAI output terms are rechecked before the MIT release (FP-15) | Selectable gallery portraits for Specters; the arena scene |
 
 FP-06+07 and FP-08+09 add no package to any manifest or lockfile, and FP-08+09 adds no bundled asset.
 

@@ -1,4 +1,5 @@
 import hashlib
+import os
 import struct
 import time
 import zlib
@@ -153,8 +154,11 @@ def test_a_reencoded_image_that_would_exceed_the_cap_is_refused(
     assert reject(small).reason == "reencoded-too-large"
 
 
-@pytest.mark.parametrize("slug", ["vell", "stitch", "reeve"])
-def test_the_bundled_a01_portraits_pass_the_upload_validator(slug: str) -> None:
+@pytest.mark.parametrize(
+    "slug",
+    ["vell", "stitch", "reeve", "ember", "rattle", "shard", "lume", "moss", "tide", "bur", "poly"],
+)
+def test_the_bundled_portraits_pass_the_upload_validator(slug: str) -> None:
     out = reencode_png((ART / f"{slug}.png").read_bytes())
     assert (out.width, out.height) == (256, 256)
 
@@ -168,3 +172,13 @@ def test_a_large_valid_image_is_reencoded_quickly() -> None:
     started = time.perf_counter()
     assert reencode_png(big).height == 1024
     assert time.perf_counter() - started < 5.0
+
+
+def test_custom_limits_accept_what_the_portrait_limits_reject_and_never_raise_the_default() -> None:
+    wide = png(1100, 2)
+    assert reject(wide).reason == "dimensions"
+    assert reencode_png(wide, max_side=4096).width == 1100
+    noisy = png(600, 600, raw=b"".join(b"\x00" + os.urandom(2400) for _ in range(600)))
+    assert len(noisy) > MAX_INPUT_BYTES
+    assert reject(noisy).reason == "input-size"
+    assert reencode_png(noisy, max_bytes=4_194_304).height == 600

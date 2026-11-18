@@ -206,7 +206,8 @@ class SpecterService:
             prepared = await asyncio.to_thread(prepare)
         except (BundledArtError, ImageRejected, OSError):
             return  # never serve art that fails its pinned hash; a test proves none is skipped
-        for item in prepared:
+        base_ms = self._clock()
+        for index, item in enumerate(prepared):
             await self._call(
                 db.insert_asset,
                 data=item.data,
@@ -214,7 +215,7 @@ class SpecterService:
                 height=item.height,
                 origin="bundled",
                 label=item.art.label,
-                now_ms=self._clock(),
+                now_ms=base_ms + index,  # the gallery lists bundled art in BUNDLED order
             )
 
     async def close(self) -> None:

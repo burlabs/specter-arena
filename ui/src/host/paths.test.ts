@@ -7,6 +7,7 @@ import {
   WORK_PATH,
   XP_PATH,
   assetPath,
+  sceneAssetPath,
   attemptsPath,
   rosterPath,
   specterActionPath,
@@ -51,6 +52,7 @@ describe('specter paths', () => {
     expect(summoningPath('req_1')).toBe('/apps/specter-arena/api/summonings/req_1');
     expect(summoningActionPath('req_1', 'accept')).toBe('/apps/specter-arena/api/summonings/req_1/accept');
     expect(assetPath('ast_1')).toBe('/apps/specter-arena/api/assets/ast_1');
+    expect(sceneAssetPath('arena-map')).toBe('/apps/specter-arena/api/scene-assets/arena-map');
   });
 
   it('encodes every id so a slash cannot add a path segment', () => {

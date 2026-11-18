@@ -115,11 +115,12 @@ SPECTER_PATHS = frozenset(
         "/api/portraits",
         "/api/assets",
         "/api/assets/{asset_id}",
+        "/api/scene-assets/{key}",
     }
 )
 
 
-def test_the_thirteen_specter_routes_are_mounted(app_copy: Path) -> None:
+def test_the_fourteen_specter_routes_are_mounted(app_copy: Path) -> None:
     assert set(inspect_app(app_copy)["paths"]) >= SPECTER_PATHS
 
 

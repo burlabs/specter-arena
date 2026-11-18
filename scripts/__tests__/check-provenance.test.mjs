@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { DENYLIST, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
+import { Buffer } from 'node:buffer';
+import { createHash } from 'node:crypto';
+import { ART_STATEMENT, DENYLIST, checkArt, checkPortedRows, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
 
 // Markers are assembled at runtime so this file never contains them literally.
 const scopedImport = `import x from '@${'dragonboat'}-cms/app';`;
@@ -109,5 +111,77 @@ describe('check-provenance run', () => {
     assert.equal(real.isIgnored('node_modules/x'), true);
     assert.equal(real.isIgnored('.kiro/steering/product.md'), false);
     assert.match(real.readFile('LICENSE'), /MIT License/);
+  });
+});
+
+const PNG = 'backend/specter_arena/specters/art/ember.png';
+const PNG_BYTES = Buffer.from('not really a png');
+const PNG_SHA = createHash('sha256').update(PNG_BYTES).digest('hex');
+/** @type {(path: string, sha: string) => string} */
+const row = (path, sha) => `| \`${path}\` | \`ember-portrait.png\` | 256 x 256 RGBA | 16 | \`${sha}\` | gallery portrait |`;
+/** @type {(...lines: string[]) => string} */
+const doc = (...lines) => ['# Provenance', `Every raster was ${ART_STATEMENT}.`, '| File | Export | Pixels | Bytes | sha256 | Use |', ...lines].join('\n');
+
+/**
+ * @param {Record<string, string>} files
+ * @param {Record<string, Buffer>} [bytes]
+ */
+function artRepo(files, bytes = { [PNG]: PNG_BYTES }) {
+  return { ...repo({ ...files }), trackedFiles: [...Object.keys(files), ...Object.keys(bytes)], readBytes: (/** @type {string} */ path) => bytes[path] ?? Buffer.alloc(0) };
+}
+
+describe('checkArt (B13)', () => {
+  it('passes when every tracked image has a row with its path and sha256', () => {
+    assert.deepEqual(checkArt(artRepo({ 'docs/provenance.md': doc(row(PNG, PNG_SHA)) })), []);
+  });
+
+  it('fails an image whose hash is not in its row, and one with no row', () => {
+    const problems = checkArt(artRepo({ 'docs/provenance.md': doc(row(PNG, '0'.repeat(64))) }));
+    assert.deepEqual(problems, [`${PNG}: no row in docs/provenance.md with this path and sha256 ${PNG_SHA}`]);
+    assert.equal(checkArt(artRepo({ 'docs/provenance.md': doc() })).length, 1);
+  });
+
+  it('fails a tracked image when the doc is missing, lacks the statement, or carries retired wording', () => {
+    assert.deepEqual(checkArt(artRepo({})), ['docs/provenance.md is missing but 1 raster file(s) are tracked']);
+    const bare = checkArt(artRepo({ 'docs/provenance.md': `${row(PNG, PNG_SHA)}\nderived non-generatively; No licensing determination` }));
+    assert.deepEqual(bare, [
+      `docs/provenance.md lacks the statement "${ART_STATEMENT}"`,
+      'docs/provenance.md: retired art wording "derived non-generatively"',
+      'docs/provenance.md: retired art wording "no licensing determination"',
+    ]);
+  });
+
+  it('fails QA art files even when the doc is fine', () => {
+    const qa = 'backend/specter_arena/specters/art/a02-light-dark-anchor-check.jpg';
+    const problems = checkArt(artRepo({ 'docs/provenance.md': doc(row(PNG, PNG_SHA)) }, { [PNG]: PNG_BYTES, [qa]: Buffer.from('q') }));
+    assert.deepEqual(problems, [`${qa}: QA art file must not ship`]);
+    for (const name of ['x/reference-crops/a.png', 'roster-reference.png', 'bur-master.png']) {
+      assert.ok(checkArt(artRepo({}, { [name]: Buffer.from('q') })).includes(`${name}: QA art file must not ship`), name);
+    }
+  });
+
+  it('does nothing when no image is tracked or bytes cannot be read', () => {
+    assert.deepEqual(checkArt(repo(cleanTree)), []);
+    assert.deepEqual(checkArt({ ...repo({ 'a.png': 'x' }) }), []);
+  });
+});
+
+describe('checkPortedRows', () => {
+  const portedDoc = '| FP-10+11 | `components/X.tsx` | `ui/src/arena/X.tsx`, `ui/src/arena/Y.tsx` | note |\n| other | `ui/src/ignored.ts` |';
+  it('flags a ported path that is not tracked and ignores rows that are not Figma Make rows', () => {
+    const files = { 'docs/provenance.md': portedDoc, 'ui/src/arena/X.tsx': '' };
+    assert.deepEqual(checkPortedRows(repo(files)), ['docs/provenance.md: row names ui/src/arena/Y.tsx, which is not a tracked file']);
+  });
+
+  it('passes when every ported path is tracked and when the doc is absent', () => {
+    assert.deepEqual(checkPortedRows(repo({ 'docs/provenance.md': portedDoc, 'ui/src/arena/X.tsx': '', 'ui/src/arena/Y.tsx': '' })), []);
+    assert.deepEqual(checkPortedRows(repo(cleanTree)), []);
+  });
+});
+
+describe('the real repository', () => {
+  it('passes the art and ported-row checks', () => {
+    assert.deepEqual(checkArt(gitRepo()), []);
+    assert.deepEqual(checkPortedRows(gitRepo()), []);
   });
 });

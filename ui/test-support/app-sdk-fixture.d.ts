@@ -8,4 +8,5 @@ declare module '@kirocrew/app-sdk' {
   export function setSpecterScenario(name: SpecterScenarioName | null): void;
   export type WorkScenarioName = import('../fixtures/work-bodies.ts').WorkScenarioName;
   export function setWorkScenario(name: WorkScenarioName | null): void;
+  export function setSceneAssetsFailing(value: boolean): void;
 }

@@ -35,6 +35,7 @@ export const summoningPath = (requestId: string): string => appApiPath(`/summoni
 export const summoningActionPath = (requestId: string, action: 'cancel' | 'accept'): string =>
   appApiPath(`/summonings/${enc(requestId)}/${action}`);
 export const assetPath = (assetId: string): string => appApiPath(`/assets/${enc(assetId)}`);
+export const sceneAssetPath = (key: string): string => appApiPath(`/scene-assets/${enc(key)}`);
 
 export const WORK_PATH = appApiPath('/work');
 export const XP_PATH = appApiPath('/xp');

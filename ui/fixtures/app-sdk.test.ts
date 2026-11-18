@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { createFixtureClient, useAppApi } from './app-sdk.ts';
-import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, WORK_PATH, XP_PATH, appApiPath, attemptsPath, workListPath } from '../src/host/paths.ts';
+import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, WORK_PATH, XP_PATH, appApiPath, attemptsPath, sceneAssetPath, workListPath } from '../src/host/paths.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 
 describe('fixture SDK allowlist (mirrors the host matcher)', () => {
@@ -88,5 +88,17 @@ describe('work routes', () => {
   it('still answers a foreign path with the canned body and rejects an undeclared work path', async () => {
     await expect(useAppApi().get(appApiPath('/elsewhere'))).resolves.toMatchObject({ ok: true });
     await expect(createFixtureClient([]).get(WORK_PATH)).rejects.toThrow('not permitted');
+  });
+});
+
+describe('scene-asset route', () => {
+  it('serves a scene asset through the guarded client and answers an unknown key 404 unknown_scene_asset', async () => {
+    const client = createFixtureClient(DECLARED_API);
+    const served = (await client.get(sceneAssetPath('arena-map'))) as Response;
+    expect(served.status).toBe(200);
+    expect(((await served.json()) as { key: string }).key).toBe('arena-map');
+    const unknown = (await client.get(sceneAssetPath('nope'))) as Response;
+    expect(unknown.status).toBe(404);
+    expect(await unknown.json()).toEqual({ contractVersion: 1, error: 'unknown_scene_asset' });
   });
 });
