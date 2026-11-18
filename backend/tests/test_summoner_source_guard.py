@@ -56,7 +56,7 @@ def violations(source: str, *, composition: bool = False) -> list[str]:
 def _relative(node: ast.ImportFrom) -> list[str]:
     module = node.module or ""
     names = [alias.name for alias in node.names]
-    leaks = {"store", "specters", "collector", "probe"}
+    leaks = {"store", "specters", "collector", "probe", "work"}
     if module.split(".")[0] in leaks or leaks & set(names):
         return [f"imports {module or names}"]
     return []
@@ -125,6 +125,8 @@ def test_the_client_never_issues_a_get_and_names_only_post_and_delete() -> None:
         ("from os import path\n", "imports os"),
         ("from ..store import Store\n", "imports store"),
         ("from .. import specters\n", "imports ['specters']"),
+        ("from ..work.service import WorkService\n", "imports work.service"),
+        ("from .. import work\n", "imports ['work']"),
         ("x = os.environ\n", "uses .environ"),
         ("x = environ\n", "uses environ"),
         ("x = p.read_text()\n", "uses .read_text"),

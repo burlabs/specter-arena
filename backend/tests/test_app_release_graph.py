@@ -26,8 +26,12 @@ generation = sorted(
     n for n in sys.modules
     if n.startswith(("backend.specter_arena.specters", "backend.specter_arena.summoner"))
 )
+work = sorted(
+    n for n in sys.modules
+    if n == "backend.specter_arena.work" or n.startswith("backend.specter_arena.work.")
+)
 print(json.dumps({
-    "paths": paths, "generation_modules": generation,
+    "paths": paths, "generation_modules": generation, "work_modules": work,
     "probe_modules": loaded, "store_modules": store,
     "sqlite3": "sqlite3" in sys.modules,
     "collector_modules": collector, "websockets": "websockets" in sys.modules,
@@ -91,6 +95,11 @@ def test_importing_the_release_app_loads_no_specter_or_summoner_module(app_copy:
         assert inspect_app(app_copy, **extra)["generation_modules"] == [], extra
 
 
+def test_importing_the_release_app_loads_no_work_module(app_copy: Path) -> None:
+    for extra in ({}, {"SPECTER_PROBE": "1"}):
+        assert inspect_app(app_copy, **extra)["work_modules"] == [], extra
+
+
 SPECTER_PATHS = frozenset(
     {
         "/api/specters",
@@ -114,6 +123,51 @@ def test_the_thirteen_specter_routes_are_mounted(app_copy: Path) -> None:
     assert set(inspect_app(app_copy)["paths"]) >= SPECTER_PATHS
 
 
+WORK_PATHS = frozenset(
+    {
+        "/api/work",
+        "/api/work/{work_id}",
+        "/api/work/{work_id}/attempts",
+        "/api/work/{work_id}/milestones",
+        "/api/work/{work_id}/decisions",
+        "/api/xp",
+        "/api/roster/{binding_id}/xp",
+    }
+)
+
+
+def test_the_work_routes_are_mounted(app_copy: Path) -> None:
+    assert set(inspect_app(app_copy)["paths"]) >= WORK_PATHS
+
+
+ROUTER_ONLY = """
+import json, sys
+import backend.specter_arena.work_routes
+bad = sorted(
+    n for n in sys.modules
+    if n == "backend.specter_arena.work" or n.startswith("backend.specter_arena.work.")
+    or n == "backend.specter_arena.store" or n.startswith("backend.specter_arena.store.")
+)
+print(json.dumps({"bad": bad, "sqlite3": "sqlite3" in sys.modules}))
+"""
+
+
+def test_the_work_router_alone_loads_no_work_service_store_or_sqlite3(app_copy: Path) -> None:
+    deps_dir = str(Path(starlette.__file__).resolve().parents[1])
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("PYTHON", "SPECTER"))}
+    env["PYTHONPATH"] = deps_dir
+    result = subprocess.run(
+        [sys.executable, "-s", "-c", ROUTER_ONLY],
+        cwd=app_copy,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {"bad": [], "sqlite3": False}
+
+
 def test_the_roster_and_attempts_routes_are_mounted_with_the_release_routes(
     app_copy: Path,
 ) -> None:
@@ -130,10 +184,12 @@ async def main():
     async with m.app.router.lifespan_context(m.app):
         collector = m.app.state.collector
         specters = m.app.state.specters
+        work = m.app.state.work
         during = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
     print(json.dumps({"collector": collector is None, "modules": during,
                       "websockets": "websockets" in sys.modules,
                       "specters": specters is not None,
+                      "work": work is not None,
                       "store": [n for n in sys.modules if n == "backend.specter_arena.store"]}))
 
 asyncio.run(main())
@@ -178,6 +234,7 @@ def test_the_probe_switch_never_starts_the_collector_or_opens_the_store(
         "modules": [],
         "websockets": False,
         "specters": False,
+        "work": False,
         "store": [],
     }
     assert not home.exists()
@@ -192,6 +249,7 @@ def test_without_gateway_environment_the_store_opens_but_the_collector_does_not_
     assert out["collector"] is True and out["store"] != []
     assert out["websockets"] is False
     assert out["specters"] is True
+    assert out["work"] is True
 
 
 def test_a_non_one_env_value_does_not_turn_the_probe_on(app_copy: Path) -> None:

@@ -10,6 +10,7 @@ from .specter_arena.config import probe_enabled
 from .specter_arena.routes import attempts, health, ping, ready, roster
 from .specter_arena.specter_routes import specter_routes
 from .specter_arena.store_runtime import StoreRuntime
+from .specter_arena.work_routes import work_routes
 
 PROBE_ON = probe_enabled()
 runtime = StoreRuntime(probe_on=PROBE_ON)
@@ -21,6 +22,7 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
     await store_runtime.open()
     started.state.collector = None
     started.state.specters = None
+    started.state.work = None
     if not store_runtime.probe_on and store_runtime.store is not None:
         # Lazy: `import backend.app` loads neither the collector nor `websockets`.
         from .specter_arena.collector.boot import boot_collector
@@ -28,8 +30,12 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
         # Lazy: `import backend.app` loads no specters, summoner or store module.
         from .specter_arena.summoner.boot import boot_specters
 
+        # Lazy: `import backend.app` loads no work module and no store module.
+        from .specter_arena.work.boot import boot_work
+
         started.state.collector = await boot_collector(store_runtime.store)
         started.state.specters = await boot_specters(store_runtime.store)
+        started.state.work = boot_work(store_runtime.store)
     try:
         yield
     finally:
@@ -47,6 +53,7 @@ routes: list[BaseRoute] = [
     Route("/api/roster", roster, methods=["GET"]),
     Route("/api/roster/{binding_id}/attempts", attempts, methods=["GET"]),
     *specter_routes(),
+    *work_routes(),
 ]
 if PROBE_ON:
     # Lazy: the release import graph must not contain the diagnostic-only probe package.
@@ -58,3 +65,4 @@ app = Starlette(routes=routes, lifespan=lifespan)
 app.state.store_runtime = runtime
 app.state.collector = None
 app.state.specters = None
+app.state.work = None
