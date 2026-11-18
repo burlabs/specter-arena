@@ -4,7 +4,7 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `fab5b910740d98d3683231705734b8f8a1db7a6f`
 
-Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
+Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "to be confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
 
 ## 1. Who this is for and what you get
 
@@ -67,7 +67,7 @@ This click is the consent click. The permissions Specter Arena declares in `app.
 
 "Approve new permissions" appears only after an update that adds entries (`update_app`; the `approve_new_permissions` string).
 
-The modal wording, the permissions view and the re-enable behavior on 0.12.2 are read from Crew's source and dashboard strings and are confirmed in OA-6 (#133).
+The modal wording, the permissions view and the re-enable behavior on 0.12.2 are read from Crew's source and dashboard strings, to be confirmed in OA-6 (#133).
 
 To revoke trust later, use Settings, Security, Third-party apps. The dashboard says removing trust also switches the app off (`security_trusted_apps.py`).
 
@@ -105,7 +105,7 @@ The app migrates its own database on the next backend start. First it copies the
 
 Use the Library toggle, or `kirocrew app disable specter-arena` and `kirocrew app enable specter-arena`.
 
-While disabled, the backend is stopped and the page shows "Enable this app from Apps to use it." (observed on Crew 0.12.0: `docs/compatibility/evidence/L2/run-log.md`). Trust and data stay. Re-enabling does not ask for trust again, because the grant is still stored (`enable_app`); the page and backend return. On 0.12.0 the backend recovered after re-enable (the "Re-enable, press" row of that log). Re-enable on 0.12.2 is confirmed in OA-6 (#133).
+While disabled, the backend is stopped and the page shows "Enable this app from Apps to use it." (observed on Crew 0.12.0: `docs/compatibility/evidence/L2/run-log.md`). Trust and data stay. Re-enabling does not ask for trust again, because the grant is still stored (`enable_app`); the page and backend return. On 0.12.0 the backend recovered after re-enable (the "Re-enable, press" row of that log). Re-enable on 0.12.2 is to be confirmed in OA-6 (#133).
 
 ## 10. Uninstall and data retention
 

@@ -4,7 +4,7 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `fab5b910740d98d3683231705734b8f8a1db7a6f`
 
-This folder holds the text and checklists for the Kiroween 2026 submission of Specter Arena. Nothing here is a claim that has not been checked against the repository; each claim names a path, an acceptance criterion id or a command.
+This folder holds the text and checklists for the Kiroween 2026 submission of Specter Arena. Each claim names its source (a path, an acceptance criterion id or a command); unchecked items are marked as such.
 
 ## Contents
 
