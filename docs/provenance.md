@@ -18,7 +18,7 @@ All code and docs in this repository were written for Specter Arena starting fro
 
 The user interface design for Specter Arena was produced with Figma Make as a separate project (a local export of it, taken on 2026-11-16, is the reference). The export is not vendored in this repository. A session ports only the files for its own screens, adapts them to this repository's contracts, toolchain and scoped CSS, and lists them here. Where the export's fixture models and a contract in `contracts/` differ, the contract wins.
 
-Figma's terms for generated code have not been checked yet. That check is scheduled before the MIT release.
+Figma's terms for generated code are recorded under "Terms checked" at the end of this file.
 
 | Session | Export file | Adapted into | What changed |
 |---|---|---|---|
@@ -59,7 +59,7 @@ How the files in each group were made, as recorded in the metadata of the Figma 
 - poly. The export carries no metadata file for poly. The same roster sheet is named "Poly Spotlight", so poly most likely comes from it, but this is not stated anywhere in the export. Eric's statement above covers the file; the processing detail is unconfirmed.
 - Arena map. Supplied as one painted image and used unchanged by the export (`src/map/layout.ts`, mode `static-art`).
 
-This replaces the earlier wording for the three A01 portraits, which described them as derived from a supplied sheet and disclaimed any rights finding (blocker B13). Eric's statement is now the recorded origin. It is not a legal opinion: OpenAI's output terms have not been rechecked yet, and that recheck is scheduled before the MIT release (FP-15), together with the Figma terms check above.
+This replaces the earlier wording for the three A01 portraits, which described them as derived from a supplied sheet and disclaimed any rights finding (blocker B13). Eric's statement is now the recorded origin. It is not a legal opinion. OpenAI's output terms were checked on 2026-11-18 and are recorded under "Terms checked" at the end of this file.
 
 Not shipped, by design: the light/dark check JPGs (`a02-light-dark-anchor-check.jpg`, `minion-patchwork-light-dark-check.jpg`), `reference-crops/`, `roster-reference.png`, every `*-master.png`, every 96 px thumbnail, and the 512 px character sprites. `npm run check:provenance` fails if any of them is tracked.
 
@@ -107,6 +107,22 @@ The following are used to plan and build this repository but are not part of it 
 - the `fullstack-implementer` agent and its SOPs
 - the quality-gate agents `gate-requirements` and `gate-fit`
 - the feature-planning SOP and the multi-agent orchestration kit
+
+## Terms checked
+
+Checked on 2026-11-18 for the MIT release. This is a disclosure record, not legal advice. Whether AI-generated material is copyrightable at all is outside both terms and outside this record; this file states who made what with which tool and makes no claim beyond the license notice in `LICENSE`.
+
+| Source | Applies to | URL read | Version | Retrieved | Quoted summary (30 words or fewer) |
+|---|---|---|---|---|---|
+| OpenAI Terms of Use | ChatGPT image generation, used by Eric Jeffers for the raster art | https://web.archive.org/web/20261118174225/https://openai.com/policies/terms-of-use/ (Internet Archive snapshot of https://openai.com/policies/terms-of-use/) | Published and effective January 1, 2026 | 2026-11-18 | "you (a) retain your ownership rights in Input and (b) own the Output. We hereby assign to you all our right, title, and interest, if any, in and to Output." |
+| Figma AI Terms | Figma Make output, including code, used for the ported UI and the vector drawings | https://www.figma.com/legal/ai-terms/ | Effective October 30, 2026 | 2026-11-18 | "Input and Output are Customer Content. As between Customer and Figma, Customer retains all right, title, and interest in Customer's Input and Output" |
+
+Notes:
+
+- The live OpenAI page returned HTTP 403 to automated fetches on 2026-11-18, so the text was read from the Internet Archive snapshot taken the same day. The page's own sha256 as fetched was `7a8be51152cc82d84e2d25a5eba90ecf8ec2602a0579243cb79012c6be89345d`. The outside-the-US version (https://openai.com/policies/row-terms-of-use/) was not read.
+- Both terms say output may not be unique and that the customer is responsible for evaluating it and obtaining any clearances (OpenAI "Similarity of content"; Figma AI Terms section 6). `backend/specter_arena/specters/scene/arena-map.png` carries a C2PA metadata chunk from the generator.
+- Figma's page sha256 as fetched: `f2a10a08d031a82f494fce18bf9e124f6c08ddc7bec324e7d3d1d15af6897d51`. The Figma Terms of Service incorporate the AI Terms.
+- Result: no conflict with the MIT release was found.
 
 ## Third-party dependencies
 
