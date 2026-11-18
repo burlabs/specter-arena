@@ -9,9 +9,9 @@ Shared single-writer files change in one open PR at a time. FP-06+07 changes non
 - [x] T4 experience: Roster and Specters tab shell, `BACKEND_ONLY` rows (FP0607-REQ-15)
 
 ## PR-B: backend generation and assets
-- [ ] T5 crew-integration: `app.json` grant, `agents/specter-summoner.json`, `summoner/`, `specter_routes.py`, `app.py` wiring, manifest tests (FP0607-CI-01 to FP0607-CI-05)
-- [ ] T6 specter-identity: `specters/` package, PNG re-encode, bundled art, `SpecterService`, fixed prompt (FP0607-REQ-01 to FP0607-REQ-06, FP0607-REQ-09, FP0607-REQ-13, FP0607-REQ-14)
-- [ ] T7 delivery: check-fixtures grant and agent guard, probe staging, monitoring-scope paragraph, provenance and dependency disclosure (FP0607-DEL-04, FP0607-DEL-05, FP0607-DEL-06, FP0607-DEL-09)
+- [x] T5 crew-integration: `app.json` grant, `agents/specter-summoner.json`, `summoner/`, `specter_routes.py`, `app.py` wiring, manifest tests (FP0607-CI-01 to FP0607-CI-05)
+- [x] T6 specter-identity: `specters/` package, PNG re-encode, bundled art, `SpecterService`, fixed prompt (FP0607-REQ-01 to FP0607-REQ-06, FP0607-REQ-09, FP0607-REQ-13, FP0607-REQ-14)
+- [x] T7 delivery: check-fixtures grant and agent guard, probe staging, monitoring-scope paragraph, provenance and dependency disclosure (FP0607-DEL-04, FP0607-DEL-05, FP0607-DEL-06, FP0607-DEL-09)
 
 ## PR-C: UI
 - [ ] T8 experience: `ui/src/specters/`, roster portraits, fixtures, types, scoped CSS (FP0607-REQ-07, FP0607-REQ-08, FP0607-REQ-11, FP0607-REQ-15)
