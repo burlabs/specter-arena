@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:work-item:v1",
+  "title": "Work item v1",
+  "description": "One WorkItem as GET /api/work/{workId} and every work route report it: a user-stated objective that groups the observed attempts linked to it, with the acceptance condition the owner wrote and the decisions taken so far. state, action, kind and the blocker codes are documented lower-case tokens, not closed lists: state is open, awaiting-review, blocked, rejected, cancelled, accepted or reopened; action is submit, accept, reject, block, unblock, cancel or reopen. An attempt is read from the attempt projection at response time: present is false and the times are null when the projection no longer holds it, and ended is true only when the attempt is present and closed. ended is never success; the only success signal is an accepted decision made by the app owner. The only actor is the constant app-owner because the host gives an app no per-user identity. progress is null when the item has no milestones, which means unknown, and otherwise counts milestones a human marked done; there is no percentage, token count or elapsed-time input anywhere. bountyXp is fixed at creation and is 0 when rewardable is false; xpNet per contributor is that bot's net XP for this item, 0 until accepted or after a reopen. A container is an item with children: it carries no attempts or XP and is accepted only after its non-cancelled children are. evidenceRevision is the hash the reviewer echoes back when accepting or rejecting; a mismatch is a stale_evidence refusal. review.canAccept is advice for the client; the backend decides again on every request, and blockers are codes such as no-evidence, attempts-not-ended, attempt-missing, children-not-accepted and wrong-state. Text fields are single-line printable text, except acceptanceCondition and note, which may hold newlines; the writer NFC-normalises and trims them. Bounds count Unicode code points. Cosmetics, Specter identity and generation requests are not inputs to anything here.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "workId": { "type": "string", "pattern": "^wrk_[0-9a-f]{24}$" },
+    "parentId": { "type": ["string", "null"], "pattern": "^wrk_[0-9a-f]{24}$" },
+    "title": { "type": "string", "pattern": "^[^\\u0000-\\u001f\\u007f]{1,120}$" },
+    "acceptanceCondition": { "type": "string", "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,280}$" },
+    "rewardable": { "type": "boolean" },
+    "bountyXp": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "policyVersion": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+    "state": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "createdAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "updatedAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "attemptId": { "type": "string", "pattern": "^att_[0-9a-f]{24}$" },
+          "bindingId": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+          "kind": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,15}$" },
+          "startedMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 },
+          "endedMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 },
+          "endSignal": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]{0,23}$" },
+          "ended": { "type": "boolean" },
+          "present": { "type": "boolean" }
+        },
+        "required": ["attemptId", "bindingId", "kind", "startedMs", "endedMs", "endSignal", "ended", "present"],
+        "additionalProperties": false
+      },
+      "maxItems": 16
+    },
+    "contributors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bindingId": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+          "attemptCount": { "type": "integer", "minimum": 1, "maximum": 16 },
+          "xpNet": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+        },
+        "required": ["bindingId", "attemptCount", "xpNet"],
+        "additionalProperties": false
+      },
+      "maxItems": 8
+    },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": { "type": "integer", "minimum": 1, "maximum": 8 },
+          "label": { "type": "string", "pattern": "^[^\\u0000-\\u001f\\u007f]{1,80}$" },
+          "doneAtMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 }
+        },
+        "required": ["position", "label", "doneAtMs"],
+        "additionalProperties": false
+      },
+      "maxItems": 8
+    },
+    "progress": {
+      "type": ["object", "null"],
+      "properties": {
+        "done": { "type": "integer", "minimum": 0, "maximum": 8 },
+        "total": { "type": "integer", "minimum": 1, "maximum": 8 }
+      },
+      "required": ["done", "total"],
+      "additionalProperties": false
+    },
+    "evidenceRevision": { "type": "string", "pattern": "^[0-9a-f]{24}$" },
+    "childCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "childrenAccepted": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "review": {
+      "type": "object",
+      "properties": {
+        "canAccept": { "type": "boolean" },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,47}$" },
+          "maxItems": 8
+        }
+      },
+      "required": ["canAccept", "blockers"],
+      "additionalProperties": false
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "decisionId": { "type": "string", "pattern": "^dec_[0-9a-f]{24}$" },
+          "seq": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+          "action": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+          "fromState": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+          "toState": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+          "actor": { "type": "string", "const": "app-owner" },
+          "atMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+          "note": { "type": ["string", "null"], "pattern": "^[^\\u0000-\\u0009\\u000b-\\u001f\\u007f]{1,280}$" },
+          "evidenceRevision": { "type": ["string", "null"], "pattern": "^[0-9a-f]{24}$" }
+        },
+        "required": ["decisionId", "seq", "action", "fromState", "toState", "actor", "atMs", "note", "evidenceRevision"],
+        "additionalProperties": false
+      },
+      "maxItems": 50
+    }
+  },
+  "required": ["contractVersion", "workId", "parentId", "title", "acceptanceCondition", "rewardable", "bountyXp", "policyVersion", "state", "version", "createdAtMs", "updatedAtMs", "attempts", "contributors", "milestones", "progress", "evidenceRevision", "childCount", "childrenAccepted", "review", "decisions"],
+  "additionalProperties": false
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:xp-summary:v1",
+  "title": "XP summary v1",
+  "description": "The progression of one bot binding, derived on every read from its XP entries and never stored. totalXp is the net of the bot's award, correction and reinstatement entries, so it is never negative. level is the position of totalXp in the versioned level table named by levelTableVersion: levelFloorXp is the cumulative XP at which that level starts and nextLevelXp is the floor of the next level, or null at the last level. acceptedWorkCount is the number of WorkItems for which the bot's net XP is above zero. XP is earned only from work the app owner accepted; tokens, tool calls, retries, time and generation jobs never earn it. The level reflects accepted work, not model ability or current condition, and nothing here is a health value, score or ranking. A bot with no entries reads totalXp 0 at level 1. The bot is referenced only by the opaque bindingId of the bot-binding contract.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "bindingId": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+    "totalXp": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+    "level": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "levelTableVersion": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+    "levelFloorXp": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+    "nextLevelXp": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000000000 },
+    "acceptedWorkCount": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "policyVersion": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" }
+  },
+  "required": ["contractVersion", "bindingId", "totalXp", "level", "levelTableVersion", "levelFloorXp", "nextLevelXp", "acceptedWorkCount", "policyVersion"],
+  "additionalProperties": false
+}

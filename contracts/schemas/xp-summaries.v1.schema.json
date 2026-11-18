@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:xp-summaries:v1",
+  "title": "XP summaries list v1",
+  "description": "Body of GET /api/xp: the xp-summary of every bot binding that has at least one XP entry, in ascending bindingId order, at most 500. A bot with no entry is simply absent and reads as 0 XP at level 1; the client joins this list to the roster by bindingId. There is no cursor because a single install has few bots with XP. asOfMs is the server time the list was read.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:xp-summary:v1" }, "maxItems": 500 },
+    "asOfMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+  },
+  "required": ["contractVersion", "items", "asOfMs"],
+  "additionalProperties": false
+}

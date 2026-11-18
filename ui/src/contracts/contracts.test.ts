@@ -139,7 +139,7 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'summoning', path: ['properties', 'budget'], keys: SUMMONING_BUDGET_KEYS },
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
-const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
+const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record', 'work-item', 'work-items', 'xp-summary', 'xp-summaries', 'xp-history'];
 
 describe('hand-written types', () => {
   const nested = (entry: TypedSchema): { properties: Record<string, unknown>; required: string[] } =>
