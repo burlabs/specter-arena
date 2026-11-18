@@ -258,7 +258,17 @@ export function ObservatoryPage() {
           </div>
           {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} />}
           {section === 'work' && <WorkView bots={items} complete={roster.complete} onLedgerChanged={xp.refresh} />}
-          {section === 'arena' && <ArenaView bots={items} complete={roster.complete} collector={roster.collector} specters={specters.byBinding} xp={xp.byBinding} />}
+          {section === 'arena' && (
+            <ArenaView
+              bots={items}
+              complete={roster.complete}
+              collector={roster.collector}
+              rosterRevision={roster.rosterRevision}
+              specters={specters.byBinding}
+              xp={xp.byBinding}
+              onLedgerChanged={xp.refresh}
+            />
+          )}
         </div>
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null

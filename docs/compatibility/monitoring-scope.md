@@ -143,3 +143,15 @@ FP-08+09 adds WorkItems, human acceptance and an XP ledger. It adds no manifest 
 - Tokens are never XP (FD-29). No token, tool-call, retry, time or generation-job count is read by the XP code.
 - Summoning and other app-owned slots never become attempts, so they cannot be linked to a WorkItem and earn nothing.
 - Nothing here widens the three-part product scope (bot name, tokens as an operational stat if ever proven, tasks or spawned work) or the untested items in decision 1.
+
+## Arena on the app page; bot-dashboard summary records skipped (FP-10+11)
+
+Added 2026-11-18 by FP-10+11 PR-C. The status header and every decision above are unchanged.
+
+FP-10+11 puts the arena and the encounter inspector on the app page `/apps/specter-arena` only. It does not write bot-dashboard summary records. `POST /api/member-records/{slug}` would need a new grant (`/api/member-records/*`), the two probe cells for it (`bot-dashboard-member-record` and `bot-dashboard-record-ungranted`) are still UNTESTED, and no probe-free path exists: the host refuses an ungranted path in the SDK before any request is sent, so the write cannot be tried without the grant. The session skipped it, as decided in advance (default: skip, no ask).
+
+- `app.json` and `agents/` are not edited. The release grants stay exactly those in D-P9 and the generation paragraph. `scripts/check-fixtures.mjs` still passes with no edit, which shows no grant was added.
+- The last paragraph of decision 4 (FP-10 owns the live probe and adding the grant) is not carried out. A later session that wants bot-dashboard summaries starts by asking Eric for that grant and then runs both probes; adding the grant is an escalation to Eric.
+- The arena is a read-only projection of the app's own routes. It adds one signed read route, `GET /api/scene-assets/{key}`, inside the existing `/apps/specter-arena/api/*` grant. It reads no bot goal, key result, ledger item, activity or note, sends nothing to Crew, and its only write is the existing in-app decision route from FP-08+09, labelled as in-app acceptance and not a Crew tool approval.
+- Crew handoff links from the inspector exist only for routes recorded as allowed in `docs/compatibility/handoff-routes.md` (machine-readable: `handoff-routes.json`). That is one route, the Bots page at `/members`. Everything else the inspector could want, a bot's chat, an approval, a session, is recorded there as unsupported or denied, so the inspector also offers a bounded, redacted "Copy diagnostic summary". "Waiting on you" is never shown, because approval signals are UNTESTED.
+- Nothing here widens the three-part product scope or the untested items in decision 1.

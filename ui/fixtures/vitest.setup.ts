@@ -1,7 +1,7 @@
 // SPECTER-FIXTURE-ONLY: installs the host module stand-in around every UI unit test.
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach } from 'vitest';
-import { resetFixtureCalls } from './app-sdk.ts';
+import { fixtureNavigations, resetFixtureCalls } from './app-sdk.ts';
 import { installHostModules } from './host-modules.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 import { resetSceneAssetFixtures } from './scene-bodies.ts';
@@ -25,6 +25,7 @@ afterEach(() => {
   resetWorkFixtures();
   resetSceneAssetFixtures();
   resetFixtureCalls();
+  fixtureNavigations.length = 0;
   teardown?.();
   teardown = undefined;
 });

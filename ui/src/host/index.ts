@@ -26,5 +26,7 @@ export {
 } from './paths';
 export { HostApiError, useHostApi } from './useHostApi';
 export type { HostApi, HostSourceMode } from './useHostApi';
+export { useHostNavigate } from './useHostNavigate';
+export type { HostPath } from './useHostNavigate';
 export { useSourceMode } from './useSourceMode';
 export type { SourceMode } from './useSourceMode';

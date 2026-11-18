@@ -14,7 +14,7 @@ Shared single-writer files change in one open PR at a time. FP-10+11 changes non
 - [x] T7 delivery: Figma Make rows, measured bundle budget and raster guard, `tests/e2e/arena.spec.ts` smoke part (FP1011-DEL-05, FP1011-DEL-08, FP1011-DEL-09)
 
 ## PR-C: the inspector, handoffs and the performance record
-- [ ] T8 experience: inspector, handoffs, diagnostic summary, celebrations and re-baseline, mode labels (FP1011-REQ-05, FP1011-REQ-09 to FP1011-REQ-14)
-- [ ] T9 crew-integration: handoff route record (FP1011-CI-03)
-- [ ] T10 delivery: inspector e2e, `arena-perf-1` run and `performance.md`, restated budget, monitoring-scope section, doc upkeep (FP1011-DEL-09, FP1011-DEL-10, FP1011-DEL-11, FP1011-DEL-13)
-- [ ] T11 specter-identity: FROZEN flip of `scene-asset`, last commit (FP1011-DEL-06)
+- [x] T8 experience: inspector, handoffs, diagnostic summary, celebrations and re-baseline, mode labels (FP1011-REQ-05, FP1011-REQ-09 to FP1011-REQ-14)
+- [x] T9 crew-integration: handoff route record (FP1011-CI-03)
+- [x] T10 delivery: inspector e2e, `arena-perf-1` run and `performance.md`, restated budget, monitoring-scope section, doc upkeep (FP1011-DEL-09, FP1011-DEL-10, FP1011-DEL-11, FP1011-DEL-13)
+- [x] T11 specter-identity: FROZEN flip of `scene-asset`, last commit (FP1011-DEL-06)

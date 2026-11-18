@@ -87,3 +87,13 @@ const client = createFixtureClient(DECLARED_API);
 export function useAppApi(): FixtureApiClient {
   return client;
 }
+
+/** Paths the app asked the host to navigate to, newest last. The preview harness reads it as window.__specterFixtureNavigations. */
+export const fixtureNavigations: string[] = [];
+
+export function useNavigate(): (path: string) => void {
+  return (path) => {
+    fixtureNavigations.push(path);
+    if (typeof window !== 'undefined') (window as unknown as { __specterFixtureNavigations?: string[] }).__specterFixtureNavigations = fixtureNavigations;
+  };
+}

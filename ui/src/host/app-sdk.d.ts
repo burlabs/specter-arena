@@ -7,4 +7,7 @@ declare module '@kirocrew/app-sdk' {
   }
 
   export function useAppApi(): AppApiClient;
+
+  /** Present on Crew 0.12.2 and later; an older host does not export it. */
+  export function useNavigate(): (path: string) => void;
 }
