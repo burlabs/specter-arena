@@ -238,6 +238,11 @@ class CrewChatSummoner:
             if created:
                 await self._delete(slot)
 
+    async def discard(self, request_id: str) -> None:
+        """Best-effort close of the slot a previous process left behind for `request_id`. It
+        names only the slot this client would have created; it never lists slots."""
+        await self._delete(SLOT_PREFIX + request_id)
+
     async def _stream_turn(self, slot: str, prompt: str) -> str:
         token = await self._exchange()
         body = json.dumps({"message": prompt, "slot": slot, "agent": SUMMON_AGENT}).encode()

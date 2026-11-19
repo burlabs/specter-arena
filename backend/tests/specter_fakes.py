@@ -88,6 +88,7 @@ class ScriptedSummoner:
         self.steps = list(steps)
         self.prompts: list[str] = []
         self.request_ids: list[str] = []
+        self.discarded: list[str] = []
         self.started = asyncio.Event()
 
     async def summon(self, prompt: str, *, request_id: str, timeout_s: float) -> SummonReply:
@@ -104,6 +105,9 @@ class ScriptedSummoner:
             await gate.wait()
             return SummonReply(str(text), "fake-model")
         return SummonReply(str(step), "fake-model")
+
+    async def discard(self, request_id: str) -> None:
+        self.discarded.append(request_id)
 
 
 def data_dir(tmp_path: Path) -> Path:

@@ -673,8 +673,10 @@ def cancel_request(store: Store, request_id: str, now_ms: int) -> RequestRecord:
         return record
 
 
-def sweep_interrupted(store: Store, now_ms: int, *, older_than_ms: int | None = None) -> int:
-    """Fail every `queued` or `running` request with `interrupted`; returns how many.
+def sweep_interrupted(
+    store: Store, now_ms: int, *, older_than_ms: int | None = None
+) -> tuple[str, ...]:
+    """Fail every `queued` or `running` request with `interrupted`; returns their request ids.
 
     Call once at startup (no age filter: a previous process owned them). `older_than_ms` limits
     the sweep to requests created at least that long ago.
@@ -682,14 +684,22 @@ def sweep_interrupted(store: Store, now_ms: int, *, older_than_ms: int | None = 
     _need_time(now_ms)
     if older_than_ms is not None:
         _need_limit(older_than_ms, "age")
-    with translate_errors(), store.write() as conn:
-        swept = conn.execute(
-            "UPDATE generation_request SET status = 'failed', error_code = 'interrupted',"
-            " finished_ms = max(?, coalesce(started_ms, created_ms))"
-            " WHERE status IN ('queued', 'running') AND (? IS NULL OR created_ms <= ? - ?)",
-            (now_ms, older_than_ms, now_ms, older_than_ms or 0),
+    where = " WHERE status IN ('queued', 'running') AND (? IS NULL OR created_ms <= ? - ?)"
+    window = (older_than_ms, now_ms, older_than_ms or 0)
+    with translate_errors(), store.write() as conn:  # BEGIN IMMEDIATE: select and update agree
+        ids = tuple(
+            str(row[0])
+            for row in conn.execute(
+                "SELECT request_id FROM generation_request" + where + " ORDER BY created_ms",
+                window,
+            )
         )
-        return swept.rowcount
+        conn.execute(
+            "UPDATE generation_request SET status = 'failed', error_code = 'interrupted',"
+            " finished_ms = max(?, coalesce(started_ms, created_ms))" + where,
+            (now_ms, *window),
+        )
+        return ids
 
 
 def get_specter(store: Store, binding_id: str) -> SpecterRecord | None:

@@ -240,7 +240,7 @@ def test_sweep_fails_what_a_previous_process_left_in_flight(store: Store) -> Non
     alpha = bind(store)
     ready(store, alpha, 1, at=T0)
     create(store, alpha, 2, at=T0 + 100)
-    assert sp.sweep_interrupted(store, T0 + 200) == 1
+    assert sp.sweep_interrupted(store, T0 + 200) == (req(2),)
     swept = sp.get_request(store, req(2))
     assert swept is not None
     assert (swept.status, swept.error_code, swept.finished_ms) == (
@@ -250,8 +250,8 @@ def test_sweep_fails_what_a_previous_process_left_in_flight(store: Store) -> Non
     )
     create(store, alpha, 3, at=T0 + 300)
     sp.mark_running(store, req(3), T0 + 301)
-    assert sp.sweep_interrupted(store, T0 + 400, older_than_ms=1_000) == 0
-    assert sp.sweep_interrupted(store, T0 + 400) == 1
+    assert sp.sweep_interrupted(store, T0 + 400, older_than_ms=1_000) == ()
+    assert sp.sweep_interrupted(store, T0 + 400) == (req(3),)
     running = sp.get_request(store, req(3))
     assert running is not None and running.status == "failed" and running.started_ms == T0 + 301
     first = sp.get_request(store, req(1))

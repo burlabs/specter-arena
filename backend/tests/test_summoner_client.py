@@ -353,7 +353,83 @@ def test_an_unavailable_summoner_always_fails_unavailable() -> None:
     assert caught.value.code == "unavailable"
 
 
+def test_an_unavailable_summoner_discards_nothing() -> None:
+    assert asyncio.run(UnavailableSummoner().discard(REQUEST_ID)) is None
+
+
 def test_an_unknown_failure_code_is_rejected() -> None:
     with pytest.raises(ValueError):
         SummonFailure("bogus")
     assert json.dumps(sorted(FAILURE_CODES))
+
+
+# ---- FP-14 hardening: response-size bounds of the hand-rolled HTTP client (delivery-F4) ---------
+
+STREAM_HEAD = b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n"
+
+
+def test_fp14_a_chunk_larger_than_one_mebibyte_is_malformed_and_the_slot_is_deleted() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        assert await failure_of(summoner) == "malformed"
+        assert crew.deleted.is_set()
+
+    oversized = f"{client_module.MAX_BODY_BYTES + 1:x}"
+    raw = STREAM_HEAD + b"Transfer-Encoding: chunked\r\n\r\n" + oversized.encode() + b"\r\n"
+    run(Script(send_raw=raw), scenario)
+
+
+def test_fp14_a_content_length_over_one_mebibyte_is_malformed_and_the_slot_is_deleted() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        assert await failure_of(summoner) == "malformed"
+        assert crew.deleted.is_set()
+
+    length = client_module.MAX_BODY_BYTES + 1
+    raw = STREAM_HEAD + f"Content-Length: {length}\r\n\r\n".encode()
+    run(Script(send_raw=raw), scenario)
+
+
+def test_fp14_a_body_cut_short_of_its_content_length_is_unavailable_and_deleted() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        assert await failure_of(summoner) == "unavailable"
+        assert crew.deleted.is_set()
+
+    raw = STREAM_HEAD + b"Content-Length: 500\r\n\r\n" + b"data: {"
+    run(Script(send_raw=raw), scenario)
+
+
+def test_fp14_a_control_reply_over_64_kib_is_malformed_and_no_slot_is_taken() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        assert await failure_of(summoner) == "malformed"
+        assert crew.calls("POST", "/api/chat") == []
+        assert not crew.deleted.is_set()  # the create reply was refused, so there is no slot
+
+    run(Script(row={"padding": "x" * (client_module.MAX_CONTROL_BYTES + 1)}), scenario)
+
+
+def test_fp14_discard_deletes_only_the_named_slot_and_never_lists() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        await summoner.discard(REQUEST_ID)
+        assert [(r.method, r.path) for r in crew.requests] == [
+            ("POST", "/api/apps/specter-arena/token"),
+            ("DELETE", f"/api/chat/slots/{SLOT}"),
+        ]
+        assert crew.deleted.is_set()
+
+    run(Script(), scenario)
+
+
+def test_fp14_discard_swallows_every_failure() -> None:
+    async def scenario(crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        await summoner.discard(REQUEST_ID)  # 403 on the delete: refused, suppressed
+        assert crew.deleted.is_set()
+
+    run(Script(delete_status=403), scenario)
+
+    async def down(_crew: FakeCrew, summoner: CrewChatSummoner) -> None:
+        await summoner.discard(REQUEST_ID)  # exchange refused: suppressed
+
+    run(Script(exchange_status=500), down)
+
+    closed_port = GatewayEnv(APP_SECRET, "http://127.0.0.1:1", "0", "specter-arena")
+    unreachable = CrewChatSummoner(closed_port)
+    asyncio.run(unreachable.discard(REQUEST_ID))

@@ -9,9 +9,12 @@ from collections.abc import Awaitable, Callable
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
+from starlette.types import Message
 
 from .config import gateway_env
 
+MAX_BODY_BYTES = 1_572_864
+ASSETS_PATH = "/api/assets"
 MAX_SKEW_SECONDS = 60
 NONCE_HEX_LENGTH = 32
 MAX_TS_DIGITS = 12
@@ -104,6 +107,37 @@ _CACHE = ReplayCache()
 CONTRACT_VERSION = 1
 
 
+async def _read_capped(request: Request) -> bytes | None:
+    """The whole body, or None when it is over `MAX_BODY_BYTES` (declared or streamed)."""
+    # A malformed Content-Length is ignored here, as the probe routes do; the streamed count
+    # below is the authority and bounds the body whatever the header claims.
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+        return None
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in request.stream():
+        total += len(chunk)
+        if total > MAX_BODY_BYTES:
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _replayed(request: Request, body: bytes) -> Request:
+    """A request over the same scope whose body is the bytes already read and verified."""
+    sent = False
+
+    async def receive() -> Message:
+        nonlocal sent
+        if sent:
+            return {"type": "http.disconnect"}
+        sent = True
+        return {"type": "http.request", "body": body, "more_body": False}
+
+    return Request(request.scope, receive)
+
+
 def signed(handler: Handler) -> Handler:
     """Require a fresh, unreplayed gateway v2 signature before running the handler."""
 
@@ -115,7 +149,14 @@ def signed(handler: Handler) -> Handler:
                 {"contractVersion": CONTRACT_VERSION, "error": "proxy_secret_missing"},
                 status_code=503,
             )
-        body = await request.body()
+        body = await _read_capped(request)
+        if body is None:
+            code = "asset_too_large" if request.url.path == ASSETS_PATH else "body_too_large"
+            return JSONResponse(
+                {"contractVersion": CONTRACT_VERSION, "error": code},
+                status_code=413,
+                headers={"X-Content-Type-Options": "nosniff"},
+            )
         verified = verify_v2(
             request.headers.get(V2_HEADER, ""),
             request.headers.get(NONCE_HEADER, ""),
@@ -130,6 +171,6 @@ def signed(handler: Handler) -> Handler:
             return JSONResponse(
                 {"contractVersion": CONTRACT_VERSION, "error": "unauthorized"}, status_code=401
             )
-        return await handler(request)
+        return await handler(_replayed(request, body))
 
     return wrapper

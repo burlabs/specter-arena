@@ -33,6 +33,7 @@ class Script:
     send_status: int = 200
     send_mode: str = "chunks"
     send_events: list[Any] = field(default_factory=list)
+    send_raw: bytes | None = None  # written verbatim as the whole reply to POST /api/chat
     stop_status: int = 200
     delete_status: int = 200
     chunked: bool = True
@@ -156,6 +157,10 @@ class FakeCrew:
         mode = script.send_mode
         if script.send_status != 200:
             await self._json(writer, script.send_status, {"error": "no"})
+            return
+        if script.send_raw is not None:
+            writer.write(script.send_raw)
+            await writer.drain()
             return
         if mode == "receipt":
             await self._json(writer, 200, {"queued": True})
