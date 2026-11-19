@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Report vulnerabilities privately through GitHub's "Report a vulnerability" form on this repository's Security tab. Do not open a public issue.
+Report vulnerabilities privately through GitHub's "Report a vulnerability" form on this repository's Security tab. Do not open a public issue. The threats considered for the release, and what is disclosed, are in `docs/release/threat-model.md`.
 
 ## Secret handling
 

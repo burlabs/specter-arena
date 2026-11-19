@@ -124,11 +124,13 @@ What stays:
 
 Reinstalling restores your Specters, work items and XP, asks for trust again and starts disabled (`install_app` preserves `data/`).
 
-To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. This deletes the whole folder including the database and cannot be undone. To keep a copy first, stop the app (disable it), then run:
+To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. This deletes the whole folder including the database and cannot be undone. To keep a copy first, stop the app (disable it), then copy the whole `data` folder, not only the `.db` file. Recent writes can sit in the `-wal` file beside it:
 
 ```sh
 cp -R ~/.kiro/crew/apps/specter-arena/data BACKUP-FOLDER
 ```
+
+What is kept, what shrinks, how to restore and what a restore loses: `docs/release/data-and-recovery.md`.
 
 ## 11. Building the artifact (maintainers)
 
@@ -174,10 +176,14 @@ A plain clone is not the supported route for judges. Crew's registry path runs `
 | "already installed" on install | Update it instead (section 8), or uninstall first |
 | Update fails because the source folder is gone | Recreate the folder, or pass `--source` with the new folder |
 | "could not verify this process as the local owner" | You ran the command from an agent shell. Run it in your own terminal (`docs/compatibility/crew-0.12.2.md`, "Install method") |
-| App starts, then reports a newer schema (`SchemaNewer`) | You installed an older release over a newer database. Install the newer release, or restore a `pre-migrate` backup |
+| App starts, then reports a newer schema (`SchemaNewer`) | You installed an older release over a newer database. Install the newer release, or restore a `pre-migrate` backup (steps: `docs/release/data-and-recovery.md`, section 5) |
 | First enable hangs or fails | PyPI is unreachable. Connect and enable again |
 | Summoning says "Summoning is not possible right now" | Crew may not have granted chat access. Approve any pending update permissions and retry, or write a Specter by hand |
 
 ## 14. Privacy
 
 The app stores only what `docs/compatibility/monitoring-scope.md` allows. It reads bot names and the scope described there, and never a bot's memory or notes. See that file for the exact rules; this page does not restate them.
+
+When you summon a Specter, the summon panel says: "Only the bot's display name and the text you type here are sent. Its memory, notes, goals, and chat history are never used. Crew keeps a record of this one-off chat in its own history."
+
+Threats considered and what is disclosed: `docs/release/threat-model.md`.
