@@ -1,11 +1,13 @@
 import { setSpecterScenario } from '@kirocrew/app-sdk';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearSceneArtCache } from '../arena/sceneAssetCache';
 import { clearAssetCache } from './assetCache';
 import { MAX_UPLOAD_BYTES, PortraitPicker } from './PortraitPicker';
 
 beforeEach(() => {
   clearAssetCache();
+  clearSceneArtCache();
   setSpecterScenario('specters-none');
 });
 
@@ -19,6 +21,23 @@ function setup(currentAssetId: string | null = null) {
 const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const fileInput = () => screen.getByLabelText(/^Upload a PNG/) as HTMLInputElement;
 const choose = (file: File) => fireEvent.change(fileInput(), { target: { files: [file] } });
+
+describe('PortraitPicker hero thumbnail', () => {
+  it('shows the hero thumbnail beside the hero portrait choice when it knows the hero', async () => {
+    render(<PortraitPicker heroId="vell" currentAssetId={null} busy={false} onApply={vi.fn()} onCancel={vi.fn()} />);
+    const group = await screen.findByRole('radiogroup');
+    const heroChoice = group.querySelector('label');
+    await waitFor(() => expect(heroChoice?.querySelector('img')).toBeTruthy());
+    expect(heroChoice?.querySelector('img')?.getAttribute('width')).toBe('64');
+    expect(heroChoice?.textContent).toBe('Use the hero portrait');
+  });
+
+  it('shows no thumbnail when the hero is not given', async () => {
+    setup();
+    const group = await screen.findByRole('radiogroup');
+    expect(group.querySelector('label')?.querySelector('img, .sa-portrait__token')).toBeNull();
+  });
+});
 
 describe('PortraitPicker upload', () => {
   it('rejects a non-PNG type before any request', async () => {

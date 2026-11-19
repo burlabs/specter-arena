@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { ARENA_LAYOUT } from './mapLayout';
+import { StructureAbyssalCitadelSvg, StructureJungleCampSvg, StructureSanctumSvg } from './SceneSvgs';
 import { ARENA, HUD } from './copy';
 import type { Placement } from './sceneLayout';
 import { Button } from '../observatory/ui';
@@ -8,14 +9,22 @@ interface Props {
   placement: Placement;
   /** The part of the map the viewport shows, in 0..1 map coordinates. */
   view: { x: number; y: number; width: number; height: number };
+  /** False while the map is missing or too long for a CSS variable: the frame then shows its plain colour. */
+  hasMap: boolean;
   open: boolean;
   onToggle: () => void;
 }
 
 const percent = (value: number): string => `${(value * 100).toFixed(2)}%`;
 
+const STRUCTURES = [
+  { id: 'sanctum', point: ARENA_LAYOUT.alliedBase, node: <StructureSanctumSvg title="" decorative /> },
+  { id: 'citadel', point: ARENA_LAYOUT.farBase, node: <StructureAbyssalCitadelSvg title="" decorative /> },
+  { id: 'camp', point: ARENA_LAYOUT.clearings[2], node: <StructureJungleCampSvg title="" decorative /> },
+] as const;
+
 /** A small overview: one dot per placed Specter and enemy and a frame for what the main view shows. */
-export function ArenaMinimap({ placement, view, open, onToggle }: Props) {
+export function ArenaMinimap({ placement, view, hasMap, open, onToggle }: Props) {
   const panelId = useId();
   return (
     <div className="sa-arena-minimap">
@@ -23,12 +32,17 @@ export function ArenaMinimap({ placement, view, open, onToggle }: Props) {
         {open ? HUD.minimapHide : HUD.minimapShow}
       </Button>
       <div id={panelId} hidden={!open}>
-        <div className="sa-arena-minimap__frame" role="img" aria-label={ARENA.minimapLabel}>
+        <div className={`sa-arena-minimap__frame${hasMap ? ' sa-has-art' : ''}`} role="img" aria-label={ARENA.minimapLabel}>
           <svg className="sa-arena-minimap__paths" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {ARENA_LAYOUT.paths.map((path) => (
               <polyline key={path.id} className="sa-arena-minimap__path" points={path.points.map((point) => `${point.x * 100},${point.y * 100}`).join(' ')} />
             ))}
           </svg>
+          {STRUCTURES.map((structure) => (
+            <span key={structure.id} className="sa-arena-minimap__structure" data-structure={structure.id} style={{ left: percent(structure.point.x), top: percent(structure.point.y) }} aria-hidden="true">
+              {structure.node}
+            </span>
+          ))}
           {[...placement.enemies].map(([id, point]) => (
             <i key={id} className="sa-arena-minimap__dot sa-arena-minimap__dot--enemy" style={{ left: percent(point.x), top: percent(point.y) }} />
           ))}

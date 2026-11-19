@@ -2,8 +2,9 @@ import type { SceneAssetV1 } from '../contracts/types';
 import { sceneAssetPath } from '../host';
 import type { HostApi } from '../host';
 
-export const MAX_CACHE_ENTRIES = 8;
-export const MAX_IN_FLIGHT = 2;
+/** The map, 2 minion sprites, 11 hero sprites and 11 hero thumbnails are 25 keys, so eviction does not run in practice. */
+export const MAX_CACHE_ENTRIES = 32;
+export const MAX_IN_FLIGHT = 4;
 /** The 4 MiB file limit of scene-asset.v1 as base64, plus slack for padding. */
 export const MAX_BASE64_CHARS = 5_700_000;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -36,6 +37,22 @@ function release(): void {
   waiting.shift()?.();
 }
 
+/**
+ * A blob URL, because Chromium resolves a custom property that holds a data URL above 2 MiB to `none` and the
+ * arena map is 2.8 MB as base64. The data URL is the fallback where `createObjectURL` is missing or refuses.
+ * Blob URLs are not revoked: the key set is bounded by the backend allowlist, and an `<img>` may still show an evicted entry.
+ */
+function urlOf(data: string): string {
+  try {
+    const binary = atob(data);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+  } catch {
+    return `data:image/png;base64,${data}`;
+  }
+}
+
 const isSize = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value > 0;
 
 async function fetchArt(api: HostApi, key: string): Promise<SceneArt> {
@@ -54,7 +71,7 @@ async function fetchArt(api: HostApi, key: string): Promise<SceneArt> {
     ) {
       throw new Error('unusable scene asset');
     }
-    return { url: `data:image/png;base64,${data}`, width: body.width, height: body.height };
+    return { url: urlOf(data), width: body.width, height: body.height };
   } finally {
     release();
   }

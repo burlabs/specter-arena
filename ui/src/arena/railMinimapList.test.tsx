@@ -51,7 +51,7 @@ describe('ArenaMinimap', () => {
 
   it('draws one dot per placed token and a frame for the view, and toggles', () => {
     const onToggle = vi.fn();
-    const { container } = render(<ArenaMinimap placement={placement} view={{ x: 0.1, y: 0.2, width: 0.5, height: 0.4 }} open onToggle={onToggle} />);
+    const { container } = render(<ArenaMinimap placement={placement} view={{ x: 0.1, y: 0.2, width: 0.5, height: 0.4 }} hasMap open onToggle={onToggle} />);
     expect(screen.getByRole('img', { name: 'Arena overview' })).toBeTruthy();
     expect(container.querySelectorAll('.sa-arena-minimap__dot')).toHaveLength(placement.specters.size + placement.enemies.size);
     expect(container.querySelector<HTMLElement>('.sa-arena-minimap__view')?.style.width).toBe('50%');
@@ -59,8 +59,31 @@ describe('ArenaMinimap', () => {
     expect(onToggle).toHaveBeenCalled();
   });
 
+  it('draws three decorative structure markers at the layout points', () => {
+    const { container } = render(<ArenaMinimap placement={placement} view={{ x: 0, y: 0, width: 1, height: 1 }} hasMap open onToggle={vi.fn()} />);
+    const markers = [...container.querySelectorAll<HTMLElement>('.sa-arena-minimap__structure')];
+    expect(markers.map((marker) => marker.dataset.structure)).toEqual(['sanctum', 'citadel', 'camp']);
+    expect(markers.map((marker) => [marker.style.left, marker.style.top])).toEqual([
+      ['16.21%', '71.2%'],
+      ['82.06%', '15.94%'],
+      ['48.09%', '63.66%'],
+    ]);
+    for (const marker of markers) {
+      expect(marker.getAttribute('aria-hidden')).toBe('true');
+      expect(marker.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+      expect(marker.querySelector('title')).toBeNull();
+    }
+  });
+
+  it('paints the map behind the frame only when there is a map', () => {
+    const { container, rerender } = render(<ArenaMinimap placement={placement} view={{ x: 0, y: 0, width: 1, height: 1 }} hasMap open onToggle={vi.fn()} />);
+    expect(container.querySelector('.sa-arena-minimap__frame')?.className).toContain('sa-has-art');
+    rerender(<ArenaMinimap placement={placement} view={{ x: 0, y: 0, width: 1, height: 1 }} hasMap={false} open onToggle={vi.fn()} />);
+    expect(container.querySelector('.sa-arena-minimap__frame')?.className).not.toContain('sa-has-art');
+  });
+
   it('hides the panel when closed', () => {
-    const { container } = render(<ArenaMinimap placement={placement} view={{ x: 0, y: 0, width: 1, height: 1 }} open={false} onToggle={vi.fn()} />);
+    const { container } = render(<ArenaMinimap placement={placement} view={{ x: 0, y: 0, width: 1, height: 1 }} hasMap open={false} onToggle={vi.fn()} />);
     expect(container.querySelector('[hidden]')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Show overview' }).getAttribute('aria-expanded')).toBe('false');
   });

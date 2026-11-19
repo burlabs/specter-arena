@@ -4,6 +4,7 @@ import type { PortraitAssetV1, PortraitsV1 } from '../contracts/types';
 import { ASSETS_PATH, HostApiError, PORTRAITS_PATH, useHostApi } from '../host';
 import { Button } from '../observatory/ui';
 import { AssetImage } from './AssetImage';
+import { HeroThumb } from './HeroThumb';
 import { CLIENT_NOT_PNG, CLIENT_TOO_LARGE, PICKER, errorWords } from './copy';
 
 export const MAX_UPLOAD_BYTES = 1_048_576;
@@ -11,6 +12,8 @@ const NONE = '';
 const LABEL_UNSAFE = /[\u0000-\u001f\u007f<>]/g;
 
 interface Props {
+  /** The hero whose own thumbnail is drawn beside "Use the hero portrait". */
+  heroId?: string;
   currentAssetId: string | null;
   busy: boolean;
   onApply: (assetId: string | null) => void;
@@ -34,7 +37,7 @@ function readBase64(file: File): Promise<string> {
   });
 }
 
-export function PortraitPicker({ currentAssetId, busy, onApply, onCancel }: Props) {
+export function PortraitPicker({ heroId, currentAssetId, busy, onApply, onCancel }: Props) {
   const api = useHostApi();
   const [items, setItems] = useState<PortraitAssetV1[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -84,6 +87,7 @@ export function PortraitPicker({ currentAssetId, busy, onApply, onCancel }: Prop
         <div className="sa-gallery" role="radiogroup" aria-label={PICKER.gallery}>
           <label className="sa-gallery__item">
             <input type="radio" name="specter-portrait" value={NONE} checked={choice === NONE} onChange={() => setChoice(NONE)} />
+            {heroId !== undefined && <HeroThumb heroId={heroId} name={PICKER.heroDefault} size={64} />}
             <span>{PICKER.heroDefault}</span>
           </label>
           {items.map((item) => (

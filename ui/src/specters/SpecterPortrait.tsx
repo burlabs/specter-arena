@@ -3,6 +3,7 @@ import type { SpecterV2 } from '../contracts/types';
 import { TOKEN_CAPTION, TOKEN_FAILED_CAPTION } from './copy';
 import { tokenHue, tokenInitials } from './model';
 import { useAsset } from './useAsset';
+import { HeroThumb } from './HeroThumb';
 import { useMotionAllowed } from './useMotionAllowed';
 
 export type PortraitSize = 'sm' | 'md' | 'lg';
@@ -16,7 +17,7 @@ interface Props {
   active?: boolean;
 }
 
-export function SpecterPortrait({ specter, size, decorative = false, active = false }: Props) {
+function AssetPortrait({ specter, size, decorative = false, active = false }: Props) {
   const asset = useAsset(specter.portrait.assetId);
   const motion = useMotionAllowed();
   const name = specter.displayName;
@@ -54,6 +55,22 @@ export function SpecterPortrait({ specter, size, decorative = false, active = fa
       {showToken && <span className="sa-caption">{caption}</span>}
     </span>
   );
+}
+
+/** A small icon with no chosen avatar shows the hero's 96 px thumbnail. */
+function ThumbPortrait({ specter, decorative = false, active = false }: Props) {
+  const motion = useMotionAllowed();
+  const classes = ['sa-portrait', 'sa-portrait--sm'];
+  if (motion && active) classes.push('sa-portrait--active');
+  return (
+    <span className={classes.join(' ')} aria-hidden={decorative ? 'true' : undefined} data-portrait="thumbnail">
+      <HeroThumb heroId={specter.heroId} name={specter.displayName} size={SIZES.sm} decorative={decorative} />
+    </span>
+  );
+}
+
+export function SpecterPortrait(props: Props) {
+  return props.size === 'sm' && !props.specter.avatarChosen ? <ThumbPortrait {...props} /> : <AssetPortrait {...props} />;
 }
 
 const SIZES: Readonly<Record<PortraitSize, number>> = { sm: 32, md: 96, lg: 160 };

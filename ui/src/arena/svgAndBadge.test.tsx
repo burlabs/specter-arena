@@ -11,6 +11,9 @@ import {
   MarkerOutcomeAcceptedSvg,
   MilestoneClearedSvg,
   MilestoneStandingSvg,
+  StructureAbyssalCitadelSvg,
+  StructureJungleCampSvg,
+  StructureSanctumSvg,
 } from './SceneSvgs';
 
 const ALL = [
@@ -23,11 +26,14 @@ const ALL = [
   MilestoneClearedSvg,
   EnemyTaskSvg,
   EnemyObjectiveSvg,
+  StructureSanctumSvg,
+  StructureAbyssalCitadelSvg,
+  StructureJungleCampSvg,
 ];
 
 describe('scene SVGs', () => {
-  it('has nine drawings', () => {
-    expect(ALL).toHaveLength(9);
+  it('has twelve drawings', () => {
+    expect(ALL).toHaveLength(12);
   });
 
   it.each(ALL.map((Svg, index) => [index, Svg] as const))('drawing %i takes its name from the caller', (_index, Svg) => {
@@ -52,6 +58,37 @@ describe('scene SVGs', () => {
     );
     const ids = [...container.querySelectorAll('linearGradient')].map((node) => node.id);
     expect(new Set(ids).size).toBe(2);
+  });
+});
+
+describe('structure drawings', () => {
+  it.each([
+    [StructureSanctumSvg, '0 0 160 160'],
+    [StructureAbyssalCitadelSvg, '0 0 160 160'],
+    [StructureJungleCampSvg, '0 0 100 100'],
+  ] as const)('draws inside the export view box %#', (Svg, viewBox) => {
+    const { container } = render(<Svg title="" decorative />);
+    expect(container.querySelector('svg')?.getAttribute('viewBox')).toBe(viewBox);
+  });
+
+  it('keeps each structure gradient reachable by its own unique id', () => {
+    const { container } = render(
+      <>
+        <StructureSanctumSvg title="" decorative />
+        <StructureSanctumSvg title="" decorative />
+        <StructureAbyssalCitadelSvg title="" decorative />
+        <StructureJungleCampSvg title="" decorative />
+      </>,
+    );
+    const ids = [...container.querySelectorAll('linearGradient, radialGradient')].map((node) => node.id);
+    expect(ids).toHaveLength(2 + 2 + 2 + 1);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const svg of container.querySelectorAll('svg')) {
+      for (const fill of svg.querySelectorAll('[fill^="url(#"]')) {
+        const target = /url\(#(.+)\)/.exec(fill.getAttribute('fill') ?? '')?.[1] ?? '';
+        expect(svg.querySelector(`[id="${target}"]`), target).not.toBeNull();
+      }
+    }
   });
 });
 
