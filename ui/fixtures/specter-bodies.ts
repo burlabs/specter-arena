@@ -14,19 +14,19 @@ const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const bindingIdOf = (n: number): string => `bnd_${'a'.repeat(20)}${n.toString(16).padStart(4, '0')}`;
 const BINDING_ID = /^bnd_[0-9a-f]{24}$/;
 
-const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, n) => {
   let c = n;
   for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
   return c >>> 0;
 });
 
-function crc32(bytes: readonly number[]): number {
+function crc32(bytes: Uint8Array): number {
   let c = 0xffffffff;
-  for (const byte of bytes) c = (CRC_TABLE[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8);
+  for (let index = 0; index < bytes.length; index += 1) c = (CRC_TABLE[(c ^ (bytes[index] ?? 0)) & 0xff] ?? 0) ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function adler32(bytes: ArrayLike<number>): number {
+function adler32(bytes: Uint8Array): number {
   let a = 1;
   let b = 0;
   for (let index = 0; index < bytes.length; index += 1) {
@@ -36,14 +36,42 @@ function adler32(bytes: ArrayLike<number>): number {
   return ((b << 16) | a) >>> 0;
 }
 
-const be32 = (value: number): number[] => [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
+const STORED_BLOCK_MAX = 0xffff;
+const ZLIB_HEADER = [0x78, 0x01];
+const BLOCK_HEADER_BYTES = 5;
+const TRAILER_BYTES = 4;
+const CHUNK_OVERHEAD = 12;
 
-function chunk(type: string, data: readonly number[]): number[] {
-  const body = [...type].map((char) => char.charCodeAt(0)).concat(data);
-  return [...be32(data.length), ...body, ...be32(crc32(body))];
+/** A PNG chunk: length, type, data, CRC over type and data. */
+function chunk(type: string, data: Uint8Array): Uint8Array {
+  const out = new Uint8Array(CHUNK_OVERHEAD + data.length);
+  const view = new DataView(out.buffer);
+  view.setUint32(0, data.length);
+  for (let index = 0; index < 4; index += 1) out[4 + index] = type.charCodeAt(index);
+  out.set(data, 8);
+  view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+  return out;
 }
 
-const STORED_BLOCK_MAX = 0xffff;
+/** The pixel rows as zlib stored blocks of at most 65,535 bytes; only the last block is final. */
+function storedStream(raw: Uint8Array): Uint8Array {
+  const blocks = Math.ceil(raw.length / STORED_BLOCK_MAX);
+  const out = new Uint8Array(ZLIB_HEADER.length + blocks * BLOCK_HEADER_BYTES + raw.length + TRAILER_BYTES);
+  const view = new DataView(out.buffer);
+  out.set(ZLIB_HEADER, 0);
+  let at = ZLIB_HEADER.length;
+  for (let start = 0; start < raw.length; start += STORED_BLOCK_MAX) {
+    const end = Math.min(start + STORED_BLOCK_MAX, raw.length);
+    const size = end - start;
+    out[at] = end === raw.length ? 1 : 0;
+    view.setUint16(at + 1, size, true);
+    view.setUint16(at + 3, ~size & 0xffff, true);
+    out.set(raw.subarray(start, end), at + BLOCK_HEADER_BYTES);
+    at += BLOCK_HEADER_BYTES + size;
+  }
+  view.setUint32(at, adler32(raw));
+  return out;
+}
 
 /**
  * A valid, uncompressed RGBA PNG of one colour, built in code so no binary literal sits in a source file.
@@ -53,21 +81,22 @@ export function solidPng(red: number, green: number, blue: number, width = 8, he
   if (!(width >= 1 && height >= 1)) throw new RangeError(`solidPng: ${width} x ${height} has no pixels`);
   const stride = width * 4 + 1;
   const raw = new Uint8Array(stride * height);
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) raw.set([red, green, blue, 255], y * stride + 1 + x * 4);
+  for (let x = 0; x < width; x += 1) raw.set([red, green, blue, 255], 1 + x * 4);
+  for (let y = 1; y < height; y += 1) raw.copyWithin(y * stride, 0, stride);
+  const header = new Uint8Array(13);
+  const headerView = new DataView(header.buffer);
+  headerView.setUint32(0, width);
+  headerView.setUint32(4, height);
+  header.set([8, 6, 0, 0, 0], 8);
+  const parts = [Uint8Array.from(PNG_SIGNATURE), chunk('IHDR', header), chunk('IDAT', storedStream(raw)), chunk('IEND', new Uint8Array(0))];
+  const bytes = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.length;
   }
-  const stored: number[] = [0x78, 0x01];
-  for (let start = 0; start < raw.length; start += STORED_BLOCK_MAX) {
-    const end = Math.min(start + STORED_BLOCK_MAX, raw.length);
-    const size = end - start;
-    stored.push(end === raw.length ? 1 : 0, size & 0xff, size >> 8, ~size & 0xff, (~size >> 8) & 0xff);
-    for (let index = start; index < end; index += 1) stored.push(raw[index] ?? 0);
-  }
-  stored.push(...be32(adler32(raw)));
-  const header = [...be32(width), ...be32(height), 8, 6, 0, 0, 0];
-  const bytes = [...PNG_SIGNATURE, ...chunk('IHDR', header), ...chunk('IDAT', stored), ...chunk('IEND', [])];
   let binary = '';
-  for (let start = 0; start < bytes.length; start += 8192) binary += String.fromCharCode(...bytes.slice(start, start + 8192));
+  for (let start = 0; start < bytes.length; start += 8192) binary += String.fromCharCode(...bytes.subarray(start, start + 8192));
   return btoa(binary);
 }
 

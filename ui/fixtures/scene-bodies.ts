@@ -12,11 +12,15 @@ const json = (body: unknown, status = 200): Response =>
 
 const apiError = (status: number, error: string): Response => json({ contractVersion: 1, error }, status);
 
+const HASH_SAMPLE = 2048;
+
+/** A stand-in digest over the length and the first and last 2,048 characters, so large fixture images stay cheap to build. */
 const hashHex = (text: string): string => {
+  const sample = text.length <= 2 * HASH_SAMPLE ? text : `${text.length}:${text.slice(0, HASH_SAMPLE)}${text.slice(-HASH_SAMPLE)}`;
   let out = '';
   for (const seed of [0x811c9dc5, 0x01000193, 0x9e3779b1, 0x85ebca6b, 0xc2b2ae35, 0x27d4eb2f, 0x165667b1, 0xd3a2646c]) {
     let h = seed;
-    for (const char of text) h = Math.imul(h ^ char.charCodeAt(0), 0x01000193) >>> 0;
+    for (let index = 0; index < sample.length; index += 1) h = Math.imul(h ^ sample.charCodeAt(index), 0x01000193) >>> 0;
     out += h.toString(16).padStart(8, '0');
   }
   return out;
@@ -107,7 +111,6 @@ export function setSceneAssetsFailing(value: boolean): void {
 export function resetSceneAssetFixtures(): void {
   failing = false;
   registered = new Map();
-  built.clear();
 }
 
 /** Null for any path that is not a scene-asset route, so the caller can fall through. */
