@@ -36,6 +36,7 @@ T0 = 1_800_000_000_000
 OWN_TABLES = {"asset", "hero_assignment", "avatar_revision"}
 PNG = sp.PNG_SIGNATURE + b"\x00" * 24
 
+
 @pytest.fixture
 def store(tmp_path: Path) -> Iterator[Store]:
     opened = open_store(tmp_path / "data")

@@ -4,7 +4,6 @@ code reaches it (FP-09-AC04, FP-09-AC06, FP-08-AC06)."""
 import re
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
 import pytest
 

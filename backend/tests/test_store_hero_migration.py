@@ -102,9 +102,9 @@ def add_manual_specter(
     """A manual Specter holding `MARKER` text; with a portrait it takes a second revision."""
     specter_id = f"spc_{n:024x}"
     profile = (
-        '{"appearance":"%s","artBrief":"x","assignmentRationale":"x","contractVersion":1,'
-        '"epithet":null,"mannerism":"x","name":"Seed %d","personality":"%s","signatureAction":null}'
-        % (MARKER, n, MARKER)
+        f'{{"appearance":"{MARKER}","artBrief":"x","assignmentRationale":"x","contractVersion":1,'
+        f'"epithet":null,"mannerism":"x","name":"Seed {n}","personality":"{MARKER}",'
+        '"signatureAction":null}'
     )
     conn.execute(
         "INSERT INTO specter (specter_id, binding_id, version, created_ms, updated_ms)"
