@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { readdirSync, readFileSync } from 'node:fs';
+import { inflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -11,8 +12,11 @@ import {
   SPECTER_SCENARIO_NAMES,
   activeSpecterScenario,
   displayNameOf,
+  installPortraitArt,
+  pngSize,
   resetSpecterFixtures,
   setSpecterScenario,
+  solidPng,
   specterResponse,
 } from './specter-bodies.ts';
 import type { SpecterScenarioName } from './specter-bodies.ts';
@@ -223,5 +227,89 @@ describe('avatar', () => {
     for (const body of [{}, { expectedVersion: 0 }, { expectedVersion: -1, assetId: null }, { expectedVersion: 0, assetId: 5 }, { expectedVersion: 0, assetId: null, x: 1 }]) {
       expect((await call('POST', portraitPath(1), body)).body.error, JSON.stringify(body)).toBe('invalid_body');
     }
+  });
+});
+
+interface DecodedPng {
+  width: number;
+  height: number;
+  colourType: number;
+  blocks: Array<{ final: boolean; length: number }>;
+  raw: Buffer;
+  blocksEndAtTrailer: boolean;
+}
+
+function decodeStoredPng(base64: string): DecodedPng {
+  const bytes = Buffer.from(base64, 'base64');
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  const colourType = bytes.readUInt8(25);
+  const idatLength = bytes.readUInt32BE(33);
+  const idat = bytes.subarray(41, 41 + idatLength);
+  const blocks: DecodedPng['blocks'] = [];
+  let at = 2;
+  while (at < idat.length - 4) {
+    const length = idat.readUInt16LE(at + 1);
+    expect(idat.readUInt16LE(at + 3)).toBe(~length & 0xffff);
+    blocks.push({ final: (idat[at] ?? 0) === 1, length });
+    at += 5 + length;
+  }
+  const raw = inflateSync(idat);
+  return { width, height, colourType, blocks, raw, blocksEndAtTrailer: at === idat.length - 4 };
+}
+
+describe('solidPng', () => {
+  it('keeps a small image in one final block, as before', () => {
+    const png = decodeStoredPng(solidPng(10, 20, 30));
+    expect([png.width, png.height, png.colourType]).toEqual([8, 8, 6]);
+    expect(png.blocks).toEqual([{ final: true, length: 8 * 33 }]);
+  });
+
+  it.each([
+    { width: 96, height: 96, blocks: 1 },
+    { width: 512, height: 512, blocks: 17 },
+    { width: 1000, height: 700, blocks: 43 },
+  ])('builds $width x $height RGBA in $blocks stored blocks that inflate to every pixel', ({ width, height, blocks }) => {
+    const encoded = solidPng(10, 20, 30, width, height);
+    const png = decodeStoredPng(encoded);
+    expect([png.width, png.height, png.colourType]).toEqual([width, height, 6]);
+    expect(png.blocks).toHaveLength(blocks);
+    expect(png.blocks.map((block) => block.final)).toEqual(png.blocks.map((_, index) => index === blocks - 1));
+    expect(png.blocks.every((block) => block.length <= 0xffff)).toBe(true);
+    expect(png.blocksEndAtTrailer).toBe(true);
+    expect(png.raw.length).toBe((width * 4 + 1) * height);
+    expect([...png.raw.subarray(0, 5)]).toEqual([0, 10, 20, 30, 255]);
+    expect(pngSize(encoded)).toEqual({ width, height });
+  });
+
+  it('makes the 1000 x 700 map image fit the 4 MiB scene limit and exceed the 2,000,000-character guard', () => {
+    const encoded = solidPng(24, 32, 48, 1000, 700);
+    expect(Buffer.from(encoded, 'base64').length).toBeLessThan(4_194_304);
+    expect(encoded.length).toBeGreaterThan(2_000_000);
+  });
+
+  it('refuses an image with no pixels', () => {
+    expect(() => solidPng(0, 0, 0, 0, 4)).toThrow(RangeError);
+    expect(() => solidPng(0, 0, 0, 4, 0)).toThrow(RangeError);
+  });
+});
+
+describe('pngSize', () => {
+  it('refuses data that is not a PNG', () => {
+    expect(() => pngSize('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')).toThrow(TypeError);
+  });
+});
+
+describe('installPortraitArt', () => {
+  it('swaps a hero stand-in for real PNG data, reads its size, and is undone by reset', async () => {
+    const before = await call('GET', '/portraits');
+    installPortraitArt({ vell: `data:image/png;base64,${solidPng(9, 9, 9, 16, 16)}` });
+    const after = await call('GET', '/portraits');
+    expect(after.body.items).toHaveLength(11);
+    expect(after.body.items[0].assetId).not.toBe(before.body.items[0].assetId);
+    expect([after.body.items[0].width, after.body.items[0].height]).toEqual([16, 16]);
+    expect(after.body.items[1].assetId).toBe(before.body.items[1].assetId);
+    resetSpecterFixtures();
+    expect((await call('GET', '/portraits')).body.items[0].assetId).toBe(before.body.items[0].assetId);
   });
 });

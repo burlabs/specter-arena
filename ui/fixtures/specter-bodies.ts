@@ -26,11 +26,11 @@ function crc32(bytes: readonly number[]): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function adler32(bytes: readonly number[]): number {
+function adler32(bytes: ArrayLike<number>): number {
   let a = 1;
   let b = 0;
-  for (const byte of bytes) {
-    a = (a + byte) % 65521;
+  for (let index = 0; index < bytes.length; index += 1) {
+    a = (a + (bytes[index] ?? 0)) % 65521;
     b = (b + a) % 65521;
   }
   return ((b << 16) | a) >>> 0;
@@ -43,21 +43,42 @@ function chunk(type: string, data: readonly number[]): number[] {
   return [...be32(data.length), ...body, ...be32(crc32(body))];
 }
 
+const STORED_BLOCK_MAX = 0xffff;
+
 /**
  * A valid, uncompressed RGBA PNG of one colour, built in code so no binary literal sits in a source file.
- * One stored deflate block holds at most 65,535 bytes, so `height * (width * 4 + 1)` must stay below it.
+ * The pixel rows go into stored deflate blocks of at most 65,535 bytes each; only the last block is final.
  */
 export function solidPng(red: number, green: number, blue: number, width = 8, height = width): string {
-  const row = [0, ...Array.from({ length: width }, () => [red, green, blue, 255]).flat()];
-  const raw = Array.from({ length: height }, () => row).flat();
-  const length = raw.length;
-  if (length > 0xffff) throw new RangeError(`solidPng: ${width} x ${height} does not fit one stored deflate block`);
-  const stored = [0x78, 0x01, 0x01, length & 0xff, length >> 8, ~length & 0xff, (~length >> 8) & 0xff, ...raw, ...be32(adler32(raw))];
+  if (!(width >= 1 && height >= 1)) throw new RangeError(`solidPng: ${width} x ${height} has no pixels`);
+  const stride = width * 4 + 1;
+  const raw = new Uint8Array(stride * height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) raw.set([red, green, blue, 255], y * stride + 1 + x * 4);
+  }
+  const stored: number[] = [0x78, 0x01];
+  for (let start = 0; start < raw.length; start += STORED_BLOCK_MAX) {
+    const end = Math.min(start + STORED_BLOCK_MAX, raw.length);
+    const size = end - start;
+    stored.push(end === raw.length ? 1 : 0, size & 0xff, size >> 8, ~size & 0xff, (~size >> 8) & 0xff);
+    for (let index = start; index < end; index += 1) stored.push(raw[index] ?? 0);
+  }
+  stored.push(...be32(adler32(raw)));
   const header = [...be32(width), ...be32(height), 8, 6, 0, 0, 0];
   const bytes = [...PNG_SIGNATURE, ...chunk('IHDR', header), ...chunk('IDAT', stored), ...chunk('IEND', [])];
   let binary = '';
   for (let start = 0; start < bytes.length; start += 8192) binary += String.fromCharCode(...bytes.slice(start, start + 8192));
   return btoa(binary);
+}
+
+const PNG_HEADER_BYTES = 24;
+
+/** Width and height from a base64 PNG's IHDR chunk. */
+export function pngSize(data: string): { width: number; height: number } {
+  const head = atob(data.slice(0, 40));
+  if (head.length < PNG_HEADER_BYTES || head.slice(1, 4) !== 'PNG') throw new TypeError('pngSize: not a PNG');
+  const read = (at: number): number => (head.charCodeAt(at) << 24) | (head.charCodeAt(at + 1) << 16) | (head.charCodeAt(at + 2) << 8) | head.charCodeAt(at + 3);
+  return { width: read(16), height: read(20) };
 }
 
 const hashHex = (text: string): string => {
@@ -75,24 +96,27 @@ interface StoredAsset {
   data: string;
 }
 
-const makeAsset = (data: string, origin: 'bundled' | 'uploaded', label: string): StoredAsset => ({
-  data,
-  meta: {
-    contractVersion: 1,
-    assetId: `ast_${hashHex(data).slice(0, 24)}`,
-    mediaType: 'image/png',
-    width: 8,
-    height: 8,
-    byteLength: Math.floor((data.length * 3) / 4),
-    origin,
-    label,
-    dataBase64: null,
-  },
-});
+const makeAsset = (data: string, origin: 'bundled' | 'uploaded', label: string): StoredAsset => {
+  const { width, height } = origin === 'bundled' ? pngSize(data) : { width: 8, height: 8 };
+  return {
+    data,
+    meta: {
+      contractVersion: 1,
+      assetId: `ast_${hashHex(data).slice(0, 24)}`,
+      mediaType: 'image/png',
+      width,
+      height,
+      byteLength: Math.floor((data.length * 3) / 4),
+      origin,
+      label,
+      dataBase64: null,
+    },
+  };
+};
 
 const HEROES = roster.heroes;
 
-const HERO_COLOURS: ReadonlyArray<readonly [number, number, number]> = [
+export const HERO_COLOURS: ReadonlyArray<readonly [number, number, number]> = [
   [150, 90, 220],
   [120, 190, 160],
   [90, 70, 150],
@@ -107,10 +131,14 @@ const HERO_COLOURS: ReadonlyArray<readonly [number, number, number]> = [
 ];
 
 /** One bundled portrait per hero, in roster order, as the backend's gallery lists them. */
-const BUNDLED: readonly StoredAsset[] = HEROES.map((hero, index) => {
-  const [red, green, blue] = HERO_COLOURS[index] ?? [128, 128, 128];
-  return makeAsset(solidPng(red, green, blue), 'bundled', `${hero.name} portrait`);
-});
+const bundledPortraits = (art: Readonly<Record<string, string>>): readonly StoredAsset[] =>
+  HEROES.map((hero, index) => {
+    const [red, green, blue] = HERO_COLOURS[index] ?? [128, 128, 128];
+    const real = art[hero.portraitSlug];
+    return makeAsset(real === undefined ? solidPng(red, green, blue) : real.slice(real.indexOf(',') + 1), 'bundled', `${hero.name} portrait`);
+  });
+
+let bundled: readonly StoredAsset[] = bundledPortraits({});
 
 /** Bindings per scenario; a test pins these against the roster fixture. */
 export const FIXTURE_BOT_COUNT: Record<SpecterScenarioName, number> = {
@@ -167,7 +195,7 @@ function specterOf(n: number, avatar: StoredAsset | null): SpecterV2 {
   const assignmentNo = n - 1;
   const index = assignmentNo % HEROES.length;
   const hero = HEROES[index] ?? HEROES[0];
-  const own = BUNDLED[index] ?? BUNDLED[0];
+  const own = bundled[index] ?? bundled[0];
   const portrait = (avatar ?? own)?.meta;
   if (hero === undefined || portrait === undefined) throw new Error('fixture roster is empty');
   const ordinal = Math.floor(assignmentNo / HEROES.length) + 1;
@@ -192,7 +220,7 @@ function specterOf(n: number, avatar: StoredAsset | null): SpecterV2 {
 
 function seed(scenario: SpecterScenarioName): SpecterV2[] {
   const count = FIXTURE_BOT_COUNT[scenario];
-  const chosen = scenario === 'specters' ? new Map<number, StoredAsset | null>([[2, BUNDLED[10] ?? null]]) : new Map<number, StoredAsset | null>();
+  const chosen = scenario === 'specters' ? new Map<number, StoredAsset | null>([[2, bundled[10] ?? null]]) : new Map<number, StoredAsset | null>();
   return Array.from({ length: count }, (_, index) => specterOf(index + 1, chosen.get(index + 1) ?? null));
 }
 
@@ -205,6 +233,13 @@ let store: FixtureState | null = null;
 export function resetSpecterFixtures(): void {
   store = null;
   override = null;
+  bundled = bundledPortraits({});
+}
+
+/** Preview only, from `real-art.ts`: swap each hero's stand-in portrait for the real PNG (a `data:` URL) by portrait slug. */
+export function installPortraitArt(bySlug: Readonly<Record<string, string>>): void {
+  bundled = bundledPortraits(bySlug);
+  store = null;
 }
 
 function current(): FixtureState {
@@ -223,7 +258,7 @@ const isObject = (value: unknown): value is Record<string, unknown> => typeof va
 const isVersion = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0;
 
 const findAsset = (state: FixtureState, assetId: string): StoredAsset | undefined =>
-  [...BUNDLED, ...state.uploaded.values()].find((asset) => asset.meta.assetId === assetId);
+  [...bundled, ...state.uploaded.values()].find((asset) => asset.meta.assetId === assetId);
 
 const heroIndexOf = (specter: SpecterV2): number => HEROES.findIndex((hero) => hero.id === specter.heroId);
 
@@ -240,7 +275,7 @@ function setPortrait(state: FixtureState, bindingId: string, body: unknown): Res
   if (assetId !== null && typeof assetId !== 'string') return apiError(400, 'invalid_body');
   const chosen = typeof assetId === 'string' ? findAsset(state, assetId) : undefined;
   if (typeof assetId === 'string' && chosen === undefined) return apiError(404, 'unknown_asset');
-  const portrait = (chosen ?? BUNDLED[heroIndexOf(existing)])?.meta;
+  const portrait = (chosen ?? bundled[heroIndexOf(existing)])?.meta;
   if (portrait === undefined) return apiError(404, 'unknown_asset');
   const same = chosen === undefined ? !existing.avatarChosen : existing.avatarChosen && existing.portrait.assetId === portrait.assetId;
   if (same) return json(existing);
@@ -286,7 +321,7 @@ const routes: ReadonlyArray<{ pattern: RegExp; method: 'GET' | 'POST'; handle: (
   {
     pattern: new RegExp(`^${appApiPath('/portraits')}$`),
     method: 'GET',
-    handle: (state) => json({ contractVersion: 1, items: [...BUNDLED, ...state.uploaded.values()].map((asset) => asset.meta) }),
+    handle: (state) => json({ contractVersion: 1, items: [...bundled, ...state.uploaded.values()].map((asset) => asset.meta) }),
   },
   { pattern: new RegExp(`^${appApiPath('/assets')}$`), method: 'POST', handle: (state, _match, body) => uploadAsset(state, body) },
   { pattern: new RegExp(`^${appApiPath('/assets')}/${SEGMENT}$`), method: 'GET', handle: (state, match) => getAsset(state, decodeURIComponent(match[1] ?? '')) },
