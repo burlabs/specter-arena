@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { RosterItemV1, SpecterV2 } from '../contracts/types';
+import type { RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
 import { ConditionBadge } from '../observatory/ConditionBadge';
 import { botCondition } from '../observatory/model';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
+import { SpecterProgression } from '../specters/SpecterProgression';
 import { tokenInitials } from '../specters/model';
 import { ARENA, HUD } from './copy';
 import type { SceneModel } from './sceneModel';
@@ -14,12 +15,13 @@ interface Props {
   model: SceneModel;
   bots: readonly RosterItemV1[];
   specters: ReadonlyMap<string, SpecterV2>;
+  xp: ReadonlyMap<string, XpSummaryV1>;
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
 }
 
 /** Every Specter once, in the same order as the scene, with the roster's own condition words. */
-export function ArenaRail({ model, bots, specters, selection, onSelect }: Props) {
+export function ArenaRail({ model, bots, specters, xp, selection, onSelect }: Props) {
   const [open, setOpen] = useState(true);
   const botById = new Map(bots.map((bot) => [bot.bindingId, bot]));
   return (
@@ -50,7 +52,8 @@ export function ArenaRail({ model, bots, specters, selection, onSelect }: Props)
                   <strong>{specter.specterName ?? specter.displayName}</strong>
                   {specter.specterName !== null && <span className="sa-help">{`for ${specter.displayName}`}</span>}
                   {bot !== undefined && <ConditionBadge view={botCondition(bot.condition)} />}
-                  <span className="sa-help">{`${ARENA.level(specter.level)} · ${ARENA.linked(specter.openAttemptIds.length)}`}</span>
+                  <SpecterProgression compact summary={xp.get(specter.bindingId)} />
+                  <span className="sa-help">{ARENA.linked(specter.openAttemptIds.length)}</span>
                 </span>
               </button>
             </li>

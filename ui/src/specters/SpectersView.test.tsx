@@ -5,15 +5,18 @@ import { rosterBody } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RosterItemV1 } from '../contracts/types';
+import { summaryOf } from '../work/testData';
 import { clearAssetCache } from './assetCache';
+import type { XpState } from '../work/useXp';
 import { SpectersView } from './SpectersView';
 import { useSpecters } from './useSpecters';
 
 const bots = rosterBody('default').items;
+const XP_READY: XpState = { status: 'ready', byBinding: new Map(), failure: null, refresh: () => undefined };
 
-function Harness({ items = bots, complete = true }: { items?: readonly RosterItemV1[]; complete?: boolean }) {
+function Harness({ items = bots, complete = true, xp = XP_READY }: { items?: readonly RosterItemV1[]; complete?: boolean; xp?: XpState }) {
   const specters = useSpecters();
-  return <SpectersView bots={items} complete={complete} specters={specters} />;
+  return <SpectersView bots={items} complete={complete} specters={specters} xp={xp} />;
 }
 
 beforeEach(() => {
@@ -107,6 +110,50 @@ describe('SpectersView states', () => {
     view.rerender(<Harness items={bots.slice(1)} complete={false} />);
     await flush();
     expect(screen.getByText('Select a bot to see its Specter.')).toBeTruthy();
+  });
+});
+
+describe('SpectersView cards', () => {
+  it('shows each hero card with the epithet, the level and the XP of the bot', async () => {
+    const atlas = bots[0];
+    if (atlas === undefined) throw new Error('no bots');
+    const xp: XpState = { ...XP_READY, byBinding: new Map([[atlas.bindingId, summaryOf({ bindingId: atlas.bindingId })]]) };
+    await open('specters', { xp });
+    const card = rowFor('Atlas');
+    expect(card.textContent).toContain('The caped one with the golden clasp');
+    expect(within(card).getByText('Level 2')).toBeTruthy();
+    expect(within(card).getByText('150 / 250 XP')).toBeTruthy();
+    expect(within(rowFor('Brindle')).getByText('Level 1')).toBeTruthy();
+    expect(within(rowFor('Brindle')).getByText('0 XP')).toBeTruthy();
+  });
+
+  it('shows the progression in the detail panel too', async () => {
+    const atlas = bots[0];
+    if (atlas === undefined) throw new Error('no bots');
+    const xp: XpState = { ...XP_READY, byBinding: new Map([[atlas.bindingId, summaryOf({ bindingId: atlas.bindingId })]]) };
+    await open('specters', { xp });
+    fireEvent.click(rowFor('Atlas'));
+    const detail = screen.getByRole('region', { name: 'Specter detail' });
+    expect(within(detail).getByText('Progression')).toBeTruthy();
+    expect(within(detail).getByRole('progressbar', { name: '50 of 150 XP toward level 3' })).toBeTruthy();
+  });
+
+  it.each([
+    ['loading', 'Not loaded yet'],
+    ['failed', 'Could not load. It retries automatically.'],
+  ] as const)('says XP is %s in words and never shows a zero', async (status, words) => {
+    await open('specters', { xp: { ...XP_READY, status, failure: status === 'failed' ? 'unavailable' : null } });
+    const card = rowFor('Atlas');
+    expect(card.textContent).toContain(words);
+    expect(card.textContent).not.toContain('0 XP');
+    expect(within(card).queryByRole('progressbar')).toBeNull();
+  });
+
+  it('shows the chosen avatar instead of the hero thumbnail once one is picked', async () => {
+    await open('specters');
+    expect(rowFor('Atlas').querySelector('.sa-portrait--md')).not.toBeNull();
+    expect(rowFor('Atlas').querySelector('[data-portrait]')).toBeNull();
+    expect(rowFor('Brindle').querySelector('.sa-portrait-wrap [data-portrait]')).not.toBeNull();
   });
 });
 

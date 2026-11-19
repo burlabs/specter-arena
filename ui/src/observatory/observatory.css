@@ -140,7 +140,10 @@
 
 .specter-arena-root .sa-header__actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   gap: 12px;
   color: var(--muted);
   font-size: 12px;
@@ -483,6 +486,34 @@
   border: 1px solid #3a2f49;
   border-radius: 10px;
   background: #1b1629;
+}
+
+.specter-arena-root .sa-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.specter-arena-root .sa-kpi {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid #3a2f49;
+  border-radius: 10px;
+  background: #1b1629;
+}
+
+.specter-arena-root .sa-kpi dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-kpi dd {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
 }
 
 .specter-arena-root .sa-card h3 {

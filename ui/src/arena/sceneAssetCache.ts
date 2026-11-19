@@ -2,7 +2,10 @@ import type { SceneAssetV1 } from '../contracts/types';
 import { sceneAssetPath } from '../host';
 import type { HostApi } from '../host';
 
-/** The map, 2 minion sprites, 11 hero sprites and 11 hero thumbnails are 25 keys, so eviction does not run in practice. */
+/**
+ * Blob URLs are never revoked, so eviction would leak the blob of every entry it drops. The backend allowlist
+ * (`scene/*.png`, 27 keys) must stay at or below this bound so eviction never runs; `sceneAssetCache.bound.test.ts` fails when it does not.
+ */
 export const MAX_CACHE_ENTRIES = 32;
 export const MAX_IN_FLIGHT = 4;
 /** The 4 MiB file limit of scene-asset.v1 as base64, plus slack for padding. */

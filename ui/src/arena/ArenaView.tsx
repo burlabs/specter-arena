@@ -8,7 +8,9 @@ import { PARTIAL_ROSTER } from '../work/copy';
 import { ArenaInspector } from './ArenaInspector';
 import { ArenaListView } from './ArenaListView';
 import { ArenaRail } from './ArenaRail';
+import { ArenaStats } from './ArenaStats';
 import { BattlefieldScene } from './BattlefieldScene';
+import { BotsOnField } from './BotsOnField';
 import { ModeBadge } from './ModeBadge';
 import { ARENA } from './copy';
 import { MARKS, mark } from './marks';
@@ -136,8 +138,10 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
             <Button onClick={refresh}>{ARENA.retry}</Button>
           </div>
         )}
+        <ArenaStats botsObserved={bots.length} coverageUnknown={models.scene.coverage.unknownBots} committedXp={[...xp.values()].reduce((sum, summary) => sum + summary.totalXp, 0)} />
+        <BotsOnField bots={bots} specters={specters} />
         <div className="sa-arena-layout">
-          <ArenaRail model={models.scene} bots={bots} specters={specters} selection={selection} onSelect={setSelection} />
+          <ArenaRail model={models.scene} bots={bots} specters={specters} xp={xp} selection={selection} onSelect={setSelection} />
           <BattlefieldScene model={models.scene} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} />
           <ArenaInspector
             selection={selection}

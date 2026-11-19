@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterItemV1 } from '../contracts/types';
+import type { RosterItemV1, SpecterV2 } from '../contracts/types';
 import { nameOf } from '../observatory/model';
 import { targetIndex } from '../observatory/RosterList';
 import { EmptyState, ErrorState, Panel } from '../observatory/ui';
+import type { XpState } from '../work/useXp';
+import { HeroThumb } from './HeroThumb';
 import { SpecterDetail } from './SpecterDetail';
 import { SpecterPortrait } from './SpecterPortrait';
+import { SpecterProgression } from './SpecterProgression';
 import { BOT_GONE, LIST, LOADING_SPECTERS, NO_SPECTER, SELECT_A_BOT, UNSUPPORTED_BACKEND, errorWords } from './copy';
 import type { SpectersState } from './useSpecters';
 
@@ -13,9 +16,26 @@ interface Props {
   bots: readonly RosterItemV1[];
   complete: boolean;
   specters: SpectersState;
+  xp: XpState;
 }
 
-export function SpectersView({ bots, complete, specters }: Props) {
+const CARD_ART_SIZE = 96;
+
+/** The 96 px hero thumbnail, or the chosen avatar once the user has picked one. */
+function CardArt({ specter }: { specter: SpecterV2 }) {
+  return specter.avatarChosen ? (
+    <SpecterPortrait specter={specter} size="md" decorative />
+  ) : (
+    <span className="sa-portrait sa-portrait--md" aria-hidden="true">
+      <HeroThumb heroId={specter.heroId} name={specter.displayName} size={CARD_ART_SIZE} />
+    </span>
+  );
+}
+
+export function SpectersView({ bots, complete, specters, xp }: Props) {
+  const progressionOf = (bindingId: string, compact: boolean) => (
+    <SpecterProgression compact={compact} summary={xp.byBinding.get(bindingId)} unavailable={xp.status === 'ready' ? undefined : xp.status === 'loading' ? 'loading' : 'failed'} />
+  );
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rovingId, setRovingId] = useState<string | null>(null);
@@ -80,11 +100,13 @@ export function SpectersView({ bots, complete, specters }: Props) {
                   onFocus={() => setRovingId(bot.bindingId)}
                   onClick={() => setSelectedId(bot.bindingId)}
                 >
-                  {specter !== undefined && <SpecterPortrait specter={specter} size="sm" decorative />}
+                  {specter !== undefined && <CardArt specter={specter} />}
                   <span className="sa-specter-row__names">
                     <strong>{nameOf(bot)}</strong>
                     <span>{specter === undefined ? NO_SPECTER : specter.displayName}</span>
+                    {specter !== undefined && <span className="sa-specter-row__epithet">{specter.epithet}</span>}
                   </span>
+                  {progressionOf(bot.bindingId, true)}
                 </button>
               </li>
             );
@@ -93,7 +115,7 @@ export function SpectersView({ bots, complete, specters }: Props) {
       </Panel>
       <Panel label={LIST.detailLabel}>
         {selected !== undefined ? (
-          <SpecterDetail key={selected.bindingId} bot={selected} specter={specters.byBinding.get(selected.bindingId) ?? null} specters={specters} />
+          <SpecterDetail key={selected.bindingId} bot={selected} specter={specters.byBinding.get(selected.bindingId) ?? null} specters={specters} progression={progressionOf(selected.bindingId, false)} />
         ) : departed ? (
           <p role="status">{BOT_GONE}</p>
         ) : (

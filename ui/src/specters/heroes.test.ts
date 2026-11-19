@@ -3,7 +3,7 @@ import roster from '../../../backend/specter_arena/specters/heroes.json';
 import { HERO_IDS } from '../contracts/types';
 import { CENTER_ANCHOR, HERO_ANCHORS, HERO_IDLE_MS, anchorOf, heroSpriteKey, heroThumbnailKey, idleMsOf } from './heroes';
 
-/** The export's `src/data/assets.ts` suggested anchors, copied here so a typo in `heroes.ts` fails. */
+/** The export's `src/data/assets.ts` suggested anchors at 8 decimals (the export writes poly's y with 9), copied here so a typo in `heroes.ts` fails. */
 const EXPORT_ANCHORS: Record<string, [number, number]> = {
   vell: [0.60742188, 0.90039062],
   stitch: [0.51905382, 0.90039062],
@@ -11,7 +11,7 @@ const EXPORT_ANCHORS: Record<string, [number, number]> = {
   rattle: [0.56401708, 0.90039062],
   ember: [0.56244721, 0.90039062],
   shard: [0.59646028, 0.90039062],
-  poly: [0.5, 0.900390625],
+  poly: [0.5, 0.90039062],
   tide: [0.55196907, 0.90039062],
   lume: [0.49503801, 0.90039062],
   moss: [0.56576046, 0.90039062],
@@ -33,6 +33,12 @@ describe('heroes', () => {
       expect(x).toBeLessThan(1);
       expect(y).toBeGreaterThan(0);
       expect(y).toBeLessThan(1);
+    }
+  });
+
+  it('writes every anchor with at most 8 decimals', () => {
+    for (const [x, y] of Object.values(HERO_ANCHORS)) {
+      for (const value of [x, y]) expect(String(value).split('.')[1]?.length ?? 0).toBeLessThanOrEqual(8);
     }
   });
 

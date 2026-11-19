@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `fab5b910740d98d3683231705734b8f8a1db7a6f`
+Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
 
 ## What it is
 
@@ -16,11 +16,11 @@ The app has four tabs: Roster, Specters, Work and Arena (`ui/src/observatory/Obs
 
 | Tab | What it does | Source |
 |---|---|---|
-| Roster | Lists your Crew bots with a plain condition: "Working", "No turn running" or "Unknown". Shows attempts, activity over 24 h and 7 d, and collection coverage as time, with "Not collected" instead of zeros. "No turn running" is not a health reading. Bots can be marked Watched; that is a view setting stored in the browser | `.kiro/specs/fp-04-bot-roster/requirements.md` (FP-04-AC01, AC02); decisions in `docs/compatibility/monitoring-scope.md` |
-| Specters | One hero per bot, from a fixed roster of 11: name, epithet, personality and look are fixed; the owner chooses only the avatar (a bundled portrait, a PNG upload, or the hero's own portrait). No classes, roles or tiers. No model is called | `.kiro/specs/fp-16-heroes-parity/requirements.md` (FP-16-AC01, AC02) |
+| Roster | Lists your Crew bots with a plain condition: "Working", "No turn running" or "Unknown". Shows attempts, activity over 24 h and 7 d, and collection coverage as time, with "Not collected" instead of zeros. "No turn running" is not a health reading. Bots can be marked Watched; that is a view setting stored in the browser. A summary above the list counts tracked bots, bots working now and bots with a collection gap | `.kiro/specs/fp-04-bot-roster/requirements.md` (FP-04-AC01, AC02); decisions in `docs/compatibility/monitoring-scope.md` |
+| Specters | One hero per bot, from a fixed roster of 11: name, epithet, personality and look are fixed; the owner chooses only the avatar (a bundled portrait, a PNG upload, or the hero's own portrait). No classes, roles or tiers. No model is called. Each bot appears as a card with its hero thumbnail, name, epithet, and level and XP from accepted work | `.kiro/specs/fp-16-heroes-parity/requirements.md` (FP-16-AC01, AC02) |
 | Work | You create a work item, link a bot's observed attempts as evidence, optionally add up to 8 milestones, and decide: submit for review, accept, reject, mark blocked, unblock, cancel or reopen. Accepting is a human click recorded as `app-owner`. Ending a session proves nothing | `.kiro/specs/fp-08-09-work-encounters-xp/requirements.md` (FP-08-AC01 to AC06) |
 | XP and levels | Each accepted work item that is rewardable pays a fixed 100 XP (`xp-policy-1`), split among the bots whose attempts were linked. Reopening writes a compensating negative entry, and re-accepting reinstates it. Level is derived from net XP with the floors 0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200 (`levels-1`) | FP-09-AC01 to AC03 in the same spec; `backend/tests/test_store_xp_properties.py` |
-| Arena | A read-only scene: each bot's Specter, each open work item as an enemy, blocked items marked, accepted items defeated with their committed XP. A list view shows every Specter and enemy. Mode label LIVE or FIXTURE. Reduced motion is respected | `.kiro/specs/fp-10-11-live-arena/requirements.md` (FP-10-AC01 to AC06) |
+| Arena | A read-only scene: each bot's Specter, each open work item as an enemy, blocked items marked, accepted items defeated with their committed XP. Three counts sit above the scene (bots observed, coverage unknown, committed XP) and a collapsed "Bots on the field" list names every bot, its hero and its condition without placing anyone. The overview map overlays the scene frame; hero sprites idle, and stop under reduced motion. A list view shows every Specter and enemy. Mode label LIVE or FIXTURE. Reduced motion is respected | `.kiro/specs/fp-10-11-live-arena/requirements.md` (FP-10-AC01 to AC06) |
 | Evidence inspector | Select a Specter or enemy to see its attempts, evidence, XP history and blocker reason. "In-app acceptance" is labelled as not a Crew tool approval. "Open Bots in Crew" opens Crew's Bots page; "Copy diagnostic summary" copies a redacted summary | FP-11-AC01 to AC06; `docs/compatibility/handoff-routes.md` |
 
 ## What it does not do

@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit. The classified list (BLOCKER or KNOWN LIMITATION, with evidence) is `docs/release/blockers.md`; the rows below are the judge-facing wording. Each KNOWN LIMITATION there names where it is disclosed, and security-relevant ones are disclosed in `docs/release/threat-model.md`.
 
-Last verified commit: `fab5b910740d98d3683231705734b8f8a1db7a6f`
+Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
 
 Each row names where the limit was recorded.
 
@@ -18,9 +18,9 @@ Each row names where the limit was recorded.
 | Accepted items created long ago can be missing from the arena | Work lists sort by creation and the arena reads one page of accepted items. The list view says so | FP-10+11 handoff, open risks |
 | The arena draws at most 80 enemies | Overflow is listed in the list view as "Not drawn in the scene" | FP-10+11 handoff |
 | Each poll reads a few hundred KB of work-item JSON | Acceptable for one machine; a lighter list read would be a work-ledger change | FP-10+11 handoff |
-| The 2.8 MB arena-map image is unproven through the real Crew proxy | If it fails the arena shows a fallback without the map. A smaller fallback was measured (issue #124) | FP-10+11 handoff |
+| The 2.8 MB arena-map image is unproven through the real Crew proxy | If it fails the arena shows a fallback without the map. A smaller fallback was measured (issue #124). Since FP-16 the map and sprites are blob URLs because Chromium paints nothing for a data URL above 2 MiB in a CSS variable; whether the host's content-security policy allows `blob:` images is not verified on an installed app (OA-5), and the fallback is a labelled map plate | FP-10+11 handoff; FP-16 PR-B and PR-C reports |
 | The "gap longer than two polls" rule has unit tests only | End-to-end tests cover the hidden-tab path | FP-10+11 handoff |
-| Performance numbers are from the FIXTURE preview on one fast Apple machine | They are not measurements of the installed app | `.kiro/specs/fp-10-11-live-arena/performance.md` |
+| Performance numbers are from the FIXTURE preview on one fast Apple machine | They are not measurements of the installed app | `.kiro/specs/fp-16-heroes-parity/performance.md` (after FP-16); `.kiro/specs/fp-10-11-live-arena/performance.md` (before) |
 | A password value of several unquoted words keeps its later words in the copied diagnostic summary | The summary removes credential-shaped values, but a credential word followed by several unquoted words loses only its first word. Check the summary before sharing it | `docs/release/blockers.md` (KL-18) |
 | No purge, in-app backup, restore or export | The app keeps everything. Only `kirocrew app uninstall specter-arena --purge-data` shrinks the store. Backup and restore are offline steps, and the hand restore was not exercised on a live Crew install | `docs/release/data-and-recovery.md`; `docs/release/blockers.md` (KL-07, KL-08) |
 | The automated accessibility scan covers the FIXTURE preview only | Screen-reader output, the real host theme and Windows High Contrast are manual checks, listed with blank results until the owner sitting | `docs/release/a11y-checklist.md`; `docs/release/blockers.md` (KL-17) |

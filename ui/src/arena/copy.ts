@@ -29,6 +29,12 @@ export const ARENA = {
   coverage: (gaps: number, unknownBots: number): string =>
     `Coverage: ${gaps} ${gaps === 1 ? 'bot has' : 'bots have'} a collection gap, ${unknownBots} ${unknownBots === 1 ? 'bot is' : 'bots are'} unknown`,
   asOf: 'As of',
+  statsLabel: 'Arena summary',
+  botsObserved: 'Bots observed',
+  coverageUnknown: 'Coverage unknown',
+  committedXp: 'Committed XP',
+  botsOnField: 'Bots on the field',
+  botsOnFieldNone: 'No bots are on the field.',
   emptyRosterTitle: 'No bots are on the roster yet',
   emptyRosterBody: 'The collector has not seen any Kiro Crew bots. Create or open a bot in Crew, then refresh.',
   noWork: 'No work is on the field.',

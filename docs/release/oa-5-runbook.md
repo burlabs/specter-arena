@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `9d215422d1d9ff64aeea1d2b23286c35e6284742` (`main` after FP-14 PR-A #141 and PR-B #142). The artifact the sitting runs on is built from RC-1, the head of commit C1 of FP-14 PR-C; its SHA is in the build record the agent hands you (step 0).
+Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head). The artifact the sitting runs on is built from RC-1, the head of commit C1 of FP-14 PR-C; its SHA is in the build record the agent hands you (step 0).
 
 OA-5 is one consolidated owner sitting. It replaces the separate owner checks OA-2 (issue #101) and OA-4 (issue #124); OA-3 (issue #109, live summoning) is closed because summoning was removed (FP-16). It is the evidence for FP-14-AC01 and AC06 and closes BLK-01 in `docs/release/blockers.md`.
 

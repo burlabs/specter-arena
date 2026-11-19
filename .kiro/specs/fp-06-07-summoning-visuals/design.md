@@ -1,5 +1,7 @@
 # FP-06+07 design
 
+> Superseded by FP-16 (program amendment PA-2, 2026-11-19): summoning, the `/api/chat` grant, the summoner agent and `agents/` were removed. This folder is kept as history; `.kiro/specs/fp-16-heroes-parity/` is current.
+
 Status: planned. The five wire contracts `specter-profile`, `specter`, `specters`, `summoning` and `portrait-asset` are `DRAFT` in `contracts/OWNERS.md` until their first UI consumer merges (PR-C).
 
 ## Shape of the work

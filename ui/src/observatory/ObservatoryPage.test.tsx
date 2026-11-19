@@ -35,6 +35,16 @@ describe('first load', () => {
     expect(screen.getByText('7 of 7 bots')).toBeTruthy();
   });
 
+  it('shows the roster summary above the list, counted over every bot and not only the visible ones', async () => {
+    await open();
+    const summary = within(screen.getByRole('group', { name: 'Roster summary' }));
+    expect(summary.getByText('Tracked bots').nextElementSibling?.textContent).toBe('7');
+    expect(summary.getByText('Working now').nextElementSibling?.textContent).toMatch(/^\d+$/);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search bots by name' }), { target: { value: 'Atl' } });
+    expect(screen.getByText('1 of 7 bots')).toBeTruthy();
+    expect(summary.getByText('Tracked bots').nextElementSibling?.textContent).toBe('7');
+  });
+
   it('opens on All when nothing is watched', async () => {
     await open();
     expect(screen.getByRole('tab', { name: 'All bots' }).getAttribute('aria-selected')).toBe('true');

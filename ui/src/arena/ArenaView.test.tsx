@@ -6,7 +6,7 @@ import { rosterBody } from '@kirocrew/app-sdk';
 import { clearSceneArtCache } from './sceneAssetCache';
 import { ArenaView } from './ArenaView';
 import { MARKS } from './marks';
-import { botOf, specterOf } from './testData';
+import { botOf, specterOf, xpOf } from './testData';
 
 const collector = { state: 'running', reasonCode: null, sinceMs: 1 };
 const bots: RosterItemV1[] = rosterBody('default').items;
@@ -41,6 +41,24 @@ describe('ready', () => {
     await settle();
     expect(screen.getByText(/^Coverage: \d+ bots? (has|have) a collection gap, \d+ bots? (is|are) unknown$/)).toBeTruthy();
     expect(screen.getByText(/^As of/)).toBeTruthy();
+  });
+
+  it('shows the stat cards from the roster and the ledger, and a collapsed bots-on-the-field list', async () => {
+    setArenaScenario('arena');
+    const first = bots[0];
+    const second = bots[1];
+    if (first === undefined || second === undefined) throw new Error('no bots');
+    const xp = new Map([
+      [first.bindingId, xpOf(first, 120, 2)],
+      [second.bindingId, xpOf(second, 30, 1)],
+    ]);
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={xp} onLedgerChanged={vi.fn()} />);
+    await settle();
+    const stats = screen.getByRole('group', { name: 'Arena summary' });
+    expect(within(stats).getByText('Bots observed').nextElementSibling?.textContent).toBe(String(bots.length));
+    expect(within(stats).getByText('Committed XP').nextElementSibling?.textContent).toBe('150');
+    expect(document.querySelector('details.sa-bots-on-field')?.hasAttribute('open')).toBe(false);
+    expect(within(screen.getByRole('complementary', { name: 'Specters' })).getByText('120 XP')).toBeTruthy();
   });
 
   it('says so when the roster is partial', async () => {

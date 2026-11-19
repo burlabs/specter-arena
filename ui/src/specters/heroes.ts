@@ -11,7 +11,7 @@ export const HERO_ANCHORS: Readonly<Record<HeroId, readonly [number, number]>> =
   rattle: [0.56401708, 0.90039062],
   ember: [0.56244721, 0.90039062],
   shard: [0.59646028, 0.90039062],
-  poly: [0.5, 0.900390625],
+  poly: [0.5, 0.90039062],
   tide: [0.55196907, 0.90039062],
   lume: [0.49503801, 0.90039062],
   moss: [0.56576046, 0.90039062],

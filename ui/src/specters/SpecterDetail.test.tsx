@@ -3,15 +3,17 @@ import type { SpecterScenarioName } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearAssetCache } from './assetCache';
+import type { XpState } from '../work/useXp';
 import { SpectersView } from './SpectersView';
 import { useSpecters } from './useSpecters';
 
 const bots = rosterBody('default').items;
+const XP_READY: XpState = { status: 'ready', byBinding: new Map(), failure: null, refresh: () => undefined };
 
 
 function Harness() {
   const specters = useSpecters();
-  return <SpectersView bots={bots} complete specters={specters} />;
+  return <SpectersView bots={bots} complete specters={specters} xp={XP_READY} />;
 }
 
 beforeEach(() => {
