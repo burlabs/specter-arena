@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
-import type { SpecterV1 } from '../contracts/types';
+import type { SpecterV2 } from '../contracts/types';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { tokenInitials } from '../specters/model';
 import { AnimatedMinion } from './AnimatedMinion';
@@ -27,7 +27,7 @@ const ZOOM_STEP = 0.25;
 
 interface Props {
   model: SceneModel;
-  specters: ReadonlyMap<string, SpecterV1>;
+  specters: ReadonlyMap<string, SpecterV2>;
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
   motion: ArenaMotion;
@@ -69,7 +69,7 @@ function enemyLabel(enemy: SceneEnemy): string {
 
 interface SpecterTokenProps {
   specter: SceneSpecter;
-  record: SpecterV1 | undefined;
+  record: SpecterV2 | undefined;
   position: { x: number; y: number };
   selected: boolean;
   roving: boolean;

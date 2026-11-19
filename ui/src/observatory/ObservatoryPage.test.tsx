@@ -429,16 +429,16 @@ describe('sections', () => {
 });
 
 describe('Specters in the roster rows', () => {
-  it('shows a portrait or token and the Specter name beside the bot, and keeps the row name stable', async () => {
+  it('shows a portrait or token and the hero name beside the bot, and keeps the row name stable', async () => {
     setSpecterScenario('specters');
     await open();
-    await waitFor(() => expect(screen.getByText(/Specter: Vesper/)).toBeTruthy());
-    expect(screen.getByText(/Specter: Wren/).textContent).toContain('placeholder token, not a portrait');
+    await waitFor(() => expect(screen.getByText(/Specter: Vell$/)).toBeTruthy());
+    expect(screen.getByText(/Specter: Stitch$/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Atlas/ })).toBeTruthy();
     expect(rowNames()).toEqual(['Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Unnamed bot']);
-    await waitFor(() => expect(document.querySelectorAll('.sa-row img.sa-portrait__img')).toHaveLength(2));
+    await waitFor(() => expect(document.querySelectorAll('.sa-row img.sa-portrait__img')).toHaveLength(7));
     const sources = [...document.querySelectorAll('.sa-row img.sa-portrait__img')].map((image) => image.getAttribute('src'));
-    expect(new Set(sources).size).toBe(2);
+    expect(new Set(sources).size).toBe(7);
   });
 
   it('keeps the roster rows when Specters fail to load', async () => {

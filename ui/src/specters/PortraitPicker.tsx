@@ -4,7 +4,7 @@ import type { PortraitAssetV1, PortraitsV1 } from '../contracts/types';
 import { ASSETS_PATH, HostApiError, PORTRAITS_PATH, useHostApi } from '../host';
 import { Button } from '../observatory/ui';
 import { AssetImage } from './AssetImage';
-import { CLIENT_NOT_PNG, CLIENT_TOO_LARGE, NO_PORTRAIT, PICKER, errorWords } from './copy';
+import { CLIENT_NOT_PNG, CLIENT_TOO_LARGE, PICKER, errorWords } from './copy';
 
 export const MAX_UPLOAD_BYTES = 1_048_576;
 const NONE = '';
@@ -84,7 +84,7 @@ export function PortraitPicker({ currentAssetId, busy, onApply, onCancel }: Prop
         <div className="sa-gallery" role="radiogroup" aria-label={PICKER.gallery}>
           <label className="sa-gallery__item">
             <input type="radio" name="specter-portrait" value={NONE} checked={choice === NONE} onChange={() => setChoice(NONE)} />
-            <span>{NO_PORTRAIT}</span>
+            <span>{PICKER.heroDefault}</span>
           </label>
           {items.map((item) => (
             <label key={item.assetId} className="sa-gallery__item">
@@ -105,7 +105,7 @@ export function PortraitPicker({ currentAssetId, busy, onApply, onCancel }: Prop
         </p>
       )}
       <div className="sa-actions">
-        <Button disabled={busy || items === null} onClick={() => onApply(choice === NONE ? null : choice)}>
+        <Button disabled={busy || items === null || choice === (currentAssetId ?? NONE)} onClick={() => onApply(choice === NONE ? null : choice)}>
           {PICKER.apply}
         </Button>
         <Button variant="ghost" onClick={onCancel}>

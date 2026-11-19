@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../contracts/types';
 import { ActivityPanel } from '../observatory/ActivityPanel';
 import { AttemptsList, AttemptsStatus } from '../observatory/AttemptsList';
 import { ConditionBadge } from '../observatory/ConditionBadge';
@@ -22,7 +22,7 @@ import type { ArenaSelection } from './selection';
 interface Props {
   specter: SceneSpecter;
   bot: RosterItemV1;
-  record: SpecterV1 | undefined;
+  record: SpecterV2 | undefined;
   summary: XpSummaryV1 | undefined;
   headingRef: RefObject<HTMLHeadingElement>;
   list: SceneModel;
@@ -66,8 +66,8 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
       {record !== undefined && (
         <figure className="sa-arena-fiction">
           <figcaption>{INSPECTOR.specterFiction}</figcaption>
-          {record.profile.epithet !== null && <p>{record.profile.epithet}</p>}
-          <p>{record.profile.personality}</p>
+          <p>{record.epithet}</p>
+          <p>{record.personality}</p>
         </figure>
       )}
 

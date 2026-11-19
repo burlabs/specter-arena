@@ -201,7 +201,7 @@ describe('camera and controls', () => {
     expect(screen.getByRole('button', { name: 'Show overview' }).getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('makes no request of its own besides the three art reads, whatever the user does', async () => {
+  it('makes no request of its own besides the art reads and the one hero portrait, whatever the user does', async () => {
     const get = vi.spyOn(useAppApi(), 'get');
     const post = vi.spyOn(useAppApi(), 'post');
     const { container } = show();
@@ -211,8 +211,9 @@ describe('camera and controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Shipped/ }));
     fireEvent(window, new Event('resize'));
     expect(post).not.toHaveBeenCalled();
-    expect(get.mock.calls.every(([path]) => String(path).includes('/scene-assets/'))).toBe(true);
-    expect(get.mock.calls.length).toBeLessThanOrEqual(3);
+    expect(get.mock.calls.every(([path]) => /\/(scene-assets|assets)\//.test(String(path)))).toBe(true);
+    expect(get.mock.calls.filter(([path]) => String(path).includes('/scene-assets/')).length).toBeLessThanOrEqual(3);
+    expect(get.mock.calls.filter(([path]) => /\/assets\//.test(String(path))).length).toBeLessThanOrEqual(1);
   });
 });
 

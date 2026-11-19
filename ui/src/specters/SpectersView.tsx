@@ -83,7 +83,7 @@ export function SpectersView({ bots, complete, specters }: Props) {
                   {specter !== undefined && <SpecterPortrait specter={specter} size="sm" decorative />}
                   <span className="sa-specter-row__names">
                     <strong>{nameOf(bot)}</strong>
-                    <span>{specter === undefined ? NO_SPECTER : specter.profile.name}</span>
+                    <span>{specter === undefined ? NO_SPECTER : specter.displayName}</span>
                   </span>
                 </button>
               </li>

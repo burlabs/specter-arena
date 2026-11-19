@@ -34,7 +34,7 @@ describe('arena source guards', () => {
   });
 
   it('imports nothing from the fixtures and nothing that writes', () => {
-    const hits = sources.filter(({ text }) => /from '\.\.\/\.\.\/fixtures|useSummoning|workDecisionsPath|workAttemptsPath|workMilestonesPath|specterActionPath/.test(text)).map(({ file }) => file);
+    const hits = sources.filter(({ text }) => /from '\.\.\/\.\.\/fixtures|useSummoning|workDecisionsPath|workAttemptsPath|workMilestonesPath|specterPortraitPath/.test(text)).map(({ file }) => file);
     expect(hits).toEqual([]);
   });
 

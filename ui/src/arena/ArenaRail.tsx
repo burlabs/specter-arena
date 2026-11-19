@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { RosterItemV1, SpecterV1 } from '../contracts/types';
+import type { RosterItemV1, SpecterV2 } from '../contracts/types';
 import { ConditionBadge } from '../observatory/ConditionBadge';
 import { botCondition } from '../observatory/model';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
@@ -13,7 +13,7 @@ import { Button } from '../observatory/ui';
 interface Props {
   model: SceneModel;
   bots: readonly RosterItemV1[];
-  specters: ReadonlyMap<string, SpecterV1>;
+  specters: ReadonlyMap<string, SpecterV2>;
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
 }

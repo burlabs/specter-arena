@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
 import { useSourceMode } from '../host';
 import { Time } from '../observatory/Time';
 import { collectorWords } from '../observatory/copy';
@@ -24,7 +24,7 @@ interface Props {
   complete: boolean;
   collector: RosterCollectorV1;
   rosterRevision: number;
-  specters: ReadonlyMap<string, SpecterV1>;
+  specters: ReadonlyMap<string, SpecterV2>;
   xp: ReadonlyMap<string, XpSummaryV1>;
   /** Called after the in-app decision flow changes the ledger, so the XP numbers elsewhere refresh. */
   onLedgerChanged: () => void;

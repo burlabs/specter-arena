@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { rosterBody } from '@kirocrew/app-sdk';
-import { specterOf } from '../specters/testData';
+import { heroOf, portraitOf } from '../specters/testData';
 import { RosterList, targetIndex } from './RosterList';
 
 const items = rosterBody('default').items;
@@ -92,26 +92,19 @@ describe('RosterList', () => {
 
 describe('RosterList with Specters', () => {
   const atlas = items[0];
-  const withSpecter = (portrait: boolean) =>
-    new Map([[atlas?.bindingId ?? '', specterOf({ bindingId: atlas?.bindingId ?? '', portrait: portrait ? { contractVersion: 1, assetId: 'ast_000000000000000000000001', mediaType: 'image/png', width: 8, height: 8, byteLength: 1, origin: 'bundled', label: 'x', dataBase64: null } : null })]]);
+  const withSpecter = () => new Map([[atlas?.bindingId ?? '', heroOf({ bindingId: atlas?.bindingId ?? '', displayName: 'Vell II', portrait: portraitOf('ast_000000000000000000000001') })]]);
 
   it('adds a decorative portrait and the Specter name after the chips, leaving the bot name first', () => {
-    setup({ specters: withSpecter(false) });
+    setup({ specters: withSpecter() });
     const row = screen.getAllByRole('listitem')[0] as HTMLElement;
     expect(row.querySelector('.sa-portrait')?.getAttribute('aria-hidden')).toBe('true');
     expect(row.querySelector('strong')?.textContent).toBe('Atlas');
-    expect(row.querySelector('.sa-row__specter')?.textContent).toBe('Specter: Lanternwick (placeholder token, not a portrait)');
+    expect(row.querySelector('.sa-row__specter')?.textContent).toBe('Specter: Vell II');
     expect(screen.getByRole('button', { name: /^Atlas/ })).toBeTruthy();
   });
 
-  it('omits the token note when the Specter has a portrait', () => {
-    setup({ specters: withSpecter(true) });
-    const row = screen.getAllByRole('listitem')[0] as HTMLElement;
-    expect(row.querySelector('.sa-row__specter')?.textContent).toBe('Specter: Lanternwick');
-  });
-
   it('leaves bots without a Specter exactly as before', () => {
-    setup({ specters: withSpecter(false) });
+    setup({ specters: withSpecter() });
     const row = screen.getAllByRole('listitem')[1] as HTMLElement;
     expect(row.querySelector('.sa-portrait')).toBeNull();
     expect(row.querySelector('.sa-row__specter')).toBeNull();

@@ -28,12 +28,7 @@ export const PORTRAITS_PATH = appApiPath('/portraits');
 export const ASSETS_PATH = appApiPath('/assets');
 
 export const specterPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}`);
-export const summoningsPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}/summonings`);
-export const specterActionPath = (bindingId: string, action: 'manual' | 'name' | 'portrait' | 'archive'): string =>
-  appApiPath(`/specters/${enc(bindingId)}/${action}`);
-export const summoningPath = (requestId: string): string => appApiPath(`/summonings/${enc(requestId)}`);
-export const summoningActionPath = (requestId: string, action: 'cancel' | 'accept'): string =>
-  appApiPath(`/summonings/${enc(requestId)}/${action}`);
+export const specterPortraitPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}/portrait`);
 export const assetPath = (assetId: string): string => appApiPath(`/assets/${enc(assetId)}`);
 export const sceneAssetPath = (key: string): string => appApiPath(`/scene-assets/${enc(key)}`);
 

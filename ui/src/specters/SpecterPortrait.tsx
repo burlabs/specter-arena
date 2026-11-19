@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { SpecterV1 } from '../contracts/types';
+import type { SpecterV2 } from '../contracts/types';
 import { TOKEN_CAPTION, TOKEN_FAILED_CAPTION } from './copy';
 import { tokenHue, tokenInitials } from './model';
 import { useAsset } from './useAsset';
@@ -8,7 +8,7 @@ import { useMotionAllowed } from './useMotionAllowed';
 export type PortraitSize = 'sm' | 'md' | 'lg';
 
 interface Props {
-  specter: SpecterV1;
+  specter: SpecterV2;
   size: PortraitSize;
   /** Hides the portrait from assistive technology; the row prints the Specter name as text. */
   decorative?: boolean;
@@ -17,9 +17,9 @@ interface Props {
 }
 
 export function SpecterPortrait({ specter, size, decorative = false, active = false }: Props) {
-  const asset = useAsset(specter.portrait?.assetId ?? null);
+  const asset = useAsset(specter.portrait.assetId);
   const motion = useMotionAllowed();
-  const name = specter.profile.name;
+  const name = specter.displayName;
   const showImage = asset.status === 'ready' && asset.src !== null;
   const showToken = asset.status === 'none' || asset.status === 'failed';
   const caption = asset.status === 'failed' ? TOKEN_FAILED_CAPTION : TOKEN_CAPTION;
@@ -36,7 +36,7 @@ export function SpecterPortrait({ specter, size, decorative = false, active = fa
       {showToken && (
         <span
           className="sa-portrait__token"
-          style={{ '--sa-hue': tokenHue(specter.specterId) } as CSSProperties}
+          style={{ '--sa-hue': tokenHue(specter.bindingId) } as CSSProperties}
           role={hidden ? undefined : 'img'}
           aria-label={hidden ? undefined : `${name}: ${caption}`}
           aria-hidden={framed ? 'true' : undefined}

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../contracts/types';
 import { Button } from '../observatory/ui';
 import { SpecterInspector } from './SpecterInspector';
 import { WorkInspector } from './WorkInspector';
@@ -15,7 +15,7 @@ interface Props {
   bots: readonly RosterItemV1[];
   collector: RosterCollectorV1;
   rosterRevision: number;
-  specters: ReadonlyMap<string, SpecterV1>;
+  specters: ReadonlyMap<string, SpecterV2>;
   xp: ReadonlyMap<string, XpSummaryV1>;
   items: ReadonlyMap<string, WorkItemV1>;
   onSelect: (selection: ArenaSelection) => void;
