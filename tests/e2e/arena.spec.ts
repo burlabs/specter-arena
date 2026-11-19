@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
@@ -371,4 +371,20 @@ test('A-13 arena-perf-1 measured: first render, poll update, sprite nodes, anima
   expect(full.every((sample) => sample.enemies === 80 && sample.specters === 20)).toBe(true);
   expect(median(full.map((sample) => sample.firstRenderMs))).toBeLessThanOrEqual(budget.firstRenderMs);
   expect(median(full.map((sample) => sample.updateMs))).toBeLessThanOrEqual(budget.updateMs);
+});
+
+const CHROMIUM_CUSTOM_PROPERTY_LIMIT = 2 * 1024 * 1024;
+
+test('A-14 the arena map paints a background image above 2 MiB', async ({ page }) => {
+  const mapBytes = statSync('backend/specter_arena/specters/scene/arena-map.png').size;
+  const dataUrlLength = 'data:image/png;base64,'.length + Math.ceil(mapBytes / 3) * 4;
+  expect(dataUrlLength, 'the shipped map is a data URL above the Chromium custom-property limit').toBeGreaterThan(CHROMIUM_CUSTOM_PROPERTY_LIMIT);
+
+  await openArena(page, 'arena');
+  const map = page.locator('.sa-arena-map');
+  await expect(map).toHaveAttribute('data-map', 'ready');
+  await expect(map).toHaveClass(/sa-has-art/);
+  const painted = (selector: string) => page.locator(selector).evaluate((element) => getComputedStyle(element).backgroundImage);
+  expect(await painted('.sa-arena-map')).toMatch(/^url\("(?:blob:|data:image\/png)/);
+  expect(await painted('.sa-arena-minimap__frame')).toMatch(/^url\("(?:blob:|data:image\/png)/);
 });
