@@ -18,6 +18,12 @@
       "name": "status",
       "reason": "Lifecycle state of one generation request (queued, running, ready, failed, cancelled, accepted, superseded), not a property of any Specter.",
       "approvedBy": "FP-06+07 planner under Eric's 2026-11-18 delegation (all gates self-approved)"
+    },
+    {
+      "file": "contracts/schemas/specter.v2.schema.json",
+      "name": "heroId",
+      "reason": "The identifier of one of 11 fixed, authored, cosmetic characters (Eric's art). It selects no behaviour, role, capability, lane or tier, and the closed list is the roster itself, so a twelfth hero needs a new migration and a v3 contract.",
+      "approvedBy": "FP-16 planner under Eric's 2026-11-17 delegation (all gates self-approved)"
     }
   ]
 }

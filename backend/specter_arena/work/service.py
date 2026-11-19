@@ -5,7 +5,7 @@ import re
 from collections.abc import Callable
 from typing import Any, Final, TypeVar
 
-from ..specters.brief import clean_text
+from ..specters.text import clean_text
 from ..store import Store
 from ..store import errors as store_errors
 from ..store import work as db_work

@@ -1,14 +1,11 @@
-"""Test doubles for the Specter service: a scripted `Summoner`, a clock, and real-store helpers.
+"""Test doubles for the Specter service: a clock and real-store helpers.
 
-The service tests run against the real work-ledger store (`store/specters.py` and migration 0005)
-in a temp directory; only the model is faked. Test-time only."""
+The service tests run against the real work-ledger store (`store/specters.py` and migration 0007)
+in a temp directory. Test-time only."""
 
 from __future__ import annotations
 
-import asyncio
-import json
 from pathlib import Path
-from typing import Any
 
 from backend.specter_arena.store import (
     BindingSeen,
@@ -21,7 +18,6 @@ from backend.specter_arena.store import (
     start_run,
 )
 from backend.specter_arena.store.bindings import store_id
-from backend.specter_arena.summoner import SummonFailure, SummonReply
 
 START_MS = 1_800_000_000_000  # same epoch the store tests use
 ALPHA = DmKey("alpha-0123456789ab", "memory-alpha")
@@ -61,53 +57,6 @@ def table_counts(opened: Store, *, except_prefixes: tuple[str, ...]) -> dict[str
             if not r[0].startswith("sqlite_") and not r[0].startswith(except_prefixes)
         ]
         return {n: conn.execute(f'SELECT count(*) FROM "{n}"').fetchone()[0] for n in names}
-
-
-def good_reply(name: str = "Wick Hollowlamp", **override: Any) -> str:
-    body: dict[str, Any] = {
-        "name": name,
-        "epithet": "keeper of the unlit corridor",
-        "personality": "Patient and a little smug.",
-        "appearance": "A lantern-headed figure in a patched grey coat.",
-        "mannerism": "Taps its glass head twice before answering.",
-        "signatureAction": "Snuffs its own flame, then relights it.",
-        "assignmentRationale": "Chosen for the quiet tone of the brief.",
-        "artBrief": "Full body, soft rim light, muted background.",
-    }
-    body.update(override)
-    return json.dumps(body)
-
-
-class ScriptedSummoner:
-    """Each call takes the next step: reply text, a `SummonFailure`, `HANG`, or `(Event, text)` that
-    waits for the event first. Records every prompt and every request id."""
-
-    HANG = object()
-
-    def __init__(self, *steps: Any) -> None:
-        self.steps = list(steps)
-        self.prompts: list[str] = []
-        self.request_ids: list[str] = []
-        self.discarded: list[str] = []
-        self.started = asyncio.Event()
-
-    async def summon(self, prompt: str, *, request_id: str, timeout_s: float) -> SummonReply:
-        self.prompts.append(prompt)
-        self.request_ids.append(request_id)
-        self.started.set()
-        step = self.steps.pop(0) if self.steps else good_reply()
-        if isinstance(step, SummonFailure):
-            raise step
-        if step is self.HANG:
-            await asyncio.sleep(3600)
-        if isinstance(step, tuple):
-            gate, text = step
-            await gate.wait()
-            return SummonReply(str(text), "fake-model")
-        return SummonReply(str(step), "fake-model")
-
-    async def discard(self, request_id: str) -> None:
-        self.discarded.append(request_id)
 
 
 def data_dir(tmp_path: Path) -> Path:

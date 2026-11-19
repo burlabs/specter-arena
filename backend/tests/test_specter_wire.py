@@ -1,4 +1,4 @@
-"""FP-02-AC04 producer test: real `SpecterService` bodies validated against the five Specter
+"""FP-02-AC04 producer test: real `SpecterService` bodies validated against the Specter
 contracts with the same validator the case runner uses, over the real store."""
 
 import asyncio
@@ -14,17 +14,15 @@ from backend.specter_arena.store import Store, open_store
 
 from .contract_support import compile_schema, load_registry
 from .png_support import png
-from .specter_fakes import ALPHA, FakeClock, ScriptedSummoner, bind, good_reply
+from .specter_fakes import ALPHA, FakeClock, bind
 
 REGISTRY = load_registry()
 
 
 IDS = {
-    "specter-profile": "urn:specter-arena:contract:specter-profile:v1",
     "portrait-asset": "urn:specter-arena:contract:portrait-asset:v1",
-    "specter": "urn:specter-arena:contract:specter:v1",
-    "specters": "urn:specter-arena:contract:specters:v1",
-    "summoning": "urn:specter-arena:contract:summoning:v1",
+    "specter": "urn:specter-arena:contract:specter:v2",
+    "specters": "urn:specter-arena:contract:specters:v2",
 }
 
 
@@ -47,25 +45,13 @@ def run[T](scenario: Callable[[], Coroutine[Any, Any, T]]) -> T:
 
 def test_every_body_the_service_produces_matches_its_contract(store: Store) -> None:
     async def scenario() -> None:
-        binding = bind(store, ALPHA, "Probe Bot")
-        service = SpecterService(store, ScriptedSummoner(good_reply()), clock=FakeClock())
+        service = SpecterService(store, clock=FakeClock())
         await service.start()
-        empty = await service.list_specters()
-        check("specters", empty)
-        request = "req_" + "1" * 24
-        _status, queued = await service.start_summoning(binding, {"requestId": request})
-        check("summoning", queued)
-        for _ in range(400):
-            ready = await service.get_summoning(request)
-            if ready["status"] == "ready":
-                break
-            await asyncio.sleep(0.005)
-        check("summoning", ready)
-        assert ready["candidate"] is not None
-        check("specter-profile", ready["candidate"])
-        specter = await service.accept(request, 0)
-        check("specter", specter)
-        check("summoning", await service.get_summoning(request))
+        check("specters", await service.list_specters())
+        binding = bind(store, ALPHA, "Probe Bot")
+        listed = await service.list_specters()
+        check("specters", listed)
+        check("specter", await service.get_specter(binding))
         gallery = (await service.list_portraits())["items"]
         for item in gallery:
             check("portrait-asset", item)
@@ -76,8 +62,9 @@ def test_every_body_the_service_produces_matches_its_contract(store: Store) -> N
         served = await service.get_asset(uploaded["assetId"])
         check("portrait-asset", served)
         assert isinstance(served["dataBase64"], str)
-        with_portrait = await service.set_portrait(binding, 1, uploaded["assetId"])
-        check("specter", with_portrait)
+        chosen = await service.set_portrait(binding, 0, uploaded["assetId"])
+        check("specter", chosen)
+        check("specter", await service.set_portrait(binding, 1, None))
         listed = await service.list_specters()
         check("specters", listed)
         assert listed["items"][0]["portrait"]["dataBase64"] is None

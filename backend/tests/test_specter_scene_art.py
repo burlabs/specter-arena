@@ -24,11 +24,11 @@ from backend.specter_arena.specters.scene_art import (
     load_scene_art,
     prepare_scene_art,
 )
-from backend.specter_arena.specters.service import Limits, SpecterService
+from backend.specter_arena.specters.service import SpecterService
 from backend.specter_arena.store import Store, open_store
 
 from .contract_support import compile_schema, load_registry
-from .specter_fakes import FakeClock, ScriptedSummoner
+from .specter_fakes import FakeClock
 from .test_specter_routes import SECRET, Api
 
 REGISTRY = load_registry()
@@ -65,9 +65,7 @@ def opened(tmp_path: Path) -> Iterator[Store]:
 
 
 def started(opened: Store) -> tuple[Starlette, SpecterService]:
-    service = SpecterService(
-        opened, ScriptedSummoner(), clock=FakeClock(), limits=Limits(timeout_s=2.0)
-    )
+    service = SpecterService(opened, clock=FakeClock())
     app = Starlette(routes=specter_routes())
     app.state.specters = service
     return app, service

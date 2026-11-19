@@ -1,0 +1,79 @@
+[
+  {
+    "file": "valid/first-hero.json",
+    "valid": true
+  },
+  {
+    "file": "valid/second-round-chosen-avatar.json",
+    "valid": true
+  },
+  {
+    "file": "valid/bur-lowercase.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/contract-version-one.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/contract-version-three.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/hero-id-unknown.json",
+    "valid": false,
+    "instancePath": "/heroId"
+  },
+  {
+    "file": "invalid/hero-id-uppercase.json",
+    "valid": false,
+    "instancePath": "/heroId"
+  },
+  {
+    "file": "invalid/source-generated.json",
+    "valid": false,
+    "instancePath": "/source"
+  },
+  {
+    "file": "invalid/portrait-null.json",
+    "valid": false,
+    "instancePath": "/portrait"
+  },
+  {
+    "file": "invalid/ordinal-zero.json",
+    "valid": false,
+    "instancePath": "/ordinal"
+  },
+  {
+    "file": "invalid/extra-role-field.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-avatar-chosen.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/display-name-empty.json",
+    "valid": false,
+    "instancePath": "/displayName"
+  },
+  {
+    "file": "invalid/binding-id-numeric.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/epithet-too-long.json",
+    "valid": false,
+    "instancePath": "/epithet"
+  },
+  {
+    "file": "invalid/specter-id-present.json",
+    "valid": false,
+    "instancePath": ""
+  }
+]

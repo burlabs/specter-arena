@@ -24,7 +24,7 @@ store = sorted(
 collector = sorted(n for n in sys.modules if n.startswith("backend.specter_arena.collector"))
 generation = sorted(
     n for n in sys.modules
-    if n.startswith(("backend.specter_arena.specters", "backend.specter_arena.summoner"))
+    if n.startswith("backend.specter_arena.specters")
 )
 work = sorted(
     n for n in sys.modules
@@ -90,7 +90,7 @@ def test_importing_the_release_app_loads_no_collector_module_and_no_websockets(
         assert (graph["collector_modules"], graph["websockets"]) == ([], False), extra
 
 
-def test_importing_the_release_app_loads_no_specter_or_summoner_module(app_copy: Path) -> None:
+def test_importing_the_release_app_loads_no_specter_module(app_copy: Path) -> None:
     for extra in ({}, {"SPECTER_PROBE": "1"}):
         assert inspect_app(app_copy, **extra)["generation_modules"] == [], extra
 
@@ -104,14 +104,7 @@ SPECTER_PATHS = frozenset(
     {
         "/api/specters",
         "/api/specters/{binding_id}",
-        "/api/specters/{binding_id}/summonings",
-        "/api/specters/{binding_id}/manual",
-        "/api/specters/{binding_id}/name",
         "/api/specters/{binding_id}/portrait",
-        "/api/specters/{binding_id}/archive",
-        "/api/summonings/{request_id}",
-        "/api/summonings/{request_id}/cancel",
-        "/api/summonings/{request_id}/accept",
         "/api/portraits",
         "/api/assets",
         "/api/assets/{asset_id}",
@@ -120,7 +113,7 @@ SPECTER_PATHS = frozenset(
 )
 
 
-def test_the_fourteen_specter_routes_are_mounted(app_copy: Path) -> None:
+def test_the_seven_specter_routes_are_mounted(app_copy: Path) -> None:
     assert set(inspect_app(app_copy)["paths"]) >= SPECTER_PATHS
 
 
