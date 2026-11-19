@@ -1,4 +1,4 @@
-"""Identity, summoning and projection work never touch the work and XP ledger, and no monitoring
+"""Hero, avatar and projection work never touch the work and XP ledger, and no monitoring
 code reaches it (FP-09-AC04, FP-09-AC06, FP-08-AC06)."""
 
 import re
@@ -40,20 +40,7 @@ from .work_fakes import (
 BACKEND = Path(__file__).resolve().parents[1]
 PACKAGE = BACKEND / "specter_arena"
 STORE_PACKAGE = "backend.specter_arena.store"
-DAY = 86_400_000
-LIMITS: dict[str, Any] = {"binding_limit": 5, "install_limit": 20, "window_ms": DAY}
 PNG = sp.PNG_SIGNATURE + b"\x00" * 24
-PROFILE: dict[str, Any] = {
-    "contractVersion": 1,
-    "name": "Vesper",
-    "epithet": None,
-    "personality": "Dry.",
-    "appearance": "Lantern-bearer.",
-    "mannerism": "Taps twice.",
-    "signatureAction": None,
-    "assignmentRationale": "Chosen from the display name.",
-    "artBrief": "Grey coat.",
-}
 ERROR_NAMES = {
     "AttemptAlreadyLinked",
     "AttemptNotEligible",
@@ -132,64 +119,38 @@ def populate(store: Store, seeded: Seeded) -> None:
     make_work(store, [seeded.attempts[2][0]], 2, milestones=["a", "b"], at=T0 + 3000)
 
 
-def summon_everything(store: Store, binding: str) -> None:
-    """The whole Specter lifecycle: summon, accept, portrait, rename, a second request, archive."""
-    first = "req_" + "1" * 24
-    sp.create_request(
-        store,
-        request_id=first,
-        binding_id=binding,
-        keep=(),
-        prompt_version="summon-1",
-        now_ms=T0 + 100,
-        **LIMITS,
-    )
-    sp.mark_running(store, first, T0 + 101)
-    sp.complete_request(
-        store, first, candidate=PROFILE, model_label="auto", attempts=1, now_ms=T0 + 102
-    )
-    sp.accept_request(store, first, expected_version=0, now_ms=T0 + 103)
-    asset = sp.insert_asset(
+def change_avatars(store: Store, binding: str) -> None:
+    """The whole avatar lifecycle: upload, choose it, choose another, reset to the hero portrait."""
+    first = sp.insert_asset(
         store, data=PNG, width=8, height=8, origin="uploaded", label="a", now_ms=T0 + 104
     ).record
-    sp.set_portrait(store, binding, expected_version=1, asset_id=asset.asset_id, now_ms=T0 + 105)
-    sp.save_rename(
-        store, binding, expected_version=2, profile={**PROFILE, "name": "Wren"}, now_ms=T0 + 106
-    )
-    second = "req_" + "2" * 24
-    sp.create_request(
-        store,
-        request_id=second,
-        binding_id=binding,
-        keep=("name",),
-        prompt_version="summon-1",
-        now_ms=T0 + 107,
-        **LIMITS,
-    )
-    sp.fail_request(store, second, error_code="timeout", attempts=1, now_ms=T0 + 108)
-    sp.sweep_interrupted(store, T0 + 109)
-    sp.archive_specter(store, binding, expected_version=3, now_ms=T0 + 110)
+    second = sp.insert_asset(
+        store, data=PNG + b"2", width=8, height=8, origin="uploaded", label="b", now_ms=T0 + 105
+    ).record
+    sp.set_avatar(store, binding, expected_version=0, asset_id=first.asset_id, now_ms=T0 + 106)
+    sp.set_avatar(store, binding, expected_version=1, asset_id=second.asset_id, now_ms=T0 + 107)
+    sp.set_avatar(store, binding, expected_version=2, asset_id=None, now_ms=T0 + 108)
 
 
-def test_summoning_alone_writes_zero_work_or_xp_rows(ledger: tuple[Store, Seeded]) -> None:
+def test_changing_avatars_alone_writes_zero_work_or_xp_rows(ledger: tuple[Store, Seeded]) -> None:
     store, seeded = ledger
     attempts_before = ledger_hash(store)["attempt"]
-    summon_everything(store, seeded.bindings[0])
+    change_avatars(store, seeded.bindings[0])
     for table in LEDGER_TABLES:
         assert query(store, f"SELECT count(*) FROM {table}") == [(0,)], table
     assert ledger_hash(store)["attempt"] == attempts_before
-    assert query(store, "SELECT count(*) FROM specter_revision")[0][0] == 4
+    assert query(store, "SELECT count(*) FROM avatar_revision")[0][0] == 3
     assert xp_summaries(store) == ()
 
 
-def test_a_full_summoning_flow_leaves_a_populated_ledger_byte_identical(
+def test_a_full_avatar_flow_leaves_a_populated_ledger_byte_identical(
     ledger: tuple[Store, Seeded],
 ) -> None:
     store, seeded = ledger
     populate(store, seeded)
     before = ledger_only(store)
     summaries = xp_summaries(store)
-    summon_everything(store, seeded.bindings[0])
+    change_avatars(store, seeded.bindings[0])
     assert ledger_only(store) == before
     assert xp_summaries(store) == summaries
     assert xp_summary(store, seeded.bindings[0]).total_xp == 50
@@ -242,11 +203,11 @@ def works(store: Store) -> list[str]:
     return [str(r[0]) for r in query(store, "SELECT work_id FROM work_item ORDER BY created_ms")]
 
 
-def test_the_ledger_has_no_reference_to_generation_request_or_asset(
+def test_the_ledger_has_no_reference_to_the_identity_tables(
     ledger: tuple[Store, Seeded],
 ) -> None:
     store, _ = ledger
-    names = ("generation_request", "specter", "asset")
+    names = ("hero_assignment", "avatar_revision", "asset")
     with store.read() as conn:
         for table in LEDGER_TABLES:
             sql = conn.execute("SELECT sql FROM sqlite_master WHERE name = ?", (table,)).fetchone()[
@@ -254,7 +215,7 @@ def test_the_ledger_has_no_reference_to_generation_request_or_asset(
             ]
             assert not any(name in sql.lower() for name in names), table
             referenced = {str(r[2]) for r in conn.execute(f"PRAGMA foreign_key_list({table})")}
-            assert not referenced & {"generation_request", "specter", "specter_revision", "asset"}
+            assert not referenced & {"hero_assignment", "avatar_revision", "asset"}
         triggers = conn.execute(
             "SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND tbl_name IN"
             " ('work_item', 'work_attempt', 'work_milestone', 'work_decision', 'xp_entry')"
@@ -288,7 +249,6 @@ def ledger_import_violations(path: Path, root: Path = BACKEND) -> list[str]:
 
 MONITORING_SOURCES = (
     "collector",
-    "summoner",
     "store/ingest.py",
     "store/projection.py",
     "store/fold.py",
@@ -296,7 +256,7 @@ MONITORING_SOURCES = (
 IDENTITY_SOURCES = ("specters", "store/specters.py")
 
 
-def test_collector_ingest_projection_fold_and_summoner_never_import_the_work_modules() -> None:
+def test_collector_ingest_projection_and_fold_never_import_the_work_modules() -> None:
     files = source_files(*MONITORING_SOURCES)
     assert len(files) >= 12
     for path in files:
@@ -332,8 +292,8 @@ def test_the_guard_flags_a_module_that_reaches_the_ledger(tmp_path: Path) -> Non
     assert ledger_import_violations(target / "clean.py", root) == []
 
 
-def test_summoner_and_collector_have_no_work_or_xp_identifier() -> None:
-    for path in source_files("collector", "summoner", "specters", "store/specters.py"):
+def test_collector_and_specters_have_no_work_or_xp_identifier() -> None:
+    for path in source_files("collector", "specters", "store/specters.py"):
         found = identifiers_and_strings(path) & LEDGER_IDENTIFIERS
         assert not found, (path.name, found)
 

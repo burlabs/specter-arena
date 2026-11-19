@@ -7,7 +7,7 @@ import pytest
 from backend.specter_arena.store import (
     SchemaNewer,
     StoreStatus,
-    get_specter,
+    get_hero,
     latest_version,
     open_store,
 )
@@ -18,7 +18,9 @@ FIXTURE_V4 = FIXTURES / "schema-v4.sql"
 FIXTURE_V5 = FIXTURES / "schema-v5.sql"
 FIXTURE_BINDING = "bnd_000000000000000000000001"
 FIXTURE_SPECTER = "spc_000000000000000000000001"
-OWN_TABLES = {"asset", "generation_request", "specter", "specter_revision"}
+# The tables FP-16 migration 0007 leaves to the identity store; the 0005 summoning tables are
+# still exercised below on the frozen v5 fixture, which is how migration 0005 stays covered.
+OWN_TABLES = {"asset", "hero_assignment", "avatar_revision"}
 
 
 def place(data_dir: Path, fixture: Path) -> None:
@@ -33,26 +35,18 @@ def normalised(conn: sqlite3.Connection) -> list[tuple[str, str, str]]:
     return [(a, b, " ".join((c or "").split())) for a, b, c in conn.execute(query)]
 
 
-def test_a_fresh_store_has_the_specter_tables_and_indexes(tmp_path: Path) -> None:
+def test_a_fresh_store_has_the_identity_tables_and_no_summoning_tables(tmp_path: Path) -> None:
     opened = open_store(tmp_path / "data")
     try:
         assert opened.status() == StoreStatus("ready", latest_version(), latest_version())
-        assert latest_version() >= 5
+        assert latest_version() >= 7
         with opened.read() as conn:
             names = {n for (n,) in conn.execute("SELECT name FROM sqlite_master")}
             for table in OWN_TABLES:
                 assert conn.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
-        assert {
-            "specter_one_active",
-            "specter_by_binding",
-            "specter_revision_request",
-            "generation_request_by_binding",
-            "generation_request_by_status",
-            "generation_request_started",
-            "generation_request_transition",
-            "specter_guard",
-            "specter_revision_sequence",
-        } <= names
+        assert {"hero_assignment_sequence", "avatar_revision_sequence"} <= names
+        assert names.isdisjoint({"specter", "specter_revision", "generation_request"})
+        assert not {n for n in names if n.startswith(("specter_", "generation_request_"))}
     finally:
         opened.close()
 
@@ -72,7 +66,7 @@ def test_the_frozen_v5_fixture_has_the_schema_the_migrations_create(tmp_path: Pa
         migrated.close()
 
 
-def test_the_v4_fixture_upgrades_with_empty_specter_tables_and_a_backup(tmp_path: Path) -> None:
+def test_the_v4_fixture_upgrades_with_a_hero_for_its_binding_and_a_backup(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V4)
     opened = open_store(data_dir)
@@ -82,31 +76,13 @@ def test_the_v4_fixture_upgrades_with_empty_specter_tables_and_a_backup(tmp_path
             assert conn.execute("PRAGMA user_version").fetchone() == (latest_version(),)
             assert conn.execute("SELECT count(*) FROM bot_binding").fetchone() == (1,)
             assert conn.execute("SELECT count(*) FROM observation").fetchone() == (1,)
-            for table in OWN_TABLES:
-                assert conn.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
-        assert get_specter(opened, FIXTURE_BINDING) is None
+            assert conn.execute("SELECT count(*) FROM asset").fetchone() == (0,)
+            assert conn.execute("SELECT count(*) FROM avatar_revision").fetchone() == (0,)
+        hero = get_hero(opened, FIXTURE_BINDING)
+        assert (hero.hero_id, hero.ordinal, hero.version, hero.asset_id) == ("vell", 1, 0, None)
     finally:
         opened.close()
     assert list((data_dir / "store" / "backups").glob("pre-migrate-v4-to-v*.db"))
-
-
-def test_the_v5_fixture_opens_and_serves_its_specter(tmp_path: Path) -> None:
-    data_dir = tmp_path / "data"
-    place(data_dir, FIXTURE_V5)
-    opened = open_store(data_dir)
-    try:
-        assert opened.status().state == "ready"
-        record = get_specter(opened, FIXTURE_BINDING)
-        assert record is not None
-        assert (record.specter_id, record.version, record.source) == (
-            FIXTURE_SPECTER,
-            2,
-            "generated",
-        )
-        assert record.profile["name"] == "Fixture Specter"
-        assert record.portrait is not None and record.portrait.label == "fixture portrait"
-    finally:
-        opened.close()
 
 
 def test_code_that_knows_only_schema_four_refuses_a_version_five_store(tmp_path: Path) -> None:

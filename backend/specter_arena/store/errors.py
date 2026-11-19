@@ -70,7 +70,7 @@ class UnknownBinding(StoreError):
 
 
 class VersionConflict(StoreError):
-    """The caller's expected Specter version is not the current one (0 means no active Specter)."""
+    """The caller's expected avatar version is not the current one (0 means none chosen yet)."""
 
     code = "version-conflict"
 
@@ -79,30 +79,8 @@ class VersionConflict(StoreError):
         self.current_version = current_version
 
 
-class UnknownSpecter(StoreError):
-    code = "unknown-specter"
-
-
-class UnknownRequest(StoreError):
-    code = "unknown-request"
-
-
 class UnknownAsset(StoreError):
     code = "unknown-asset"
-
-
-class GenerationInFlight(StoreError):
-    code = "generation-in-flight"
-
-
-class BudgetExhausted(StoreError):
-    code = "budget-exhausted"
-
-
-class NotReady(StoreError):
-    """Accept was asked for a request that is not `ready`."""
-
-    code = "not-ready"
 
 
 class UnknownWork(StoreError):
