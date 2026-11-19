@@ -67,11 +67,11 @@ Bots only. The app keeps a bot's own thread (key `member-<member_id>.memory-<mem
 
 ### 4. Arena on a bot dashboard (PA1-D5, FD-31)
 
-The arena UI lives at `/apps/specter-arena`. The app may also write a small per-bot summary record (for example the Specter name and condition) with `POST /api/member-records/{slug}` for a bot dashboard page to bind. No app UI is embedded in bot dashboards: the host does not support it, and `bot-dashboard-webview-hook` is UNTESTED.
+The arena UI lives at `/apps/specter-arena`. The app may also write a small per-bot summary record (for example the Specter name and condition) with `POST /api/member-records/{slug}` for a bot dashboard page to bind. No app UI is embedded in bot dashboards: the host does not support it, and `bot-dashboard-webview-hook` is UNTESTED. (Superseded 2026-11-18 by FP-10+11, recorded in "Arena on the app page; bot-dashboard summary records skipped" below: the app does not write member records and holds no grant for them.)
 
 This is untested live. `bot-dashboard-member-record` is UNTESTED: the one attempt answered `400 bad_record_type`, a defect in the probe request, not a host answer. `bot-dashboard-record-ungranted` is UNTESTED, so the refusal without a grant is also unknown.
 
-FP-10 owns the live probe of both the write and the ungranted refusal, and owns adding `/api/member-records/*` to the release manifest at that point. The manifest does not include it before then.
+FP-10 owns the live probe of both the write and the ungranted refusal, and owns adding `/api/member-records/*` to the release manifest at that point. The manifest does not include it before then. (FP-10+11 skipped the probe and the grant; the manifest still does not include it.)
 
 ## Result
 
@@ -85,7 +85,7 @@ These record what the Pass 2 collector (FP-02+03) keeps and what it does not kno
 
 ### Grants (D-P9)
 
-The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone.
+The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone. (As of FP-06+07 the manifest has three api entries; the third is `/api/chat`, described in "Generation grant, not monitoring" below. The statement above was true when it was written, and the collector still reads no grant it does not need.)
 
 ### Bot identity (D-P10)
 
@@ -155,3 +155,11 @@ FP-10+11 puts the arena and the encounter inspector on the app page `/apps/spect
 - The arena is a read-only projection of the app's own routes. It adds one signed read route, `GET /api/scene-assets/{key}`, inside the existing `/apps/specter-arena/api/*` grant. It reads no bot goal, key result, ledger item, activity or note, sends nothing to Crew, and its only write is the existing in-app decision route from FP-08+09, labelled as in-app acceptance and not a Crew tool approval.
 - Crew handoff links from the inspector exist only for routes recorded as allowed in `docs/compatibility/handoff-routes.md` (machine-readable: `handoff-routes.json`). That is one route, the Bots page at `/members`. Everything else the inspector could want, a bot's chat, an approval, a session, is recorded there as unsupported or denied, so the inspector also offers a bounded, redacted "Copy diagnostic summary". "Waiting on you" is never shown, because approval signals are UNTESTED.
 - Nothing here widens the three-part product scope or the untested items in decision 1.
+
+## FP-14 re-check (2026-11-19)
+
+The status header and every decision above are unchanged. Re-read against the code and the shipped manifest at `9d215422d1d9ff64aeea1d2b23286c35e6284742`:
+
+- The bot's DM key is `member-<member_id>[.memory-<memory_store>]` (`backend/specter_arena/collector/identity.py`: `bot_dm_key`, `is_store_less_key`). No statement above uses a different form for the app's own behavior. The older slug-based spelling of the key remains only in the generated probe vocabulary and evidence under `docs/compatibility/` (`capability-*` files and `evidence/`), which record the question as it was asked.
+- `app.json` grants `/apps/specter-arena/api/*`, `/api/agents` and `/api/chat` under `permissions.api`, and `slots:user` under `permissions.events`. Nothing else.
+- The `/api/chat` grant is matched by Crew on its path prefix, so it can also reach `/api/chat/slots`, including a list of all slots (FP-06+07 handoff, risk R2; not observed on a live host). The app never issues a GET on that path (`backend/tests/test_summoner_source_guard.py`). The release classifies this as KNOWN LIMITATION KL-02 in `docs/release/blockers.md`, and it becomes a blocker only if OA-5 step 7 shows slot rows reaching an app route, a log or the copied summary.

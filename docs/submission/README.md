@@ -14,7 +14,7 @@ This folder holds the text and checklists for the Kiroween 2026 submission of Sp
 | `kiro-use.md` | How Kiro was used, and what is not claimed | Draft |
 | `architecture.md` | Technical write-up | Draft |
 | `provenance-summary.md` | Who made what, with which tool | Draft |
-| `known-limitations.md` | Limits a judge should know before running the app | Draft, finalized from FP-14's blocker list later |
+| `known-limitations.md` | Limits a judge should know before running the app | Draft; classified list in `docs/release/blockers.md` |
 | `rules-checklist.md` | One row per Kiroween requirement with status and evidence | Draft |
 | `demo-script.md` | Shot list for the under-3-minute video | Draft |
 

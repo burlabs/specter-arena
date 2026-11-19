@@ -65,6 +65,7 @@ function baseFiles(overrides = {}) {
     'DEPENDENCIES.md': 'deps\n',
     'docs/provenance.md': 'provenance\n',
     'docs/release/install.md': 'install\n',
+    'docs/release/blockers.md': 'blockers\n',
     'backend/app.py': 'app = 1\n',
     'ui/src/a.ts': 'export const a = 1;\n',
     '.env.example': 'KEY=\n',
@@ -359,6 +360,7 @@ describe('packageRelease failures', () => {
     ['missing nvmrc', { '.nvmrc': null }, /\.nvmrc pins Node nothing/],
     ['missing LICENSE', { LICENSE: null }, /LICENSE: required file missing/],
     ['missing install guide', { 'docs/release/install.md': null }, /docs\/release\/install\.md: required file missing/],
+    ['missing blocker list', { 'docs/release/blockers.md': null }, /docs\/release\/blockers\.md: required file missing/],
     ['invalid app.json', { 'app.json': 'not json' }, /app\.json is not valid JSON/],
     ['app.json not an object', { 'app.json': '[]' }, /is not a JSON object/],
   ]);
