@@ -69,7 +69,6 @@ function baseFiles(overrides = {}) {
     'backend/app.py': 'app = 1\n',
     'ui/src/a.ts': 'export const a = 1;\n',
     '.env.example': 'KEY=\n',
-    'agents/specter-summoner.json': readFileSync('agents/specter-summoner.json', 'utf8'),
   };
   for (const [path, text] of Object.entries(overrides)) {
     if (text === null) delete files[path];

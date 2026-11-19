@@ -6,9 +6,7 @@ export const FIXTURE_MARKER = 'SPECTER-FIXTURE-ONLY';
 export const DIAGNOSTIC_MARKER = 'SPECTER-DIAGNOSTIC-ONLY';
 export const OWN_API_ENTRY = '/apps/specter-arena/api/*';
 export const AGENTS_API_ENTRY = '/api/agents';
-export const CHAT_API_ENTRY = '/api/chat';
-export const RELEASE_API_ENTRIES = [OWN_API_ENTRY, AGENTS_API_ENTRY, CHAT_API_ENTRY];
-export const RELEASE_AGENTS = ['agents/specter-summoner.json'];
+export const RELEASE_API_ENTRIES = [OWN_API_ENTRY, AGENTS_API_ENTRY];
 export const RELEASE_EVENTS = ['slots:user'];
 export const DEFAULT_BUNDLE_DIR = 'ui/dist';
 export const DEFAULT_DIAGNOSTIC_DIR = 'ui/diagnostic-dist';
@@ -133,40 +131,26 @@ function scanPermissions(file, permissions) {
 }
 
 /**
- * The release manifest names exactly one app agent, and that agent has no tools, no MCP servers and no
- * `.mcp.json`: the summoner reads user-typed text and must not gain rights from it (FP-06-AC05).
+ * The release declares no app agents: a manifest `agents` key and any file under the manifest's
+ * `agents/` directory are findings (PA-2 removed the summoner agent and its `/api/chat` grant).
  * @param {string} manifestPath app.json
  * @param {unknown} agents manifest `agents`
  * @returns {{ file: string, reason: string }[]}
  */
 function scanAgents(manifestPath, agents) {
-  if (agents === undefined) return [];
-  const allowed = RELEASE_AGENTS.join(', ');
-  if (!Array.isArray(agents) || agents.length !== RELEASE_AGENTS.length || agents.some((entry, index) => entry !== RELEASE_AGENTS[index])) {
-    return [{ file: manifestPath, reason: `release manifest agents must be exactly [${allowed}]` }];
-  }
-  const agentPath = join(dirname(manifestPath), RELEASE_AGENTS[0] ?? '');
-  if (!existsSync(agentPath)) return [{ file: manifestPath, reason: `release manifest agent file ${RELEASE_AGENTS[0]} not found` }];
-  let agent;
-  try {
-    agent = JSON.parse(readFileSync(agentPath, 'utf8'));
-  } catch {
-    return [{ file: agentPath, reason: 'is not valid JSON' }];
-  }
   /** @type {{ file: string, reason: string }[]} */
   const findings = [];
-  if (!Array.isArray(agent?.tools) || agent.tools.length !== 0) findings.push({ file: agentPath, reason: 'agent must declare tools: []' });
-  const servers = agent?.mcpServers;
-  if (typeof servers !== 'object' || servers === null || Array.isArray(servers) || Object.keys(servers).length !== 0) {
-    findings.push({ file: agentPath, reason: 'agent must declare mcpServers: {}' });
+  if (agents !== undefined) findings.push({ file: manifestPath, reason: 'release manifest declares agents; the release declares none (PA-2)' });
+  const agentsDir = join(dirname(manifestPath), 'agents');
+  if (existsSync(agentsDir) && listFiles(agentsDir).length > 0) {
+    findings.push({ file: agentsDir, reason: 'release tree has agent files; the release declares none (PA-2)' });
   }
-  if (agent?.includeMcpJson !== false) findings.push({ file: agentPath, reason: 'agent must declare includeMcpJson: false' });
   return findings;
 }
 
 /**
  * The release manifest may only point at the release bundle and declares only the release grants:
- * the app's own proxy namespace, `/api/agents`, `/api/chat` (summoning, FP-06+07) and the `slots:user` event.
+ * the app's own proxy namespace, `/api/agents` and the `slots:user` event.
  * Probe grants belong in probe/manifest-overlay.json.
  * @param {string} path app.json
  * @returns {{ file: string, reason: string }[]}

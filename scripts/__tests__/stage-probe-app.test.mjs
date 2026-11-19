@@ -85,7 +85,7 @@ describe('the committed overlay', () => {
 
   it('is not reflected in the release manifest, which has no diagnostic reference and only the release grants', () => {
     assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
-    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents', '/api/chat'], events: ['slots:user'] });
+    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] });
     assert.equal(realManifest.backend.hooks, undefined);
   });
 });
@@ -152,8 +152,8 @@ describe('mergeManifest', () => {
     assert.deepEqual(merged.permissions, realOverlay.permissions);
   });
 
-  it('drops the release agents list, because the staged probe copies no agents directory', () => {
-    assert.deepEqual(realManifest.agents, ['agents/specter-summoner.json']);
+  it('the release manifest has no agents and the staged probe has none either', () => {
+    assert.equal(realManifest.agents, undefined);
     for (const phase of ['v0', 'v1', 'v2']) {
       assert.equal('agents' in mergeManifest(realManifest, overlayForPhase(realOverlay, phase)), false, phase);
     }

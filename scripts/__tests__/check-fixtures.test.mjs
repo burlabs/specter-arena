@@ -181,20 +181,28 @@ describe('scanManifest', () => {
   });
 
   it('flags any other api entry, including the probe grants, next to the allowed ones', () => {
-    const grants = [OWN_API_ENTRY, '/api/agents', '/api/chat', '/api/usage', '/api/sessions/usage', '/apps/specter-arena/api/probe'];
+    const grants = [OWN_API_ENTRY, '/api/agents', '/api/usage', '/api/sessions/usage', '/apps/specter-arena/api/probe'];
     const path = manifestFile(JSON.stringify({ permissions: { api: grants } }));
     assert.deepEqual(
       scanManifest(path).map(({ reason }) => reason),
       ['/api/usage', '/api/sessions/usage', '/apps/specter-arena/api/probe'].map(
         (entry) =>
-          `release manifest permissions.api entry "${entry}" is not allowed; only ${OWN_API_ENTRY}, /api/agents, /api/chat, each once (probe permissions belong in probe/manifest-overlay.json)`,
+          `release manifest permissions.api entry "${entry}" is not allowed; only ${OWN_API_ENTRY}, /api/agents, each once (probe permissions belong in probe/manifest-overlay.json)`,
       ),
     );
   });
 
-  it('allows the summoning grant /api/chat next to the others', () => {
-    const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY, '/api/agents', '/api/chat'], events: ['slots:user'] } }));
-    assert.deepEqual(scanManifest(path), []);
+  it('flags /api/chat and its children: the release has no generation grant (PA-2)', () => {
+    for (const entry of ['/api/chat', '/api/chat/slots', '/api/chat/*']) {
+      const path = manifestFile(JSON.stringify({ permissions: { api: [OWN_API_ENTRY, '/api/agents', entry], events: ['slots:user'] } }));
+      assert.deepEqual(
+        scanManifest(path).map(({ reason }) => reason),
+        [
+          `release manifest permissions.api entry "${entry}" is not allowed; only ${OWN_API_ENTRY}, /api/agents, each once (probe permissions belong in probe/manifest-overlay.json)`,
+        ],
+        entry,
+      );
+    }
   });
 
   it('flags a duplicated allowed entry and a non-string entry', () => {
@@ -333,45 +341,44 @@ describe('runPositiveControl', () => {
   });
 });
 
-describe('scanManifest agents (FP-06-AC05)', () => {
-  /**
-   * @param {unknown} agentsValue
-   * @param {Record<string, unknown> | string | null} agentFile null writes no agent file
-   */
-  function withAgent(agentsValue, agentFile) {
-    const path = manifestFile(JSON.stringify({ agents: agentsValue }));
-    if (agentFile !== null) {
-      mkdirSync(join(dirname(path), 'agents'));
-      writeFileSync(join(dirname(path), 'agents', 'specter-summoner.json'), typeof agentFile === 'string' ? agentFile : JSON.stringify(agentFile));
-    }
-    return path;
-  }
-  const ok = { tools: [], mcpServers: {}, includeMcpJson: false, model: 'auto' };
-  const named = ['agents/specter-summoner.json'];
+describe('scanManifest agents (PA-2: the release declares none)', () => {
+  const AGENTS_FINDING = 'release manifest declares agents; the release declares none (PA-2)';
+  const FILES_FINDING = 'release tree has agent files; the release declares none (PA-2)';
 
-  it('passes the one tool-free summoner and a manifest with no agents', () => {
-    assert.deepEqual(scanManifest(withAgent(named, ok)), []);
+  it('passes a manifest with no agents key', () => {
     assert.deepEqual(scanManifest(manifestFile(JSON.stringify({}))), []);
   });
 
-  it('flags any other agents list', () => {
-    for (const value of [named.concat('agents/extra.json'), ['agents/other.json'], [], 'agents/specter-summoner.json']) {
-      assert.deepEqual(
-        scanManifest(withAgent(value, ok)).map(({ reason }) => reason),
-        ['release manifest agents must be exactly [agents/specter-summoner.json]'],
-      );
+  it('allows an empty agents directory', () => {
+    const path = manifestFile(JSON.stringify({}));
+    mkdirSync(join(dirname(path), 'agents'));
+    assert.deepEqual(scanManifest(path), []);
+  });
+
+  it('flags any agents key, empty or not', () => {
+    for (const value of [[], {}, ['agents/specter-summoner.json'], 'agents/x.json']) {
+      assert.deepEqual(scanManifest(manifestFile(JSON.stringify({ agents: value }))).map(({ reason }) => reason), [AGENTS_FINDING]);
     }
   });
 
-  it('flags a missing or unparseable agent file', () => {
-    assert.deepEqual(scanManifest(withAgent(named, null)).map(({ reason }) => reason), ['release manifest agent file agents/specter-summoner.json not found']);
-    assert.deepEqual(scanManifest(withAgent(named, '{')).map(({ reason }) => reason), ['is not valid JSON']);
+  it('flags a file under agents/', () => {
+    const path = manifestFile(JSON.stringify({}));
+    mkdirSync(join(dirname(path), 'agents'));
+    writeFileSync(join(dirname(path), 'agents', 'specter-summoner.json'), '{}');
+    assert.deepEqual(scanManifest(path).map(({ reason }) => reason), [FILES_FINDING]);
   });
 
-  it('flags tools, MCP servers or .mcp.json on the agent', () => {
-    assert.deepEqual(scanManifest(withAgent(named, { ...ok, tools: ['fs_read'] })).map(({ reason }) => reason), ['agent must declare tools: []']);
-    assert.deepEqual(scanManifest(withAgent(named, { ...ok, mcpServers: { x: {} } })).map(({ reason }) => reason), ['agent must declare mcpServers: {}']);
-    assert.deepEqual(scanManifest(withAgent(named, { ...ok, includeMcpJson: true })).map(({ reason }) => reason), ['agent must declare includeMcpJson: false']);
-    assert.deepEqual(scanManifest(withAgent(named, {})).map(({ reason }) => reason), ['agent must declare tools: []', 'agent must declare mcpServers: {}', 'agent must declare includeMcpJson: false']);
+  it('flags a nested file under agents/', () => {
+    const path = manifestFile(JSON.stringify({}));
+    mkdirSync(join(dirname(path), 'agents', 'deep'), { recursive: true });
+    writeFileSync(join(dirname(path), 'agents', 'deep', 'x.json'), '{}');
+    assert.deepEqual(scanManifest(path).map(({ reason }) => reason), [FILES_FINDING]);
+  });
+
+  it('reports both findings when the key and a file are present', () => {
+    const path = manifestFile(JSON.stringify({ agents: [] }));
+    mkdirSync(join(dirname(path), 'agents'));
+    writeFileSync(join(dirname(path), 'agents', 'a.json'), '{}');
+    assert.deepEqual(scanManifest(path).map(({ reason }) => reason), [AGENTS_FINDING, FILES_FINDING]);
   });
 });

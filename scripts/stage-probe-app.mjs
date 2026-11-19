@@ -71,7 +71,7 @@ export function mergeManifest(base, overlay) {
     ...(permissions === undefined ? {} : { permissions }),
     ui: { ...baseUi, ...(isRecord(overlayUi) ? overlayUi : {}) },
   };
-  // The staged probe copies no `agents/` directory and never summons, so the release agent list stays behind.
+  // The staged probe copies no `agents/` directory, so an agent list in any overlay stays behind.
   delete merged.agents;
   return merged;
 }
