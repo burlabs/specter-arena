@@ -347,11 +347,12 @@ def test_more_than_200_assets_still_resolves_a_chosen_upload(store: Store) -> No
                 (await rig.service.upload_asset(up(png(1 + n % 50, 1 + n // 50))))["assetId"]
             )
         assert len(set(ids)) == 205
-        newest = ids[-1]
-        assert newest not in {i["assetId"] for i in (await rig.service.list_portraits())["items"]}
-        chosen = await rig.service.set_portrait(rig.b1, 0, newest)
-        assert chosen["portrait"]["assetId"] == newest
-        assert (await rig.service.list_specters())["items"][0]["portrait"]["assetId"] == newest
+        listed = {i["assetId"] for i in (await rig.service.list_portraits())["items"]}
+        assert len(listed) == 200
+        unlisted = next(asset_id for asset_id in ids if asset_id not in listed)
+        chosen = await rig.service.set_portrait(rig.b1, 0, unlisted)
+        assert chosen["portrait"]["assetId"] == unlisted
+        assert (await rig.service.list_specters())["items"][0]["portrait"]["assetId"] == unlisted
 
     run(scenario)
 
