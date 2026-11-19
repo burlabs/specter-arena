@@ -12,6 +12,11 @@ from .contract_support import CONTRACTS_DIR, SCHEMA_FILE
 
 TESTS = Path(__file__).resolve().parent
 OWN = {"test_contracts.py", "test_contract_parity.py", "test_contract_producers.py"}
+OWNERS_FILE = CONTRACTS_DIR / "OWNERS.md"
+OWNER_ROW = re.compile(
+    r"^\|\s*`(?P<name>[a-z][a-z0-9-]*)`\s*\|\s*(?P<major>[1-9][0-9]*)\s*\|\s*[\w-]+\s*\|\s*(?P<status>[A-Z]+)\s*\|",
+    re.MULTILINE,
+)
 SCHEMA_IDS = [
     f"urn:specter-arena:contract:{match['name']}:v{match['major']}"
     for path in sorted((CONTRACTS_DIR / "schemas").glob("*.schema.json"))
@@ -31,9 +36,22 @@ def producer_sources(directory: Path = TESTS) -> dict[str, str]:
     }
 
 
-def schemas_without_a_producer(sources: dict[str, str], schema_ids: list[str]) -> list[str]:
+def retired_schema_ids(owners_text: str) -> list[str]:
+    """Schemas OWNERS.md marks RETIRED: no longer emitted, so no producer is expected (FP-16)."""
+    return [
+        f"urn:specter-arena:contract:{match['name']}:v{match['major']}"
+        for match in OWNER_ROW.finditer(owners_text)
+        if match["status"] == "RETIRED"
+    ]
+
+
+def schemas_without_a_producer(
+    sources: dict[str, str], schema_ids: list[str], retired: frozenset[str] = frozenset()
+) -> list[str]:
     missing = []
     for schema_id in schema_ids:
+        if schema_id in retired:
+            continue
         pattern = re.escape(schema_id) + r"(?![A-Za-z0-9])"
         named_in = [text for text in sources.values() if re.search(pattern, text)]
         if not any("compile_schema" in text for text in named_in):
@@ -41,20 +59,50 @@ def schemas_without_a_producer(sources: dict[str, str], schema_ids: list[str]) -
     return missing
 
 
-def test_the_registry_lists_all_twenty_one_schemas() -> None:
-    assert len(SCHEMA_IDS) == 21
+def test_the_registry_lists_all_twenty_three_schemas() -> None:
+    assert len(SCHEMA_IDS) == 23
     assert "urn:specter-arena:contract:roster:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempts:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempt-item:v1" in SCHEMA_IDS
     for name in ("specter-profile", "specter", "specters", "summoning", "portrait-asset"):
         assert f"urn:specter-arena:contract:{name}:v1" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:specter:v2" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:specters:v2" in SCHEMA_IDS
     assert "urn:specter-arena:contract:scene-asset:v1" in SCHEMA_IDS
     for name in ("work-item", "work-items", "xp-summary", "xp-summaries", "xp-history"):
         assert f"urn:specter-arena:contract:{name}:v1" in SCHEMA_IDS
 
 
 def test_every_schema_is_validated_against_a_real_producer_body() -> None:
-    assert schemas_without_a_producer(producer_sources(), SCHEMA_IDS) == []
+    retired = frozenset(retired_schema_ids(OWNERS_FILE.read_text(encoding="utf-8")))
+    assert schemas_without_a_producer(producer_sources(), SCHEMA_IDS, retired) == []
+
+
+def test_exactly_the_four_pa_2_identity_contracts_are_retired() -> None:
+    retired = retired_schema_ids(OWNERS_FILE.read_text(encoding="utf-8"))
+    assert set(retired) == {
+        f"urn:specter-arena:contract:{name}:v1"
+        for name in ("specter", "specter-profile", "specters", "summoning")
+    }
+    assert len(retired) == 4
+    assert set(retired) <= set(SCHEMA_IDS)
+
+
+def test_a_retired_schema_is_exempt_and_a_live_one_is_not(tmp_path: Path) -> None:
+    old = "urn:specter-arena:contract:old:v1"
+    live = "urn:specter-arena:contract:live:v1"
+    sources = producer_sources(tmp_path)
+    assert schemas_without_a_producer(sources, [old, live], frozenset({old})) == [live]
+    assert schemas_without_a_producer(sources, [old, live]) == [old, live]
+
+
+def test_only_the_retired_status_is_read_from_owners_rows() -> None:
+    text = (
+        "| `a` | 1 | work-ledger | FROZEN | x |\n"
+        "| `b` | 2 | specter-identity | RETIRED | y |\n"
+        "| `c` | 1 | delivery | DRAFT | z |\n"
+    )
+    assert retired_schema_ids(text) == ["urn:specter-arena:contract:b:v2"]
 
 
 def test_a_schema_named_only_by_the_case_runners_is_reported(tmp_path: Path) -> None:

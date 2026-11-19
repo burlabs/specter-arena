@@ -25,7 +25,7 @@ The default policy is **keep everything**. The only way to shrink the store is u
 | Data | Behaviour | Evidence |
 |---|---|---|
 | `observation`, `quarantine`, `xp_entry` | Never changed and never deleted. UPDATE and DELETE abort in SQL | triggers `observation_immutable`, `observation_keep` (`store/migrations/0003_observation_coverage.sql`), `quarantine_immutable`, `quarantine_keep`, `xp_entry_immutable`, `xp_entry_keep` (`store/migrations/0006_work_xp.sql`) |
-| `bot_binding`, `bot_display_revision`, `bot_presence`, `binding_rebind`, `work_item`, `work_attempt`, `work_milestone`, `work_decision`, `specter`, `specter_revision`, `asset`, `generation_request` | Never deleted. DELETE aborts in SQL. Rows that change do so only through guarded transitions | the `*_keep` triggers in migrations 0002, 0005 and 0006 |
+| `bot_binding`, `bot_display_revision`, `bot_presence`, `binding_rebind`, `work_item`, `work_attempt`, `work_milestone`, `work_decision`, `hero_assignment`, `avatar_revision`, `asset` | Never deleted. DELETE aborts in SQL. Rows that change do so only through guarded transitions | the `*_keep` triggers in migrations 0002, 0005, 0006 and 0007 (`store/migrations/0007_hero_roster.sql`) |
 | `attempt`, `bot_state` (projections) | Rebuildable from observations. `rebuild_projection` is the only code that deletes from them and nothing in the running app calls it (KL-10) | `backend/specter_arena/store/projection.py` |
 | XP and level | Not tied to `observation` or `attempt`. Each decision keeps its own evidence, at most 8192 bytes. Deleting or rebuilding observations cannot zero XP | `store/migrations/0006_work_xp.sql` (`evidence_json` check); `backend/tests/test_store_release_hardening.py::test_deleting_or_rebuilding_observations_never_changes_xp` |
 | Pre-migration backups | The newest 3 are kept | `KEEP_PRE_MIGRATION` in `store/backup.py`; `backend/tests/test_store_backup.py::test_successive_upgrades_keep_the_newest_three_pre_migration_backups` |
@@ -46,7 +46,7 @@ Only `kirocrew app uninstall specter-arena --purge-data`. The flag was confirmed
 
 ## 5. Restore
 
-The tested path is the function `restore()` in `backend/specter_arena/store/backup.py`. It verifies the backup (`quick_check`, schema version), requires the live store to be closed, stages a copy, moves the live database aside as `specter-arena.db.pre-restore-<stamp>`, removes the `-wal` and `-shm` files of the replaced database, then renames the staged copy into place. Test: `backend/tests/test_store_release_hardening.py::test_a_restored_backup_keeps_identity_specters_portraits_and_xp`.
+The tested path is the function `restore()` in `backend/specter_arena/store/backup.py`. It verifies the backup (`quick_check`, schema version), requires the live store to be closed, stages a copy, moves the live database aside as `specter-arena.db.pre-restore-<stamp>`, removes the `-wal` and `-shm` files of the replaced database, then renames the staged copy into place. Test: `backend/tests/test_store_release_hardening.py::test_a_restored_backup_keeps_identity_heroes_avatars_and_xp`.
 
 The owner steps below do by hand what `restore()` does. **The hand procedure was not exercised on a live Crew install.** Treat it as untested until `docs/release/oa-5-result.md` or another record says otherwise.
 
@@ -61,15 +61,17 @@ A backup is one closed file (`copy_database` sets `journal_mode = DELETE` and ru
 
 ## 6. What a restore loses
 
-A restore returns the store to the moment of the backup. Identity, Specters, portraits, work items and XP that existed in the backup are intact. Nothing written after it can be recovered from the restored store.
+A restore returns the store to the moment of the backup. Identity, heroes, avatars, work items and XP that existed in the backup are intact. Nothing written after it can be recovered from the restored store.
 
 | Backup file | Loses |
 |---|---|
 | `pre-migrate-vN-to-vM-<stamp>.db` (taken before an upgrade) | Everything written since that upgrade started |
 | `backup-v<N>-<stamp>.db` | Everything written since that file was taken |
-| A backup taken before an acceptance | The later acceptance, its XP award and its evidence. Tested result: XP 0, empty XP history, the work item back at `awaiting-review`, the Specter present (`backend/tests/test_store_release_hardening.py::test_a_backup_taken_before_acceptance_restores_without_the_later_award`) |
 
-Accepted items, XP awards, observations and new Specters written after the backup are not recoverable from the restored store. The app shows no banner after a restore. This page is the disclosure.
+Migration 0007 removes the generated Specter text from the database tables. Dropped text may remain in free pages of the database file and in the automatic `pre-migrate-v6-to-v7-<stamp>.db` backup (the newest 3 backups are kept) until those are pruned or deleted. The migration runner forbids `VACUUM`, so the file is not rewritten.
+| A backup taken before an acceptance | The later acceptance, its XP award and its evidence. Tested result: XP 0, empty XP history, the work item back at `awaiting-review`, the hero present (`backend/tests/test_store_release_hardening.py::test_a_backup_taken_before_acceptance_restores_without_the_later_award`) |
+
+Accepted items, XP awards, observations and new bindings, heroes and avatar choices written after the backup are not recoverable from the restored store. The app shows no banner after a restore. This page is the disclosure.
 
 ## 7. Scale and compatibility
 
@@ -90,6 +92,4 @@ Accepted items, XP awards, observations and new Specters written after the backu
 | The backend answers `503 store_unavailable` | The store failed to open, or another process holds the write lock | Wait. If it persists, disable and enable the app. If it persists after that, restore |
 | An upgrade is refused after a failed pre-migration backup | The backup could not be written. The live database was not touched (`backend/tests/test_store_backup.py::test_a_failed_pre_migration_backup_aborts_the_migration`) | Free disk space and enable again |
 | Roster empty, or "scope lost" or silent collection | A grant was lost (`scope-lost-or-silent`) | Reopen the app's permissions in Crew and approve them, then restart the app |
-| Summoning says it is not possible right now | The `/api/chat` grant is not approved, or Crew refused | Approve pending update permissions, then disable and enable the app (the grant is read once at start), or write a Specter by hand. Attempts made while generation is unavailable spend no budget (BLK-04) |
-| A leftover chat named for a Specter summoning appears in Crew | A crash mid-turn. Cleanup is best effort (KL-04) | Delete it in Crew. No data in the app depends on it |
 | First enable hangs | PyPI is unreachable | Connect and enable again |

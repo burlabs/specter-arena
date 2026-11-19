@@ -15,7 +15,6 @@ This page installs the Specter Arena release into your own Kiro Crew. There is n
 - Kiro Crew 0.12.2 is the tested version. `kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
 - macOS or Linux.
 - Network access to PyPI on the first enable. Crew installs the packages in `requirements.txt` with `pip --target` (`kiro_crew/apps/backend_runtime/provisioning.py`).
-- A Kiro plan with available credit if you want live summoning. Summoning is billed to the owner's plan (see section 7).
 - At least one Crew bot, to see a populated roster (`docs/compatibility/monitoring-scope.md`).
 - Node, npm and uv are not needed to install the artifact. They are only needed to build from a git clone (section 12).
 
@@ -61,9 +60,8 @@ This click is the consent click. The permissions Specter Arena declares in `app.
 
 | Kind | Entry |
 |---|---|
-| API | `/apps/specter-arena/api/*`, `/api/agents`, `/api/chat` |
+| API | `/apps/specter-arena/api/*`, `/api/agents` |
 | Event | `slots:user` |
-| Agent | `specter-arena-summoner` |
 
 "Approve new permissions" appears only after an update that adds entries (`update_app`; the `approve_new_permissions` string).
 
@@ -80,15 +78,9 @@ To revoke trust later, use Settings, Security, Third-party apps. The dashboard s
 - "Waiting on you" and "Blocked" are not observable bot states, so the app never shows them for a bot. Work you mark blocked is a separate, user-set state.
 - The arena is a read-only view of what the other tabs record.
 
-## 7. Summoning and billing
+## 7. Heroes and avatars
 
-Summoning writes a Specter profile in one chat turn by the declared agent `specter-arena-summoner`. The agent has no tools and no MCP (`agents/specter-summoner.json`). The turn is billed to your Kiro plan.
-
-Limits: 5 summonings per bot and 20 per install in a rolling 24 hours, one in flight at a time, 90 seconds per request (`backend/specter_arena/specters/service.py`).
-
-Manual entry works without summoning: on the Specters tab you can write a Specter by hand (`POST /api/specters/{binding_id}/manual`).
-
-Live summoning has not been verified on an installed app yet. It is tracked as owner check OA-3 (issue #109).
+Each bot gets one of 11 fixed heroes when it is first seen, in first-seen order. A hero's name, epithet and personality are fixed and ship with the app. You change only the avatar: pick a bundled portrait, upload a PNG, or reset to the hero portrait. No model is called and nothing is billed.
 
 ## 8. Update
 
@@ -178,12 +170,11 @@ A plain clone is not the supported route for judges. Crew's registry path runs `
 | "could not verify this process as the local owner" | You ran the command from an agent shell. Run it in your own terminal (`docs/compatibility/crew-0.12.2.md`, "Install method") |
 | App starts, then reports a newer schema (`SchemaNewer`) | You installed an older release over a newer database. Install the newer release, or restore a `pre-migrate` backup (steps: `docs/release/data-and-recovery.md`, section 5) |
 | First enable hangs or fails | PyPI is unreachable. Connect and enable again |
-| Summoning says "Summoning is not possible right now" | Crew may not have granted chat access. Approve any pending update permissions and retry, or write a Specter by hand |
 
 ## 14. Privacy
 
 The app stores only what `docs/compatibility/monitoring-scope.md` allows. It reads bot names and the scope described there, and never a bot's memory or notes. See that file for the exact rules; this page does not restate them.
 
-When you summon a Specter, the summon panel says: "Only the bot's display name and the text you type here are sent. Its memory, notes, goals, and chat history are never used. Crew keeps a record of this one-off chat in its own history."
+The Specters tab sends nothing to any model. A hero's text is fixed and shipped with the app.
 
 Threats considered and what is disclosed: `docs/release/threat-model.md`.

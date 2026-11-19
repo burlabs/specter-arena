@@ -12,6 +12,7 @@ Scope: every object that crosses the wire between the UI and the backend, and ev
 5. **Persisted data** older than the reader goes through an explicit upcaster, one function per `N -> N+1`, tested with a case from the old version. **Newer-than-known** majors fail closed: the object is quarantined or reported, never guessed at.
 6. **`FROZEN` contracts** (see `OWNERS.md`) change only by rule 4. A `DRAFT` contract may change in place until its first consumer merges.
 7. **Cases.** Each schema has `contracts/cases/<name>/v<N>/cases.json` and the files it lists under `valid/` and `invalid/`. A change to a schema updates its cases in the same PR. Both the Vitest runner (`ui/src/contracts/contracts.test.ts`) and the pytest runner (`backend/tests/test_contracts.py`) read the same files and compare validity and, for invalid cases that list one, the JSON Pointer of the first error.
+8. **`RETIRED` contracts** (see `OWNERS.md`) are no longer emitted or read by any route or store path. Their schema files, cases and guard exemptions stay as a record of the shape, so a captured body of that version can still be validated. They need no producer test (`backend/tests/test_contract_producers.py` skips them) and no TypeScript type. A retired contract is never revived; a new shape is a new major.
 
 ## Writing schemas that behave the same in both validators
 

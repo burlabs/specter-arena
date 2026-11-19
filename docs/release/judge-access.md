@@ -7,7 +7,7 @@ Specter Arena is a Kiro Crew app. It runs inside a Kiro Crew installation, so th
 1. Install Kiro Crew 0.12.2 or later on macOS or Linux.
 2. Download the release artifact and its checksum from the GitHub Release page for the tagged commit, named on the Release page and, once published, in `docs/release/release-record.md`.
 3. Follow `docs/release/install.md` from "Verify and extract" to "Check it works".
-4. You need at least one Crew bot for a populated roster, network access to PyPI on first enable, and a Kiro plan with credit if you want live summoning (it bills your plan). Manual Specter entry works without it.
+4. You need at least one Crew bot for a populated roster, network access to PyPI on first enable.
 
 This is the same artifact the maintainer tested, identified by the commit and sha256 in the release record.
 

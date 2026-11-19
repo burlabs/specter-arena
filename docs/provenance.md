@@ -29,8 +29,7 @@ Figma's terms for generated code are recorded under "Terms checked" at the end o
 | FP-04 | `observatory/model.ts` | `ui/src/observatory/model.ts` | rewritten from the contracts; only the export's vocabulary was a reference |
 | FP-06+07 | `components/SpecterArtwork.tsx` | `ui/src/specters/SpecterPortrait.tsx` | image with a failure state and a labelled fallback token; fixture lookup, anchors and the ghost drawing removed; scoped classes |
 | FP-06+07 | `components/MotionPolicyContext.tsx` | `ui/src/specters/useMotionAllowed.ts` | idea only: reduced motion turns effects off; context and user pause removed |
-| FP-06+07 | `components/SpectersPage.tsx` | `ui/src/specters/SpectersView.tsx`, `SpecterDetail.tsx` | layout and interaction spec; rewritten against the `specter` and `specters` contracts; fixtures, XP and progression removed |
-| FP-06+07 | `components/SummoningPage.tsx` | `ui/src/specters/SummonPanel.tsx` | interaction spec; rewritten against the summoning route; mock generator removed |
+| FP-06+07 | `components/SpectersPage.tsx` | `ui/src/specters/SpectersView.tsx`, `SpecterDetail.tsx` | layout and interaction spec; rewritten against the `specter` and `specters` contracts; fixtures, XP and progression removed. FP-16: read-only hero card; summoning, manual entry, rename and archive removed |
 | FP-08+09 | `components/WorkReviewPanel.tsx` | `ui/src/work/ReviewPanel.tsx`, `reviewMachine.ts`, `WorkDetail.tsx` | review and accept interaction spec only; rewritten against the `work-item` contract; three states became seven; the campaign, attribution, evidence URL and session XP fields are cut; the `<dialog>` became an inline confirm form; fixtures removed; scoped classes |
 | FP-08+09 | `components/SpecterProgression.tsx` | `ui/src/work/XpMeter.tsx`, `XpCards.tsx`, `ProgressionPanel.tsx` | level and XP display idea; the fixed 100 XP constant and the session scope are replaced by the `levels-1` fields of `xp-summary`; the bar width is computed from XP fields only; scoped classes |
 | FP-08+09 | `workflow/model.ts` (acceptance parts only) | none | vocabulary reference only; nothing ported; the contracts win |
@@ -50,7 +49,7 @@ Ported CSS has no Tailwind and every selector is scoped under the app root. No i
 
 ## Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation
 
-Every raster image this repository ships was created by Eric Jeffers using ChatGPT (OpenAI) image generation. That is Eric's statement of 2026-11-18 (the program decisions log, "Art release") and it is recorded here as given. The files are not tied to any bot, role or character category: the portraits are a gallery any Specter can use, and the arena map, the two minion sprites and the two minion portraits are scene art.
+Every raster image this repository ships was created by Eric Jeffers using ChatGPT (OpenAI) image generation. That is Eric's statement of 2026-11-18 (the program decisions log, "Art release") and it is recorded here as given. The files are not tied to any bot, role or character category: the portraits are the heroes' default faces and a gallery any bot's avatar can use, and the arena map, the two minion sprites and the two minion portraits are scene art.
 
 How the files in each group were made, as recorded in the metadata of the Figma Make export (`public/assets/*.json`, read 2026-11-18):
 

@@ -9,7 +9,7 @@ export const DRAFT_07 = 'http://json-schema.org/draft-07/schema#';
 export const ID_PREFIX = 'urn:specter-arena:contract:';
 export const SCHEMA_FILE = /^(?<name>[a-z][a-z0-9-]*)\.v(?<major>[1-9][0-9]*)\.schema\.json$/;
 export const OWNERS = ['crew-integration', 'work-ledger', 'specter-identity', 'experience', 'delivery'];
-export const OWNER_STATUSES = ['DRAFT', 'FROZEN'];
+export const OWNER_STATUSES = ['DRAFT', 'FROZEN', 'RETIRED'];
 /** FP-02-AC06: whole-token matches, case-insensitive, after splitting camelCase, `_` and `-`. */
 export const DENIED_TOKENS = new Set([
   'class', 'classes', 'archetype', 'archetypes', 'species', 'category', 'categories', 'taxonomy',
@@ -333,7 +333,7 @@ export function run({ root = '.', log = console.log } = {}) {
       problems.push(`${file}: ${error instanceof Error ? error.message : 'does not compile'}`);
     }
     if (owner === undefined) problems.push(`${CONTRACTS_DIR}/OWNERS.md has no row for ${key}`);
-    else if (!OWNERS.includes(owner.owner) || !OWNER_STATUSES.includes(owner.status)) problems.push(`${CONTRACTS_DIR}/OWNERS.md: ${key} needs a known owner and DRAFT or FROZEN`);
+    else if (!OWNERS.includes(owner.owner) || !OWNER_STATUSES.includes(owner.status)) problems.push(`${CONTRACTS_DIR}/OWNERS.md: ${key} needs a known owner and DRAFT, FROZEN or RETIRED`);
     const match = SCHEMA_FILE.exec(name);
     if (match?.groups !== undefined) {
       const caseDir = `${CONTRACTS_DIR}/cases/${match.groups.name}/v${match.groups.major}`;
