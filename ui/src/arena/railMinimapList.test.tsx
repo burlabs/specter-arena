@@ -27,7 +27,7 @@ const items = new Map(work.map((item) => [item.workId, item]));
 describe('ArenaRail', () => {
   it('lists every Specter once with the roster words, selects and collapses', () => {
     const onSelect = vi.fn();
-    render(<ArenaRail model={model} bots={bots} specters={specters} selection={{ kind: 'specter', bindingId: brindle.bindingId }} onSelect={onSelect} />);
+    render(<ArenaRail model={model} bots={bots} specters={specters} xp={new Map([[atlas.bindingId, xpOf(atlas, 100, 2)]])} selection={{ kind: 'specter', bindingId: brindle.bindingId }} onSelect={onSelect} />);
     const rail = screen.getByRole('complementary', { name: 'Specters' });
     expect(within(rail).getAllByRole('listitem')).toHaveLength(3);
     expect(within(rail).getByText('Vesper')).toBeTruthy();
@@ -35,7 +35,11 @@ describe('ArenaRail', () => {
     expect(within(rail).getByText('Working')).toBeTruthy();
     expect(within(rail).getByText('No turn running')).toBeTruthy();
     expect(within(rail).getByText('Unknown')).toBeTruthy();
-    expect(within(rail).getByText('Lv. 2 · 1 open attempt')).toBeTruthy();
+    expect(within(rail).getByText('Level 2')).toBeTruthy();
+    expect(within(rail).getByText('100 XP')).toBeTruthy();
+    expect(within(rail).getByText('1 open attempt')).toBeTruthy();
+    expect(within(rail).getAllByText('Level 1')).toHaveLength(2);
+    expect(within(rail).getAllByRole('progressbar')).toHaveLength(1);
     const pressed = within(rail).getAllByRole('button', { pressed: true });
     expect(pressed).toHaveLength(1);
     fireEvent.click(within(rail).getByText('Vesper'));

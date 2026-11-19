@@ -36,6 +36,7 @@ export const CLIENT_TOO_LARGE = 'That image is larger than 1 MB.';
 
 export const FIELD_LABELS = {
   bot: 'Bot',
+  progression: 'Progression',
   personality: 'Personality',
   appearance: 'Appearance',
 } as const;

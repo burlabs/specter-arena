@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
 import { BotDetail } from './BotDetail';
 import { OperationalLegend } from './OperationalLegend';
+import { RosterKpis } from './RosterKpis';
 import { RosterList } from './RosterList';
 import { Tabs } from './Tabs';
 import { Time } from './Time';
@@ -206,6 +207,7 @@ export function ObservatoryPage() {
         <Tabs label="Sections" tabs={SECTIONS} value={section} panelId={sectionPanelId} tabId={sectionTabId} onChange={setSection} />
         <div role="tabpanel" id={sectionPanelId} aria-labelledby={sectionTabId(section)}>
           <div hidden={section !== 'roster'}>
+            <RosterKpis items={items} />
             <div className="sa-layout">
               <Panel label="Roster">
                 <div className="sa-toolbar">
@@ -256,7 +258,7 @@ export function ObservatoryPage() {
               </Panel>
             </div>
           </div>
-          {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} />}
+          {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} xp={xp} />}
           {section === 'work' && <WorkView bots={items} complete={roster.complete} onLedgerChanged={xp.refresh} />}
           {section === 'arena' && (
             <ArenaView

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { RosterItemV1, SpecterV2 } from '../contracts/types';
 import { HostApiError, specterPortraitPath, useHostApi } from '../host';
 import { nameOf } from '../observatory/model';
@@ -12,11 +13,13 @@ interface Props {
   bot: RosterItemV1;
   specter: SpecterV2 | null;
   specters: SpectersState;
+  /** The bot's level and XP, drawn by the list so the card and the detail agree. */
+  progression: ReactNode;
 }
 
 const codeOf = (error: unknown): string => (error instanceof HostApiError ? (error.error ?? `http_${error.status}`) : 'offline');
 
-export function SpecterDetail({ bot, specter, specters }: Props) {
+export function SpecterDetail({ bot, specter, specters, progression }: Props) {
   const api = useHostApi();
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -74,6 +77,10 @@ export function SpecterDetail({ bot, specter, specters }: Props) {
         <div className="sa-field">
           <dt>{FIELD_LABELS.bot}</dt>
           <dd>{nameOf(bot)}</dd>
+        </div>
+        <div className="sa-field">
+          <dt>{FIELD_LABELS.progression}</dt>
+          <dd>{progression}</dd>
         </div>
         <div className="sa-field">
           <dt>{FIELD_LABELS.personality}</dt>

@@ -307,66 +307,68 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
           {motion.paused ? HUD.resume : HUD.pause}
         </Button>
       </div>
-      <div
-        ref={viewportRef}
-        className="sa-arena-viewport"
-        role="group"
-        aria-label={ARENA.mapLabel}
-        onKeyDown={onKeyDown}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-        onPointerLeave={endDrag}
-      >
-        <div className="sa-arena-stage" style={stageStyle}>
-          <span className={`sa-arena-map${mapUrl !== null ? ' sa-has-art' : ''}`} data-map={mapArt.status} aria-hidden="true" />
-          <svg className="sa-arena-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            {lines.map((line) => (
-              <line
-                key={line.key}
-                className="sa-arena-engage"
-                data-engage={line.key}
-                x1={line.from.x * 100}
-                y1={line.from.y * 100}
-                x2={line.to.x * 100}
-                y2={line.to.y * 100}
-                vectorEffect="non-scaling-stroke"
+      <div className="sa-arena-frame">
+        <div
+          ref={viewportRef}
+          className="sa-arena-viewport"
+          role="group"
+          aria-label={ARENA.mapLabel}
+          onKeyDown={onKeyDown}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onPointerLeave={endDrag}
+        >
+          <div className="sa-arena-stage" style={stageStyle}>
+            <span className={`sa-arena-map${mapUrl !== null ? ' sa-has-art' : ''}`} data-map={mapArt.status} aria-hidden="true" />
+            <svg className="sa-arena-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              {lines.map((line) => (
+                <line
+                  key={line.key}
+                  className="sa-arena-engage"
+                  data-engage={line.key}
+                  x1={line.from.x * 100}
+                  y1={line.from.y * 100}
+                  x2={line.to.x * 100}
+                  y2={line.to.y * 100}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
+            </svg>
+            {model.specters.map((specter) => (
+              <SpecterToken
+                key={specter.bindingId}
+                specter={specter}
+                position={placement.specters.get(specter.bindingId) ?? { x: 0.5, y: 0.5 }}
+                selected={isSelected(selection, 'specter', specter.bindingId)}
+                roving={activeId === specter.bindingId}
+                animate={motion.animate}
+                onSelect={() => onSelect({ kind: 'specter', bindingId: specter.bindingId })}
+                register={register(specter.bindingId)}
               />
             ))}
-          </svg>
-          {model.specters.map((specter) => (
-            <SpecterToken
-              key={specter.bindingId}
-              specter={specter}
-              position={placement.specters.get(specter.bindingId) ?? { x: 0.5, y: 0.5 }}
-              selected={isSelected(selection, 'specter', specter.bindingId)}
-              roving={activeId === specter.bindingId}
-              animate={motion.animate}
-              onSelect={() => onSelect({ kind: 'specter', bindingId: specter.bindingId })}
-              register={register(specter.bindingId)}
-            />
-          ))}
-          {model.enemies.map((enemy) => (
-            <EnemyToken
-              key={enemy.workId}
-              enemy={enemy}
-              position={placement.enemies.get(enemy.workId) ?? { x: 0.5, y: 0.5 }}
-              selected={isSelected(selection, 'work', enemy.workId)}
-              roving={activeId === enemy.workId}
-              animate={motion.animate && (!enemy.defeated || celebrating.has(enemy.workId))}
-              celebrating={celebrating.has(enemy.workId)}
-              spriteReady={(enemy.size === 'encounter' ? patchbrute : patchling).status === 'ready'}
-              facing={engagementFacing(enemy, placement)}
-              onSelect={() => onSelect({ kind: 'work', workId: enemy.workId })}
-              register={register(enemy.workId)}
-            />
-          ))}
+            {model.enemies.map((enemy) => (
+              <EnemyToken
+                key={enemy.workId}
+                enemy={enemy}
+                position={placement.enemies.get(enemy.workId) ?? { x: 0.5, y: 0.5 }}
+                selected={isSelected(selection, 'work', enemy.workId)}
+                roving={activeId === enemy.workId}
+                animate={motion.animate && (!enemy.defeated || celebrating.has(enemy.workId))}
+                celebrating={celebrating.has(enemy.workId)}
+                spriteReady={(enemy.size === 'encounter' ? patchbrute : patchling).status === 'ready'}
+                facing={engagementFacing(enemy, placement)}
+                onSelect={() => onSelect({ kind: 'work', workId: enemy.workId })}
+                register={register(enemy.workId)}
+              />
+            ))}
+          </div>
+          {(mapArt.status === 'failed' || (mapArt.status === 'ready' && mapUrl === null)) && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
+          <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
         </div>
-        {(mapArt.status === 'failed' || (mapArt.status === 'ready' && mapUrl === null)) && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
-        <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
+        <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
       </div>
-      <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
     </section>
   );
 }

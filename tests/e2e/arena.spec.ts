@@ -427,3 +427,35 @@ test('A-16 hero sprites idle-animate, and stop under reduced motion', async ({ b
   await expect(stillPage.locator('.sa-hero.sa-is-animated')).toHaveCount(0);
   await still.close();
 });
+
+test('A-17 the minimap is open on first render and overlays the map frame at 1440', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openArena(page, 'arena');
+  const minimap = page.locator('.sa-arena-minimap');
+  await expect(minimap.getByRole('button', { name: 'Hide overview' })).toBeVisible();
+  await expect(minimap.getByRole('img', { name: 'Arena overview' })).toBeVisible();
+  const frame = await page.locator('.sa-arena-frame').boundingBox();
+  const box = await minimap.boundingBox();
+  const viewport = await page.locator('.sa-arena-viewport').boundingBox();
+  if (frame === null || box === null || viewport === null) throw new Error('the frame or the minimap has no box');
+  expect(box.x).toBeGreaterThanOrEqual(frame.x);
+  expect(box.y).toBeGreaterThanOrEqual(frame.y);
+  expect(box.x + box.width).toBeLessThanOrEqual(frame.x + frame.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(frame.y + frame.height);
+  expect(viewport.height).toBeLessThanOrEqual(0.7 * 900 + 1);
+  expect(Math.abs(viewport.width / viewport.height - 1672 / 941)).toBeLessThan(0.05);
+});
+
+test('A-18 at 390 px no tab scrolls sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openArena(page, 'arena');
+  const widths: Record<string, number> = {};
+  for (const name of ['Arena', 'Roster', 'Specters', 'Work']) {
+    await sectionTab(page, name).click();
+    widths[name] = await page.evaluate(() => document.documentElement.scrollWidth);
+  }
+  test.info().annotations.push({ type: 'scrollWidth', description: JSON.stringify(widths) });
+  console.log(`A-18 document scrollWidth at 390 px: ${JSON.stringify(widths)}`);
+  expect(widths.Arena).toBe(390);
+  for (const width of Object.values(widths)) expect(width).toBeLessThanOrEqual(390);
+});

@@ -28,7 +28,7 @@ describe('specter copy', () => {
     expect(PICKER.heroDefault).toBe('Use the hero portrait');
     expect(PICKER.heading).toBe('Choose an avatar');
     expect(TOKEN_CAPTION).toBe('Placeholder token, not a portrait');
-    expect(Object.values(FIELD_LABELS)).toEqual(['Bot', 'Personality', 'Appearance']);
+    expect(Object.values(FIELD_LABELS)).toEqual(['Bot', 'Progression', 'Personality', 'Appearance']);
   });
 
   it('gives every error code words and flags an unknown one', () => {
