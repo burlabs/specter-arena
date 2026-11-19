@@ -271,7 +271,7 @@ def test_the_v5_fixture_upgrades_to_v7_in_one_open_with_one_backup(tmp_path: Pat
 def test_work_and_xp_rows_and_bindings_are_untouched_by_the_migration(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     path = seeded_v6(data_dir)["path"]
-    before = sqlite3.connect(path)
+    before = sqlite3.connect(str(path))
     expected = {k: v for k, v in ledger_digest(before).items() if k != "bot_binding"}
     bindings = [tuple(r) for r in before.execute("SELECT * FROM bot_binding ORDER BY binding_seq")]
     before.close()
