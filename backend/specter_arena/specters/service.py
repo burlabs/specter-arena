@@ -4,6 +4,7 @@ import asyncio
 import base64
 import binascii
 import contextlib
+import logging
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -12,7 +13,7 @@ from typing import Any, Final, TypeVar
 from ..store import Store
 from ..store import errors as store_errors
 from ..store import specters as db
-from ..summoner import Summoner, SummonFailure
+from ..summoner import Summoner, SummonFailure, UnavailableSummoner
 from .brief import BriefRejected, build_brief, clean_text
 from .bundled import BundledArtError, prepare
 from .png import MAX_INPUT_BYTES, ImageRejected, reencode_png
@@ -27,6 +28,9 @@ from .profile import (
 from .prompt import SUMMON_PROMPT_VERSION, build_prompt
 
 T = TypeVar("T")
+
+_LOG = logging.getLogger("specter_arena.specters.service")
+DISCARD_BOUND_S: Final = 30.0  # one overall bound for the boot-time slot cleanup
 
 REQUEST_ID: Final = re.compile(r"req_[0-9a-f]{24}")
 ASSET_ID: Final = re.compile(r"ast_[0-9a-f]{24}")
@@ -158,6 +162,7 @@ class SpecterService:
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._admit = asyncio.Lock()
         self._image_gate = asyncio.Semaphore(1)
+        self._cleanups: set[asyncio.Task[None]] = set()
         self._closed = False
 
     # ---- plumbing -------------------------------------------------------------------------
@@ -201,11 +206,14 @@ class SpecterService:
 
     async def start(self) -> None:
         """Fail requests a previous process left running, then install the bundled portraits."""
-        await self._call(db.sweep_interrupted, self._clock())
+        await self._sweep()
         try:
             prepared = await asyncio.to_thread(prepare)
-        except (BundledArtError, ImageRejected, OSError):
-            return  # never serve art that fails its pinned hash; a test proves none is skipped
+        except (BundledArtError, ImageRejected, OSError) as error:
+            # Never serve art that fails its pinned hash; a test proves none is skipped. Log the
+            # exception type once so a missing or tampered portrait is not silent.
+            _LOG.warning("bundled portraits not installed: %s", type(error).__name__)
+            return
         base_ms = self._clock()
         for index, item in enumerate(prepared):
             await self._call(
@@ -218,9 +226,25 @@ class SpecterService:
                 now_ms=base_ms + index,  # the gallery lists bundled art in BUNDLED order
             )
 
+    async def _sweep(self) -> None:
+        """Fail requests no running task owns, then close their Crew slots in the background."""
+        swept = await self._call(db.sweep_interrupted, self._clock())
+        if not swept:
+            return
+        cleanup = asyncio.create_task(self._discard(swept))
+        self._cleanups.add(cleanup)
+        cleanup.add_done_callback(self._cleanups.discard)
+
+    async def _discard(self, request_ids: Sequence[str]) -> None:
+        """Best effort: a slot that cannot be closed stays in Crew (a known limitation)."""
+        with contextlib.suppress(Exception):
+            async with asyncio.timeout(DISCARD_BOUND_S):
+                for request_id in request_ids:
+                    await self._summoner.discard(request_id)
+
     async def close(self) -> None:
         self._closed = True
-        tasks = list(self._tasks.values())
+        tasks = [*self._tasks.values(), *self._cleanups]
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -252,7 +276,8 @@ class SpecterService:
 
     async def start_summoning(self, binding_id: str, body: object) -> tuple[int, dict[str, Any]]:
         binding_id = self._binding(binding_id)
-        if self._closed:
+        if self._closed or isinstance(self._summoner, UnavailableSummoner):
+            # No request row and no budget: a retry after the owner approves the grant must work.
             raise SpecterError("generation_unavailable", 503)
         if not isinstance(body, dict) or not set(body) <= {"requestId", "purpose", "style", "keep"}:
             raise SpecterError("invalid_body", 400)
@@ -311,7 +336,7 @@ class SpecterService:
                 # (for example a failed terminal write). Fail it once and retry.
                 if error.code != "generation_in_flight" or self._tasks or attempt == 2:
                     raise
-                await self._call(db.sweep_interrupted, self._clock())
+                await self._sweep()
         raise AssertionError("unreachable")
 
     async def _run(

@@ -11,11 +11,10 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
-from .proxy_auth import CONTRACT_VERSION, signed
+from .proxy_auth import ASSETS_PATH, CONTRACT_VERSION, signed
+from .proxy_auth import MAX_BODY_BYTES as MAX_BODY_BYTES
 
-MAX_BODY_BYTES = 1_572_864
 NOSNIFF = {"X-Content-Type-Options": "nosniff"}
-_ASSETS_PATH = "/api/assets"
 UNKNOWN_SCENE_ASSET = "unknown_scene_asset"
 Handler = Callable[[Request], Awaitable[Response]]
 
@@ -30,7 +29,7 @@ def capped(handler: Handler) -> Handler:
 
     @functools.wraps(handler)
     async def wrapper(request: Request) -> Response:
-        too_big = "asset_too_large" if request.url.path == _ASSETS_PATH else "body_too_large"
+        too_big = "asset_too_large" if request.url.path == ASSETS_PATH else "body_too_large"
         raw = request.headers.get("content-length", "")
         if not raw.isdigit() or int(raw) > MAX_BODY_BYTES:
             return _error(too_big, 413)
