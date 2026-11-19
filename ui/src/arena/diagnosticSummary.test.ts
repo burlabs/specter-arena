@@ -18,6 +18,18 @@ const FAKES: ReadonlyArray<[string, string]> = [
   ['slack token', `${'xo'}xb-${'1234'.repeat(4)}`],
   ['aws key id', `${'AK'}IA${'ABCDEFGHIJKLMNOP'}`],
   ['jwt', `${'ey'}J${'hbGciOiJIUzI1'}.${'eyJzdWIiOiIxMjM0'}.${'sig12345678'}`],
+  ['refresh token assignment', `${'refresh'}_${'tok'}en=${'r8'.repeat(8)}`],
+  ['client secret assignment', `${'client'}_${'sec'}ret=${'c5'.repeat(8)}`],
+  ['id token with a colon', `${'id'}_${'tok'}en: ${'i2'.repeat(8)}`],
+  ['private key assignment', `${'private'}_${'k'}ey=${'p4'.repeat(8)}`],
+  ['session id assignment', `${'session'}_${'i'}d=${'s6'.repeat(8)}`],
+  ['quoted json value', `{"${'tok'}en":"${'j3'.repeat(8)}"}`],
+  ['quoted value with a space', `${'pass'}word="${'two words'} here"`],
+  ['basic authorization header', `${'Author'}ization: ${'Ba'}sic ${'dXNlcjpwYXNzd29yZA'}==`],
+  ['token authorization header', `${'Author'}ization: ${'Tok'}en ${'t7'.repeat(8)}`],
+  ['basic credential on its own', `${'Ba'}sic ${'dXNlcjpwYXNzd29yZA'}==`],
+  ['cookie header', `${'Coo'}kie: ${'sid'}=${'k9'.repeat(8)}`],
+  ['url with user and password', `${'postgres'}://${'user'}:${'pw'.repeat(4)}@db.example.test/app`],
 ];
 
 describe('diagnosticSummary', () => {
@@ -99,5 +111,13 @@ describe('diagnosticSummary', () => {
 describe('scrubSecrets', () => {
   it('leaves ordinary text alone', () => {
     expect(scrubSecrets('state: open, 2 attempts, key results are fine')).toBe('state: open, 2 attempts, key results are fine');
+  });
+
+  it.each(['monkey=banana', 'keyboard: yes', 'author: Sam', 'Basic training', 'Basic configuration needed', 'selection: work', 'condition: working (running)'])('keeps %s readable', (text) => {
+    expect(scrubSecrets(text)).toBe(text);
+  });
+
+  it('removes the whole quoted value, not just its first word', () => {
+    expect(scrubSecrets(`${'pass'}word="${'two words'} here" after`)).toBe('[removed] after');
   });
 });

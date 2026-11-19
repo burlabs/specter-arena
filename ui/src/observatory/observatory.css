@@ -67,6 +67,24 @@
   outline: none;
 }
 
+.specter-arena-root a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .specter-arena-root button:focus-visible,
+  .specter-arena-root a:focus-visible,
+  .specter-arena-root input:focus-visible,
+  .specter-arena-root select:focus-visible,
+  .specter-arena-root textarea:focus-visible,
+  .specter-arena-root [tabindex="0"]:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
 .specter-arena-root button {
   cursor: pointer;
 }

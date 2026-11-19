@@ -21,9 +21,14 @@ export interface DiagnosticInput {
 // Free text from the roster or the work ledger can carry anything a user typed, so the finished text is scrubbed
 // as well as built from an allow-list.
 const SCRUBBERS: ReadonlyArray<RegExp> = [
+  /\bAuthorization\s*:\s*\S+(?:\s+\S+)?/gi,
   /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi,
+  /\bBasic\s+(?=[A-Za-z0-9+/]*[0-9=+/])[A-Za-z0-9+/]{8,}={0,2}/g,
+  /\b(?:Set-)?Cookie\s*:\s*[^\n]+/gi,
+  /\b[a-z][a-z0-9+.-]*:\/\/[^\s/@]+@\S+/gi,
   /\bhttps?:\/\/\S+/gi,
-  /\b(?:token|key|auth|secret|password|passwd|api[_-]?key|access[_-]?token|session)\s*[=:]\s*\S+/gi,
+  // A credential word, optionally inside a longer name such as refresh_token or client_secret, then = or : and a value.
+  /(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_-])*(?:token|secret|key|password|passwd|credential|session|cookie|auth)(?:[_-][A-Za-z0-9]+)*["']?\s*[=:]\s*(?:"[^"]*"|'[^']*'|[^\s"',;]+)/gi,
   /\bsk-[A-Za-z0-9_-]{8,}/g,
   /\bgh[pousr]_[A-Za-z0-9]{8,}/g,
   /\bxox[abprs]-[A-Za-z0-9-]{8,}/g,

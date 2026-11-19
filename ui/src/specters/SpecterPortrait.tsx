@@ -40,8 +40,9 @@ export function SpecterPortrait({ specter, size, decorative = false, active = fa
           role={hidden ? undefined : 'img'}
           aria-label={hidden ? undefined : `${name}: ${caption}`}
           aria-hidden={framed ? 'true' : undefined}
+          data-initials={decorative ? tokenInitials(name) : undefined}
         >
-          {tokenInitials(name)}
+          {decorative ? null : tokenInitials(name)}
         </span>
       )}
     </span>

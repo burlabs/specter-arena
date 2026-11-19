@@ -58,6 +58,20 @@ describe('SpecterPortrait', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
+  it('keeps the initials of a decorative token out of its text and in data-initials', () => {
+    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" decorative />);
+    const token = container.querySelector('.sa-portrait__token');
+    expect(token?.textContent).toBe('');
+    expect(token?.getAttribute('data-initials')).toBe('L');
+  });
+
+  it('keeps the initials of a labelled token as text with no data-initials', () => {
+    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" />);
+    const token = container.querySelector('.sa-portrait__token');
+    expect(token?.textContent).toBe('L');
+    expect(token?.hasAttribute('data-initials')).toBe(false);
+  });
+
   it('shows no caption while the image loads, then the image with an alt', async () => {
     const { container } = render(<SpecterPortrait specter={specterOf({ portrait: asset })} size="md" />);
     expect(container.querySelector('[data-portrait="loading"]')).toBeTruthy();

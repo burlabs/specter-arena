@@ -49,6 +49,10 @@
   font-weight: 800;
 }
 
+.specter-arena-root .sa-portrait__token[data-initials]::before {
+  content: attr(data-initials);
+}
+
 .specter-arena-root .sa-portrait--lg .sa-portrait__token {
   font-size: 40px;
 }
