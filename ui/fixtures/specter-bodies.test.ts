@@ -3,10 +3,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SCENARIO_NAMES, rosterBody } from './monitoring-bodies.ts';
+import roster from '../../backend/specter_arena/specters/heroes.json';
+import { HERO_IDS } from '../src/contracts/types.ts';
+import { SCENARIO_NAMES } from './monitoring-bodies.ts';
 import {
+  FIXTURE_BOT_COUNT,
   SPECTER_SCENARIO_NAMES,
   activeSpecterScenario,
+  displayNameOf,
   resetSpecterFixtures,
   setSpecterScenario,
   specterResponse,
@@ -18,16 +22,15 @@ const ajv = new Ajv({ strict: true });
 for (const name of readdirSync(schemasDir).filter((file) => file.endsWith('.schema.json'))) {
   ajv.addSchema(JSON.parse(readFileSync(`${schemasDir}${name}`, 'utf8')) as object);
 }
-const validator = (name: string) => {
-  const validate = ajv.getSchema(`urn:specter-arena:contract:${name}:v1`);
+const validator = (name: string, version = 1) => {
+  const validate = ajv.getSchema(`urn:specter-arena:contract:${name}:v${version}`);
   if (validate === undefined) throw new Error(`no schema ${name}`);
   return validate;
 };
 
 const PREFIX = '/apps/specter-arena/api';
-const ATLAS = rosterBody('default').items[0]?.bindingId ?? '';
-const BRINDLE = rosterBody('default').items[1]?.bindingId ?? '';
-const REQ = (n: number) => `req_${String(n).padStart(24, '0')}`;
+const bindingOf = (n: number) => `bnd_${'a'.repeat(20)}${n.toString(16).padStart(4, '0')}`;
+const NAMES = ['Vell', 'Stitch', 'Reeve', 'Rattle', 'Ember', 'Shard', 'Poly', 'Tide', 'Lume', 'Moss', 'bur'];
 
 async function call(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ status: number; body: any }> {
   const response = await specterResponse(`${PREFIX}${path}`, method, body);
@@ -38,9 +41,10 @@ async function call(method: 'GET' | 'POST', path: string, body?: unknown): Promi
 beforeEach(() => resetSpecterFixtures());
 
 describe('scenario names', () => {
-  it('are unique and none is a monitoring scenario', () => {
+  it('are unique, none is a monitoring scenario, and the retired ones are gone', () => {
     expect(new Set(SPECTER_SCENARIO_NAMES).size).toBe(SPECTER_SCENARIO_NAMES.length);
     for (const name of SPECTER_SCENARIO_NAMES) expect((SCENARIO_NAMES as readonly string[]).includes(name)).toBe(false);
+    for (const retired of ['specters-empty', 'summon-failure', 'long-names']) expect(SPECTER_SCENARIO_NAMES as readonly string[]).not.toContain(retired);
   });
 
   it('defaults to specters-none and follows the override', () => {
@@ -49,9 +53,19 @@ describe('scenario names', () => {
     expect(activeSpecterScenario()).toBe('specters');
   });
 
-  it('serves nothing for paths that are not Specter routes', () => {
+  it('serves nothing for paths that are not Specter routes, including the removed ones', () => {
     expect(specterResponse(`${PREFIX}/roster`, 'GET')).toBeNull();
     expect(specterResponse(`${PREFIX}/probe/run`, 'POST', {})).toBeNull();
+    for (const [path, method] of [
+      [`/specters/${bindingOf(1)}/summonings`, 'POST'],
+      [`/specters/${bindingOf(1)}/manual`, 'POST'],
+      [`/specters/${bindingOf(1)}/name`, 'POST'],
+      [`/specters/${bindingOf(1)}/archive`, 'POST'],
+      ['/summonings/req_1', 'GET'],
+      ['/summonings/req_1/accept', 'POST'],
+    ] as const) {
+      expect(specterResponse(`${PREFIX}${path}`, method, {})).toBeNull();
+    }
   });
 
   it('refuses the wrong method on a Specter route', async () => {
@@ -59,54 +73,78 @@ describe('scenario names', () => {
   });
 });
 
+describe('the roster', () => {
+  it('pins the eleven names and ids, and HERO_IDS equals the roster file', () => {
+    expect(roster.heroes.map((hero) => hero.name)).toEqual(NAMES);
+    expect(roster.heroes.map((hero) => hero.id)).toEqual([...HERO_IDS]);
+  });
+
+  it('composes display names the way the backend does', () => {
+    expect(displayNameOf('Vell', 1)).toBe('Vell');
+    expect(displayNameOf('Vell', 2)).toBe('Vell II');
+    expect(displayNameOf('bur', 3)).toBe('bur III');
+    expect(displayNameOf('Vell', 4)).toBe('Vell IV');
+    expect(displayNameOf('Vell', 3999)).toBe('Vell MMMCMXCIX');
+    expect(displayNameOf('Vell', 4000)).toBe('Vell 4000');
+  });
+});
+
 describe.each(SPECTER_SCENARIO_NAMES)('%s bodies validate against the contracts', (scenario: SpecterScenarioName) => {
-  it('serves specters.v1, each specter.v1 and the portraits list', async () => {
+  it('serves specters.v2, each specter.v2 and the portraits list', async () => {
     setSpecterScenario(scenario);
     const list = await call('GET', '/specters');
-    expect(validator('specters')(list.body), JSON.stringify(validator('specters').errors)).toBe(true);
+    const check = validator('specters', 2);
+    expect(check(list.body), JSON.stringify(check.errors)).toBe(true);
+    expect(list.body.items).toHaveLength(FIXTURE_BOT_COUNT[scenario]);
     for (const item of list.body.items) {
       const one = await call('GET', `/specters/${item.bindingId}`);
-      expect(validator('specter')(one.body)).toBe(true);
+      expect(validator('specter', 2)(one.body), JSON.stringify(validator('specter', 2).errors)).toBe(true);
     }
     const portraits = await call('GET', '/portraits');
-    expect(portraits.body.items).toHaveLength(3);
+    expect(portraits.body.items).toHaveLength(11);
     for (const item of portraits.body.items) expect(validator('portrait-asset')(item)).toBe(true);
   });
 });
 
-describe('seeds', () => {
-  it.each([
-    ['specters-none', 0],
-    ['specters-empty', 0],
-    ['specters', 3],
-    ['summon-failure', 1],
-    ['asset-failed', 1],
-    ['long-names', 2],
-  ] as const)('%s lists %i Specters', async (scenario, count) => {
-    setSpecterScenario(scenario);
-    expect((await call('GET', '/specters')).body.items).toHaveLength(count);
+describe('assignment', () => {
+  it('gives binding n hero (n-1) mod 11 at ordinal (n-1) div 11 + 1', async () => {
+    setSpecterScenario('arena-perf-specters');
+    const items = (await call('GET', '/specters')).body.items;
+    expect(items.slice(0, 11).map((item: any) => item.name)).toEqual(NAMES);
+    expect(items[11].displayName).toBe('Vell II');
+    expect(items[11].ordinal).toBe(2);
+    expect(items[19].displayName).toBe('Lume II');
+    expect(items[0].bindingId).toBe(bindingOf(1));
+    expect(items[10].displayName).toBe('bur');
   });
 
-  it('gives the three seeded Specters distinct ids, a portrait, a token and long text', async () => {
+  it('gives the heroes-wrapped scenario a thirteenth bot named Stitch II', async () => {
+    setSpecterScenario('heroes-wrapped');
+    const items = (await call('GET', '/specters')).body.items;
+    expect(items).toHaveLength(13);
+    expect(items[12].displayName).toBe('Stitch II');
+  });
+
+  it('starts every hero on version 0 with its own portrait, except bot 2 in specters', async () => {
     setSpecterScenario('specters');
     const items = (await call('GET', '/specters')).body.items;
-    expect(new Set(items.map((item: any) => item.specterId)).size).toBe(3);
-    expect(items.filter((item: any) => item.portrait === null)).toHaveLength(1);
-    expect(new Set(items.filter((item: any) => item.portrait).map((item: any) => item.portrait.assetId)).size).toBe(2);
-    expect(items[2].profile.personality.length).toBeGreaterThan(300);
+    expect(items).toHaveLength(7);
+    expect(items.filter((item: any) => item.avatarChosen).map((item: any) => item.bindingId)).toEqual([bindingOf(2)]);
+    expect(items[1].version).toBe(1);
+    expect(items[0].version).toBe(0);
+    expect(new Set(items.filter((item: any) => !item.avatarChosen).map((item: any) => item.portrait.assetId)).size).toBe(6);
   });
 
-  it('gives long-names a 40-character unbroken name and a 60-character epithet', async () => {
-    setSpecterScenario('long-names');
-    const first = (await call('GET', '/specters')).body.items[0];
-    expect(first.profile.name).toHaveLength(40);
-    expect(first.profile.epithet).toHaveLength(60);
-    expect(first.profile.name).not.toMatch(/\s/);
+  it('keeps the bot counts the roster fixture expects', () => {
+    expect(FIXTURE_BOT_COUNT['arena-perf-specters']).toBe(20);
+    expect(FIXTURE_BOT_COUNT['specters-none']).toBe(0);
   });
+});
 
+describe('assets', () => {
   it('serves distinct bundled PNGs by id, and the asset body validates', async () => {
     const items = (await call('GET', '/portraits')).body.items;
-    expect(new Set(items.map((item: any) => item.assetId)).size).toBe(3);
+    expect(new Set(items.map((item: any) => item.assetId)).size).toBe(11);
     const datas = new Set<string>();
     for (const item of items) {
       const asset = await call('GET', `/assets/${item.assetId}`);
@@ -114,7 +152,7 @@ describe('seeds', () => {
       expect(atob(asset.body.dataBase64).startsWith('\u0089PNG')).toBe(true);
       datas.add(asset.body.dataBase64);
     }
-    expect(datas.size).toBe(3);
+    expect(datas.size).toBe(11);
   });
 
   it('fails every asset in asset-failed', async () => {
@@ -123,177 +161,67 @@ describe('seeds', () => {
     expect((await call('GET', `/assets/${items[0].assetId}`)).status).toBe(404);
   });
 
-  it('404s an unknown asset, an unknown specter and an unknown request', async () => {
+  it('404s an unknown asset and an unknown binding', async () => {
     expect((await call('GET', '/assets/ast_nope')).body.error).toBe('unknown_asset');
-    expect((await call('GET', `/specters/${ATLAS}`)).body.error).toBe('no_specter');
-    expect((await call('GET', `/summonings/${REQ(1)}`)).body.error).toBe('unknown_request');
+    expect((await call('GET', `/specters/${bindingOf(1)}`)).body.error).toBe('unknown_binding');
+  });
+
+  it('rejects an upload that is not a PNG, is not base64, or is too large', async () => {
+    expect((await call('POST', '/assets', { mediaType: 'image/jpeg', dataBase64: 'AAAA' })).status).toBe(415);
+    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: '***' })).status).toBe(422);
+    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: btoa('not a png!!') })).status).toBe(422);
+    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: 'A'.repeat(1_398_105) })).status).toBe(413);
+    expect((await call('POST', '/assets', { mediaType: 'image/png' })).status).toBe(400);
   });
 });
 
-describe('summoning lifecycle', () => {
-  const start = (n: number, body: Record<string, unknown> = {}) => call('POST', `/specters/${ATLAS}/summonings`, { requestId: REQ(n), ...body });
+describe('avatar', () => {
+  const portraitPath = (n: number) => `/specters/${bindingOf(n)}/portrait`;
 
-  it('advances queued, running, ready by poll count and validates every step', async () => {
-    const created = await start(1);
-    expect(created.status).toBe(202);
-    expect(created.body.status).toBe('queued');
-    expect(validator('summoning')(created.body)).toBe(true);
-    const running = await call('GET', `/summonings/${REQ(1)}`);
-    expect(running.body.status).toBe('running');
-    expect(running.body.budget.bindingRemaining).toBe(4);
-    const ready = await call('GET', `/summonings/${REQ(1)}`);
-    expect(ready.body.status).toBe('ready');
-    expect(validator('summoning')(ready.body)).toBe(true);
-    expect((await call('GET', `/summonings/${REQ(1)}`)).body.status).toBe('ready');
-  });
+  async function upload(): Promise<string> {
+    const portraits = (await call('GET', '/portraits')).body.items;
+    const first = (await call('GET', `/assets/${portraits[3].assetId}`)).body;
+    const response = await call('POST', '/assets', { mediaType: 'image/png', dataBase64: first.dataBase64, label: 'Mine' });
+    return response.body.assetId;
+  }
 
-  it('is idempotent on requestId', async () => {
-    await start(1);
-    const again = await start(1);
-    expect(again.status).toBe(200);
-    expect(again.body.requestId).toBe(REQ(1));
-  });
-
-  it('allows one request in flight per bot, and a budget of five', async () => {
-    await start(1);
-    expect((await start(2)).body.error).toBe('generation_in_flight');
-    for (let n = 1; n <= 5; n += 1) {
-      if (n > 1) await start(n);
-      await call('GET', `/summonings/${REQ(n)}`);
-      await call('GET', `/summonings/${REQ(n)}`);
-    }
-    const sixth = await start(6);
-    expect(sixth.status).toBe(429);
-    expect(sixth.body.error).toBe('budget_exhausted');
-  });
-
-  it('rejects a bad binding and a bad body', async () => {
-    expect((await call('POST', '/specters/nope/summonings', { requestId: REQ(1) })).body.error).toBe('unknown_binding');
-    expect((await call('POST', `/specters/${ATLAS}/summonings`, { requestId: 'x' })).body.error).toBe('invalid_body');
-    expect((await call('POST', `/specters/${ATLAS}/summonings`, null)).body.error).toBe('invalid_body');
-  });
-
-  it('fails with a timeout in summon-failure', async () => {
-    setSpecterScenario('summon-failure');
-    await start(1);
-    await call('GET', `/summonings/${REQ(1)}`);
-    const failed = await call('GET', `/summonings/${REQ(1)}`);
-    expect(failed.body).toMatchObject({ status: 'failed', error: 'timeout' });
-    expect(validator('summoning')(failed.body)).toBe(true);
-  });
-
-  it('cancels, including a ready candidate, and leaves a finished request alone', async () => {
-    await start(1);
-    expect((await call('POST', `/summonings/${REQ(1)}/cancel`, {})).body.status).toBe('cancelled');
-    expect((await call('GET', `/summonings/${REQ(1)}`)).body.status).toBe('cancelled');
-    expect((await call('POST', `/summonings/${REQ(1)}/cancel`, {})).body.status).toBe('cancelled');
-    expect((await call('POST', `/summonings/${REQ(9)}/cancel`, {})).body.error).toBe('unknown_request');
-  });
-
-  it('accepts with the expected version, rejects stale and not-ready, and supersedes other candidates', async () => {
-    await start(1);
-    expect((await call('POST', `/summonings/${REQ(1)}/accept`, { expectedVersion: 0 })).body.error).toBe('not_ready');
-    await call('GET', `/summonings/${REQ(1)}`);
-    await call('GET', `/summonings/${REQ(1)}`);
-    expect((await call('POST', `/summonings/${REQ(1)}/accept`, { expectedVersion: 4 })).body.error).toBe('version_conflict');
-    expect((await call('POST', `/summonings/${REQ(1)}/accept`, { expectedVersion: -1 })).body.error).toBe('invalid_body');
-    const accepted = await call('POST', `/summonings/${REQ(1)}/accept`, { expectedVersion: 0 });
-    expect(accepted.status).toBe(200);
-    expect(accepted.body.version).toBe(1);
-    expect(validator('specter')(accepted.body)).toBe(true);
-    expect((await call('GET', `/summonings/${REQ(1)}`)).body.status).toBe('accepted');
-    expect((await call('POST', `/summonings/${REQ(9)}/accept`, { expectedVersion: 0 })).body.error).toBe('unknown_request');
-
-    await start(2);
-    await call('GET', `/summonings/${REQ(2)}`);
-    await call('GET', `/summonings/${REQ(2)}`);
-    const reroll = await call('POST', `/summonings/${REQ(2)}/accept`, { expectedVersion: 1 });
-    expect(reroll.body.version).toBe(2);
-    expect(reroll.body.specterId).toBe(accepted.body.specterId);
-  });
-
-  it('applies keep from the current Specter on a reroll', async () => {
+  it('choosing an asset bumps the version and sets avatarChosen', async () => {
     setSpecterScenario('specters');
-    await start(1, { keep: ['name', 7] });
-    await call('GET', `/summonings/${REQ(1)}`);
-    const ready = await call('GET', `/summonings/${REQ(1)}`);
-    expect(ready.body.candidate.name).toBe('Vesper');
-    expect(validator('summoning')(ready.body)).toBe(true);
-  });
-});
-
-describe('writes', () => {
-  const hand = (name = 'Hand') => ({
-    contractVersion: 1,
-    name,
-    epithet: null,
-    personality: 'p',
-    appearance: 'a',
-    mannerism: 'm',
-    signatureAction: null,
-    assignmentRationale: 'r',
-    artBrief: 'b',
+    const portraits = (await call('GET', '/portraits')).body.items;
+    const chosen = await call('POST', portraitPath(1), { expectedVersion: 0, assetId: portraits[5].assetId });
+    expect(chosen.status).toBe(200);
+    expect(chosen.body).toMatchObject({ version: 1, avatarChosen: true, name: 'Vell' });
+    expect(chosen.body.portrait.assetId).toBe(portraits[5].assetId);
+    expect(validator('specter', 2)(chosen.body)).toBe(true);
   });
 
-  it('saves a manual profile as source manual, and checks the profile and the version', async () => {
-    const saved = await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 0, profile: hand() });
-    expect(saved.body).toMatchObject({ source: 'manual', promptVersion: null, version: 1 });
-    expect(validator('specter')(saved.body)).toBe(true);
-    expect((await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 0, profile: hand() })).body.error).toBe('version_conflict');
-    expect((await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 1, profile: { ...hand(), name: '' } })).body.error).toBe('invalid_body');
-    expect((await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 1, profile: { ...hand(), epithet: 'x'.repeat(61) } })).body.error).toBe('invalid_body');
-    expect((await call('POST', '/specters/bad/manual', { expectedVersion: 0, profile: hand() })).status).toBe(404);
-    expect((await call('POST', `/specters/${BRINDLE}/manual`, 'no')).body.error).toBe('invalid_body');
+  it('reset returns the hero portrait, never null, and avatarChosen false', async () => {
+    setSpecterScenario('specters');
+    const portraits = (await call('GET', '/portraits')).body.items;
+    const reset = await call('POST', portraitPath(2), { expectedVersion: 1, assetId: null });
+    expect(reset.status).toBe(200);
+    expect(reset.body).toMatchObject({ version: 2, avatarChosen: false });
+    expect(reset.body.portrait.assetId).toBe(portraits[1].assetId);
   });
 
-  it('renames, clears and sets the epithet, and needs a Specter', async () => {
-    expect((await call('POST', `/specters/${BRINDLE}/name`, { expectedVersion: 0, name: 'X' })).body.error).toBe('no_specter');
-    await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 0, profile: hand() });
-    const renamed = await call('POST', `/specters/${BRINDLE}/name`, { expectedVersion: 1, name: 'Renamed', epithet: 'The Second' });
-    expect(renamed.body.profile).toMatchObject({ name: 'Renamed', epithet: 'The Second' });
-    expect(renamed.body.version).toBe(2);
-    const kept = await call('POST', `/specters/${BRINDLE}/name`, { expectedVersion: 2, name: 'Again' });
-    expect(kept.body.profile.epithet).toBe('The Second');
-    expect((await call('POST', `/specters/${BRINDLE}/name`, { expectedVersion: 3, name: '' })).body.error).toBe('invalid_body');
+  it('a same-avatar write is a no-op that does not bump the version', async () => {
+    setSpecterScenario('specters');
+    const same = await call('POST', portraitPath(1), { expectedVersion: 0, assetId: null });
+    expect(same.body.version).toBe(0);
+    const uploaded = await upload();
+    await call('POST', portraitPath(1), { expectedVersion: 0, assetId: uploaded });
+    const again = await call('POST', portraitPath(1), { expectedVersion: 1, assetId: uploaded });
+    expect(again.body.version).toBe(1);
   });
 
-  it('sets, clears and rejects portraits', async () => {
-    await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 0, profile: hand() });
-    const first = (await call('GET', '/portraits')).body.items[0];
-    const set = await call('POST', `/specters/${BRINDLE}/portrait`, { expectedVersion: 1, assetId: first.assetId });
-    expect(set.body.portrait.assetId).toBe(first.assetId);
-    expect(set.body.portrait.dataBase64).toBeNull();
-    const cleared = await call('POST', `/specters/${BRINDLE}/portrait`, { expectedVersion: 2, assetId: null });
-    expect(cleared.body.portrait).toBeNull();
-    expect((await call('POST', `/specters/${BRINDLE}/portrait`, { expectedVersion: 3, assetId: 'ast_nope' })).body.error).toBe('unknown_asset');
-    expect((await call('POST', `/specters/${BRINDLE}/portrait`, { expectedVersion: 3, assetId: 4 })).body.error).toBe('unknown_asset');
-    expect((await call('POST', `/specters/${ATLAS}/portrait`, { expectedVersion: 0, assetId: null })).body.error).toBe('no_specter');
-  });
-
-  it('archives with the right version only', async () => {
-    expect((await call('POST', `/specters/${BRINDLE}/archive`, { expectedVersion: 0 })).body.error).toBe('no_specter');
-    await call('POST', `/specters/${BRINDLE}/manual`, { expectedVersion: 0, profile: hand() });
-    expect((await call('POST', `/specters/${BRINDLE}/archive`, { expectedVersion: 9 })).body.error).toBe('version_conflict');
-    expect((await call('POST', `/specters/${BRINDLE}/archive`, {})).body.error).toBe('invalid_body');
-    expect((await call('POST', '/specters/bad/archive', { expectedVersion: 1 })).status).toBe(404);
-    expect((await call('POST', `/specters/${BRINDLE}/archive`, { expectedVersion: 1 })).body).toEqual({ contractVersion: 1, archived: true });
-    expect((await call('GET', '/specters')).body.items).toHaveLength(0);
-  });
-
-  it('accepts a PNG upload and rejects other media, bad bytes and oversize', async () => {
-    const png = btoa('\u0089PNG\r\n\u001a\n-rest');
-    const uploaded = await call('POST', '/assets', { mediaType: 'image/png', dataBase64: png, label: 'Mine' });
-    expect(uploaded.status).toBe(201);
-    expect(validator('portrait-asset')(uploaded.body)).toBe(true);
-    expect(uploaded.body.origin).toBe('uploaded');
-    expect((await call('GET', `/assets/${uploaded.body.assetId}`)).body.dataBase64).toBe(png);
-    expect((await call('GET', '/portraits')).body.items).toHaveLength(4);
-    const unnamed = await call('POST', '/assets', { mediaType: 'image/png', dataBase64: png });
-    expect(unnamed.body.label).toBe('Uploaded portrait');
-    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: btoa('plain text') })).body.error).toBe('invalid_image');
-    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: '***' })).body.error).toBe('invalid_image');
-    expect((await call('POST', '/assets', { mediaType: 'image/gif', dataBase64: png })).body.error).toBe('unsupported_media');
-    expect((await call('POST', '/assets', { mediaType: 'image/png', dataBase64: 'A'.repeat(1_398_105) })).body.error).toBe('asset_too_large');
-    expect((await call('POST', '/assets', { mediaType: 'image/png' })).body.error).toBe('invalid_body');
+  it('answers 409, 404 and 400 the way the backend does', async () => {
+    setSpecterScenario('specters');
+    expect((await call('POST', portraitPath(1), { expectedVersion: 4, assetId: null })).body.error).toBe('version_conflict');
+    expect((await call('POST', portraitPath(1), { expectedVersion: 0, assetId: 'ast_' + '0'.repeat(24) })).body.error).toBe('unknown_asset');
+    expect((await call('POST', portraitPath(99), { expectedVersion: 0, assetId: null })).body.error).toBe('unknown_binding');
+    expect((await call('POST', '/specters/nope/portrait', { expectedVersion: 0, assetId: null })).body.error).toBe('unknown_binding');
+    for (const body of [{}, { expectedVersion: 0 }, { expectedVersion: -1, assetId: null }, { expectedVersion: 0, assetId: 5 }, { expectedVersion: 0, assetId: null, x: 1 }]) {
+      expect((await call('POST', portraitPath(1), body)).body.error, JSON.stringify(body)).toBe('invalid_body');
+    }
   });
 });
