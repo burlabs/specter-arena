@@ -1,5 +1,7 @@
 # FP-06+07 tasks
 
+> Superseded by FP-16 (program amendment PA-2, 2026-11-19): summoning, the `/api/chat` grant, the summoner agent and `agents/` were removed. This folder is kept as history; `.kiro/specs/fp-16-heroes-parity/` is current.
+
 Shared single-writer files change in one open PR at a time. FP-06+07 changes none of root `package.json`, any lockfile, `requirements.txt` or `.github/workflows/`. `contracts/OWNERS.md` changes in PR-A (rows) and PR-C (flips, last commit). `ui/src/contracts/contracts.test.ts` changes in PR-A (`BACKEND_ONLY`) and PR-C (`TYPED`). `ui/src/build-output.test.ts` changes in PR-C.
 
 ## PR-A: shell, contracts and store

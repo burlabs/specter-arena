@@ -1,5 +1,7 @@
 # FP-06+07 requirements: summoning, persistent Specters, and safe visuals
 
+> Superseded by FP-16 (program amendment PA-2, 2026-11-19): summoning, the `/api/chat` grant, the summoner agent and `agents/` were removed. This folder is kept as history; `.kiro/specs/fp-16-heroes-parity/` is current.
+
 One session, one design, one plan, at most three PRs (batching approved by Eric on 2026-11-15, limits in the program context §3). PR-A is the shell, contracts and store, PR-B the backend generation and assets, PR-C the UI. Requirement ids are registered in `spec/ids.md`. Decisions are recorded in `design.md`.
 
 Under program amendment PA-1, read every "agent" below that anchors a Specter, a binding or a roster entry as bot. The Grimoire is cut (Eric, 2026-11-17): this feature owns the classless `specter-profile.v1` contract, a minimal creative brief and one fixed generation prompt. Where a criterion mentions FP-05 contracts, read the specter-identity contracts of this feature instead.

@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `9d215422d1d9ff64aeea1d2b23286c35e6284742` (`main` after FP-14 PR-A #141 and PR-B #142)
+Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
 
 State of this file: the release-candidate state, called RC-1, which is the head of commit C1 of FP-14 PR-C. At RC-1 two rows are open on purpose: BLK-01 (the owner sitting OA-5 has not run) and BLK-02 (the two quality gates have not approved the committed release candidate). A later commit on the same PR records the OA-5 result and updates those two rows. This file is part of every packaged artifact (`scripts/package.mjs` `REQUIRED_FILES`), so a reader of an artifact sees the state that was true when it was built.
 
@@ -48,7 +48,7 @@ Each limitation names where it is disclosed to a reader.
 | KL-13 | work-ledger | Orphaned `.partial` and `.restore-*.db` temporary files after a crash are not swept | `docs/release/data-and-recovery.md` |
 | KL-14 | specter-identity | Uploaded portraits beyond about 189 vanish from the 200-entry gallery. There is no upload count cap and no asset garbage collection | `docs/release/threat-model.md` |
 | KL-15 | specter-identity | `backend/specter_arena/store/specters.py` is large. Splitting it is deferred | this file only (maintenance) Status: moot (FP-16): the file now holds heroes, avatars and assets only. |
-| KL-16 | experience | Performance numbers are for the FIXTURE preview on one Apple machine. They say nothing about the installed app | `docs/submission/known-limitations.md` (performance row), `docs/release/evidence-checklist.md` |
+| KL-16 | experience | Performance numbers are for the FIXTURE preview on one Apple machine. They say nothing about the installed app | `docs/submission/known-limitations.md` (performance row), `docs/release/evidence-checklist.md`, `.kiro/specs/fp-16-heroes-parity/performance.md` |
 | KL-17 | experience | The automated accessibility scan covers the FIXTURE preview only. The real host theme, screen-reader output and Windows High Contrast are manual checks | `docs/submission/known-limitations.md`, `docs/release/a11y-checklist.md` |
 | KL-18 | experience | A credential word followed by several unquoted words loses only its first word in the copied summary. Check the summary before sharing it | `docs/submission/known-limitations.md` |
 | KL-19 | delivery | Three moderate `npm audit` findings in the development toolchain (an `eslint` dependency chain). None ships in the artifact. No Python audit was run | `docs/release/threat-model.md` |

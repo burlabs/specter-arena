@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit. Eligibility is the organizers' decision, not a guarantee.
 
-Last verified commit: `fab5b910740d98d3683231705734b8f8a1db7a6f`
+Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
 
 Rules read: the Devpost overview page https://kiroween.devpost.com/ on 2026-11-18 (HTTP 200). The Rules tab https://kiroween.devpost.com/rules returned HTTP 403 to automated fetches on 2026-11-18 (web fetch and curl with a browser user agent), so the requirements below come from the overview's "What to Submit" section and the master plan's W6 summary. The overview itself says to review the Rules tab for full details.
 
