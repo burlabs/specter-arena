@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 from collections.abc import Awaitable, Callable, Coroutine, Iterator
 from pathlib import Path
 from typing import Any
@@ -13,12 +14,12 @@ from typing import Any
 import pytest
 
 from backend.specter_arena.specters import service as service_module
-from backend.specter_arena.specters.bundled import BUNDLED
+from backend.specter_arena.specters.bundled import BUNDLED, BundledArtError
 from backend.specter_arena.specters.profile import FIELDS
 from backend.specter_arena.specters.service import UNSET, Limits, SpecterError, SpecterService
 from backend.specter_arena.store import Store, StoreUnavailable, open_store
 from backend.specter_arena.store import specters as db
-from backend.specter_arena.summoner import SummonFailure
+from backend.specter_arena.summoner import SummonFailure, UnavailableSummoner
 
 from .png_support import png
 from .specter_fakes import (
@@ -354,7 +355,7 @@ def test_ac04_a_late_complete_after_a_sweep_writes_nothing(store: Store) -> None
             window_ms=86_400_000,
         )
         assert db.mark_running(store, rid(5), START_MS)
-        assert db.sweep_interrupted(store, START_MS + 1) == 1
+        assert db.sweep_interrupted(store, START_MS + 1) == (rid(5),)
         late = db.complete_request(
             store,
             rid(5),
@@ -445,6 +446,8 @@ def test_ac04_a_stranded_running_row_does_not_wedge_the_next_request(store: Stor
         await rig.summon(2)
         assert rig.request(7).error_code == "interrupted"
         assert (await rig.settle(2))["status"] == "ready"
+        await asyncio.gather(*rig.service._cleanups)
+        assert rig.summoner.discarded == [rid(7)]
 
     run(scenario)
 
@@ -750,5 +753,148 @@ def test_fp07_ac04_a_portrait_change_leaves_identity_history_and_binding_alone(
         assert (await rig.service.set_portrait(rig.b1, 2, None))["portrait"] is None
         assert await code_of(rig.service.set_portrait(rig.b1, 1, None)) == ("version_conflict", 409)
         assert await code_of(rig.service.set_portrait(rig.b2, 0, None)) == ("no_specter", 404)
+
+    run(scenario)
+
+
+# ---- FP-14 hardening: specter-identity-F1, F2, F3 ----------------------------------------------
+
+
+def count_rows(store: Store, table: str) -> int:
+    with store.read() as conn:
+        return int(conn.execute(f"SELECT count(*) FROM {table}").fetchone()[0])
+
+
+def test_fp14_f1_an_unavailable_summoner_is_503_and_spends_no_budget(store: Store) -> None:
+    """FP-14-AC01/AC06, FP0607-CI-04: attempts without the grant must not lock out summoning."""
+
+    async def scenario() -> None:
+        rig = Rig(store)
+        rig.service = SpecterService(store, UnavailableSummoner(), clock=rig.clock)
+        for n in range(1, 8):
+            assert await code_of(rig.summon(n)) == ("generation_unavailable", 503)
+        assert count_rows(store, "generation_request") == 0
+        budget = await rig.service._budget(rig.b1)
+        assert (budget.binding_remaining, budget.install_remaining) == (5, 20)
+        # Approving the grant later (a real summoner on the same store) works at once.
+        rig.service = SpecterService(store, rig.summoner, clock=rig.clock)
+        assert (await rig.summon(8))[0] == 202
+        assert (await rig.settle(8))["status"] == "ready"
+
+    run(scenario)
+
+
+def test_fp14_f1_a_refused_live_turn_still_counts_against_the_budget(store: Store) -> None:
+    """The cost cap stays tight: only the unavailable summoner is exempt."""
+
+    async def scenario() -> None:
+        rig = Rig(store, SummonFailure("refused"))
+        await rig.summon(1)
+        assert (await rig.settle(1))["budget"]["bindingRemaining"] == 4
+
+    run(scenario)
+
+
+def test_fp14_f2_start_discards_the_slot_of_the_swept_request_once(store: Store) -> None:
+    """FP-14-AC01 (restart): R4 stranded slot. One request is in flight per install, so one id."""
+
+    async def scenario() -> None:
+        rig = Rig(store)
+        db.create_request(
+            store,
+            request_id=rid(1),
+            binding_id=rig.b1,
+            keep=(),
+            prompt_version="summon-1",
+            now_ms=START_MS,
+            binding_limit=5,
+            install_limit=20,
+            window_ms=86_400_000,
+        )
+        db.mark_running(store, rid(1), START_MS + 1)
+        await rig.service.start()
+        await asyncio.gather(*rig.service._cleanups)
+        assert rig.summoner.discarded == [rid(1)]
+        await rig.service.start()  # nothing left to sweep, so nothing more to discard
+        assert rig.summoner.discarded == [rid(1)]
+
+    run(scenario)
+
+
+def test_fp14_f2_a_failing_discard_never_stops_boot_or_later_discards(store: Store) -> None:
+    async def scenario() -> None:
+        rig = Rig(store)
+
+        async def broken(request_id: str) -> None:
+            rig.summoner.discarded.append(request_id)
+            raise RuntimeError("crew down")
+
+        rig.summoner.discard = broken  # type: ignore[method-assign]
+        db.create_request(
+            store,
+            request_id=rid(1),
+            binding_id=rig.b1,
+            keep=(),
+            prompt_version="summon-1",
+            now_ms=START_MS,
+            binding_limit=5,
+            install_limit=20,
+            window_ms=86_400_000,
+        )
+        await rig.service.start()
+        await asyncio.gather(*rig.service._cleanups)
+        assert rig.summoner.discarded == [rid(1)]
+        assert len(db.list_assets(store)) == len(BUNDLED)  # portraits still installed
+
+    run(scenario)
+
+
+def test_fp14_f2_a_discard_that_hangs_is_bounded_and_close_cancels_it(
+    store: Store, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def scenario() -> None:
+        monkeypatch.setattr(service_module, "DISCARD_BOUND_S", 0.05)
+        rig = Rig(store)
+
+        async def hang(request_id: str) -> None:
+            rig.summoner.discarded.append(request_id)
+            await asyncio.sleep(3600)
+
+        rig.summoner.discard = hang  # type: ignore[method-assign]
+        db.create_request(
+            store,
+            request_id=rid(1),
+            binding_id=rig.b1,
+            keep=(),
+            prompt_version="summon-1",
+            now_ms=START_MS,
+            binding_limit=5,
+            install_limit=20,
+            window_ms=86_400_000,
+        )
+        await rig.service.start()
+        await asyncio.wait_for(asyncio.gather(*rig.service._cleanups), timeout=2)
+        assert rig.service._cleanups == set()
+        await rig.service.close()
+
+    run(scenario)
+
+
+def test_fp14_f3_missing_or_tampered_art_is_logged_once_by_type_only(
+    store: Store, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    async def scenario() -> None:
+        def broken() -> None:
+            raise BundledArtError("vell")
+
+        monkeypatch.setattr(service_module, "prepare", broken)
+        rig = Rig(store)
+        with caplog.at_level(logging.WARNING, logger="specter_arena.specters.service"):
+            await rig.service.start()
+        assert [r.getMessage() for r in caplog.records] == [
+            "bundled portraits not installed: BundledArtError"
+        ]
+        assert "vell" not in caplog.text  # the file name is not logged
+        assert db.list_assets(store) == ()  # none served
 
     run(scenario)

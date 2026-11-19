@@ -27,9 +27,14 @@ class SummonFailure(Exception):
 class Summoner(Protocol):
     async def summon(self, prompt: str, *, request_id: str, timeout_s: float) -> SummonReply: ...
 
+    async def discard(self, request_id: str) -> None: ...
+
 
 class UnavailableSummoner:
     """Used when the gateway environment or the /api/chat grant is absent."""
 
     async def summon(self, prompt: str, *, request_id: str, timeout_s: float) -> SummonReply:
         raise SummonFailure("unavailable")
+
+    async def discard(self, request_id: str) -> None:
+        return None
