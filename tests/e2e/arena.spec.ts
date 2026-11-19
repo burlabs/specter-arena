@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
@@ -371,4 +371,59 @@ test('A-13 arena-perf-1 measured: first render, poll update, sprite nodes, anima
   expect(full.every((sample) => sample.enemies === 80 && sample.specters === 20)).toBe(true);
   expect(median(full.map((sample) => sample.firstRenderMs))).toBeLessThanOrEqual(budget.firstRenderMs);
   expect(median(full.map((sample) => sample.updateMs))).toBeLessThanOrEqual(budget.updateMs);
+});
+
+const CHROMIUM_CUSTOM_PROPERTY_LIMIT = 2 * 1024 * 1024;
+
+test('A-14 the arena map paints a background image above 2 MiB', async ({ page }) => {
+  const mapBytes = statSync('backend/specter_arena/specters/scene/arena-map.png').size;
+  const dataUrlLength = 'data:image/png;base64,'.length + Math.ceil(mapBytes / 3) * 4;
+  expect(dataUrlLength, 'the shipped map is a data URL above the Chromium custom-property limit').toBeGreaterThan(CHROMIUM_CUSTOM_PROPERTY_LIMIT);
+
+  await openArena(page, 'arena');
+  const map = page.locator('.sa-arena-map');
+  await expect(map).toHaveAttribute('data-map', 'ready');
+  await expect(map).toHaveClass(/sa-has-art/);
+  const painted = (selector: string) => page.locator(selector).evaluate((element) => getComputedStyle(element).backgroundImage);
+  expect(await painted('.sa-arena-map')).toMatch(/^url\("(?:blob:|data:image\/png)/);
+  expect(await painted('.sa-arena-minimap__frame')).toMatch(/^url\("(?:blob:|data:image\/png)/);
+});
+
+test('A-15 every Specter token shows a decoded hero sprite image', async ({ page }) => {
+  await openArena(page, 'arena');
+  const tokens = page.locator('[data-sprite="specter"]');
+  await expect(tokens).toHaveCount(7);
+  await expect(page.locator('[data-sprite="specter"] img.sa-hero__img')).toHaveCount(7);
+  const sizes = await page.locator('[data-sprite="specter"] img.sa-hero__img').evaluateAll((images) =>
+    (images as HTMLImageElement[]).map((image) => ({ hero: image.closest('[data-hero]')?.getAttribute('data-hero'), width: image.naturalWidth, height: image.naturalHeight, complete: image.complete })),
+  );
+  expect(sizes.every((size) => size.complete && size.width === 512 && size.height === 512)).toBe(true);
+  expect(new Set(sizes.map((size) => size.hero)).size).toBe(7);
+});
+
+test('A-16 hero sprites idle-animate, and stop under reduced motion', async ({ browser }) => {
+  const idle = (page: Page) =>
+    page.evaluate(() => ({
+      names: [...document.querySelectorAll('.sa-hero__img')].map((image) => getComputedStyle(image).animationName),
+      running: document.getAnimations().filter((animation) => (animation.effect as KeyframeEffect | null)?.target?.classList.contains('sa-hero__img') && animation.playState === 'running').length,
+    }));
+
+  const moving = await browser.newContext({ locale: 'en-US', timezoneId: 'UTC', baseURL: 'http://127.0.0.1:4173/' });
+  const movingPage = await moving.newPage();
+  await openArena(movingPage, 'arena');
+  await expect(movingPage.locator('.sa-hero__img')).toHaveCount(7);
+  const running = await idle(movingPage);
+  expect(running.names.every((name) => /^sa-arena-[a-z]+-idle$/.test(name))).toBe(true);
+  expect(running.running).toBe(7);
+  await moving.close();
+
+  const still = await browser.newContext({ locale: 'en-US', timezoneId: 'UTC', baseURL: 'http://127.0.0.1:4173/', reducedMotion: 'reduce' });
+  const stillPage = await still.newPage();
+  await openArena(stillPage, 'arena');
+  await expect(stillPage.locator('.sa-hero__img')).toHaveCount(7);
+  const stopped = await idle(stillPage);
+  expect(stopped.names.every((name) => name === 'none')).toBe(true);
+  expect(stopped.running).toBe(0);
+  await expect(stillPage.locator('.sa-hero.sa-is-animated')).toHaveCount(0);
+  await still.close();
 });

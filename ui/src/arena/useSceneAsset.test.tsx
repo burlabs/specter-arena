@@ -10,11 +10,11 @@ afterEach(() => {
 });
 
 describe('useSceneAsset', () => {
-  it('goes from loading to a data URL for a known key', async () => {
+  it('goes from loading to an image URL for a known key', async () => {
     const { result } = renderHook(() => useSceneAsset('arena-map'));
     expect(result.current.status).toBe('loading');
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(result.current.art?.url.startsWith('data:image/png;base64,')).toBe(true);
+    expect(result.current.art?.url).toMatch(/^(?:blob:|data:image\/png;base64,)/);
     expect(result.current.art).toMatchObject({ width: 160, height: 90 });
   });
 

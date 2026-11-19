@@ -96,6 +96,7 @@ export function SpecterDetail({ bot, specter, specters }: Props) {
       </div>
       {picking && (
         <PortraitPicker
+          heroId={specter.heroId}
           currentAssetId={specter.avatarChosen ? specter.portrait.assetId : null}
           busy={busy}
           onApply={(assetId) => void setAvatar(assetId)}

@@ -138,7 +138,7 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
         )}
         <div className="sa-arena-layout">
           <ArenaRail model={models.scene} bots={bots} specters={specters} selection={selection} onSelect={setSelection} />
-          <BattlefieldScene model={models.scene} specters={specters} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} />
+          <BattlefieldScene model={models.scene} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} />
           <ArenaInspector
             selection={selection}
             list={models.list}

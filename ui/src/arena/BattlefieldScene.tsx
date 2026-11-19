@@ -1,9 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
-import type { SpecterV2 } from '../contracts/types';
-import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { tokenInitials } from '../specters/model';
 import { AnimatedMinion } from './AnimatedMinion';
+import { AnimatedSpecter } from './AnimatedSpecter';
 import { ArenaMinimap } from './ArenaMinimap';
 import { PresentationCueLayer } from './PresentationCueLayer';
 import type { PresentationCue } from './PresentationCueLayer';
@@ -27,7 +26,6 @@ const ZOOM_STEP = 0.25;
 
 interface Props {
   model: SceneModel;
-  specters: ReadonlyMap<string, SpecterV2>;
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
   motion: ArenaMotion;
@@ -69,15 +67,15 @@ function enemyLabel(enemy: SceneEnemy): string {
 
 interface SpecterTokenProps {
   specter: SceneSpecter;
-  record: SpecterV2 | undefined;
   position: { x: number; y: number };
   selected: boolean;
   roving: boolean;
+  animate: boolean;
   onSelect: () => void;
   register: (element: HTMLButtonElement | null) => void;
 }
 
-function SpecterToken({ specter, record, position, selected, roving, onSelect, register }: SpecterTokenProps) {
+function SpecterToken({ specter, position, selected, roving, animate, onSelect, register }: SpecterTokenProps) {
   const stance = specterStance(specter);
   const conditionLabel = stance === 'coverage-unknown' ? ARENA.unknownCondition : stance === 'engaging' ? ARENA.engaging : ARENA.atRest;
   const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
@@ -95,8 +93,8 @@ function SpecterToken({ specter, record, position, selected, roving, onSelect, r
       tabIndex={roving ? 0 : -1}
       onClick={onSelect}
     >
-      {record !== undefined ? (
-        <SpecterPortrait specter={record} size="sm" decorative active={stance === 'engaging'} />
+      {specter.heroId !== null ? (
+        <AnimatedSpecter heroId={specter.heroId} animate={animate} initials={tokenInitials(specter.specterName ?? specter.displayName)} />
       ) : (
         <span className="sa-token__placeholder" aria-hidden="true" data-initials={tokenInitials(specter.displayName)} />
       )}
@@ -182,13 +180,15 @@ function engagementFacing(enemy: SceneEnemy, placement: Placement): 'left' | 'ri
   return here !== undefined && there !== undefined && there.x > here.x ? 'right' : 'left';
 }
 
-const cssUrl = (url: string): string => `url("${url}")`;
+/** Chromium drops a custom property above 2 MiB, so a longer URL is never put in one and the map plate shows instead. */
+export const MAX_CSS_VAR_URL_CHARS = 2_000_000;
+const cssUrl = (url: string): string | null => (url.length > MAX_CSS_VAR_URL_CHARS ? null : `url("${url}")`);
 
 /**
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model, specters, selection, onSelect, motion, cues, celebrating, onCueComplete }: Props) {
+export function BattlefieldScene({ model, selection, onSelect, motion, cues, celebrating, onCueComplete }: Props) {
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
   const patchbrute = useSceneAsset('minion-patchbrute-sprite');
@@ -276,9 +276,12 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion,
   );
 
   const sceneStyle: CSSProperties & Record<string, string> = {};
-  if (mapArt.status === 'ready') sceneStyle['--sa-map'] = cssUrl(mapArt.art.url);
-  if (patchling.status === 'ready') sceneStyle['--sa-sprite-patchling'] = cssUrl(patchling.art.url);
-  if (patchbrute.status === 'ready') sceneStyle['--sa-sprite-patchbrute'] = cssUrl(patchbrute.art.url);
+  const mapUrl = mapArt.status === 'ready' ? cssUrl(mapArt.art.url) : null;
+  const patchlingUrl = patchling.status === 'ready' ? cssUrl(patchling.art.url) : null;
+  const patchbruteUrl = patchbrute.status === 'ready' ? cssUrl(patchbrute.art.url) : null;
+  if (mapUrl !== null) sceneStyle['--sa-map'] = mapUrl;
+  if (patchlingUrl !== null) sceneStyle['--sa-sprite-patchling'] = patchlingUrl;
+  if (patchbruteUrl !== null) sceneStyle['--sa-sprite-patchbrute'] = patchbruteUrl;
   const stageStyle: CSSProperties = {
     left: transform.offset.x + transform.pan.x,
     top: transform.offset.y + transform.pan.y,
@@ -317,7 +320,7 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion,
         onPointerLeave={endDrag}
       >
         <div className="sa-arena-stage" style={stageStyle}>
-          <span className={`sa-arena-map${mapArt.status === 'ready' ? ' sa-has-art' : ''}`} data-map={mapArt.status} aria-hidden="true" />
+          <span className={`sa-arena-map${mapUrl !== null ? ' sa-has-art' : ''}`} data-map={mapArt.status} aria-hidden="true" />
           <svg className="sa-arena-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {lines.map((line) => (
               <line
@@ -336,10 +339,10 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion,
             <SpecterToken
               key={specter.bindingId}
               specter={specter}
-              record={specters.get(specter.bindingId)}
               position={placement.specters.get(specter.bindingId) ?? { x: 0.5, y: 0.5 }}
               selected={isSelected(selection, 'specter', specter.bindingId)}
               roving={activeId === specter.bindingId}
+              animate={motion.animate}
               onSelect={() => onSelect({ kind: 'specter', bindingId: specter.bindingId })}
               register={register(specter.bindingId)}
             />
@@ -360,10 +363,10 @@ export function BattlefieldScene({ model, specters, selection, onSelect, motion,
             />
           ))}
         </div>
-        {mapArt.status === 'failed' && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
+        {(mapArt.status === 'failed' || (mapArt.status === 'ready' && mapUrl === null)) && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
         <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
       </div>
-      <ArenaMinimap placement={placement} view={view} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
+      <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
     </section>
   );
 }

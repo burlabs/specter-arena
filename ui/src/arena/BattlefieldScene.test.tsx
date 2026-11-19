@@ -21,14 +21,13 @@ const work = [
 ];
 
 const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper')], xp: [xpOf(atlas, 250, 3)], work }));
-const specters = new Map([[atlas.bindingId, specterOf(atlas, 'Vesper')]]);
 const motion = { animate: true, paused: false, togglePause: vi.fn() };
 
 function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSelection) => void; animate?: boolean; paused?: boolean; toggle?: () => void; cues?: PresentationCue[]; celebrating?: Set<string>; onCueComplete?: (id: string) => void } = {}) {
   return render(
     <BattlefieldScene
       model={model}
-      specters={specters}
+     
       selection={props.selection ?? null}
       onSelect={props.onSelect ?? vi.fn()}
       motion={{ animate: props.animate ?? true, paused: props.paused ?? false, togglePause: props.toggle ?? motion.togglePause }}
@@ -188,7 +187,7 @@ describe('camera and controls', () => {
     expect(container.querySelector('.sa-arena-scene')?.className).toContain('sa-is-animated');
     fireEvent.click(screen.getByRole('button', { name: 'Pause animation' }));
     expect(toggle).toHaveBeenCalledTimes(1);
-    rerender(<BattlefieldScene model={model} specters={specters} selection={null} onSelect={vi.fn()} motion={{ animate: false, paused: true, togglePause: toggle }} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    rerender(<BattlefieldScene model={model} selection={null} onSelect={vi.fn()} motion={{ animate: false, paused: true, togglePause: toggle }} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Resume animation' }).getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.sa-arena-scene')?.className).toContain('sa-is-static');
   });
@@ -201,7 +200,7 @@ describe('camera and controls', () => {
     expect(screen.getByRole('button', { name: 'Show overview' }).getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('makes no request of its own besides the art reads and the one hero portrait, whatever the user does', async () => {
+  it('makes no request of its own besides the scene art reads, whatever the user does', async () => {
     const get = vi.spyOn(useAppApi(), 'get');
     const post = vi.spyOn(useAppApi(), 'post');
     const { container } = show();
@@ -211,20 +210,48 @@ describe('camera and controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Shipped/ }));
     fireEvent(window, new Event('resize'));
     expect(post).not.toHaveBeenCalled();
-    expect(get.mock.calls.every(([path]) => /\/(scene-assets|assets)\//.test(String(path)))).toBe(true);
-    expect(get.mock.calls.filter(([path]) => String(path).includes('/scene-assets/')).length).toBeLessThanOrEqual(3);
-    expect(get.mock.calls.filter(([path]) => /\/assets\//.test(String(path))).length).toBeLessThanOrEqual(1);
+    expect(get.mock.calls.every(([path]) => /\/scene-assets\//.test(String(path)))).toBe(true);
+    expect(get.mock.calls.length).toBeLessThanOrEqual(4);
   });
 });
 
 describe('art', () => {
-  it('puts loaded art in CSS variables and uses sprites for the minions', async () => {
+  it('draws a Specter with a hero as a sprite image, never a CSS variable, and the others as placeholders', async () => {
+    const { container } = show();
+    await waitFor(() => expect(container.querySelector('.sa-hero__img')).not.toBeNull());
+    const sprite = container.querySelector('.sa-hero__img');
+    expect(sprite?.tagName).toBe('IMG');
+    expect(sprite?.getAttribute('src')).toMatch(/^(?:blob:|data:image\/png;base64,)/);
+    expect(sprite?.getAttribute('alt')).toBe('');
+    expect(container.querySelectorAll('.sa-hero')).toHaveLength(1);
+    expect(container.querySelectorAll('.sa-token__placeholder')).toHaveLength(2);
+    expect(container.querySelector<HTMLElement>('.sa-arena-scene')?.getAttribute('style') ?? '').not.toContain('hero');
+  });
+
+  it('shows the initials placeholder for a hero whose sprite fails, and keeps the token selectable', async () => {
+    setSceneAssetsFailing(true);
+    const { container } = show();
+    await waitFor(() => expect(container.querySelector('[data-map="failed"]')).not.toBeNull());
+    expect(container.querySelectorAll('.sa-hero')).toHaveLength(0);
+    expect(container.querySelectorAll('.sa-token__placeholder')).toHaveLength(3);
+  });
+
+  it('idles only while motion is allowed', async () => {
+    const { container, rerender } = show();
+    await waitFor(() => expect(container.querySelector('.sa-hero')).not.toBeNull());
+    expect(container.querySelector('.sa-hero')?.className).toContain('sa-is-animated');
+    rerender(<BattlefieldScene model={model} selection={null} onSelect={vi.fn()} motion={{ animate: false, paused: true, togglePause: vi.fn() }} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    expect(container.querySelector('.sa-hero')?.className).toContain('sa-is-static');
+    expect(container.querySelector('.sa-hero')?.className).not.toContain('sa-is-animated');
+  });
+
+  it('puts loaded art in CSS variables as blob URLs and uses sprites for the minions', async () => {
     const { container } = show();
     await waitFor(() => expect(container.querySelector('[data-map="ready"]')).not.toBeNull());
     const section = container.querySelector<HTMLElement>('.sa-arena-scene')!;
-    await waitFor(() => expect(section.style.getPropertyValue('--sa-sprite-patchbrute')).toContain('data:image/png;base64,'));
-    expect(section.style.getPropertyValue('--sa-map')).toContain('data:image/png;base64,');
-    expect(section.style.getPropertyValue('--sa-sprite-patchling')).toContain('data:image/png;base64,');
+    await waitFor(() => expect(section.style.getPropertyValue('--sa-sprite-patchbrute')).toContain('blob:'));
+    expect(section.style.getPropertyValue('--sa-map')).toContain('blob:');
+    expect(section.style.getPropertyValue('--sa-sprite-patchling')).toContain('blob:');
     expect(container.querySelectorAll('.sa-minion__art').length).toBe(4);
     expect(container.querySelector('.sa-arena-map')?.className).toContain('sa-has-art');
   });
@@ -255,7 +282,7 @@ describe('reduced motion', () => {
 describe('empty model', () => {
   it('draws only the map when there is nothing to show', () => {
     const empty = buildSceneModel(inputsOf());
-    const { container } = render(<BattlefieldScene model={empty} specters={new Map()} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    const { container } = render(<BattlefieldScene model={empty} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
     expect(container.querySelectorAll('[data-scene-node]')).toHaveLength(0);
     expect(screen.getByRole('group', { name: 'Arena map' })).toBeTruthy();
   });

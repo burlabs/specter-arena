@@ -15,5 +15,7 @@ export default defineConfig({
     outDir: fromUi('./preview-dist'),
     emptyOutDir: true,
   },
+  // The dev server serves only the Vite root by default; real-art.ts reads the PNGs in ../backend.
+  server: { fs: { allow: [fromUi('..')] } },
   preview: { port: 4173, strictPort: true },
 });

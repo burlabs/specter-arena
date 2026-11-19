@@ -92,7 +92,7 @@ _ERRORS: Final[tuple[tuple[type[Exception], str, int], ...]] = (
 
 class WorkService:
     """The only thing the work routes call. It never reads or writes observations, bot
-    configuration or a Specter, and it has no caller on the collector or summoner paths.
+    configuration or a Specter, and it has no caller on the collector path.
     Every store call is a function of `store/work.py` or `store/xp.py` run through
     `asyncio.to_thread`; the single writer lock in `Store.write()` serialises acceptance."""
 

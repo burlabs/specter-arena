@@ -212,3 +212,84 @@ export function EnemyObjectiveSvg(props: SceneSvgProps) {
     </Frame>
   );
 }
+
+export function StructureSanctumSvg(props: SceneSvgProps) {
+  return (
+    <Frame {...props} viewBox="0 0 160 160">
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-stone`} x1="0" y1="0" x2="0.8" y2="1">
+              <stop offset="0" stopColor="#f1eaff" />
+              <stop offset="1" stopColor="#9c8ab9" />
+            </linearGradient>
+            <linearGradient id={`${id}-light`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#d8c8ff" />
+              <stop offset="1" stopColor="#8065bd" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="80" cy="137" rx="54" ry="14" fill="#171022" opacity=".35" />
+          <path d="M34 126 43 65 80 34l37 31 9 61-17 10H51Z" fill={`url(#${id}-stone)`} stroke="#5d4d78" strokeWidth="4" strokeLinejoin="round" />
+          <path d="M53 66 80 43l27 23-6 8H59Z" fill="#c7b9db" />
+          <path d="M62 128V91c0-13 8-22 18-22s18 9 18 22v37Z" fill="#39284f" stroke="#655080" strokeWidth="3" />
+          <path d="M69 126V93c0-8 5-14 11-14s11 6 11 14v33Z" fill={`url(#${id}-light)`} />
+          <path d="M43 73h18v58H39Zm56 0h18l4 58h-22Z" fill="#b8a8ce" stroke="#65547d" strokeWidth="3" strokeLinejoin="round" />
+          <path d="M36 127h88l-9 12H46Z" fill="#79658f" stroke="#514166" strokeWidth="3" strokeLinejoin="round" />
+          <circle cx="80" cy="55" r="5" fill="#b49aff" />
+        </>
+      )}
+    </Frame>
+  );
+}
+
+export function StructureAbyssalCitadelSvg(props: SceneSvgProps) {
+  return (
+    <Frame {...props} viewBox="0 0 160 160">
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-shell`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#49345f" />
+              <stop offset="1" stopColor="#21172e" />
+            </linearGradient>
+            <radialGradient id={`${id}-core`}>
+              <stop offset="0" stopColor="#fff0b0" />
+              <stop offset=".55" stopColor="#ffb45f" />
+              <stop offset="1" stopColor="#b84d45" />
+            </radialGradient>
+          </defs>
+          <ellipse cx="80" cy="137" rx="57" ry="14" fill="#120b1c" opacity=".45" />
+          <path d="m28 128 13-67 24 12L80 27l15 46 24-12 13 67-20 12H48Z" fill={`url(#${id}-shell)`} stroke="#6e526f" strokeWidth="4" strokeLinejoin="round" />
+          <path d="m41 61 8-28 18 37-15 13Zm78 0-8-28-18 37 15 13Z" fill="#594066" stroke="#8a6175" strokeWidth="3" strokeLinejoin="round" />
+          <path d="M60 130V91l20-18 20 18v39Z" fill="#1a1226" stroke="#805266" strokeWidth="3" />
+          <path d="m80 88 12 14-12 23-12-23Z" fill={`url(#${id}-core)`} />
+          <path d="m30 128 28-6 22 14 22-14 30 6-17 13H45Z" fill="#33223f" stroke="#66465b" strokeWidth="3" strokeLinejoin="round" />
+          <path d="m78 29 5 22-7 14 5 12" fill="none" stroke="#b27772" strokeWidth="3" strokeLinecap="round" />
+        </>
+      )}
+    </Frame>
+  );
+}
+
+export function StructureJungleCampSvg(props: SceneSvgProps) {
+  return (
+    <Frame {...props} viewBox="0 0 100 100">
+      {(id) => (
+        <>
+          <defs>
+            <linearGradient id={`${id}-stone`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#b9abd0" />
+              <stop offset="1" stopColor="#564568" />
+            </linearGradient>
+          </defs>
+          <ellipse cx="50" cy="73" rx="37" ry="15" fill="#191123" opacity=".35" />
+          <ellipse cx="50" cy="68" rx="34" ry="13" fill="none" stroke="#a889db" strokeWidth="5" />
+          <path d="m31 67 8-24 14 7-2 21Zm22 4-2-30 15-8 8 34-9 8Z" fill={`url(#${id}-stone)`} stroke="#574568" strokeWidth="3" strokeLinejoin="round" />
+          <path d="m43 62 7-11 8 10-7 10Z" fill="#d5c5ff" />
+          <circle cx="18" cy="60" r="4" fill="#88dde6" />
+          <circle cx="82" cy="58" r="4" fill="#ffd080" />
+        </>
+      )}
+    </Frame>
+  );
+}

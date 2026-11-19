@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { HERO_IDS } from '../contracts/types';
 
 const css = readFileSync(fileURLToPath(new URL('./arena.css', import.meta.url)), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -76,6 +77,16 @@ describe('arena.css', () => {
     expect(css.slice(at).match(/@media/g)).toHaveLength(1);
     expect(css.slice(at)).toContain('animation: none !important');
     expect(css.slice(at)).toContain('transition: none !important');
+  });
+
+  it('defines an idle keyframe and an animation rule for each of the 11 heroes, and no keyframe without a rule', () => {
+    expect(HERO_IDS).toHaveLength(11);
+    for (const id of HERO_IDS) {
+      expect(keyframes, id).toContain(`sa-arena-${id}-idle`);
+      expect(selectors, id).toContain(`.specter-arena-root .sa-hero--${id}.sa-is-animated .sa-hero__img`);
+      expect(css, id).toContain(`animation-name: sa-arena-${id}-idle;`);
+    }
+    expect(keyframes.filter((name) => name.endsWith('-idle'))).toHaveLength(11);
   });
 
   it('keeps every font size at 12px or more', () => {

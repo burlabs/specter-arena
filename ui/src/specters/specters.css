@@ -112,7 +112,6 @@
 .specter-arena-root .sa-row__specter,
 .specter-arena-root .sa-profile h2,
 .specter-arena-root .sa-profile p,
-.specter-arena-root .sa-candidate p,
 .specter-arena-root .sa-specter-row__names span {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -257,29 +256,9 @@
   font-size: 12px;
 }
 
-.specter-arena-root .sa-keep {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-
-.specter-arena-root .sa-keep label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.specter-arena-root .sa-budget,
 .specter-arena-root .sa-help {
   color: var(--muted);
   font-size: 12px;
-}
-
-.specter-arena-root .sa-progress {
-  padding: 10px 12px;
-  border: 1px solid rgba(136, 221, 230, 0.22);
-  border-radius: 10px;
-  background: rgba(136, 221, 230, 0.06);
 }
 
 .specter-arena-root .sa-error {
@@ -287,19 +266,6 @@
   border: 1px solid var(--danger);
   border-radius: 10px;
   background: rgba(255, 155, 174, 0.08);
-}
-
-.specter-arena-root .sa-candidate {
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--violet);
-  border-radius: 12px;
-  background: rgba(180, 154, 255, 0.06);
-}
-
-.specter-arena-root .sa-candidate h3 {
-  overflow-wrap: anywhere;
 }
 
 .specter-arena-root .sa-gallery {
@@ -327,13 +293,6 @@
 
 .specter-arena-root .sa-gallery__item:focus-within {
   box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
-}
-
-.specter-arena-root .sa-inline-confirm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
 }
 
 @media (max-width: 900px) {
