@@ -23,20 +23,20 @@ from backend.specter_arena.store import (
 from backend.specter_arena.store import connection as connection_module
 from backend.specter_arena.store import specters as sp
 
-from .test_store_specter_isolation import PNG, PROFILE
+from .test_store_specter_isolation import PNG
 from .work_fakes import T0, decide, ledger_hash, make_work, open_seeded, query, submit_and_accept
 
 BUDGET_S = 2.0
 
 
-def test_a_restored_backup_keeps_identity_specters_portraits_and_xp(tmp_path: Path) -> None:
+def test_a_restored_backup_keeps_identity_heroes_avatars_and_xp(tmp_path: Path) -> None:
     store, seeded = open_seeded(tmp_path, bots=2, per_bot=2)
     binding = seeded.bindings[0]
-    sp.save_manual(store, binding, expected_version=0, profile=PROFILE, now_ms=T0 + 50)
+    hero_before = sp.get_hero(store, binding)
     asset = sp.insert_asset(
         store, data=PNG, width=8, height=8, origin="uploaded", label="a", now_ms=T0 + 51
     ).record
-    sp.set_portrait(store, binding, expected_version=1, asset_id=asset.asset_id, now_ms=T0 + 52)
+    sp.set_avatar(store, binding, expected_version=0, asset_id=asset.asset_id, now_ms=T0 + 52)
     item = make_work(store, [seeded.attempts[0][0]])
     accepted = submit_and_accept(store, item, 1, at=T0 + 2000)
     assert accepted.state == "accepted"
@@ -55,10 +55,11 @@ def test_a_restored_backup_keeps_identity_specters_portraits_and_xp(tmp_path: Pa
             identity_before
         )
         assert xp_summary(again, binding).total_xp == 100
-        current = sp.get_specter(again, binding)
-        assert current is not None and current.profile["name"] == PROFILE["name"]
-        assert current.portrait is not None and current.portrait.asset_id == asset.asset_id
-        assert query(again, "SELECT count(*) FROM specter_revision")[0][0] == 2
+        current = sp.get_hero(again, binding)
+        assert (current.hero_id, current.ordinal) == (hero_before.hero_id, hero_before.ordinal)
+        assert (current.version, current.asset_id) == (1, asset.asset_id)
+        assert query(again, "SELECT count(*) FROM avatar_revision")[0][0] == 1
+        assert [h.hero_id for h in sp.list_heroes(again)] == ["vell", "stitch"]
         stored = sp.get_asset(again, asset.asset_id)
         assert stored is not None and stored.sha256 == asset.sha256
         assert query(again, "SELECT count(*) FROM observation")[0][0] > 0
@@ -86,7 +87,7 @@ def test_deleting_or_rebuilding_observations_never_changes_xp(tmp_path: Path) ->
 def test_a_backup_taken_before_acceptance_restores_without_the_later_award(tmp_path: Path) -> None:
     store, seeded = open_seeded(tmp_path, bots=1, per_bot=1)
     binding = seeded.bindings[0]
-    sp.save_manual(store, binding, expected_version=0, profile=PROFILE, now_ms=T0 + 50)
+    hero_before = sp.get_hero(store, binding)
     item = make_work(store, [seeded.attempts[0][0]])
     submitted = decide(store, item, "submit", 1, at=T0 + 2000)
     saved = backup(store, tmp_path / "saved")
@@ -102,7 +103,7 @@ def test_a_backup_taken_before_acceptance_restores_without_the_later_award(tmp_p
         assert xp_history(again, binding, cursor=None, limit=50).page.items == ()
         page = list_work(again, state=None, binding_id=None, cursor=None, limit=25)
         assert [record.state for record in page.items] == ["awaiting-review"]
-        assert sp.get_specter(again, binding) is not None
+        assert sp.get_hero(again, binding) == hero_before
         assert query(again, "SELECT count(*) FROM xp_entry")[0][0] == 0
     finally:
         again.close()

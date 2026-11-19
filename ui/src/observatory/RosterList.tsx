@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterItemV1, SpecterV1 } from '../contracts/types';
+import type { RosterItemV1, SpecterV2 } from '../contracts/types';
 import { ConditionBadge } from './ConditionBadge';
 import { Initials } from './Initials';
-import { ROW_TOKEN_NOTE, SPECTER_ROW_PREFIX } from '../specters/copy';
+import { SPECTER_ROW_PREFIX } from '../specters/copy';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { botCondition, nameOf, workerChips } from './model';
 
@@ -12,7 +12,7 @@ interface Props {
   selectedId: string | null;
   watched: ReadonlySet<string>;
   watchListFull: boolean;
-  specters?: ReadonlyMap<string, SpecterV1>;
+  specters?: ReadonlyMap<string, SpecterV2>;
   onSelect: (bindingId: string) => void;
   onToggleWatch: (bindingId: string) => void;
 }
@@ -76,8 +76,7 @@ export function RosterList({ items, selectedId, watched, watchListFull, specters
                 {specter !== undefined && (
                   <span className="sa-row__specter">
                     {SPECTER_ROW_PREFIX}
-                    {specter.profile.name}
-                    {specter.portrait === null && <span className="sa-visually-hidden">{ROW_TOKEN_NOTE}</span>}
+                    {specter.displayName}
                   </span>
                 )}
               </span>

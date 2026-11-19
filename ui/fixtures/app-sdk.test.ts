@@ -37,8 +37,9 @@ describe('fixture SDK allowlist (mirrors the host matcher)', () => {
 });
 
 describe('release manifest allowlist', () => {
-  it('declares the own-namespace entry the page calls through and the agents and summoning grants', () => {
-    expect(DECLARED_API).toEqual([`${APP_API_PREFIX}/*`, '/api/agents', '/api/chat']);
+  it('declares the own-namespace entry the page calls through and the agents grant, and no chat grant', () => {
+    expect(DECLARED_API).toEqual([`${APP_API_PREFIX}/*`, '/api/agents']);
+    expect(DECLARED_API.some((entry) => entry.startsWith('/api/chat'))).toBe(false);
   });
 
   it('permits the ping path and the probe paths, and rejects the rest of the gateway namespace', async () => {

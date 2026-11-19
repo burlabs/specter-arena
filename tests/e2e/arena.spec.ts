@@ -249,7 +249,7 @@ test('A-11b a bot that leaves the roster clears its Specter evidence at the next
   await page.clock.install();
   await openArena(page, 'arena-stale');
   await specterButton(page, 'Fenn').click();
-  await expect(inspectorHeading(page)).toHaveText('Fenn');
+  await expect(inspectorHeading(page)).toHaveText('Poly');
   await expect(inspector(page).getByRole('heading', { level: 3, name: 'XP ledger' })).toBeVisible();
   await page.clock.runFor(16_000);
   await expect(inspectorHeading(page)).toHaveText('This item is no longer available');

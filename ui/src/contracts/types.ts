@@ -140,18 +140,6 @@ export interface AttemptsV1 {
   activity: AttemptsActivityV1;
 }
 
-export interface SpecterProfileV1 {
-  contractVersion: 1;
-  name: string;
-  epithet: string | null;
-  personality: string;
-  appearance: string;
-  mannerism: string;
-  signatureAction: string | null;
-  assignmentRationale: string;
-  artBrief: string;
-}
-
 /** dataBase64 is null in lists and embedded copies; a string only in the body of GET /api/assets/{assetId}. `origin` is a documented token, not a closed list. */
 export interface PortraitAssetV1 {
   contractVersion: 1;
@@ -177,46 +165,35 @@ export interface SceneAssetV1 {
   dataBase64: string;
 }
 
-/** `source` is a documented token ('generated' or 'manual'), not a closed list. */
-export interface SpecterV1 {
-  contractVersion: 1;
-  specterId: string;
+/** The 11 hero ids in roster order. A test compares this list with the `heroId` enum of specter.v2. */
+export const HERO_IDS = ['vell', 'stitch', 'reeve', 'rattle', 'ember', 'shard', 'poly', 'tide', 'lume', 'moss', 'bur'] as const;
+export type HeroId = (typeof HERO_IDS)[number];
+
+/**
+ * One bot's assigned hero. `portrait` is never null: it is the hero's bundled portrait while `avatarChosen` is false.
+ * `version` is the avatar revision (0 when none) and goes back as `expectedVersion` on the portrait route.
+ */
+export interface SpecterV2 {
+  contractVersion: 2;
   bindingId: string;
   version: number;
-  profile: SpecterProfileV1;
-  portrait: PortraitAssetV1 | null;
-  source: string;
-  promptVersion: string | null;
+  heroId: HeroId;
+  ordinal: number;
+  displayName: string;
+  name: string;
+  epithet: string;
+  personality: string;
+  appearance: string;
+  portrait: PortraitAssetV1;
+  avatarChosen: boolean;
+  source: 'roster';
   createdAtMs: number;
   updatedAtMs: number;
 }
 
-export interface SpectersV1 {
-  contractVersion: 1;
-  items: SpecterV1[];
-}
-
-export interface SummoningBudgetV1 {
-  bindingRemaining: number;
-  bindingLimit: number;
-  installRemaining: number;
-  installLimit: number;
-  windowMs: number;
-}
-
-/** `status` is a documented token (queued, running, ready, failed, cancelled, accepted, superseded), not a closed list. */
-export interface SummoningV1 {
-  contractVersion: 1;
-  requestId: string;
-  bindingId: string;
-  status: string;
-  candidate: SpecterProfileV1 | null;
-  error: string | null;
-  promptVersion: string;
-  keep: string[];
-  createdAtMs: number;
-  finishedAtMs: number | null;
-  budget: SummoningBudgetV1;
+export interface SpectersV2 {
+  contractVersion: 2;
+  items: SpecterV2[];
 }
 
 /** Body of GET /api/portraits. The route has no schema of its own. */
@@ -244,13 +221,10 @@ export const ATTEMPT_ITEM_KEYS: Record<keyof AttemptItemV1, true> = { contractVe
 export const ATTEMPTS_WINDOW_KEYS: Record<keyof AttemptsWindowV1, true> = { fromMs: true, toMs: true, windowMs: true, observedFromMs: true, coveredMs: true, gapCount: true, botTurnsStarted: true, workersStarted: true, sampleSize: true, ended: true, stillOpen: true, unknown: true };
 export const ATTEMPTS_ACTIVITY_KEYS: Record<keyof AttemptsActivityV1, true> = { last24h: true, last7d: true };
 export const ATTEMPTS_KEYS: Record<keyof AttemptsV1, true> = { contractVersion: true, bindingId: true, items: true, nextCursor: true, rosterRevision: true, asOfMs: true, activity: true };
-export const SPECTER_PROFILE_KEYS: Record<keyof SpecterProfileV1, true> = { contractVersion: true, name: true, epithet: true, personality: true, appearance: true, mannerism: true, signatureAction: true, assignmentRationale: true, artBrief: true };
 export const PORTRAIT_ASSET_KEYS: Record<keyof PortraitAssetV1, true> = { contractVersion: true, assetId: true, mediaType: true, width: true, height: true, byteLength: true, origin: true, label: true, dataBase64: true };
 export const SCENE_ASSET_KEYS: Record<keyof SceneAssetV1, true> = { contractVersion: true, key: true, mediaType: true, width: true, height: true, sha256: true, byteLength: true, dataBase64: true };
-export const SPECTER_KEYS: Record<keyof SpecterV1, true> = { contractVersion: true, specterId: true, bindingId: true, version: true, profile: true, portrait: true, source: true, promptVersion: true, createdAtMs: true, updatedAtMs: true };
-export const SPECTERS_KEYS: Record<keyof SpectersV1, true> = { contractVersion: true, items: true };
-export const SUMMONING_BUDGET_KEYS: Record<keyof SummoningBudgetV1, true> = { bindingRemaining: true, bindingLimit: true, installRemaining: true, installLimit: true, windowMs: true };
-export const SUMMONING_KEYS: Record<keyof SummoningV1, true> = { contractVersion: true, requestId: true, bindingId: true, status: true, candidate: true, error: true, promptVersion: true, keep: true, createdAtMs: true, finishedAtMs: true, budget: true };
+export const SPECTER_KEYS: Record<keyof SpecterV2, true> = { contractVersion: true, bindingId: true, version: true, heroId: true, ordinal: true, displayName: true, name: true, epithet: true, personality: true, appearance: true, portrait: true, avatarChosen: true, source: true, createdAtMs: true, updatedAtMs: true };
+export const SPECTERS_KEYS: Record<keyof SpectersV2, true> = { contractVersion: true, items: true };
 
 /** startedMs, endedMs and endSignal are null for an attempt that is no longer in the attempts record (present: false). */
 export interface WorkAttemptV1 {

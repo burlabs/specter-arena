@@ -18,11 +18,11 @@ A Starlette ASGI app (`app.json` `backend.entryPoint` is `backend/app.py`) that 
 
 ## Requests
 
-The UI calls `/apps/specter-arena/api/*`. The Crew gateway proxies those to the backend's `/api/*` and signs each request; the backend checks the signature (`backend/specter_arena/proxy_auth.py`). The manifest declares only these grants: the app's own API prefix, `/api/agents`, `/api/chat`, the event `slots:user`, and the agent `specter-arena-summoner`.
+The UI calls `/apps/specter-arena/api/*`. The Crew gateway proxies those to the backend's `/api/*` and signs each request; the backend checks the signature (`backend/specter_arena/proxy_auth.py`). The manifest declares only these grants: the app's own API prefix, `/api/agents` and the event `slots:user`. It declares no agent.
 
 ## Data
 
-SQLite in the app's Crew data directory, `data/store/specter-arena.db`, with checksummed migrations 0001 to 0006 (`backend/specter_arena/store/`). The app copies the database to `data/store/backups/` before a migration and keeps three copies. A collector records bot attempts observed through Crew; the work ledger holds work items, decisions and XP entries; the Specter tables hold identities and assets.
+SQLite in the app's Crew data directory, `data/store/specter-arena.db`, with checksummed migrations 0001 to 0007 (`backend/specter_arena/store/`). The app copies the database to `data/store/backups/` before a migration and keeps three copies. A collector records bot attempts observed through Crew; the work ledger holds work items, decisions and XP entries; the Specter tables hold identities and assets.
 
 ## Contracts
 
@@ -37,6 +37,6 @@ The arena is a pure function of the polled reads (roster, specters, work, XP). S
 - Tokens, session length and animation never become XP.
 - Acceptance is a human click. A Crew tool approval is not acceptance, and the UI labels in-app acceptance as such.
 - XP lives on the bot binding, not on a Specter, and level is derived at read time.
-- A summoning request is never work and never earns XP.
+- Hero assignment never earns XP.
 
 Sources: `docs/architecture/component-index.md`, `docs/compatibility/monitoring-scope.md`, `docs/compatibility/handoff-routes.md`, `.kiro/specs/*/design.md`.

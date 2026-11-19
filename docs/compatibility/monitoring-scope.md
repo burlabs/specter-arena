@@ -85,7 +85,7 @@ These record what the Pass 2 collector (FP-02+03) keeps and what it does not kno
 
 ### Grants (D-P9)
 
-The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone. (As of FP-06+07 the manifest has three api entries; the third is `/api/chat`, described in "Generation grant, not monitoring" below. The statement above was true when it was written, and the collector still reads no grant it does not need.)
+The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone. (FP-06+07 briefly had a third api entry, `/api/chat`; FP-16 removed it.)
 
 ### Bot identity (D-P10)
 
@@ -124,12 +124,12 @@ No probe sitting was held for Pass 2, and OA-1 did not exercise these:
 
 Added 2026-11-18 under Eric's approval of grant A. The status header and every decision above are unchanged.
 
-FP-06+07 adds one grant for summoning a Specter: `permissions.api` gains `/api/chat`, and the manifest lists one app agent, `specter-arena-summoner` (file `agents/specter-summoner.json`), with no tools, no MCP servers, no `.mcp.json` and the `auto` model. It adds no event, `spawn`, `jobs`, `network` or `sessionApproval`. The app uses it only to start its own chat slot, send one prompt and read that slot's reply.
+Superseded by FP-16 (2026-11-19): FP-06+07 adds one grant for summoning a Specter: `permissions.api` gains `/api/chat`, and the manifest lists one app agent, `specter-arena-summoner` (file `agents/specter-summoner.json`), with no tools, no MCP servers, no `.mcp.json` and the `auto` model. It adds no event, `spawn`, `jobs`, `network` or `sessionApproval`. The app uses it only to start its own chat slot, send one prompt and read that slot's reply.
 
 - This is generation, not monitoring. It reads nothing about any bot. The app still monitors through `slots:user` and `GET /api/agents` only, and the three-part product scope (name, tokens, tasks or spawned work) is not widened.
-- Slots the app creates are app-owned. The `slots:user` collector receives user-origin slots, so it does not receive these, and they never become attempts, observations or coverage. Each request is also recorded as `internal: summoning` in `generation_request`, so a later XP feature must exclude it.
-- The host matches a bare grant entry against its child paths, so `/api/chat` also matches `/api/chat/slots/...`. Crew confines an app token to slots it owns, and the probe cell `user-chat-slots-api` (the all-user slot list) stays DENIED. The app must not call `GET /api/chat/slots` and must not read any slot it did not create. A backend test pins the paths the summoner uses.
-- Not proven on a live install: that the host still refuses `GET /api/chat/slots` once `/api/chat` is granted. The owner step OA-3 records the answer. Until then nothing depends on that refusal.
+- Superseded by FP-16 (2026-11-19): Slots the app creates are app-owned. The `slots:user` collector receives user-origin slots, so it does not receive these, and they never become attempts, observations or coverage. Each request is also recorded as `internal: summoning` in `generation_request`, so a later XP feature must exclude it.
+- Superseded by FP-16 (2026-11-19): The host matches a bare grant entry against its child paths, so `/api/chat` also matches `/api/chat/slots/...`. Crew confines an app token to slots it owns, and the probe cell `user-chat-slots-api` (the all-user slot list) stays DENIED. The app must not call `GET /api/chat/slots` and must not read any slot it did not create. A backend test pins the paths the summoner uses.
+- Superseded by FP-16 (2026-11-19): Not proven on a live install: that the host still refuses `GET /api/chat/slots` once `/api/chat` is granted. The owner step OA-3 records the answer. Until then nothing depends on that refusal.
 - Updating an installed app stages the added grant until the owner approves it. Without approval, generation reports `generation_unavailable` and monitoring keeps working.
 
 ## Acceptance and XP are app-owned (FP-08+09)
@@ -141,7 +141,7 @@ FP-08+09 adds WorkItems, human acceptance and an XP ledger. It adds no manifest 
 - Acceptance and XP are records this app keeps about its own work items. They are not read from Crew. The inputs are the attempts the collector already projects (a bot's own turn or a worker session whose `created_by` is the bot's slot key) and what the app owner types. Bot goals, key results, ledger items, activity and notes stay DENIED and are not used to define a WorkItem.
 - An ended attempt is not success. A WorkItem is accepted only by a decision the app owner makes through a signed route. The host gives an app no per-user identity, so the recorded actor is the constant `app-owner`; no bot, collector or observation path can reach acceptance.
 - Tokens are never XP (FD-29). No token, tool-call, retry, time or generation-job count is read by the XP code.
-- Summoning and other app-owned slots never become attempts, so they cannot be linked to a WorkItem and earn nothing.
+- Superseded by FP-16 (2026-11-19): Summoning and other app-owned slots never become attempts, so they cannot be linked to a WorkItem and earn nothing.
 - Nothing here widens the three-part product scope (bot name, tokens as an operational stat if ever proven, tasks or spawned work) or the untested items in decision 1.
 
 ## Arena on the app page; bot-dashboard summary records skipped (FP-10+11)
@@ -161,5 +161,9 @@ FP-10+11 puts the arena and the encounter inspector on the app page `/apps/spect
 The status header and every decision above are unchanged. Re-read against the code and the shipped manifest at `9d215422d1d9ff64aeea1d2b23286c35e6284742`:
 
 - The bot's DM key is `member-<member_id>[.memory-<memory_store>]` (`backend/specter_arena/collector/identity.py`: `bot_dm_key`, `is_store_less_key`). No statement above uses a different form for the app's own behavior. The older slug-based spelling of the key remains only in the generated probe vocabulary and evidence under `docs/compatibility/` (`capability-*` files and `evidence/`), which record the question as it was asked.
-- `app.json` grants `/apps/specter-arena/api/*`, `/api/agents` and `/api/chat` under `permissions.api`, and `slots:user` under `permissions.events`. Nothing else.
-- The `/api/chat` grant is matched by Crew on its path prefix, so it can also reach `/api/chat/slots`, including a list of all slots (FP-06+07 handoff, risk R2; not observed on a live host). The app never issues a GET on that path (`backend/tests/test_summoner_source_guard.py`). The release classifies this as KNOWN LIMITATION KL-02 in `docs/release/blockers.md`, and it becomes a blocker only if OA-5 step 7 shows slot rows reaching an app route, a log or the copied summary.
+- `app.json` grants `/apps/specter-arena/api/*` and `/api/agents` under `permissions.api`, and `slots:user` under `permissions.events`. Nothing else (FP-16 removed `/api/chat`).
+- Superseded by FP-16 (2026-11-19): The `/api/chat` grant is matched by Crew on its path prefix, so it can also reach `/api/chat/slots`, including a list of all slots (FP-06+07 handoff, risk R2; not observed on a live host). The app never issues a GET on that path (`backend/tests/test_summoner_source_guard.py`). The release classifies this as KNOWN LIMITATION KL-02 in `docs/release/blockers.md`, and it becomes a blocker only if OA-5 step 7 shows slot rows reaching an app route, a log or the copied summary.
+
+## FP-16 removes the generation grant (2026-11-19)
+
+`/api/chat` and the `specter-arena-summoner` agent leave the release manifest. The grants are `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`. The slot-list reach noted as R2 is closed because the grant is gone. Chat slots named `specter-summon-*` created by RC-1 may remain in Crew's history; the app cannot clean them. What Crew does with an already approved grant on update is read from the Crew source (`manager_records._approved_grants_after_manifest_change`) and confirmed end to end only at the OA-5 sitting.

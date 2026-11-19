@@ -34,12 +34,11 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures" / "store"
 FIXTURE_V5 = FIXTURES / "schema-v5.sql"
 FIXTURE_V6 = FIXTURES / "schema-v6.sql"
 FIXTURE_BINDING = "bnd_000000000000000000000001"
-FIXTURE_SPECTER = "spc_000000000000000000000001"
 FIXTURE_ACCEPTED = "wrk_000000000000000000000001"
 FIXTURE_OPEN = "wrk_000000000000000000000002"
 FIXTURE_REVISION = "50583c64149211559a9f6ecc"
 LEDGER_TABLES = ("work_item", "work_attempt", "work_milestone", "work_decision", "xp_entry")
-SPECTER_TABLES = ("asset", "generation_request", "specter", "specter_revision")
+IDENTITY_TABLES = ("asset", "hero_assignment", "avatar_revision")
 NEW_INDEXES = {
     "work_item_by_created",
     "work_item_by_parent",
@@ -74,8 +73,8 @@ def trigger_names(conn: sqlite3.Connection) -> set[str]:
     }
 
 
-def test_the_migration_is_the_sixth_and_names_the_work_tables() -> None:
-    assert latest_version() == 6
+def test_the_sixth_migration_names_the_work_tables() -> None:
+    assert latest_version() >= 6
     assert PACKAGED[5].name == "work_xp"
 
 
@@ -110,7 +109,7 @@ def test_the_frozen_v6_fixture_has_the_schema_the_migrations_create(tmp_path: Pa
         migrated.close()
 
 
-def test_the_v5_fixture_upgrades_with_empty_work_tables_and_a_backup(tmp_path: Path) -> None:
+def test_the_v5_fixture_upgrades_with_empty_work_tables_and_one_backup(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V5)
     opened = open_store(data_dir)
@@ -118,13 +117,13 @@ def test_the_v5_fixture_upgrades_with_empty_work_tables_and_a_backup(tmp_path: P
         assert opened.status().state == "ready"
         with opened.read() as conn:
             assert conn.execute("PRAGMA user_version").fetchone() == (latest_version(),)
-            assert conn.execute("SELECT count(*) FROM specter").fetchone() == (1,)
+            assert conn.execute("SELECT count(*) FROM hero_assignment").fetchone() == (1,)
             assert conn.execute("SELECT count(*) FROM bot_binding").fetchone() == (1,)
             for table in LEDGER_TABLES:
                 assert conn.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
     finally:
         opened.close()
-    assert list((data_dir / "store" / "backups").glob("pre-migrate-v5-to-v6-*.db"))
+    assert list((data_dir / "store" / "backups").glob("pre-migrate-v5-to-v7-*.db"))
 
 
 def test_the_v6_fixture_opens_and_serves_its_work(tmp_path: Path) -> None:
@@ -1096,7 +1095,7 @@ def test_the_ledger_tables_reference_only_each_other_and_bot_binding(tmp_path: P
         "xp_entry": ["bot_binding", "work_decision", "work_item"],
     }
     assert referencing <= set(LEDGER_TABLES)
-    assert not referencing & set(SPECTER_TABLES)
+    assert not referencing & set(IDENTITY_TABLES)
 
 
 def test_rebuild_projection_is_not_blocked_by_linked_work(tmp_path: Path) -> None:

@@ -8,6 +8,9 @@ from pathlib import Path
 import pytest
 
 from backend.specter_arena.specters.bundled import ART_DIR, BUNDLED, BundledArtError, prepare
+from backend.specter_arena.specters.service import hero_default_asset_id
+from backend.specter_arena.store import open_store
+from backend.specter_arena.store import specters as db
 
 PINNED = {
     "vell": "268d5b2f0e068017002941afafe15d5c30375f2cf80ff144eec1c07b9c18dcf0",
@@ -66,3 +69,21 @@ def test_a_tampered_file_is_never_served() -> None:
 
     with pytest.raises(BundledArtError):
         prepare(reader=tampered)
+
+
+def test_hero_default_asset_id_equals_the_inserted_asset_id(tmp_path: Path) -> None:
+    store = open_store(tmp_path / "data")
+    try:
+        for index, item in enumerate(prepare()):
+            inserted = db.insert_asset(
+                store,
+                data=item.data,
+                width=item.width,
+                height=item.height,
+                origin="bundled",
+                label=item.art.label,
+                now_ms=1_800_000_000_000 + index,
+            )
+            assert inserted.record.asset_id == hero_default_asset_id(item.art)
+    finally:
+        store.close()

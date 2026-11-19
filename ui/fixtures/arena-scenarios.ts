@@ -34,17 +34,12 @@ export const ARENA_PERF_1 = {
   standaloneLeaves: 50,
   recentlyAccepted: 12,
   workingAttempts: 30,
-  specters: 14,
+  specters: 20,
 } as const;
 
 const BOT_NAMES: readonly string[] = [
   'Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Garnet', 'Hollis', 'Ivory', 'Juniper',
   'Kestrel', 'Linden', 'Maple', 'Nettle', 'Orrin', 'Pike', 'Quill', 'Rowan', 'Sable', 'Thorn',
-];
-
-export const PERF_SPECTER_NAMES: readonly string[] = [
-  'Vesper', 'Wren', 'Thistle', 'Lanternwick', 'Mossgrave', 'Pennywhistle', 'Ashbourne',
-  'Cobalt', 'Dapple', 'Eventide', 'Fathom', 'Gossamer', 'Halcyon', 'Ibis',
 ];
 
 /** Bots 1..6 run three attempts, bots 7..12 run two: 18 + 12 = 30. */

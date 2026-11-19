@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 import {
+  HERO_IDS,
   API_ERROR_KEYS,
   ATTEMPT_CONDITION_KEYS,
   ATTEMPT_ITEM_KEYS,
@@ -24,10 +25,7 @@ import {
   ROSTER_WORKERS_KEYS,
   SCENE_ASSET_KEYS,
   SPECTER_KEYS,
-  SPECTER_PROFILE_KEYS,
   SPECTERS_KEYS,
-  SUMMONING_BUDGET_KEYS,
-  SUMMONING_KEYS,
   WORK_ATTEMPT_KEYS,
   WORK_CONTRIBUTOR_KEYS,
   WORK_DECISION_KEYS,
@@ -51,10 +49,8 @@ import type {
   ReadyV1,
   RosterItemV1,
   RosterV1,
-  SpecterProfileV1,
-  SpecterV1,
-  SpectersV1,
-  SummoningV1,
+  SpecterV2,
+  SpectersV2,
   WorkItemV1,
   WorkItemsV1,
   XpHistoryV1,
@@ -127,6 +123,8 @@ describe.each(schemaFiles)('contract %s', (schemaFile) => {
 
 interface TypedSchema {
   readonly schema: string;
+  /** Major version of the schema file; 1 when omitted. */
+  readonly version?: number;
   /** Path to a nested object schema inside the file, e.g. ['properties', 'condition']. */
   readonly path: readonly string[];
   readonly keys: Record<string, true>;
@@ -150,13 +148,10 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'attempts', path: [], keys: ATTEMPTS_KEYS },
   { schema: 'attempts', path: ['properties', 'activity'], keys: ATTEMPTS_ACTIVITY_KEYS },
   { schema: 'attempts', path: ['definitions', 'window'], keys: ATTEMPTS_WINDOW_KEYS },
-  { schema: 'specter-profile', path: [], keys: SPECTER_PROFILE_KEYS },
   { schema: 'portrait-asset', path: [], keys: PORTRAIT_ASSET_KEYS },
   { schema: 'scene-asset', path: [], keys: SCENE_ASSET_KEYS },
-  { schema: 'specter', path: [], keys: SPECTER_KEYS },
-  { schema: 'specters', path: [], keys: SPECTERS_KEYS },
-  { schema: 'summoning', path: [], keys: SUMMONING_KEYS },
-  { schema: 'summoning', path: ['properties', 'budget'], keys: SUMMONING_BUDGET_KEYS },
+  { schema: 'specter', version: 2, path: [], keys: SPECTER_KEYS },
+  { schema: 'specters', version: 2, path: [], keys: SPECTERS_KEYS },
   { schema: 'work-item', path: [], keys: WORK_ITEM_KEYS },
   { schema: 'work-item', path: ['properties', 'attempts', 'items'], keys: WORK_ATTEMPT_KEYS },
   { schema: 'work-item', path: ['properties', 'contributors', 'items'], keys: WORK_CONTRIBUTOR_KEYS },
@@ -172,12 +167,14 @@ const TYPED: readonly TypedSchema[] = [
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
 const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
+/** Contracts PA-2 retired: the v1 identity files stay for history and have no TypeScript reader. */
+const RETIRED = ['specter-profile', 'summoning'];
 
 describe('hand-written types', () => {
   const nested = (entry: TypedSchema): { properties: Record<string, unknown>; required: string[] } =>
     entry.path.reduce<unknown>(
       (node, key) => (node as Record<string, unknown>)[key],
-      readJson(`${schemasDir}${entry.schema}.v1.schema.json`),
+      readJson(`${schemasDir}${entry.schema}.v${entry.version ?? 1}.schema.json`),
     ) as { properties: Record<string, unknown>; required: string[] };
 
   it.each(TYPED)('$schema $path names exactly the schema properties, all required', (entry) => {
@@ -189,7 +186,7 @@ describe('hand-written types', () => {
   it('covers every schema file', () => {
     const typed = new Set(TYPED.map((entry) => entry.schema));
     const names = schemaFiles.map((file) => file.replace(/\.v\d+\.schema\.json$/, ''));
-    expect(names.filter((name) => !typed.has(name) && !BACKEND_ONLY.includes(name))).toEqual([]);
+    expect(names.filter((name) => !typed.has(name) && !BACKEND_ONLY.includes(name) && !RETIRED.includes(name))).toEqual([]);
     expect(BACKEND_ONLY.filter((name) => !names.includes(name))).toEqual([]);
   });
 
@@ -255,17 +252,6 @@ describe('hand-written types', () => {
       asOfMs: 86400000,
       activity: { last24h: window, last7d: { ...window, fromMs: 0, windowMs: 604800000, toMs: 604800000 } },
     };
-    const profile: SpecterProfileV1 = {
-      contractVersion: 1,
-      name: 'Lanternwick',
-      epithet: null,
-      personality: 'Patient and dry.',
-      appearance: 'A tall figure in a pale coat.',
-      mannerism: 'Hums while waiting.',
-      signatureAction: null,
-      assignmentRationale: 'Matches the careful way this bot works.',
-      artBrief: 'A lantern held low.',
-    };
     const asset: PortraitAssetV1 = {
       contractVersion: 1,
       assetId: 'ast_0a1b2c3d4e5f60718293a4b5',
@@ -287,32 +273,24 @@ describe('hand-written types', () => {
       byteLength: 70,
       dataBase64: 'iVBORw0KGgo=',
     };
-    const specter: SpecterV1 = {
-      contractVersion: 1,
-      specterId: 'spc_0a1b2c3d4e5f60718293a4b5',
-      bindingId: 'bnd_0a1b2c3d',
+    const specter: SpecterV2 = {
+      contractVersion: 2,
+      bindingId: 'bnd_0a1b2c3d4e5f60718293a4b5',
       version: 1,
-      profile,
+      heroId: 'vell',
+      ordinal: 2,
+      displayName: 'Vell II',
+      name: 'Vell',
+      epithet: 'The caped one with the golden clasp',
+      personality: 'Calm and a little formal.',
+      appearance: 'Pale lavender, rounded ghost.',
       portrait: asset,
-      source: 'generated',
-      promptVersion: 'summon-1',
+      avatarChosen: true,
+      source: 'roster',
       createdAtMs: 1760000005000,
       updatedAtMs: 1760000005000,
     };
-    const specters: SpectersV1 = { contractVersion: 1, items: [specter] };
-    const summoning: SummoningV1 = {
-      contractVersion: 1,
-      requestId: 'req_0a1b2c3d4e5f60718293a4b5',
-      bindingId: 'bnd_0a1b2c3d',
-      status: 'ready',
-      candidate: profile,
-      error: null,
-      promptVersion: 'summon-1',
-      keep: ['name'],
-      createdAtMs: 1760000005000,
-      finishedAtMs: 1760000006000,
-      budget: { bindingRemaining: 4, bindingLimit: 5, installRemaining: 19, installLimit: 20, windowMs: 86400000 },
-    };
+    const specters: SpectersV2 = { contractVersion: 2, items: [specter] };
     const bindingId = 'bnd_0a1b2c3d4e5f60718293a4b5';
     const workItem: WorkItemV1 = {
       contractVersion: 1,
@@ -376,12 +354,8 @@ describe('hand-written types', () => {
       ['roster', roster],
       ['attempt-item', attempt],
       ['attempts', attempts],
-      ['specter-profile', profile],
       ['portrait-asset', asset],
       ['scene-asset', sceneAsset],
-      ['specter', specter],
-      ['specters', specters],
-      ['summoning', summoning],
       ['work-item', workItem],
       ['work-item', unknownProgress],
       ['work-items', workItems],
@@ -392,6 +366,8 @@ describe('hand-written types', () => {
     for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
+    expect(ajv.getSchema('urn:specter-arena:contract:specter:v2')?.(specter)).toBe(true);
+    expect(ajv.getSchema('urn:specter-arena:contract:specters:v2')?.(specters)).toBe(true);
   });
 });
 
@@ -409,5 +385,19 @@ describe('$ref forms the contracts rely on', () => {
     expect(validate({ id: 'bnd_0a1b2c3d' })).toBe(true);
     expect(validate({ id: 'not an id!' })).toBe(false);
     expect(validate({ id: 7 })).toBe(false);
+  });
+});
+
+describe('PA-2 identity contracts', () => {
+  it('HERO_IDS equals the heroId enum of specter.v2', () => {
+    const schema = readJson(`${schemasDir}specter.v2.schema.json`) as { properties: { heroId: { enum: string[] } } };
+    expect([...HERO_IDS]).toEqual(schema.properties.heroId.enum);
+  });
+
+  it('the four retired v1 identity contracts say RETIRED in OWNERS.md and the v2 ones say FROZEN', () => {
+    const owners = readFileSync(`${contractsDir}OWNERS.md`, 'utf8');
+    const row = (name: string, version: number) => owners.split('\n').find((line) => line.startsWith(`| \`${name}\` | ${version} |`)) ?? '';
+    for (const name of ['specter-profile', 'specter', 'specters', 'summoning']) expect(row(name, 1)).toContain('| RETIRED |');
+    for (const name of ['specter', 'specters']) expect(row(name, 2)).toContain('| FROZEN |');
   });
 });

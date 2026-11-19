@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PortraitAssetV1 } from '../contracts/types';
 import { clearAssetCache } from './assetCache';
 import { SpecterPortrait } from './SpecterPortrait';
-import { specterOf } from './testData';
+import { heroOf } from './testData';
 
 let asset: PortraitAssetV1 = {
   contractVersion: 1,
@@ -34,75 +34,84 @@ function reduceMotion(reduce: boolean) {
   }));
 }
 
+const FAILED = 'Portrait could not be loaded. Showing a placeholder token.';
+const unloadable = (extra = {}) => heroOf({ displayName: 'Lantern Wick', ...extra });
+const loadable = (extra = {}) => heroOf({ portrait: asset, ...extra });
+
 describe('SpecterPortrait', () => {
-  it('draws a labelled token with the Specter initials when there is no portrait', () => {
-    render(<SpecterPortrait specter={specterOf({ profile: { ...specterOf().profile, name: 'Lantern Wick' } })} size="md" />);
+  it('shows the portrait while it loads, then draws a labelled token with the initials if the asset cannot load', async () => {
+    const { container } = render(<SpecterPortrait specter={unloadable()} size="md" />);
+    expect(container.querySelector('[data-portrait="loading"]')).toBeTruthy();
+    expect(await screen.findByText(FAILED)).toBeTruthy();
     expect(screen.getByText('LW')).toBeTruthy();
-    expect(screen.getByText('Placeholder token, not a portrait')).toBeTruthy();
   });
 
-  it('uses a hue from the specter id', () => {
-    const { container } = render(<SpecterPortrait specter={specterOf()} size="lg" />);
+  it('uses a hue from the binding id', async () => {
+    const { container } = render(<SpecterPortrait specter={unloadable()} size="lg" />);
+    await screen.findByText(FAILED);
     expect((container.querySelector('.sa-portrait__token') as HTMLElement).style.getPropertyValue('--sa-hue')).toMatch(/^\d+$/);
   });
 
-  it('labels a small non-decorative token for assistive technology', () => {
-    render(<SpecterPortrait specter={specterOf()} size="sm" />);
-    expect(screen.getByRole('img', { name: 'Lanternwick: Placeholder token, not a portrait' })).toBeTruthy();
-    expect(screen.queryByText('Placeholder token, not a portrait')).toBeNull();
+  it('labels a small non-decorative token for assistive technology', async () => {
+    render(<SpecterPortrait specter={heroOf()} size="sm" />);
+    expect(await screen.findByRole('img', { name: `Vell: ${FAILED}` })).toBeTruthy();
+    expect(screen.queryByText(FAILED)).toBeNull();
   });
 
-  it('hides a decorative portrait from assistive technology', () => {
-    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" decorative />);
+  it('hides a decorative portrait from assistive technology', async () => {
+    const { container } = render(<SpecterPortrait specter={heroOf()} size="sm" decorative />);
+    await waitFor(() => expect(container.querySelector('[data-portrait="token"]')).toBeTruthy());
     expect(container.querySelector('.sa-portrait')?.getAttribute('aria-hidden')).toBe('true');
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('keeps the initials of a decorative token out of its text and in data-initials', () => {
-    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" decorative />);
+  it('keeps the initials of a decorative token out of its text and in data-initials', async () => {
+    const { container } = render(<SpecterPortrait specter={heroOf()} size="sm" decorative />);
+    await waitFor(() => expect(container.querySelector('.sa-portrait__token')).toBeTruthy());
     const token = container.querySelector('.sa-portrait__token');
     expect(token?.textContent).toBe('');
-    expect(token?.getAttribute('data-initials')).toBe('L');
+    expect(token?.getAttribute('data-initials')).toBe('V');
   });
 
-  it('keeps the initials of a labelled token as text with no data-initials', () => {
-    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" />);
+  it('keeps the initials of a labelled token as text with no data-initials', async () => {
+    const { container } = render(<SpecterPortrait specter={heroOf()} size="sm" />);
+    await waitFor(() => expect(container.querySelector('.sa-portrait__token')).toBeTruthy());
     const token = container.querySelector('.sa-portrait__token');
-    expect(token?.textContent).toBe('L');
+    expect(token?.textContent).toBe('V');
     expect(token?.hasAttribute('data-initials')).toBe(false);
   });
 
-  it('shows no caption while the image loads, then the image with an alt', async () => {
-    const { container } = render(<SpecterPortrait specter={specterOf({ portrait: asset })} size="md" />);
+  it('shows no caption while the image loads, then the image with an alt from the display name', async () => {
+    const { container } = render(<SpecterPortrait specter={loadable({ displayName: 'Vell II' })} size="md" />);
     expect(container.querySelector('[data-portrait="loading"]')).toBeTruthy();
     expect(screen.queryByText(/Placeholder token/)).toBeNull();
-    const image = await screen.findByAltText('Portrait of Lanternwick');
+    const image = await screen.findByAltText('Portrait of Vell II');
     expect(image.getAttribute('src')).toMatch(/^data:image\/png;base64,/);
     expect(screen.queryByText(/Placeholder token/)).toBeNull();
   });
 
   it('uses an empty alt for a decorative image', async () => {
-    const { container } = render(<SpecterPortrait specter={specterOf({ portrait: asset })} size="sm" decorative />);
+    const { container } = render(<SpecterPortrait specter={loadable()} size="sm" decorative />);
     await waitFor(() => expect(container.querySelector('img')).toBeTruthy());
     expect(container.querySelector('img')?.getAttribute('alt')).toBe('');
   });
 
   it('falls back to the token with the failed caption when the asset cannot load', async () => {
     setSpecterScenario('asset-failed');
-    render(<SpecterPortrait specter={specterOf({ portrait: asset })} size="md" />);
-    expect(await screen.findByText('Portrait could not be loaded. Showing a placeholder token.')).toBeTruthy();
-    expect(screen.getByText('L')).toBeTruthy();
+    render(<SpecterPortrait specter={loadable()} size="md" />);
+    expect(await screen.findByText(FAILED)).toBeTruthy();
+    expect(screen.getByText('V')).toBeTruthy();
   });
 
   it('adds float and active effects only when motion is allowed', async () => {
     reduceMotion(false);
-    const moving = render(<SpecterPortrait specter={specterOf()} size="md" active />);
+    const moving = render(<SpecterPortrait specter={loadable()} size="md" active />);
     await act(async () => undefined);
     expect(moving.container.querySelector('.sa-portrait--float')).toBeTruthy();
     expect(moving.container.querySelector('.sa-portrait--active')).toBeTruthy();
     moving.unmount();
     reduceMotion(true);
-    const still = render(<SpecterPortrait specter={specterOf()} size="md" active />);
+    const still = render(<SpecterPortrait specter={loadable()} size="md" active />);
     await act(async () => undefined);
     expect(still.container.querySelector('.sa-portrait--float')).toBeNull();
     expect(still.container.querySelector('.sa-portrait--active')).toBeNull();
@@ -110,7 +119,7 @@ describe('SpecterPortrait', () => {
 
   it('never floats a row-sized portrait, but still shows the active ring', async () => {
     reduceMotion(false);
-    const { container } = render(<SpecterPortrait specter={specterOf()} size="sm" active decorative />);
+    const { container } = render(<SpecterPortrait specter={loadable()} size="sm" active decorative />);
     await act(async () => undefined);
     expect(container.querySelector('.sa-portrait--float')).toBeNull();
     expect(container.querySelector('.sa-portrait--active')).toBeTruthy();

@@ -10,11 +10,8 @@ import {
   sceneAssetPath,
   attemptsPath,
   rosterPath,
-  specterActionPath,
   specterPath,
-  summoningActionPath,
-  summoningPath,
-  summoningsPath,
+  specterPortraitPath,
   workAttemptsPath,
   workDecisionsPath,
   workListPath,
@@ -45,22 +42,16 @@ describe('specter paths', () => {
     expect(ASSETS_PATH).toBe('/apps/specter-arena/api/assets');
   });
 
-  it('builds the per-bot and per-request paths', () => {
+  it('builds the per-bot paths', () => {
     expect(specterPath('bnd_1')).toBe('/apps/specter-arena/api/specters/bnd_1');
-    expect(summoningsPath('bnd_1')).toBe('/apps/specter-arena/api/specters/bnd_1/summonings');
-    expect(specterActionPath('bnd_1', 'portrait')).toBe('/apps/specter-arena/api/specters/bnd_1/portrait');
-    expect(summoningPath('req_1')).toBe('/apps/specter-arena/api/summonings/req_1');
-    expect(summoningActionPath('req_1', 'accept')).toBe('/apps/specter-arena/api/summonings/req_1/accept');
+    expect(specterPortraitPath('bnd_1')).toBe('/apps/specter-arena/api/specters/bnd_1/portrait');
     expect(assetPath('ast_1')).toBe('/apps/specter-arena/api/assets/ast_1');
     expect(sceneAssetPath('arena-map')).toBe('/apps/specter-arena/api/scene-assets/arena-map');
   });
 
   it('encodes every id so a slash cannot add a path segment', () => {
     expect(specterPath('a/b')).toBe('/apps/specter-arena/api/specters/a%2Fb');
-    expect(summoningsPath('a/b')).toBe('/apps/specter-arena/api/specters/a%2Fb/summonings');
-    expect(specterActionPath('a/b', 'name')).toBe('/apps/specter-arena/api/specters/a%2Fb/name');
-    expect(summoningPath('a/b')).toBe('/apps/specter-arena/api/summonings/a%2Fb');
-    expect(summoningActionPath('a/b', 'cancel')).toBe('/apps/specter-arena/api/summonings/a%2Fb/cancel');
+    expect(specterPortraitPath('a/b')).toBe('/apps/specter-arena/api/specters/a%2Fb/portrait');
     expect(assetPath('a/b')).toBe('/apps/specter-arena/api/assets/a%2Fb');
   });
 });

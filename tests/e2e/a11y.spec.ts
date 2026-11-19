@@ -31,7 +31,7 @@ test('AX-1 each of the four tabs has no WCAG 2.1 A or AA axe violation', async (
   }
 });
 
-test('AX-2 selected states have no violation: bot, Specter, summoning, Work item, and every Arena token', async ({ page }) => {
+test('AX-2 selected states have no violation: bot, Specter, Work item, and every Arena token', async ({ page }) => {
   test.setTimeout(45_000);
   await open(page, 'arena');
   await rosterList(page).getByRole('button', { name: /^Atlas/ }).click();
@@ -59,11 +59,12 @@ test('AX-2 selected states have no violation: bot, Specter, summoning, Work item
   }
 });
 
-test('AX-3 the summoning panel has no violation', async ({ page }) => {
-  await open(page, 'specters-empty');
+test('AX-3 the avatar picker has no violation', async ({ page }) => {
+  await open(page, 'specters');
   await sectionTab(page, 'Specters').click();
   await page.getByRole('list', { name: 'Bots with Specters' }).getByRole('button').first().click();
-  await expect(page.getByRole('button', { name: 'Summon a Specter' })).toBeVisible();
+  await page.getByRole('button', { name: 'Change avatar' }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Portraits' })).toBeVisible();
   expect(await violations(page)).toEqual([]);
 });
 

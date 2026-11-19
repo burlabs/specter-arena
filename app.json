@@ -13,8 +13,7 @@
   "permissions": {
     "api": [
       "/apps/specter-arena/api/*",
-      "/api/agents",
-      "/api/chat"
+      "/api/agents"
     ],
     "events": [
       "slots:user"
@@ -29,8 +28,5 @@
         "icon": "Package"
       }
     ]
-  },
-  "agents": [
-    "agents/specter-summoner.json"
-  ]
+  }
 }

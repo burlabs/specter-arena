@@ -51,8 +51,6 @@ async def _call(request: Request, method: str, *args: Any, status: int = 200) ->
         result = await getattr(service, method)(*args)
     except domain.SpecterError as error:
         return _error(error.code, error.status)
-    if method == "start_summoning":
-        status, result = result
     return JSONResponse(result, status_code=status, headers=NOSNIFF)
 
 
@@ -84,71 +82,6 @@ async def get_specter(request: Request) -> Response:
 
 @capped
 @signed
-async def start_summoning(request: Request) -> Response:
-    try:
-        body: object = json.loads(await request.body())
-    except ValueError:
-        return _error("invalid_body", 400)
-    return await _call(request, "start_summoning", _p(request, "binding_id"), body)
-
-
-@signed
-async def get_summoning(request: Request) -> Response:
-    return await _call(request, "get_summoning", _p(request, "request_id"))
-
-
-@capped
-@signed
-async def cancel_summoning(request: Request) -> Response:
-    if await _object(request, frozenset(), frozenset()) is None:
-        return _error("invalid_body", 400)
-    return await _call(request, "cancel_summoning", _p(request, "request_id"))
-
-
-@capped
-@signed
-async def accept(request: Request) -> Response:
-    keys = frozenset({"expectedVersion"})
-    body = await _object(request, keys, keys)
-    if body is None:
-        return _error("invalid_body", 400)
-    return await _call(request, "accept", _p(request, "request_id"), body["expectedVersion"])
-
-
-@capped
-@signed
-async def save_manual(request: Request) -> Response:
-    keys = frozenset({"expectedVersion", "profile"})
-    body = await _object(request, keys, keys)
-    if body is None:
-        return _error("invalid_body", 400)
-    return await _call(
-        request, "save_manual", _p(request, "binding_id"), body["expectedVersion"], body["profile"]
-    )
-
-
-@capped
-@signed
-async def rename(request: Request) -> Response:
-    body = await _object(
-        request,
-        frozenset({"expectedVersion", "name", "epithet"}),
-        frozenset({"expectedVersion", "name"}),
-    )
-    if body is None:
-        return _error("invalid_body", 400)
-    return await _call(
-        request,
-        "rename",
-        _p(request, "binding_id"),
-        body["expectedVersion"],
-        body["name"],
-        body.get("epithet", _domain().UNSET),
-    )
-
-
-@capped
-@signed
 async def set_portrait(request: Request) -> Response:
     keys = frozenset({"expectedVersion", "assetId"})
     body = await _object(request, keys, keys)
@@ -157,16 +90,6 @@ async def set_portrait(request: Request) -> Response:
     return await _call(
         request, "set_portrait", _p(request, "binding_id"), body["expectedVersion"], body["assetId"]
     )
-
-
-@capped
-@signed
-async def archive(request: Request) -> Response:
-    keys = frozenset({"expectedVersion"})
-    body = await _object(request, keys, keys)
-    if body is None:
-        return _error("invalid_body", 400)
-    return await _call(request, "archive", _p(request, "binding_id"), body["expectedVersion"])
 
 
 @signed
@@ -207,14 +130,7 @@ def specter_routes() -> list[BaseRoute]:
     return [
         Route("/api/specters", list_specters, methods=["GET"]),
         Route("/api/specters/{binding_id}", get_specter, methods=["GET"]),
-        Route("/api/specters/{binding_id}/summonings", start_summoning, methods=["POST"]),
-        Route("/api/specters/{binding_id}/manual", save_manual, methods=["POST"]),
-        Route("/api/specters/{binding_id}/name", rename, methods=["POST"]),
         Route("/api/specters/{binding_id}/portrait", set_portrait, methods=["POST"]),
-        Route("/api/specters/{binding_id}/archive", archive, methods=["POST"]),
-        Route("/api/summonings/{request_id}", get_summoning, methods=["GET"]),
-        Route("/api/summonings/{request_id}/cancel", cancel_summoning, methods=["POST"]),
-        Route("/api/summonings/{request_id}/accept", accept, methods=["POST"]),
         Route("/api/portraits", list_portraits, methods=["GET"]),
         Route("/api/assets", upload_asset, methods=["POST"]),
         Route("/api/assets/{asset_id}", get_asset, methods=["GET"]),

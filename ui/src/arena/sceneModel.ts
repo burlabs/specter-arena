@@ -1,4 +1,4 @@
-import type { RosterItemV1, SpecterV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { HeroId, RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../contracts/types';
 import type { SourceMode } from '../host';
 import { nameOf } from '../observatory/model';
 
@@ -11,7 +11,7 @@ export interface SceneInputs {
   mode: SourceMode;
   nowMs: number;
   roster: readonly RosterItemV1[];
-  specters: readonly SpecterV1[];
+  specters: readonly SpecterV2[];
   xp: readonly XpSummaryV1[];
   work: readonly WorkItemV1[];
   /** A work stream still had a cursor after the page cap, so counts are a minimum. */
@@ -23,7 +23,9 @@ export type Progress = { kind: 'milestones'; done: number; total: number } | { k
 export interface SceneSpecter {
   bindingId: string;
   displayName: string;
+  /** The hero's display name ("Vell II"), or null before the assignment shows up in a poll. */
   specterName: string | null;
+  heroId: HeroId | null;
   portraitAssetId: string | null;
   condition: 'working' | 'settled' | 'unknown';
   openAttemptIds: string[];
@@ -127,8 +129,9 @@ export function buildSceneModel(inputs: SceneInputs, enemyCap: number = ENEMY_CA
       return {
         bindingId: bot.bindingId,
         displayName: nameOf(bot),
-        specterName: specter?.profile.name ?? null,
-        portraitAssetId: specter?.portrait?.assetId ?? null,
+        specterName: specter?.displayName ?? null,
+        heroId: specter?.heroId ?? null,
+        portraitAssetId: specter?.portrait.assetId ?? null,
         condition: conditionOf(bot),
         openAttemptIds: sorted(openByBot.get(bot.bindingId)),
         engagedWorkIds: sorted(engagedByBot.get(bot.bindingId)),

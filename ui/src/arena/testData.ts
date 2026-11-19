@@ -1,4 +1,5 @@
-import type { RosterItemV1, SpecterV1, WorkAttemptV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import { HERO_IDS } from '../contracts/types';
+import type { RosterItemV1, SpecterV2, WorkAttemptV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
 import { itemOf } from '../work/testData';
 import type { SceneInputs } from './sceneModel';
 
@@ -43,28 +44,30 @@ export const attemptOf = (bot: RosterItemV1, n: number, extra: Partial<WorkAttem
 export const workOf = (n: number, extra: Partial<WorkItemV1> = {}): WorkItemV1 =>
   itemOf({ workId: `wrk_${String(n).padStart(24, '0')}`, title: `Task ${n}`, createdAtMs: NOW - n * 1_000, updatedAtMs: NOW - n * 1_000, ...extra });
 
-export const specterOf = (bot: RosterItemV1, name: string, assetId: string | null = null): SpecterV1 => ({
-  contractVersion: 1,
-  specterId: `spc_${bot.bindingId.slice(4)}`,
-  bindingId: bot.bindingId,
-  version: 1,
-  profile: {
-    contractVersion: 1,
-    name,
-    epithet: null,
+const DEFAULT_PORTRAIT_ASSET = `ast_${'0'.repeat(24)}`;
+
+/** A hero for a bot: assignment follows the bot number so each bot in a test has its own hero. */
+export const specterOf = (bot: RosterItemV1, name: string, assetId: string | null = null): SpecterV2 => {
+  const assignment = (Number.parseInt(bot.bindingId.slice(-4), 10) || 1) - 1;
+  const heroId = HERO_IDS[assignment % HERO_IDS.length] ?? 'vell';
+  return {
+    contractVersion: 2,
+    bindingId: bot.bindingId,
+    version: assetId === null ? 0 : 1,
+    heroId,
+    ordinal: Math.floor(assignment / HERO_IDS.length) + 1,
+    displayName: name,
+    name: name.split(' ')[0] ?? name,
+    epithet: 'Quiet.',
     personality: 'Quiet.',
     appearance: 'Pale.',
-    mannerism: 'Nods.',
-    signatureAction: null,
-    assignmentRationale: 'Fits.',
-    artBrief: 'A figure.',
-  },
-  portrait: assetId === null ? null : { contractVersion: 1, assetId, mediaType: 'image/png', width: 8, height: 8, byteLength: 10, origin: 'bundled', label: 'x', dataBase64: null },
-  source: 'generated',
-  promptVersion: null,
-  createdAtMs: NOW,
-  updatedAtMs: NOW,
-});
+    portrait: { contractVersion: 1, assetId: assetId ?? DEFAULT_PORTRAIT_ASSET, mediaType: 'image/png', width: 8, height: 8, byteLength: 10, origin: 'bundled', label: 'x', dataBase64: null },
+    avatarChosen: assetId !== null,
+    source: 'roster',
+    createdAtMs: NOW,
+    updatedAtMs: NOW,
+  };
+};
 
 export const xpOf = (bot: RosterItemV1, totalXp: number, level: number): XpSummaryV1 => ({
   contractVersion: 1,

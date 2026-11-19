@@ -1,4 +1,5 @@
-"""Identity work writes no monitoring, binding or progress data (FP-06-AC03/06, FP-07-AC04)."""
+"""Hero and avatar work writes no monitoring, binding or progress data (FP-06-AC03/06, FP-07-AC04,
+FP-16)."""
 
 from collections.abc import Iterator
 from pathlib import Path
@@ -17,12 +18,14 @@ from backend.specter_arena.store import (
     Store,
     attempts_page,
     get_binding,
+    get_hero,
     ingest,
     open_store,
     rebuild_projection,
     roster_page,
     roster_revision,
     row_fact_digest,
+    set_avatar,
     start_run,
 )
 from backend.specter_arena.store import specters as sp
@@ -30,21 +33,8 @@ from backend.specter_arena.store.bindings import store_id
 
 ALPHA = DmKey("alpha-0123456789ab", "memory-alpha")
 T0 = 1_800_000_000_000
-DAY = 86_400_000
-LIMITS: dict[str, Any] = {"binding_limit": 5, "install_limit": 20, "window_ms": DAY}
-OWN_TABLES = {"asset", "generation_request", "specter", "specter_revision"}
+OWN_TABLES = {"asset", "hero_assignment", "avatar_revision"}
 PNG = sp.PNG_SIGNATURE + b"\x00" * 24
-PROFILE: dict[str, Any] = {
-    "contractVersion": 1,
-    "name": "Vesper",
-    "epithet": None,
-    "personality": "Dry.",
-    "appearance": "Lantern-bearer.",
-    "mannerism": "Taps twice.",
-    "signatureAction": None,
-    "assignmentRationale": "Chosen from the display name.",
-    "artBrief": "Grey coat.",
-}
 
 
 @pytest.fixture
@@ -87,7 +77,7 @@ def seed_monitoring(opened: Store) -> str:
 
 
 def snapshot(opened: Store) -> dict[str, list[tuple[Any, ...]]]:
-    """Every row of every table outside the Specter tables, found from sqlite_master so a table
+    """Every row of every table outside the identity tables, found from sqlite_master so a table
     a later migration adds is covered without editing this test."""
     with opened.read() as conn:
         tables = [
@@ -104,7 +94,7 @@ def snapshot(opened: Store) -> dict[str, list[tuple[Any, ...]]]:
         }
 
 
-def test_the_snapshot_sees_every_non_specter_table_and_notices_a_write(store: Store) -> None:
+def test_the_snapshot_sees_every_non_identity_table_and_notices_a_write(store: Store) -> None:
     binding = seed_monitoring(store)
     before = snapshot(store)
     assert {"observation", "attempt", "bot_state", "bot_binding", "coverage_interval"} <= set(
@@ -120,7 +110,7 @@ def test_the_snapshot_sees_every_non_specter_table_and_notices_a_write(store: St
     assert snapshot(store) != before
 
 
-def test_a_full_summoning_flow_writes_nothing_outside_the_specter_tables(store: Store) -> None:
+def test_a_full_avatar_flow_writes_nothing_outside_the_identity_tables(store: Store) -> None:
     binding = seed_monitoring(store)
     rebuild_projection(store, as_of_ms=T0 + 5)
     before = snapshot(store)
@@ -128,59 +118,41 @@ def test_a_full_summoning_flow_writes_nothing_outside_the_specter_tables(store: 
     attempts_before = attempts_page(store, binding, cursor=None, limit=50, as_of_ms=T0 + 10)
     revision_before = roster_revision(store)
     binding_before = get_binding(store, binding)
+    hero_before = get_hero(store, binding)
 
-    sp.create_request(
-        store,
-        request_id="req_" + "1" * 24,
-        binding_id=binding,
-        keep=(),
-        prompt_version="summon-1",
-        now_ms=T0 + 100,
-        **LIMITS,
-    )
-    sp.mark_running(store, "req_" + "1" * 24, T0 + 101)
-    sp.complete_request(
-        store, "req_" + "1" * 24, candidate=PROFILE, model_label="auto", attempts=1, now_ms=T0 + 102
-    )
-    sp.accept_request(store, "req_" + "1" * 24, expected_version=0, now_ms=T0 + 103)
-    asset = sp.insert_asset(
+    first = sp.insert_asset(
         store, data=PNG, width=8, height=8, origin="uploaded", label="a", now_ms=T0 + 104
     ).record
-    sp.set_portrait(store, binding, expected_version=1, asset_id=asset.asset_id, now_ms=T0 + 105)
-    sp.save_rename(
-        store, binding, expected_version=2, profile={**PROFILE, "name": "Wren"}, now_ms=T0 + 106
-    )
-    sp.create_request(
-        store,
-        request_id="req_" + "2" * 24,
-        binding_id=binding,
-        keep=("name",),
-        prompt_version="summon-1",
-        now_ms=T0 + 107,
-        **LIMITS,
-    )
-    sp.fail_request(store, "req_" + "2" * 24, error_code="timeout", attempts=1, now_ms=T0 + 108)
-    sp.sweep_interrupted(store, T0 + 109)
-    sp.archive_specter(store, binding, expected_version=3, now_ms=T0 + 110)
+    second = sp.insert_asset(
+        store, data=PNG + b"2", width=8, height=8, origin="uploaded", label="b", now_ms=T0 + 105
+    ).record
+    set_avatar(store, binding, expected_version=0, asset_id=first.asset_id, now_ms=T0 + 106)
+    set_avatar(store, binding, expected_version=1, asset_id=second.asset_id, now_ms=T0 + 107)
+    set_avatar(store, binding, expected_version=2, asset_id=None, now_ms=T0 + 108)
 
     assert snapshot(store) == before
     assert roster_page(store, cursor=None, limit=50, as_of_ms=T0 + 10) == roster_before
     assert attempts_page(store, binding, cursor=None, limit=50, as_of_ms=T0 + 10) == attempts_before
     assert roster_revision(store) == revision_before
     assert get_binding(store, binding) == binding_before
+    after = get_hero(store, binding)
+    assert (after.hero_id, after.ordinal, after.assignment_no, after.assigned_ms) == (
+        hero_before.hero_id,
+        hero_before.ordinal,
+        hero_before.assignment_no,
+        hero_before.assigned_ms,
+    )
+    assert (after.version, after.asset_id) == (3, None)
     with store.read() as conn:
-        assert conn.execute("SELECT count(*) FROM specter_revision").fetchone() == (4,)
-        assert conn.execute("SELECT DISTINCT internal_tag FROM generation_request").fetchall() == [
-            ("summoning",)
-        ]
+        assert conn.execute("SELECT count(*) FROM avatar_revision").fetchone() == (3,)
 
 
 def test_rebuilding_the_projection_leaves_identity_data_alone(store: Store) -> None:
     binding = seed_monitoring(store)
-    sp.save_manual(store, binding, expected_version=0, profile=PROFILE, now_ms=T0 + 50)
-    sp.insert_asset(
+    asset = sp.insert_asset(
         store, data=PNG, width=8, height=8, origin="uploaded", label="a", now_ms=T0 + 51
-    )
+    ).record
+    set_avatar(store, binding, expected_version=0, asset_id=asset.asset_id, now_ms=T0 + 52)
 
     def identity() -> dict[str, list[tuple[Any, ...]]]:
         with store.read() as conn:
@@ -191,10 +163,10 @@ def test_rebuilding_the_projection_leaves_identity_data_alone(store: Store) -> N
     assert identity() == before
 
 
-def test_the_store_has_no_observation_for_a_generation_slot_name(store: Store) -> None:
-    """The store keeps only `generation_request` rows for summoning; there is no slot key,
-    session id or transcript column for a generation (FP-06-AC06 at the data level)."""
+def test_no_identity_table_has_a_slot_session_prompt_or_transcript_column(store: Store) -> None:
+    """The identity tables hold no slot key, session id, prompt or reply (FP-06-AC06 at the data
+    level, kept after summoning is gone)."""
     with store.read() as conn:
-        columns = {c[1] for c in conn.execute("PRAGMA table_info(generation_request)")}
-    assert not {"slot_key", "session_id", "prompt", "reply", "transcript", "raw"} & columns
-    assert {"internal_tag", "prompt_version", "model_label"} <= columns
+        for table in sorted(OWN_TABLES):
+            columns = {c[1] for c in conn.execute(f"PRAGMA table_info({table})")}
+            assert not {"slot_key", "session_id", "prompt", "reply", "transcript", "raw"} & columns

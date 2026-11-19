@@ -10,7 +10,7 @@ from starlette.testclient import TestClient
 
 import backend.app as app_module
 import backend.specter_arena.collector.boot as collector_boot
-import backend.specter_arena.summoner.boot as summoner_boot
+import backend.specter_arena.specters.boot as specters_boot
 import backend.specter_arena.work.boot as work_boot
 import backend.specter_arena.work.service as service_module
 from backend.specter_arena.store import Store, open_store
@@ -39,7 +39,7 @@ def isolated_app(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
     monkeypatch.setenv("KIROCREW_PROXY_SECRET", SIGNING_VALUE)
     monkeypatch.setattr(collector_boot, "boot_collector", no_collector)
-    monkeypatch.setattr(summoner_boot, "boot_specters", no_specters)
+    monkeypatch.setattr(specters_boot, "boot_specters", no_specters)
     original = app_module.app.state.store_runtime
     yield
     app_module.app.state.store_runtime = original

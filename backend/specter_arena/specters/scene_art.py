@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any, Final
 
 from .png import ImageRejected, reencode_png
-from .profile import CONTRACT_VERSION
 
+CONTRACT_VERSION: Final = 1  # scene-asset.v1 (FROZEN)
 SCENE_DIR: Final = Path(__file__).with_name("scene")
 SCENE_MAX_BYTES: Final = 4_194_304  # 4 MiB; the portrait limit is 1 MiB
 SCENE_MAX_SIDE: Final = 4096  # the portrait limit is 1024

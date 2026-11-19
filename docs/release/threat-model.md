@@ -15,14 +15,14 @@ This is the release threat model for Specter Arena (FP-14-AC02). Every control a
 
 ## 2. Assets
 
-- The owner's Crew access: the gateway signing secret the host passes to the backend through `KIROCREW_PROXY_SECRET` (`backend/specter_arena/config.py`), and the app token used for the `slots:user` feed and `/api/chat`.
+- The owner's Crew access: the gateway signing secret the host passes to the backend through `KIROCREW_PROXY_SECRET` (`backend/specter_arena/config.py`), and the app token used for the `slots:user` feed and `GET /api/agents`.
 - The store: Specters, portraits, work items, decisions and the XP ledger (`docs/release/data-and-recovery.md`).
 - Bot names and activity metadata the collector keeps (`docs/compatibility/monitoring-scope.md`, "What the collector keeps").
 
 ## 3. Trust boundaries
 
 1. Crew host to the app backend: every route except `/health` requires a signed request.
-2. App backend to the Crew gateway: the `slots:user` event feed, `GET /api/agents` and `/api/chat`, all with the app token.
+2. App backend to the Crew gateway: the `slots:user` event feed and `GET /api/agents`, both with the app token.
 3. Browser UI to the host proxy to the backend.
 4. The owner and the filesystem under `~/.kiro/crew/apps/specter-arena/data`.
 
@@ -49,23 +49,20 @@ This is the release threat model for Specter Arena (FP-14-AC02). Every control a
 | Grant removed while running | The collector stops with `scope-lost-or-silent` | `backend/specter_arena/collector/supervisor.py` (`scope-lost-or-silent`) | none | none |
 | An open feed delivers no frames | Relies on the websocket library keepalive, not an application idle timeout | none specific | A half-open feed can stay open until the library keepalive fails | KL-06 |
 
-### 4.3 `/api/chat` summoning
+### 4.3 Heroes and avatars (no model call)
 
 | Threat | Control | Test | Residual risk | ID |
 |---|---|---|---|---|
-| The `/api/chat` grant reaches the host's whole slot list (R2) | The client uses only its own slot: create, send, read, delete. No GET on the slot list. A source guard fails the build on a new path | `backend/tests/test_summoner_source_guard.py`; `backend/tests/test_summoner_client.py::test_fp14_discard_deletes_only_the_named_slot_and_never_lists` | The host may still answer a slot-list GET for the app token. Not observed on a live host. If OA-5 step 7 finds slot rows reaching an app route, log or summary, BLK-05 opens | KL-02, BLK-05 |
-| The temporary chat stays in Crew's history (R3) | The summon panel states it (`PRIVACY_NOTE` in `ui/src/specters/copy.ts`, pinned by `ui/src/specters/copy.test.ts`). `docs/release/install.md` section 14 repeats it | `ui/src/specters/copy.test.ts` (`discloses that Crew keeps a record of the one-off summoning chat`) | Whether Crew keeps the chat is the FP-06+07 handoff's claim. OA-5 step 7 checks it | KL-03 |
-| A slot is left behind after a crash (R4) | At start, requests marked `interrupted` get their slot deleted in the background, best effort, bounded at 30 seconds (`SpecterService._sweep`, `_discard`, `DISCARD_BOUND_S`; `CrewChatSummoner.discard`) | `backend/tests/test_specter_service.py::test_fp14_f2_start_discards_the_slot_of_the_swept_request_once`, `::test_fp14_f2_a_failing_discard_never_stops_boot_or_later_discards`, `::test_fp14_f2_a_discard_that_hangs_is_bounded_and_close_cancels_it`; `backend/tests/test_summoner_client.py::test_fp14_discard_swallows_every_failure`, `::test_an_unavailable_summoner_discards_nothing` | If Crew is unreachable at the next start, the slot stays | KL-04 |
-| Cost abuse: repeated summoning | At most 5 per bot and 20 per install in a rolling 24 hours, one in flight, 90 seconds per request (`Limits` in `backend/specter_arena/specters/service.py`) | `backend/tests/test_specter_service.py::test_fp14_f1_a_refused_live_turn_still_counts_against_the_budget` | A live refusal from Crew still counts against the budget by design | none |
-| Unavailable generation burns the budget | An unavailable summoner answers `generation_unavailable` (503) before any request row exists | `backend/tests/test_specter_service.py::test_fp14_f1_an_unavailable_summoner_is_503_and_spends_no_budget` | none | BLK-04 (fixed in PR-A #141) |
-| The model's reply is hostile or oversized | The reply is untrusted input: size-bounded reads and a validated, bounded profile (`MAX_REPLY_CHARS` in `backend/specter_arena/specters/profile.py`). A malformed reply is retried once at most | `backend/tests/test_summoner_client.py::test_fp14_a_chunk_larger_than_one_mebibyte_is_malformed_and_the_slot_is_deleted`, `::test_fp14_a_content_length_over_one_mebibyte_is_malformed_and_the_slot_is_deleted`, `::test_fp14_a_body_cut_short_of_its_content_length_is_unavailable_and_deleted`, `::test_fp14_a_control_reply_over_64_kib_is_malformed_and_no_slot_is_taken` | A profile that validates can still be unflattering text. The owner can edit or replace it | none |
+| A hero's text is edited, generated or injected | The text is shipped content in `backend/specter_arena/specters/heroes.json`, loaded and validated at start; no route writes it | `backend/tests/test_heroes.py` (names, ids, limits, markup and control characters, denied words); `backend/tests/test_specter_routes.py::test_removed_routes_answer_404_even_when_signed` | Changing a hero needs a new release | none |
+| An uploaded avatar is hostile or oversized | PNG only, re-encoded, at most 1 MiB and 1024 px, label cleaned (existing rule) | `backend/tests/test_specter_service.py::test_upload_rejections` | none | none |
+| The app reaches a model or Crew chat | The manifest grants only `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`; the release guard rejects `/api/chat` and any agent | `backend/tests/test_manifest.py`; `scripts/__tests__/check-fixtures.test.mjs` | none | none |
 
 ### 4.4 Uploads and assets
 
 | Threat | Control | Test | Residual risk | ID |
 |---|---|---|---|---|
 | A hostile or oversized image | PNG only, re-encoded with the standard library, at most 1 MiB and 1024 pixels (`MAX_INPUT_BYTES`, `MAX_DIMENSION` in `backend/specter_arena/specters/png.py`). Immutable asset IDs. No arbitrary URLs | `backend/tests/test_specter_png.py` | Uploaded portraits beyond about 189 vanish from the 200-entry gallery. No upload count cap and no asset garbage collection | KL-14 |
-| Bundled art is replaced or tampered | Bundled art is checked against pinned hashes. A missing or tampered file is never served and is logged once by exception type | `backend/tests/test_specter_bundled.py::test_a_tampered_file_is_never_served`; `backend/tests/test_specter_service.py::test_fp14_f3_missing_or_tampered_art_is_logged_once_by_type_only` | none | none |
+| Bundled art is replaced or tampered | Bundled art is checked against pinned hashes. A missing or tampered file is never served and is logged once by exception type | `backend/tests/test_specter_bundled.py::test_a_tampered_file_is_never_served`; `backend/tests/test_specter_service.py::test_start_with_tampered_art_logs_once_by_type_only_and_reads_fail_503` | none | none |
 
 ### 4.5 Diagnostics
 
@@ -84,7 +81,7 @@ What the summary can contain: ids, states, ISO times, counts and contract versio
 | Damaged or newer database | `quick_check` on open and on restore; `SchemaNewer` refuses a newer schema; migration checksums re-verified; a failing migration rolls back | `backend/tests/test_store_migrations.py::test_a_failing_migration_rolls_back_completely`; `backend/tests/test_store_backup.py::test_a_failed_pre_migration_backup_aborts_the_migration` | none | none |
 | Lost update or double award under concurrency | One writer under `BEGIN IMMEDIATE`; acceptance is idempotent per token | `backend/tests/test_store_work_concurrency.py::test_eight_concurrent_accepts_with_distinct_tokens_make_one_award`, `::test_four_handles_accepting_at_once_make_one_award`; `backend/tests/test_store_xp_properties.py` | none | none |
 | A second process holds the write lock | Readiness reads `unavailable` for up to 5 seconds, then recovers | `backend/tests/test_store_release_hardening.py::test_a_second_connection_holding_the_write_lock_makes_the_store_unavailable_then_it_recovers` | Up to 5 seconds of `503 store_unavailable` | KL-12 |
-| Restore loses identity or progression | `restore()` verifies and replaces atomically | `backend/tests/test_store_release_hardening.py::test_a_restored_backup_keeps_identity_specters_portraits_and_xp`, `::test_a_backup_taken_before_acceptance_restores_without_the_later_award` | The hand procedure for restore is untested on a live Crew install | KL-08, BLK-06 |
+| Restore loses identity or progression | `restore()` verifies and replaces atomically | `backend/tests/test_store_release_hardening.py::test_a_restored_backup_keeps_identity_heroes_avatars_and_xp`, `::test_a_backup_taken_before_acceptance_restores_without_the_later_award` | The hand procedure for restore is untested on a live Crew install | KL-08, BLK-06 |
 
 ### 4.7 Supply chain and release
 
@@ -98,4 +95,4 @@ What the summary can contain: ids, states, ISO times, counts and contract versio
 
 ## 5. Result
 
-No unresolved authorization or cross-scope data exposure is recorded. BLK-03 (credential exclusion) and BLK-07 (body read before signature) are fixed in PR-B (#142) and PR-A (#141). BLK-05 (the `/api/chat` slot-list reach) is `conditional` and not triggered: it is not observed and the app never reads the list. The tests above are the evidence. BLK-01 (OA-5 not run) and BLK-02 (gates not yet approved) are open at RC-1, so this is not a statement that the release candidate is approved. This sentence is generated from `docs/release/blockers.md`; if that file changes, this section must change with it.
+No unresolved authorization or cross-scope data exposure is recorded. BLK-03 (credential exclusion) and BLK-07 (body read before signature) are fixed in PR-B (#142) and PR-A (#141). BLK-05 (the `/api/chat` slot-list reach) is `moot (FP-16)`: the grant no longer exists. The tests above are the evidence. BLK-01 (OA-5 not run) and BLK-02 (gates not yet approved) are open at RC-1, so this is not a statement that the release candidate is approved. This sentence is generated from `docs/release/blockers.md`; if that file changes, this section must change with it.

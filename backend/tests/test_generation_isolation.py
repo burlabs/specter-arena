@@ -2,8 +2,9 @@
 
 from backend.specter_arena.collector.identity import bot_dm_key
 from backend.specter_arena.collector.parse import parse_slots
-from backend.specter_arena.summoner.client import SLOT_PREFIX
 
+# Slots left in Crew history by RC-1 builds that summoned; the collector must keep ignoring them.
+SLOT_PREFIX = "specter-summon-"
 REQUEST_ID = "req_" + "0" * 24
 SLOT_KEY = SLOT_PREFIX + REQUEST_ID
 

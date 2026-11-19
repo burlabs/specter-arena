@@ -198,6 +198,10 @@ describe('parseOwners and parseExemptions', () => {
     assert.deepEqual([...parseOwners(OWNERS_TEXT)], [['thing.v1', { owner: 'work-ledger', status: 'DRAFT' }]]);
   });
 
+  it('reads a RETIRED status', () => {
+    assert.deepEqual([...parseOwners(OWNERS_TEXT.replace('DRAFT', 'RETIRED'))], [['thing.v1', { owner: 'work-ledger', status: 'RETIRED' }]]);
+  });
+
   it('accepts complete exemptions and reports incomplete ones', () => {
     const ok = { file: 'f', name: 'n', reason: 'r', approvedBy: 'Eric' };
     assert.deepEqual(parseExemptions({ version: 1, exemptions: [ok] }), { problems: [], exemptions: [{ file: 'f', name: 'n' }] });
@@ -303,6 +307,12 @@ describe('run', () => {
     failsWith(runLogged(tree({ 'contracts/OWNERS.md': '' })), /has no row for thing\.v1/);
     failsWith(runLogged(tree({ 'contracts/OWNERS.md': `${OWNERS_TEXT}| \`ghost\` | 1 | work-ledger | DRAFT | x |\n` })), /ghost\.v1, which has no schema file/);
     failsWith(runLogged(tree({ 'contracts/OWNERS.md': OWNERS_TEXT.replace('work-ledger', 'someone') })), /known owner/);
+  });
+
+  it('accepts a RETIRED row and rejects any other status (FP-16)', () => {
+    const retired = runLogged(tree({ 'contracts/OWNERS.md': OWNERS_TEXT.replace('DRAFT', 'RETIRED') }));
+    assert.equal(retired.code, 0, retired.lines.join('\n'));
+    failsWith(runLogged(tree({ 'contracts/OWNERS.md': OWNERS_TEXT.replace('DRAFT', 'GONE') })), /known owner and DRAFT, FROZEN or RETIRED/);
   });
 
   it('fails on a specter-identity schema with a closed list (FP-05 plug-in control)', () => {

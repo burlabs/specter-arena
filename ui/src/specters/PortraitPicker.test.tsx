@@ -77,13 +77,21 @@ describe('PortraitPicker upload', () => {
     vi.restoreAllMocks();
   });
 
-  it('applies null for No portrait and calls Cancel', async () => {
+  it('applies null for the hero portrait and calls Cancel', async () => {
     const { onApply, onCancel } = setup('ast_current');
     await screen.findByRole('radiogroup');
-    fireEvent.click(screen.getByRole('radio', { name: /No portrait/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Use the hero portrait/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(onApply).toHaveBeenCalledWith(null);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it('disables Apply while the choice is the current avatar, and while nothing has changed from the hero portrait', async () => {
+    setup(null);
+    await screen.findByRole('radiogroup');
+    expect((screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getAllByRole('radio')[1] as HTMLElement);
+    expect((screen.getByRole('button', { name: 'Apply' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

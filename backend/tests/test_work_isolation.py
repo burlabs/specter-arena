@@ -1,9 +1,10 @@
-"""FP0809-CI-06 and FP-09-AC06: no monitoring, identity or generation code reaches the work
-service, the work service reaches nothing outside the store and the wire, acceptance has one
-path, and summoning and acceptance never write each other's rows. Guards read syntax trees, and
+"""FP0809-CI-06 and FP-09-AC06: no monitoring or identity code reaches the work service, the
+work service reaches nothing outside the store and the wire, acceptance has one path, and
+avatar changes and acceptance never write each other's rows. Guards read syntax trees, and
 each one has a negative control that proves it fails on a violation."""
 
 import asyncio
+import base64
 import re
 from collections.abc import Callable, Coroutine, Iterator
 from pathlib import Path
@@ -11,10 +12,11 @@ from typing import Any
 
 import pytest
 
-from backend.specter_arena.specters.service import UNSET, Limits, SpecterService
+from backend.specter_arena.specters.service import SpecterService
 from backend.specter_arena.store import Store, xp_summary
 
-from .specter_fakes import FakeClock, ScriptedSummoner, good_reply
+from .png_support import png
+from .specter_fakes import FakeClock
 from .test_store_isolation import dynamic_import_arguments, identifiers_and_strings, resolve_imports
 from .test_store_work_isolation import source_files
 from .work_api_fakes import WorkRig, build_rig, run
@@ -24,11 +26,10 @@ BACKEND = Path(__file__).resolve().parents[1]
 PACKAGE = BACKEND / "specter_arena"
 BASE = "backend.specter_arena"
 WORK_MODULES = (f"{BASE}.work", f"{BASE}.work_routes")
-SPECTER_TABLES = ("specter", "specter_revision", "generation_request", "asset")
+SPECTER_TABLES = ("asset", "hero_assignment", "avatar_revision")
 
 INBOUND_SOURCES = (
     "collector",
-    "summoner",
     "specters",
     "store/ingest.py",
     "store/projection.py",
@@ -51,7 +52,7 @@ OUTBOUND_BANNED_ROOTS = {
     "httpx",
     "urllib",
 }
-OUTBOUND_BANNED_PACKAGES = (f"{BASE}.collector", f"{BASE}.summoner", f"{BASE}.probe")
+OUTBOUND_BANNED_PACKAGES = (f"{BASE}.collector", f"{BASE}.probe")
 OUTBOUND_BANNED_TEXT = ("/api/members", "/api/chat", "member-")
 ALLOWED_OUTBOUND_DYNAMIC_IMPORTS = {".work.service"}
 
@@ -134,7 +135,6 @@ def test_negative_control_the_outbound_guard_flags_each_way_out(tmp_path: Path) 
         "net.py": "import urllib.request\n",
         "ws.py": "import websockets\n",
         "collector.py": "from ..collector import boot\n",
-        "summoner.py": "from ..summoner import client\n",
         "probe.py": "from ..probe import routes\n",
         "members.py": "path = '/api/members/x'\n",
         "chat.py": "path = '/api/chat/slots'\n",
@@ -173,37 +173,23 @@ def rig(tmp_path: Path) -> Iterator[WorkRig]:
         made.store.close()
 
 
-def rid(n: int) -> str:
-    return f"req_{n:024x}"
-
-
 def specter_service(store: Store) -> SpecterService:
-    summoner = ScriptedSummoner(good_reply("Wick"), good_reply("Other Name", appearance="Moth."))
-    return SpecterService(store, summoner, clock=FakeClock(), limits=Limits(timeout_s=2.0))
-
-
-async def settle(service: SpecterService, n: int) -> None:
-    for _ in range(400):
-        if (await service.get_summoning(rid(n)))["status"] in ("ready", "failed", "cancelled"):
-            return
-        await asyncio.sleep(0.005)
-    raise AssertionError("request did not settle")
+    return SpecterService(store, clock=FakeClock())
 
 
 async def full_specter_flow(store: Store, binding: str) -> None:
-    """Summon, accept, rename, reroll with the name kept, accept, then show a bundled portrait."""
+    """Read the hero, upload art, choose it, then reset to the hero portrait."""
     service = specter_service(store)
     await service.start()
     try:
-        await service.start_summoning(binding, {"requestId": rid(1)})
-        await settle(service, 1)
-        assert (await service.accept(rid(1), 0))["version"] == 1
-        assert (await service.rename(binding, 1, "Wicker", UNSET))["version"] == 2
-        await service.start_summoning(binding, {"requestId": rid(2), "keep": ["name"]})
-        await settle(service, 2)
-        assert (await service.accept(rid(2), 2))["version"] == 3
-        art = (await service.list_portraits())["items"][0]
-        assert (await service.set_portrait(binding, 3, art["assetId"]))["version"] == 4
+        assert (await service.get_specter(binding))["version"] == 0
+        art = await service.upload_asset(
+            {"mediaType": "image/png", "dataBase64": base64.b64encode(png()).decode()}
+        )
+        assert (await service.set_portrait(binding, 0, art["assetId"]))["version"] == 1
+        assert (await service.set_portrait(binding, 1, None))["version"] == 2
+        gallery = (await service.list_portraits())["items"][0]
+        assert (await service.set_portrait(binding, 2, gallery["assetId"]))["version"] == 3
     finally:
         await service.close()
 
@@ -248,10 +234,10 @@ def specter_hashes(store: Store) -> dict[str, str]:
     return {name: table_hash(store, name) for name in SPECTER_TABLES}
 
 
-def test_a_full_summoning_flow_writes_zero_work_or_xp_rows(rig: WorkRig) -> None:
+def test_a_full_avatar_flow_writes_zero_work_or_xp_rows(rig: WorkRig) -> None:
     before = ledger_hash(rig.store)
     go(lambda: full_specter_flow(rig.store, rig.seeded.bindings[0]))
-    assert query(rig.store, "SELECT count(*) FROM specter_revision")[0][0] >= 4
+    assert query(rig.store, "SELECT count(*) FROM avatar_revision")[0][0] >= 3
     for table in LEDGER_TABLES:
         assert query(rig.store, f"SELECT count(*) FROM {table}") == [(0,)], table
     assert ledger_hash(rig.store) == before

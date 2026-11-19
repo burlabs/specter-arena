@@ -25,7 +25,6 @@ Install and judge instructions live in `docs/release/install.md` and `docs/relea
 | Item | State |
 |---|---|
 | Text drafts in this folder | Written, not final |
-| Live summoning | Not yet verified on an installed app (owner check OA-3, issue #109) |
 | Release artifact and clean-install check | Not built yet. The packaging script and the owner's install check (OA-6, issue #133) come later |
 
 ## Steps only Eric can do

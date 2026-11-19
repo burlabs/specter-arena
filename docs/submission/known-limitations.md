@@ -8,7 +8,6 @@ Each row names where the limit was recorded.
 
 | Limit | What it means for you | Source |
 |---|---|---|
-| Live summoning is not yet verified on an installed app | The summoning agent may be refused by Crew. If so the UI says "Summoning is not possible right now" and you can write a Specter by hand or choose a portrait. Owner check OA-3 (issue #109) decides | FP-06+07 handoff, risk R1 |
 | First enable needs network access to PyPI | Crew downloads the backend's Python packages on the first start. Offline first enable fails | `docs/release/install.md` |
 | "Waiting on you" and "Blocked" bot states are not shown | Crew does not expose approval signals to apps in a proven way. The roster shows "Working", "No turn running" and "Unknown" only. "No turn running" is not a health reading | FP-04 handoff, decision Q1 |
 | The roster lists only bots Crew lets the app see | Bots without a store, never-opened direct messages and scheduled turns are invisible. Coverage is the collector's, since the bot was first seen | FP-04 handoff, "must NOT assume" list |
@@ -23,11 +22,10 @@ Each row names where the limit was recorded.
 | The "gap longer than two polls" rule has unit tests only | End-to-end tests cover the hidden-tab path | FP-10+11 handoff |
 | Performance numbers are from the FIXTURE preview on one fast Apple machine | They are not measurements of the installed app | `.kiro/specs/fp-10-11-live-arena/performance.md` |
 | A password value of several unquoted words keeps its later words in the copied diagnostic summary | The summary removes credential-shaped values, but a credential word followed by several unquoted words loses only its first word. Check the summary before sharing it | `docs/release/blockers.md` (KL-18) |
-| Crew keeps the temporary summoning chat | Summoning runs as one chat turn on the declared agent. Crew keeps a record of that one-off chat in its own history. The summon panel says so. Owner check OA-5 step 7 confirms it | FP-06+07 handoff, risk R3; `docs/release/blockers.md` (KL-03) |
-| The `/api/chat` grant can reach the host's whole chat slot list | The host matches the grant by path prefix. The app never reads the list, and a test forbids it. This was not observed on a live host. If OA-5 shows slot data reaching the app, it becomes a blocker | FP-06+07 handoff, risk R2; `docs/release/threat-model.md`; `docs/release/blockers.md` (KL-02) |
 | No purge, in-app backup, restore or export | The app keeps everything. Only `kirocrew app uninstall specter-arena --purge-data` shrinks the store. Backup and restore are offline steps, and the hand restore was not exercised on a live Crew install | `docs/release/data-and-recovery.md`; `docs/release/blockers.md` (KL-07, KL-08) |
 | The automated accessibility scan covers the FIXTURE preview only | Screen-reader output, the real host theme and Windows High Contrast are manual checks, listed with blank results until the owner sitting | `docs/release/a11y-checklist.md`; `docs/release/blockers.md` (KL-17) |
 | SQLite 3.37 or newer is required | The work tables are STRICT. A host with older SQLite fails at migration; CI is the check | FP-08+09 handoff |
 | Do not install an older release over a newer one | The store refuses a database whose schema is newer than the code | `docs/release/install.md` "Update" |
 | Art is AI-generated and may not be unique | Disclosed with its terms check; the arena map carries a C2PA metadata chunk | `docs/provenance.md` "Terms checked" |
 | One demo machine | Tested on macOS only | `docs/compatibility/crew-0.12.2.md` |
+| A hero's text is fixed | Changing a hero's name, epithet or personality needs a new release. The owner changes only the avatar | `docs/release/install.md` section 7 |

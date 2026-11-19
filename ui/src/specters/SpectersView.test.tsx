@@ -39,7 +39,7 @@ const list = () => screen.getByRole('list', { name: 'Bots with Specters' });
 const rowFor = (name: string) => within(list()).getByRole('button', { name: new RegExp(`^${name}`) });
 
 describe('SpectersView states', () => {
-  it('says it is loading, then lists every bot with No Specter yet', async () => {
+  it('says it is loading, then lists every bot, with No Specter yet while a poll has not caught up', async () => {
     setSpecterScenario('specters-none');
     render(<Harness />);
     expect(screen.getByRole('status').textContent).toBe('Loading Specters…');
@@ -49,12 +49,13 @@ describe('SpectersView states', () => {
     expect(screen.getByText('Select a bot to see its Specter.')).toBeTruthy();
   });
 
-  it('shows each bot with its Specter name', async () => {
+  it('shows each bot with its hero name in roster order', async () => {
     await open('specters');
-    expect(rowFor('Atlas').textContent).toContain('Vesper');
-    expect(rowFor('Brindle').textContent).toContain('Wren');
-    expect(rowFor('Cinder').textContent).toContain('Thistle');
-    expect(rowFor('Dune').textContent).toContain('No Specter yet');
+    expect(rowFor('Atlas').textContent).toContain('Vell');
+    expect(rowFor('Brindle').textContent).toContain('Stitch');
+    expect(rowFor('Cinder').textContent).toContain('Reeve');
+    expect(rowFor('Dune').textContent).toContain('Rattle');
+    expect(screen.queryByText('No Specter yet')).toBeNull();
   });
 
   it('explains an old backend instead of showing an error', async () => {
@@ -128,39 +129,36 @@ describe('SpectersView keyboard and selection', () => {
     expect(document.activeElement).toBe(before);
   });
 
-  it('marks the selected bot and shows its Specter in the detail panel', async () => {
+  it('marks the selected bot and shows its hero in the detail panel', async () => {
     await open('specters');
     fireEvent.click(rowFor('Atlas'));
     expect(rowFor('Atlas').getAttribute('aria-current')).toBe('true');
     const detail = screen.getByRole('region', { name: 'Specter detail' });
-    expect(within(detail).getByRole('heading', { level: 2, name: 'Vesper' })).toBeTruthy();
-    expect(detail.textContent).toContain('Who waits at the door');
-    expect(detail.textContent).toContain('Generated through Crew, prompt version summon-1');
+    expect(within(detail).getByRole('heading', { level: 2, name: 'Vell' })).toBeTruthy();
+    expect(detail.textContent).toContain('The caped one with the golden clasp');
   });
 
-  it('shows the bot name and No Specter yet for a bot without one', async () => {
-    await open('specters');
+  it('shows the bot name and a check-again prompt for a bot whose hero is not listed yet', async () => {
+    await open('specters-none');
     fireEvent.click(rowFor('Dune'));
     const detail = screen.getByRole('region', { name: 'Specter detail' });
     expect(within(detail).getByRole('heading', { level: 2, name: 'Dune' })).toBeTruthy();
-    expect(detail.textContent).toContain('No Specter yet');
+    expect(detail.textContent).toContain('has not been given a hero yet');
   });
 
-  it('renders long text as text, never as markup', async () => {
-    await open('specters-none');
-    fireEvent.click(rowFor('Atlas'));
-    fireEvent.click(screen.getByRole('button', { name: 'Write one by hand' }));
-    const form = screen.getByRole('form', { name: 'Write a Specter by hand' });
+  it('renders hero text as text, never as markup', async () => {
     const hostile = '<img src=x onerror=alert(1)>';
-    fireEvent.change(within(form).getByLabelText(/^Name/), { target: { value: 'Ok' } });
-    for (const label of ['Personality', 'Appearance', 'Mannerism', 'Why this fits', 'Art brief']) {
-      fireEvent.change(within(form).getByLabelText(new RegExp(`^${label}`)), { target: { value: label === 'Appearance' ? hostile : 'fine' } });
-    }
-    fireEvent.click(within(form).getByRole('button', { name: 'Save' }));
-    await flush();
+    const original = useAppApi().get.bind(useAppApi());
+    vi.spyOn(useAppApi(), 'get').mockImplementation(async (path: string) => {
+      const response = (await original(path)) as Response;
+      if (!path.endsWith('/specters')) return response;
+      const body = (await response.json()) as { items: { appearance: string }[] };
+      return new Response(JSON.stringify({ ...body, items: body.items.map((item) => ({ ...item, appearance: hostile })) }), { status: 200 });
+    });
+    await open('specters');
+    fireEvent.click(rowFor('Atlas'));
     const detail = screen.getByRole('region', { name: 'Specter detail' });
     expect(detail.textContent).toContain(hostile);
     expect(detail.querySelector('img[onerror]')).toBeNull();
-    expect(detail.textContent).toContain('Written by you');
   });
 });

@@ -3,12 +3,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RosterItemV1, SpecterV1, WorkItemV1, XpSummaryV1 } from '../src/contracts/types.ts';
+import type { RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../src/contracts/types.ts';
 import { PING_PATH, ROSTER_PATH, SPECTERS_PATH, WORK_PATH, XP_PATH, workListPath, workPath } from '../src/host/paths.ts';
 import {
   ARENA_PERF_1,
   ARENA_SCENARIO_NAMES,
-  PERF_SPECTER_NAMES,
   canonicalArenaScenario,
   isArenaScenario,
   perfItems,
@@ -119,15 +118,16 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
     }
   });
 
-  it('has 14 Specters on bindings 1..14 and leaves 6 bots without one', async () => {
+  it('gives every one of the 20 bots a hero, wrapping at 11', async () => {
     setArenaScenario('arena-perf-1');
-    const specters = await read<{ items: SpecterV1[] }>(SPECTERS_PATH);
-    expect(specters.body.items).toHaveLength(14);
-    expect(specters.body.items.map((specter) => specter.profile.name)).toEqual([...PERF_SPECTER_NAMES]);
-    expect(specters.body.items.every((specter) => specter.portrait === null)).toBe(true);
+    const specters = await read<{ items: SpecterV2[] }>(SPECTERS_PATH);
+    expect(specters.body.items).toHaveLength(20);
+    expect(specters.body.items.map((specter) => specter.displayName).slice(0, 3)).toEqual(['Vell', 'Stitch', 'Reeve']);
+    expect(specters.body.items[11]?.displayName).toBe('Vell II');
+    expect(specters.body.items[19]?.displayName).toBe('Lume II');
     const roster = await read<{ items: RosterItemV1[] }>(ROSTER_PATH);
     const withSpecter = new Set(specters.body.items.map((specter) => specter.bindingId));
-    expect(roster.body.items.filter((bot) => !withSpecter.has(bot.bindingId))).toHaveLength(6);
+    expect(roster.body.items.filter((bot) => !withSpecter.has(bot.bindingId))).toHaveLength(0);
   });
 
   it('serves xp summaries that match the accepted items', async () => {
@@ -152,11 +152,11 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
 });
 
 describe('the other arena scenarios', () => {
-  it('arena serves the existing demo data: seven bots, thirteen items, three Specters', async () => {
+  it('arena serves the existing demo data: seven bots, thirteen items, seven heroes', async () => {
     setArenaScenario('arena');
     expect((await read<{ items: unknown[] }>(ROSTER_PATH)).body.items).toHaveLength(7);
     expect((await read<WorkPage>(WORK_PATH)).body.items).toHaveLength(13);
-    expect((await read<{ items: unknown[] }>(SPECTERS_PATH)).body.items).toHaveLength(3);
+    expect((await read<{ items: unknown[] }>(SPECTERS_PATH)).body.items).toHaveLength(7);
   });
 
   it('arena-empty has no bindings, no work and no Specters', async () => {

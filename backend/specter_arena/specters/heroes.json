@@ -1,0 +1,114 @@
+{
+  "heroes": [
+    {
+      "id": "vell",
+      "name": "Vell",
+      "epithet": "The caped one with the golden clasp",
+      "personality": "Calm and a little formal. Vell lets the room go quiet first, then speaks softly and means every word. Fond of tidy corners, slow bows and being exactly on time.",
+      "appearance": "Pale lavender, rounded ghost with black oval eyes, a deep purple cape and one gold clasp at the throat.",
+      "portraitSlug": "vell",
+      "spriteKey": "hero-vell-sprite",
+      "thumbnailKey": "hero-vell-thumbnail"
+    },
+    {
+      "id": "stitch",
+      "name": "Stitch",
+      "epithet": "Patched together and perfectly at ease",
+      "personality": "Cheerful and unbothered. Stitch has been put back together more than once and tells it as a good story. Hums while wandering, apologises to doors, and is quietly proud of every seam.",
+      "appearance": "Pale grey-green rounded ghost with flat dark-purple hair, two lilac bolts at the sides and a stitched seam on its cheek.",
+      "portraitSlug": "stitch",
+      "spriteKey": "hero-stitch-sprite",
+      "thumbnailKey": "hero-stitch-thumbnail"
+    },
+    {
+      "id": "reeve",
+      "name": "Reeve",
+      "epithet": "Small and hooded, never in a hurry",
+      "personality": "Quiet and thoughtful, with a dry sense of humour. Reeve notices small things and keeps them until asked. Carries a crescent scythe like a walking stick and is oddly polite about it.",
+      "appearance": "Small pale ghost with black oval eyes under a deep purple hood, holding a crescent scythe.",
+      "portraitSlug": "reeve",
+      "spriteKey": "hero-reeve-sprite",
+      "thumbnailKey": "hero-reeve-thumbnail"
+    },
+    {
+      "id": "rattle",
+      "name": "Rattle",
+      "epithet": "All bones and good humour",
+      "personality": "Big-hearted and a bit clumsy. Rattle clatters when it laughs, and it laughs often. Collects odd buttons, forgets where it put them, and takes every skeleton joke as a compliment.",
+      "appearance": "Dark purple ghost with a pale skull-like head, black eye sockets, a small nose hollow, simple ribs and leg-bone markings.",
+      "portraitSlug": "rattle",
+      "spriteKey": "hero-rattle-sprite",
+      "thumbnailKey": "hero-rattle-thumbnail"
+    },
+    {
+      "id": "ember",
+      "name": "Ember",
+      "epithet": "Warm glow, restless flicker",
+      "personality": "Eager and bright. Ember flickers when it is happy and flares when it is embarrassed. Loves a cold room, a long story and being asked to stay a little longer.",
+      "appearance": "Warm peach-gold ghost wrapped in soft purple flame shapes, with black oval eyes and three small detached purple wisps.",
+      "portraitSlug": "ember",
+      "spriteKey": "hero-ember-sprite",
+      "thumbnailKey": "hero-ember-thumbnail"
+    },
+    {
+      "id": "shard",
+      "name": "Shard",
+      "epithet": "Sharp edges, soft heart",
+      "personality": "Reserved at first, then surprisingly tender. Shard chimes faintly when nervous, saves the small crystals it sheds, and gives them to anyone who is kind to it.",
+      "appearance": "Pale lavender ghost with black oval eyes and angular purple crystals growing along its left side and body.",
+      "portraitSlug": "shard",
+      "spriteKey": "hero-shard-sprite",
+      "thumbnailKey": "hero-shard-thumbnail"
+    },
+    {
+      "id": "poly",
+      "name": "Poly",
+      "epithet": "One big eye on everything",
+      "personality": "Endlessly curious and a little blunt. Poly stares because it truly wants to know, asks why twice, and is delighted by the answer. Its spots darken when it is pleased.",
+      "appearance": "Pale lavender ghost with a single large eye ringed in purple, a dark pupil and a few purple spots on its cheek.",
+      "portraitSlug": "poly",
+      "spriteKey": "hero-poly-sprite",
+      "thumbnailKey": "hero-poly-thumbnail"
+    },
+    {
+      "id": "tide",
+      "name": "Tide",
+      "epithet": "Slow waves and curling arms",
+      "personality": "Easygoing and a little dreamy. Tide drifts, hums sea songs, and blows small bubbles while it thinks. Never rushed, always arrives, usually with a story about the long way round.",
+      "appearance": "Blue-violet ghost under a rippled, water-like crest, with black oval eyes, curled spotted tentacles and two round bubbles.",
+      "portraitSlug": "tide",
+      "spriteKey": "hero-tide-sprite",
+      "thumbnailKey": "hero-tide-thumbnail"
+    },
+    {
+      "id": "lume",
+      "name": "Lume",
+      "epithet": "A small light in a big dark",
+      "personality": "Gentle and encouraging. Lume glows brighter around people it likes, sways when happy, and believes nobody should walk a dark hallway alone. Poor at secrets: it shines right through them.",
+      "appearance": "Warm glowing ghost inside a purple lantern frame with a gold handle loop, black oval eyes and pale lobes below.",
+      "portraitSlug": "lume",
+      "spriteKey": "hero-lume-sprite",
+      "thumbnailKey": "hero-lume-thumbnail"
+    },
+    {
+      "id": "moss",
+      "name": "Moss",
+      "epithet": "Soft, slow and quietly rooted",
+      "personality": "Patient and homely. Moss grows fondly on the things it loves and takes its time over everything. Likes damp afternoons, small mushrooms, and a nap in the sun it swears it never took.",
+      "appearance": "Pale ghost under a spotted purple mushroom cap, with black oval eyes, green moss patches and three small mushrooms.",
+      "portraitSlug": "moss",
+      "spriteKey": "hero-moss-sprite",
+      "thumbnailKey": "hero-moss-thumbnail"
+    },
+    {
+      "id": "bur",
+      "name": "bur",
+      "epithet": "Snow-fur and one shy snowflake",
+      "personality": "Shy, cosy and easily delighted. bur hides inside its own fur when overwhelmed, hugs with both oversized hands, and leaves little snowflakes behind. Surprisingly warm to the touch.",
+      "appearance": "Soft white-lavender yeti ghost with layered snow fur, two snow-capped purple horns, black oval eyes, a snowflake mark and oversized furry hands.",
+      "portraitSlug": "bur",
+      "spriteKey": "hero-bur-sprite",
+      "thumbnailKey": "hero-bur-thumbnail"
+    }
+  ]
+}

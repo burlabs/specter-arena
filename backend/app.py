@@ -27,8 +27,8 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
         # Lazy: `import backend.app` loads neither the collector nor `websockets`.
         from .specter_arena.collector.boot import boot_collector
 
-        # Lazy: `import backend.app` loads no specters, summoner or store module.
-        from .specter_arena.summoner.boot import boot_specters
+        # Lazy: `import backend.app` loads no specters or store module.
+        from .specter_arena.specters.boot import boot_specters
 
         # Lazy: `import backend.app` loads no work module and no store module.
         from .specter_arena.work.boot import boot_work
