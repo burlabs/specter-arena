@@ -5,7 +5,7 @@ export const TOKEN_CAPTION = 'Placeholder token, not a portrait';
 export const TOKEN_FAILED_CAPTION = 'Portrait could not be loaded. Showing a placeholder token.';
 export const COSMETIC_NOTE = "A Specter is a name and a picture. It never changes this bot's setup, permissions, or work.";
 export const PRIVACY_NOTE =
-  "Only the bot's display name and the text you type here are sent. Its memory, notes, goals, and chat history are never used.";
+  "Only the bot's display name and the text you type here are sent. Its memory, notes, goals, and chat history are never used. Crew keeps a record of this one-off chat in its own history.";
 
 export const SOURCE_WORDS = {
   generated: (version: string | null): string => `Generated through Crew${version === null ? '' : `, prompt version ${version}`}`,

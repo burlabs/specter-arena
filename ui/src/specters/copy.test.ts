@@ -5,6 +5,7 @@ import {
   ERROR_WORDS,
   MANUAL,
   MANUAL_FORM,
+  PRIVACY_NOTE,
   STATUS_WORDS,
   TOKEN_CAPTION,
   budgetLine,
@@ -59,6 +60,10 @@ describe('specter copy', () => {
   it('words every status and flags an unknown one with its code', () => {
     for (const status of Object.keys(STATUS_WORDS)) expect(statusWords(status)).toBe(STATUS_WORDS[status]);
     expect(statusWords('mystery')).toBe('Unknown status (mystery)');
+  });
+
+  it('discloses that Crew keeps a record of the one-off summoning chat', () => {
+    expect(PRIVACY_NOTE).toContain('Crew keeps a record');
   });
 
   it('words the source of a profile and an unknown source', () => {

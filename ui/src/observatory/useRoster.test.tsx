@@ -97,6 +97,7 @@ describe('useRoster', () => {
 describe('failureOf', () => {
   it.each([
     [new HostApiError(403, null), 'expired'],
+    [new HostApiError(401, 'unauthorized'), 'unknown'],
     [new HostApiError(503, 'store_not_ready'), 'store-not-ready'],
     [new HostApiError(503, 'store_unavailable'), 'store-unavailable'],
     [new HostApiError(503, null), 'store-unavailable'],

@@ -48,7 +48,9 @@ function MarkerIcon({ kind }: { kind: MarkerKind }) {
 }
 
 function specterName(specter: SceneSpecter): string {
-  return specter.specterName === null ? `${specter.displayName}, no Specter yet` : `${specter.specterName} for ${specter.displayName}`;
+  // The printed name and the "×N attempts" badge come first and in the printed order, so the accessible name contains the visible text.
+  const printed = specter.openAttemptIds.length > 1 ? `${specter.specterName ?? specter.displayName} ${ARENA.attemptsBadge(specter.openAttemptIds.length)}` : (specter.specterName ?? specter.displayName);
+  return specter.specterName === null ? `${printed}, no Specter yet` : `${printed} for ${specter.displayName}`;
 }
 
 function specterLabel(specter: SceneSpecter, conditionLabel: string): string {
@@ -59,8 +61,9 @@ function specterLabel(specter: SceneSpecter, conditionLabel: string): string {
 
 function enemyLabel(enemy: SceneEnemy): string {
   const effect = enemyEffect(enemy);
-  const parts = [enemy.title, enemy.size === 'encounter' ? 'encounter' : 'work item', effect.stateText, effect.progressText];
+  const parts = [enemy.title, effect.stateText, effect.progressText];
   if (enemy.defeated && enemy.committedXp !== null) parts.push(ARENA.xpAward(enemy.committedXp));
+  parts.push(enemy.size === 'encounter' ? 'encounter' : 'work item');
   return parts.join(', ');
 }
 
@@ -95,17 +98,18 @@ function SpecterToken({ specter, record, position, selected, roving, onSelect, r
       {record !== undefined ? (
         <SpecterPortrait specter={record} size="sm" decorative active={stance === 'engaging'} />
       ) : (
-        <span className="sa-token__placeholder" aria-hidden="true">
-          {tokenInitials(specter.displayName)}
-        </span>
+        <span className="sa-token__placeholder" aria-hidden="true" data-initials={tokenInitials(specter.displayName)} />
       )}
       <span className="sa-token__label" aria-hidden="true">
         {specter.specterName ?? specter.displayName}
       </span>
       {specter.openAttemptIds.length > 1 && (
-        <span className="sa-token__badge" aria-hidden="true">
-          {ARENA.attemptsBadge(specter.openAttemptIds.length)}
-        </span>
+        <>
+          {' '}
+          <span className="sa-token__badge" aria-hidden="true">
+            {ARENA.attemptsBadge(specter.openAttemptIds.length)}
+          </span>
+        </>
       )}
       {stance === 'coverage-unknown' && <MarkerIcon kind="coverage-unknown" />}
     </button>
@@ -152,16 +156,19 @@ function EnemyToken({ enemy, position, selected, roving, animate, celebrating, s
       />
       <span className="sa-token__label" aria-hidden="true">
         {enemy.title}
-      </span>
+      </span>{' '}
       <span className="sa-token__meta" aria-hidden="true">
         {effect.stateText}
         {' · '}
         {effect.progressText}
       </span>
       {enemy.defeated && enemy.committedXp !== null && (
-        <span className="sa-token__xp" aria-hidden="true">
-          {ARENA.xpAward(enemy.committedXp)}
-        </span>
+        <>
+          {' '}
+          <span className="sa-token__xp" aria-hidden="true">
+            {ARENA.xpAward(enemy.committedXp)}
+          </span>
+        </>
       )}
       {effect.marker !== null && <MarkerIcon kind={effect.marker} />}
     </button>

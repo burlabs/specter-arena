@@ -327,6 +327,10 @@
   font-weight: 700;
 }
 
+.specter-arena-root .sa-token__placeholder::before {
+  content: attr(data-initials);
+}
+
 .specter-arena-root .sa-token--specter {
   z-index: 2;
 }

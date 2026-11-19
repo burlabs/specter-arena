@@ -22,6 +22,7 @@ Direct dependencies and pinned tools, with licenses. Exact resolved versions are
 | `@types/react` | 18.3.1 | MIT | React types |
 | `@types/react-dom` | 18.3.1 | MIT | react-dom types |
 | `@playwright/test` | 1.65.0 | Apache-2.0 | Chromium smoke test of the preview harness |
+| `@axe-core/playwright` | 4.14.0 | MPL-2.0 | Accessibility scan in `tests/e2e/a11y.spec.ts`; dev only, never bundled. Brings `axe-core` 4.14.1 (MPL-2.0, resolved by the lockfile from `~4.14.0`) |
 | `ajv` | 8.20.0 | MIT | Validates `contracts/schemas/` (draft-07) in the Vitest contract runner and `npm run check:schema`; dev only, never bundled. Brings `fast-uri` 3.1.9, `json-schema-traverse` 1.0.0 and `require-from-string` 2.0.2. ESLint keeps its own nested `ajv` 6.15.0 |
 
 React is pinned to 18.3.1 to match the host React observed live in FP-01 (L1, Crew 0.12.0), so the unit tests and preview harness run the same major the production bundle meets. `ui/src/` uses only APIs present in React 18 and 19.

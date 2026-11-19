@@ -50,7 +50,7 @@ describe('tokens', () => {
     const { container } = show();
     expect(container.querySelectorAll('[data-sprite]')).toHaveLength(3 + 4);
     expect(container.querySelectorAll('[data-scene-node]')).toHaveLength(7);
-    expect(screen.getByRole('button', { name: /^Vesper for Atlas, Working, Level 3, 3 open attempts$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas, Working, Level 3, 3 open attempts$/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Brindle, no Specter yet, Placeholder token, not a portrait, No turn running, Level 1$/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Dune, no Specter yet.*Coverage unknown/ })).toBeTruthy();
   });
@@ -61,16 +61,26 @@ describe('tokens', () => {
     expect(screen.getByText('×3 attempts')).toBeTruthy();
   });
 
-  it('names enemies by title, kind, state and progress', () => {
+  it('names enemies by title, state, progress and kind', () => {
     show();
-    expect(screen.getByRole('button', { name: 'Reconcile invoices, work item, Blocked, Progress unknown' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Close the books, encounter, Open, 1 of 3 milestones' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Review me, work item, Awaiting your review, Progress unknown' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reconcile invoices, Blocked, Progress unknown, work item' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Close the books, Open, 1 of 3 milestones, encounter' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Review me, Awaiting your review, Progress unknown, work item' })).toBeTruthy();
+  });
+
+  it('gives every token an accessible name that contains the words printed on it (WCAG 2.5.3)', () => {
+    const { container } = show();
+    const words = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}+\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+    const tokens = [...container.querySelectorAll<HTMLElement>('[data-scene-node]')];
+    expect(tokens).toHaveLength(7);
+    for (const token of tokens) {
+      expect(words(token.getAttribute('aria-label') ?? ''), token.getAttribute('aria-label') ?? '').toContain(words(token.textContent ?? ''));
+    }
   });
 
   it('shows the defeated pose with its committed XP and no animation class', () => {
     show();
-    const shipped = screen.getByRole('button', { name: /^Shipped, work item, Defeated.*\+100 XP$/ });
+    const shipped = screen.getByRole('button', { name: /^Shipped, Defeated.*\+100 XP, work item$/ });
     expect(within(shipped).getByText('+100 XP')).toBeTruthy();
     expect(shipped.className).toContain('sa-is-defeated');
     expect(shipped.querySelector('.sa-is-animated')).toBeNull();
@@ -90,7 +100,7 @@ describe('tokens', () => {
     expect(screen.getByRole('button', { name: /^Shipped/ }).getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: /^Shipped/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: work[3]!.workId });
-    fireEvent.click(screen.getByRole('button', { name: /^Vesper for Atlas/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
   });
 });
