@@ -21,6 +21,7 @@ export {
   workMilestonesPath,
   workPath,
   xpHistoryPath,
+  xpPagedPath,
 } from './paths';
 export { HostApiError, useHostApi } from './useHostApi';
 export type { HostApi, HostSourceMode } from './useHostApi';

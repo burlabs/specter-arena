@@ -1,15 +1,16 @@
 import { useCallback } from 'react';
-import type { WorkItemV1 } from '../contracts/types';
+import type { WorkListItemV1 } from '../contracts/types';
 import { HostApiError, useHostApi, workListPath } from '../host';
 import { usePolled } from '../observatory/usePolled';
-import { ShapeError, parseWorkItems } from '../work/model';
+import { ShapeError, parseWorkListPage } from '../work/model';
 
 export const STREAM_PAGES = 8;
 export const PAGE_SIZE = 25;
 const FIELD_STATES = ['open', 'awaiting-review', 'blocked', 'reopened'] as const;
 
 export interface ArenaWorkSnapshot {
-  items: WorkItemV1[];
+  /** The list projection: no decisions, review or evidence. The inspector reads the full item through `useWorkEvidence`. */
+  items: WorkListItemV1[];
   /** The largest `asOfMs` any page reported. The scene clock; never the browser clock. */
   asOfMs: number;
   /** A stream still had a cursor after the page cap, so counts are a minimum. */
@@ -32,7 +33,9 @@ export function arenaFailureOf(error: unknown): ArenaWorkFailure {
 
 /**
  * The arena's only poll of its own: four on-field streams read up to STREAM_PAGES pages each, plus one page of
- * accepted items. Any failing read fails the whole poll, so a snapshot never mixes ages; `usePolled` keeps the
+ * accepted items. Every stream reads `view=list&order=updated`, so the pages hold the most recently changed items
+ * first: when the page cap drops anything, it drops the stalest, and an item accepted today leads the accepted page
+ * whatever its creation time. Any failing read fails the whole poll, so a snapshot never mixes ages; `usePolled` keeps the
  * last good snapshot and `failure` says it is stale. Every request is a GET.
  */
 export function useArenaWork(): { state: ArenaWorkState; refresh: () => void } {
@@ -40,11 +43,11 @@ export function useArenaWork(): { state: ArenaWorkState; refresh: () => void } {
   const load = useCallback(async (): Promise<ArenaWorkSnapshot> => {
     let asOfMs = 0;
     let truncated = false;
-    const readStream = async (state: string, pages: number): Promise<WorkItemV1[]> => {
-      const out: WorkItemV1[] = [];
+    const readStream = async (state: string, pages: number): Promise<WorkListItemV1[]> => {
+      const out: WorkListItemV1[] = [];
       let cursor: string | null = null;
       for (let page = 0; page < pages; page += 1) {
-        const body = parseWorkItems(await api.getJson<unknown>(workListPath(state, PAGE_SIZE, cursor)));
+        const body = parseWorkListPage(await api.getJson<unknown>(workListPath(state, PAGE_SIZE, cursor, 'updated')), 'updated');
         out.push(...body.items);
         asOfMs = Math.max(asOfMs, body.asOfMs);
         cursor = body.nextCursor;
@@ -54,7 +57,7 @@ export function useArenaWork(): { state: ArenaWorkState; refresh: () => void } {
       return out;
     };
     const streams = await Promise.all([...FIELD_STATES.map((state) => readStream(state, STREAM_PAGES)), readStream('accepted', 1)]);
-    const newest = new Map<string, WorkItemV1>();
+    const newest = new Map<string, WorkListItemV1>();
     for (const item of streams.flat()) {
       const known = newest.get(item.workId);
       if (known === undefined || known.version < item.version) newest.set(item.workId, item);

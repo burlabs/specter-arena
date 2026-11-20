@@ -1,4 +1,4 @@
-import type { RosterItemV1, WorkItemV1, WorkItemsV1, XpHistoryV1, XpSummariesV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterItemV1, WorkItemV1, WorkItemsV2, WorkListItemV1, WorkListOrderV2, XpHistoryV1, XpSummariesV2, XpSummaryV1 } from '../contracts/types';
 import { nameOf } from '../observatory/model';
 import { PROGRESS } from './copy';
 
@@ -83,19 +83,94 @@ export function parseWorkItem(body: unknown): WorkItemV1 {
   return body;
 }
 
-export function parseWorkItems(body: unknown): WorkItemsV1 {
-  const page = body as Partial<WorkItemsV1> | null;
-  if (page === null || !Array.isArray(page.items) || page.items.length > 25 || !page.items.every(isWorkItem)) throw new ShapeError('unexpected work list body');
-  return { contractVersion: 1, items: page.items, nextCursor: page.nextCursor ?? null, asOfMs: page.asOfMs ?? 0 };
+/**
+ * What a list row, the arena scene and the Work list read: the list fields only. A `WorkListItemV1` and a full
+ * `WorkItemV1` both satisfy it, so display code that needs nothing more never has to know which one it got.
+ */
+export type WorkRowV1 = Pick<
+  WorkItemV1,
+  'workId' | 'parentId' | 'title' | 'rewardable' | 'bountyXp' | 'state' | 'version' | 'createdAtMs' | 'updatedAtMs' | 'attempts' | 'contributors' | 'progress' | 'childCount' | 'childrenAccepted'
+>;
+
+const isNumber = (value: unknown): value is number => typeof value === 'number';
+
+export function isWorkListItem(value: unknown): value is WorkListItemV1 {
+  if (!isObject(value)) return false;
+  return (
+    isText(value.workId) &&
+    isText(value.title) &&
+    isText(value.state) &&
+    isNumber(value.version) &&
+    isNumber(value.createdAtMs) &&
+    isNumber(value.updatedAtMs) &&
+    isNumber(value.childCount) &&
+    isNumber(value.childrenAccepted) &&
+    typeof value.rewardable === 'boolean' &&
+    typeof value.everAccepted === 'boolean' &&
+    Array.isArray(value.attempts) &&
+    Array.isArray(value.contributors) &&
+    (value.progress === null || isObject(value.progress))
+  );
+}
+
+/** A write response is a full item; the list holds the list projection of it until the next poll catches up. */
+export function listItemOf(item: WorkItemV1): WorkListItemV1 {
+  return {
+    contractVersion: 1,
+    workId: item.workId,
+    parentId: item.parentId,
+    title: item.title,
+    rewardable: item.rewardable,
+    bountyXp: item.bountyXp,
+    state: item.state,
+    version: item.version,
+    createdAtMs: item.createdAtMs,
+    updatedAtMs: item.updatedAtMs,
+    attempts: item.attempts,
+    contributors: item.contributors,
+    progress: item.progress,
+    childCount: item.childCount,
+    childrenAccepted: item.childrenAccepted,
+    everAccepted: item.decisions.some((decision) => decision.action === 'accept'),
+  };
+}
+
+/** `work-items.v2`. Fails closed on any other contract version, a different order than the one asked for, or an old full-item body. */
+export function parseWorkListPage(body: unknown, order: WorkListOrderV2): WorkItemsV2 {
+  const page = body as Partial<WorkItemsV2> | null;
+  if (
+    page === null ||
+    typeof page !== 'object' ||
+    page.contractVersion !== 2 ||
+    page.order !== order ||
+    !Array.isArray(page.items) ||
+    page.items.length > 25 ||
+    !page.items.every(isWorkListItem) ||
+    (page.nextCursor != null && !isText(page.nextCursor))
+  ) {
+    throw new ShapeError('unexpected work list body');
+  }
+  return { contractVersion: 2, order, items: page.items, nextCursor: page.nextCursor ?? null, asOfMs: page.asOfMs ?? 0 };
 }
 
 const isSummary = (value: unknown): value is XpSummaryV1 =>
   isObject(value) && isText(value.bindingId) && typeof value.totalXp === 'number' && typeof value.level === 'number' && isText(value.levelTableVersion);
 
-export function parseXpSummaries(body: unknown): XpSummariesV1 {
-  const page = body as Partial<XpSummariesV1> | null;
-  if (page === null || !Array.isArray(page.items) || page.items.length > 500 || !page.items.every(isSummary)) throw new ShapeError('unexpected xp body');
-  return { contractVersion: 1, items: page.items, asOfMs: page.asOfMs ?? 0 };
+/** One page of `xp-summaries.v2`. */
+export function parseXpSummariesPage(body: unknown): XpSummariesV2 {
+  const page = body as Partial<XpSummariesV2> | null;
+  if (
+    page === null ||
+    typeof page !== 'object' ||
+    page.contractVersion !== 2 ||
+    !Array.isArray(page.items) ||
+    page.items.length > 200 ||
+    !page.items.every(isSummary) ||
+    (page.nextCursor != null && !isText(page.nextCursor))
+  ) {
+    throw new ShapeError('unexpected xp body');
+  }
+  return { contractVersion: 2, items: page.items, nextCursor: page.nextCursor ?? null, asOfMs: page.asOfMs ?? 0 };
 }
 
 export function parseXpHistory(body: unknown): XpHistoryV1 {
@@ -120,7 +195,7 @@ export function newest(...items: ReadonlyArray<WorkItemV1 | null | undefined>): 
 }
 
 /** Newest first; workId descending breaks ties so a poll never reorders equals. */
-export const byCreated = (a: WorkItemV1, b: WorkItemV1): number => b.createdAtMs - a.createdAtMs || (a.workId < b.workId ? 1 : a.workId > b.workId ? -1 : 0);
+export const byCreated = (a: WorkRowV1, b: WorkRowV1): number => b.createdAtMs - a.createdAtMs || (a.workId < b.workId ? 1 : a.workId > b.workId ? -1 : 0);
 
 export function botNameOf(bots: readonly RosterItemV1[], bindingId: string): string {
   const bot = bots.find((item) => item.bindingId === bindingId);

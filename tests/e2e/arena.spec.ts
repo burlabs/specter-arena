@@ -195,7 +195,10 @@ test('A-9 accepting in the inspector makes exactly one write, defeats the enemy 
 
   await sectionTab(page, 'Work').click();
   await page.getByRole('list', { name: 'Work items' }).getByRole('button', { name: /^Migrate the nightly report/ }).click();
-  const contributors = await page.getByRole('region', { name: 'Work detail' }).getByRole('list', { name: 'Contributors' }).locator('li').allTextContents();
+  // The Work tab list holds list rows only, so the detail pane waits for the item route before it has contributors to read.
+  const contributorRows = page.getByRole('region', { name: 'Work detail' }).getByRole('list', { name: 'Contributors' }).locator('li');
+  await expect(contributorRows.first()).toBeVisible();
+  const contributors = await contributorRows.allTextContents();
   expect(contributors.reduce((sum, line) => sum + Number(/(\d+) XP/.exec(line)?.[1] ?? 0), 0)).toBe(xp);
 
   await sectionTab(page, 'Roster').click();
@@ -458,4 +461,20 @@ test('A-18 at 390 px no tab scrolls sideways', async ({ page }) => {
   console.log(`A-18 document scrollWidth at 390 px: ${JSON.stringify(widths)}`);
   expect(widths.Arena).toBe(390);
   for (const width of Object.values(widths)) expect(width).toBeLessThanOrEqual(390);
+});
+
+test('A-19 the arena, the Work tab and the XP read use only the v2 reads: list in update order, list in creation order, paged XP', async ({ page }) => {
+  await openArena(page, 'arena-perf-1');
+  await sectionTab(page, 'Work').click();
+  await expect(page.getByRole('list', { name: 'Work items' })).toBeVisible();
+  const gets = (await calls(page)).filter((call) => call.method === 'GET').map((call) => call.path);
+  const workReads = gets.filter((path) => /\/api\/work(\?|$)/.test(path));
+  const xpReads = gets.filter((path) => /\/api\/xp(\?|$)/.test(path));
+  expect(workReads.length).toBeGreaterThan(0);
+  expect(xpReads.length).toBeGreaterThan(0);
+  for (const path of workReads) expect(path, path).toMatch(/[?&]view=list&order=(updated|created)&limit=25/);
+  expect(workReads.some((path) => path.includes('order=updated'))).toBe(true);
+  expect(workReads.some((path) => path.includes('order=created'))).toBe(true);
+  for (const path of xpReads) expect(path, path).toMatch(/[?&]view=paged&limit=200/);
+  expect(await writes(page)).toEqual([]);
 });

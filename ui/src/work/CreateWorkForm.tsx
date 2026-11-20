@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
-import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import type { RosterItemV1, WorkItemV1, WorkListItemV1 } from '../contracts/types';
 import { Button } from '../observatory/ui';
 import { lengthOf } from '../specters/model';
 import { AttemptPicker } from './AttemptPicker';
@@ -11,14 +11,14 @@ import type { WorkActions } from './useWorkActions';
 
 interface Props {
   bots: readonly RosterItemV1[];
-  existing: readonly WorkItemV1[];
+  existing: readonly WorkListItemV1[];
   linked: ReadonlyMap<string, string>;
   actions: WorkActions;
   onCreated: (item: WorkItemV1) => void;
   onCancel: () => void;
 }
 
-const canTakeParts = (item: WorkItemV1): boolean => !isTerminalForLinks(item.state) && !item.decisions.some((decision) => decision.action === 'accept');
+const canTakeParts = (item: WorkListItemV1): boolean => !isTerminalForLinks(item.state) && !item.everAccepted;
 
 export function CreateWorkForm({ bots, existing, linked, actions, onCreated, onCancel }: Props) {
   const [title, setTitle] = useState('');

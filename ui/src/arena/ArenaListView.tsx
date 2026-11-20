@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import type { RosterItemV1 } from '../contracts/types';
 import { ConditionBadge } from '../observatory/ConditionBadge';
 import { botCondition } from '../observatory/model';
 import { ProgressLine } from '../work/ProgressLine';
@@ -7,6 +7,7 @@ import { StateBadge } from '../work/StateBadge';
 import { xpChipOf } from '../work/WorkList';
 import { ROW } from '../work/copy';
 import { botNameOf } from '../work/model';
+import type { WorkRowV1 as WorkItemV1 } from '../work/model';
 import { ModeBadge } from './ModeBadge';
 import { ARENA, FILTERS } from './copy';
 import type { FilterValue } from './copy';

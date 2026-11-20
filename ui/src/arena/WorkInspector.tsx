@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import type { RefObject } from 'react';
 import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import type { WorkRowV1 } from '../work/model';
 import { Time } from '../observatory/Time';
 import { Button } from '../observatory/ui';
 import { ProgressLine } from '../work/ProgressLine';
@@ -24,7 +25,7 @@ interface Props {
   list: SceneModel;
   bots: readonly RosterItemV1[];
   /** The arena's own snapshot, used only for a title while the evidence loads. */
-  known: WorkItemV1 | undefined;
+  known: WorkRowV1 | undefined;
   onClose: () => void;
   onLedgerChanged: () => void;
   onWorkChanged: () => void;

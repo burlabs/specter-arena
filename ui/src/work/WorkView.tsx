@@ -36,10 +36,11 @@ export function WorkView({ bots, complete, onLedgerChanged }: Props) {
     return map;
   }, [work.items]);
 
-  const listed = selectedId === null ? null : (work.byId.get(selectedId) ?? null);
+  // The list holds only the list projection, so the detail pane reads the full item from its own poll or from
+  // the last write response, never from a list row.
   const polled = detail.state.status === 'ready' ? detail.state.item : null;
   const own = local !== null && local.workId === selectedId ? local : null;
-  const selected = newest(listed, polled, own);
+  const selected = newest(polled, own);
   const gone = detail.state.status === 'gone';
 
   const applied = (item: WorkItemV1) => {
@@ -81,7 +82,7 @@ export function WorkView({ bots, complete, onLedgerChanged }: Props) {
     );
   }
 
-  const parentTitle = (item: WorkItemV1): string | null => (item.parentId === null ? null : (work.byId.get(item.parentId)?.title ?? null));
+  const parentTitle = (item: { parentId: string | null }): string | null => (item.parentId === null ? null : (work.byId.get(item.parentId)?.title ?? null));
 
   let listArea;
   if (work.status === 'loading') listArea = <p role="status">{LIST.loading}</p>;
