@@ -15,14 +15,15 @@ import {
   newWorkRequestId,
   newest,
   parseWorkItem,
-  parseWorkItems,
+  parseWorkListPage,
   parseXpHistory,
-  parseXpSummaries,
+  parseXpSummariesPage,
+  listItemOf,
   progressWords,
   shortId,
   stateView,
 } from './model';
-import { ATLAS, itemOf, listOf, summaryOf } from './testData';
+import { ATLAS, itemOf, listPageOf, rowOf, summaryOf, xpPageOf } from './testData';
 
 describe('states and actions (M-1, M-2)', () => {
   it('words all seven states and flags an unknown token with no actions', () => {
@@ -81,10 +82,10 @@ describe('words and ids (M-3, M-9)', () => {
 describe('parsers (M-4)', () => {
   it('accept valid bodies', () => {
     expect(parseWorkItem(itemOf()).title).toBe('Migrate the nightly report');
-    expect(parseWorkItems(listOf(itemOf())).items).toHaveLength(1);
-    expect(parseWorkItems({ items: [] })).toMatchObject({ nextCursor: null, asOfMs: 0 });
-    expect(parseXpSummaries({ items: [summaryOf()] }).items).toHaveLength(1);
-    expect(parseXpSummaries({ items: [] })).toMatchObject({ asOfMs: 0 });
+    expect(parseWorkListPage(listPageOf([rowOf()], 'updated'), 'updated').items).toHaveLength(1);
+    expect(parseWorkListPage({ contractVersion: 2, order: 'created', items: [] }, 'created')).toMatchObject({ nextCursor: null, asOfMs: 0 });
+    expect(parseXpSummariesPage(xpPageOf([summaryOf()])).items).toHaveLength(1);
+    expect(parseXpSummariesPage({ contractVersion: 2, items: [] })).toMatchObject({ asOfMs: 0, nextCursor: null });
     const history = parseXpHistory({ bindingId: ATLAS, summary: summaryOf(), items: [{ entryId: 'xpe_1', amount: -5 }] });
     expect(history.items).toHaveLength(1);
     expect(parseXpHistory({ summary: summaryOf(), items: [] })).toMatchObject({ bindingId: '', nextCursor: null, asOfMs: 0 });
@@ -93,8 +94,13 @@ describe('parsers (M-4)', () => {
   it('throw a ShapeError for anything else', () => {
     const bad = { ...itemOf(), review: { canAccept: true } };
     for (const body of [null, 4, {}, { ...itemOf(), attempts: null }, bad]) expect(() => parseWorkItem(body)).toThrow(ShapeError);
-    for (const body of [null, {}, { items: [{}] }, { items: Array.from({ length: 26 }, () => itemOf()) }]) expect(() => parseWorkItems(body)).toThrow(ShapeError);
-    for (const body of [null, {}, { items: [{}] }, { items: Array.from({ length: 501 }, () => summaryOf()) }]) expect(() => parseXpSummaries(body)).toThrow(ShapeError);
+    const badPages = [null, {}, listPageOf([{} as never]), listPageOf(Array.from({ length: 26 }, () => rowOf())), { ...listPageOf([rowOf()]), contractVersion: 1 }, listPageOf([rowOf()], 'updated'), { ...listPageOf([rowOf()]), nextCursor: 5 }];
+    for (const body of badPages) expect(() => parseWorkListPage(body, 'created')).toThrow(ShapeError);
+    // A v1 full item has no everAccepted, so a backend that ignored view=list is refused rather than half read.
+    expect(() => parseWorkListPage({ ...listPageOf([]), items: [itemOf()] }, 'created')).toThrow(ShapeError);
+    const { everAccepted: _dropped, ...noFlag } = rowOf();
+    expect(() => parseWorkListPage(listPageOf([noFlag as never]), 'created')).toThrow(ShapeError);
+    for (const body of [null, {}, xpPageOf([{} as never]), xpPageOf(Array.from({ length: 201 }, () => summaryOf())), { ...xpPageOf([summaryOf()]), contractVersion: 1 }, { ...xpPageOf([]), nextCursor: 3 }]) expect(() => parseXpSummariesPage(body)).toThrow(ShapeError);
     for (const body of [null, {}, { summary: summaryOf(), items: [{}] }, { summary: summaryOf(), items: Array.from({ length: 51 }, () => ({ entryId: 'x', amount: 1 })) }, { summary: {}, items: [] }]) {
       expect(() => parseXpHistory(body)).toThrow(ShapeError);
     }
@@ -136,5 +142,18 @@ describe('level span (M-8)', () => {
     expect(levelSpan(summaryOf({ nextLevelXp: null }))).toEqual({ into: 50, span: null });
     expect(levelSpan(summaryOf({ nextLevelXp: 100 }))).toEqual({ into: 50, span: null });
     expect(levelSpan(summaryOf({ totalXp: 10 }))).toEqual({ into: 0, span: 150 });
+  });
+});
+
+describe('list projection (FP-18)', () => {
+  it('projects a full item to exactly the work-list-item.v1 fields', () => {
+    const accept = { decisionId: 'dec_1', seq: 1, action: 'accept', fromState: 'awaiting-review', toState: 'accepted', actor: 'app-owner' as const, atMs: 1, note: null, evidenceRevision: null };
+    const row = listItemOf(itemOf({ decisions: [accept], progress: { done: 1, total: 2 } }));
+    expect(Object.keys(row).sort()).toEqual(
+      ['attempts', 'bountyXp', 'childCount', 'childrenAccepted', 'contractVersion', 'contributors', 'createdAtMs', 'everAccepted', 'parentId', 'progress', 'rewardable', 'state', 'title', 'updatedAtMs', 'version', 'workId'],
+    );
+    expect(row.everAccepted).toBe(true);
+    expect(listItemOf(itemOf()).everAccepted).toBe(false);
+    expect(listItemOf(itemOf({ decisions: [{ ...accept, action: 'submit' }] })).everAccepted).toBe(false);
   });
 });

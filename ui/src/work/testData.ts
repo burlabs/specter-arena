@@ -1,4 +1,5 @@
-import type { WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { WorkItemV1, WorkListItemV1, XpSummaryV1 } from '../contracts/types';
+import { listItemOf } from './model';
 
 export const ATLAS = `bnd_${'a'.repeat(20)}0001`;
 export const BRINDLE = `bnd_${'a'.repeat(20)}0002`;
@@ -42,3 +43,12 @@ export const itemOf = (extra: Partial<WorkItemV1> = {}): WorkItemV1 => ({
 });
 
 export const listOf = (...items: WorkItemV1[]) => ({ contractVersion: 1, items, nextCursor: null, asOfMs: 1 });
+
+/** A `work-list-item.v1`: the list projection of a full item, so a test states the full item once. */
+export const rowOf = (extra: Partial<WorkItemV1> = {}): WorkListItemV1 => listItemOf(itemOf(extra));
+
+/** A `work-items.v2` page. */
+export const listPageOf = (items: WorkListItemV1[], order: 'created' | 'updated' = 'created', nextCursor: string | null = null, asOfMs = 1) => ({ contractVersion: 2, order, items, nextCursor, asOfMs });
+
+/** An `xp-summaries.v2` page. */
+export const xpPageOf = (items: XpSummaryV1[], nextCursor: string | null = null, asOfMs = 1) => ({ contractVersion: 2, items, nextCursor, asOfMs });

@@ -79,7 +79,7 @@ describe('monitoring routes', () => {
 describe('work routes', () => {
   it('serves the work list with its query string and the xp list as real Responses', async () => {
     const client = useAppApi();
-    const work = (await client.get(workListPath('open', 25, null))) as Response;
+    const work = (await client.get(workListPath('open', 25, null, 'created'))) as Response;
     expect(work.status).toBe(200);
     expect(((await work.json()) as { items: unknown[] }).items).toEqual([]);
     const xp = (await client.get(XP_PATH)) as Response;

@@ -1,5 +1,5 @@
 // SPECTER-FIXTURE-ONLY: FIXTURE Work and XP routes for the preview harness and unit tests; never imported by ui/src.
-import type { WorkAttemptV1, WorkDecisionV1, WorkItemV1, XpEntryV1, XpSummaryV1 } from '../src/contracts/types.ts';
+import type { WorkAttemptV1, WorkDecisionV1, WorkItemV1, WorkListItemV1, XpEntryV1, XpSummaryV1 } from '../src/contracts/types.ts';
 import { appApiPath } from '../src/host/paths.ts';
 import { canonicalArenaScenario, perfItems } from './arena-scenarios.ts';
 import { FIXTURE_NOW_MS, activeScenario, attemptsBody, rosterBody } from './monitoring-bodies.ts';
@@ -545,25 +545,62 @@ function current(): FixtureState {
 }
 
 const byCreated = (a: Stored, b: Stored): number => b.createdAtMs - a.createdAtMs || (a.workId < b.workId ? 1 : a.workId > b.workId ? -1 : 0);
+const byUpdated = (a: Stored, b: Stored): number => b.updatedAtMs - a.updatedAtMs || (a.workId < b.workId ? 1 : a.workId > b.workId ? -1 : 0);
 
-function pageOf<T>(all: readonly T[], search: string, size: number): { items: T[]; nextCursor: string | null } | null {
+/** The cursor tag names the order it belongs to, as the backend's order-tagged cursor does: a cursor from the other order is refused. */
+function pageOf<T>(all: readonly T[], search: string, size: number, tag: 'c' | 'u' = 'c'): { items: T[]; nextCursor: string | null } | null {
   const params = new URLSearchParams(search);
   const rawCursor = params.get('cursor');
-  const offset = rawCursor === null ? 0 : /^c_\d{1,6}$/.test(rawCursor) ? Number(rawCursor.slice(2)) : -1;
+  const offset = rawCursor === null ? 0 : new RegExp(`^${tag}_\\d{1,6}$`).test(rawCursor) ? Number(rawCursor.slice(2)) : -1;
   if (offset < 0) return null;
   const rawLimit = params.get('limit');
   const limit = rawLimit !== null && /^\d{1,6}$/.test(rawLimit) ? Math.min(Math.max(Number(rawLimit), 1), size) : size;
   const items = all.slice(offset, offset + limit);
-  return { items, nextCursor: offset + limit < all.length ? `c_${offset + limit}` : null };
+  return { items, nextCursor: offset + limit < all.length ? `${tag}_${offset + limit}` : null };
+}
+
+/** `work-list-item.v1`: the list fields of the full view plus `everAccepted`; no decisions, review, evidence revision, condition or milestone labels. */
+function listViewOf(state: FixtureState, item: Stored): WorkListItemV1 {
+  const full = viewOf(state, item);
+  return {
+    contractVersion: 1,
+    workId: full.workId,
+    parentId: full.parentId,
+    title: full.title,
+    rewardable: full.rewardable,
+    bountyXp: full.bountyXp,
+    state: full.state,
+    version: full.version,
+    createdAtMs: full.createdAtMs,
+    updatedAtMs: full.updatedAtMs,
+    attempts: full.attempts,
+    contributors: full.contributors,
+    progress: full.progress,
+    childCount: full.childCount,
+    childrenAccepted: full.childrenAccepted,
+    everAccepted: item.decisions.some((decision) => decision.action === 'accept'),
+  };
 }
 
 function listWork(state: FixtureState, search: string): Response {
-  const filter = new URLSearchParams(search).get('state');
+  const params = new URLSearchParams(search);
+  const filter = params.get('state');
+  const view = params.get('view');
+  const order = params.get('order');
   if (filter !== null && !STATES.includes(filter)) return apiError(400, 'invalid_state');
-  const all = [...state.items.values()].filter((item) => filter === null || item.state === filter).sort(byCreated);
-  const page = pageOf(all, search, LIST_PAGE);
+  // `order` is a `view=list` parameter; any other view or order is a 400, as on the backend.
+  if (view !== null && view !== 'list') return apiError(400, 'invalid_view');
+  if (order !== null && (view === null || (order !== 'created' && order !== 'updated'))) return apiError(400, 'invalid_order');
+  const matching = [...state.items.values()].filter((item) => filter === null || item.state === filter);
+  if (view === null) {
+    const page = pageOf(matching.sort(byCreated), search, LIST_PAGE);
+    if (page === null) return apiError(400, 'invalid_cursor');
+    return json({ contractVersion: 1, items: page.items.map((item) => viewOf(state, item)), nextCursor: page.nextCursor, asOfMs: FIXTURE_NOW_MS });
+  }
+  const by = order === 'updated' ? 'updated' : 'created';
+  const page = pageOf(matching.sort(by === 'updated' ? byUpdated : byCreated), search, LIST_PAGE, by === 'updated' ? 'u' : 'c');
   if (page === null) return apiError(400, 'invalid_cursor');
-  return json({ contractVersion: 1, items: page.items.map((item) => viewOf(state, item)), nextCursor: page.nextCursor, asOfMs: FIXTURE_NOW_MS });
+  return json({ contractVersion: 2, order: by, items: page.items.map((item) => listViewOf(state, item)), nextCursor: page.nextCursor, asOfMs: FIXTURE_NOW_MS });
 }
 
 const CREATE_KEYS = ['requestId', 'title', 'acceptanceCondition', 'rewardable', 'parentId', 'attemptIds', 'milestones'];
@@ -690,9 +727,25 @@ function decide(state: FixtureState, workId: string, body: unknown): Response {
   return json(viewOf(state, item));
 }
 
-function xpSummaries(state: FixtureState): Response {
+const XP_PAGE = 200;
+
+function xpSummaries(state: FixtureState, search: string): Response {
+  const params = new URLSearchParams(search);
+  const view = params.get('view');
+  if (view !== null && view !== 'paged') return apiError(400, 'invalid_view');
   const ids = [...new Set(state.entries.map((entry) => entry.bindingId))].sort();
-  return json({ contractVersion: 1, items: ids.map((id) => summaryOf(state, id)), asOfMs: FIXTURE_NOW_MS });
+  if (view === null) return json({ contractVersion: 1, items: ids.slice(0, 500).map((id) => summaryOf(state, id)), asOfMs: FIXTURE_NOW_MS });
+  // Keyset on the binding id, ascending: the cursor is the last id of the previous page.
+  const rawCursor = params.get('cursor');
+  if (rawCursor !== null && !/^b_bnd_[0-9a-f]{24}$/.test(rawCursor)) return apiError(400, 'invalid_cursor');
+  const rawLimit = params.get('limit');
+  if (rawLimit !== null && !/^\d{1,6}$/.test(rawLimit)) return apiError(400, 'invalid_limit');
+  const limit = rawLimit === null ? XP_PAGE : Math.min(Math.max(Number(rawLimit), 1), XP_PAGE);
+  const after = rawCursor === null ? null : rawCursor.slice(2);
+  const rest = ids.filter((id) => after === null || id > after);
+  const page = rest.slice(0, limit);
+  const last = page[page.length - 1];
+  return json({ contractVersion: 2, items: page.map((id) => summaryOf(state, id)), nextCursor: rest.length > limit && last !== undefined ? `b_${last}` : null, asOfMs: FIXTURE_NOW_MS });
 }
 
 function xpHistory(state: FixtureState, bindingId: string, search: string): Response {
@@ -745,7 +798,7 @@ const routes: readonly Route[] = [
   { pattern: new RegExp(`^${appApiPath('/work')}/${SEGMENT}/attempts$`), method: 'POST', handle: (state, match, body) => linkAttempt(state, safeDecode(match[1] ?? ''), body) },
   { pattern: new RegExp(`^${appApiPath('/work')}/${SEGMENT}/milestones$`), method: 'POST', handle: (state, match, body) => setMilestone(state, safeDecode(match[1] ?? ''), body) },
   { pattern: new RegExp(`^${appApiPath('/work')}/${SEGMENT}/decisions$`), method: 'POST', handle: (state, match, body) => decide(state, safeDecode(match[1] ?? ''), body) },
-  { pattern: new RegExp(`^${appApiPath('/xp')}$`), method: 'GET', handle: (state) => xpSummaries(state) },
+  { pattern: new RegExp(`^${appApiPath('/xp')}$`), method: 'GET', handle: (state, _match, _body, search) => xpSummaries(state, search) },
   { pattern: new RegExp(`^${appApiPath('/roster')}/${SEGMENT}/xp$`), method: 'GET', handle: (state, match, _body, search) => xpHistory(state, safeDecode(match[1] ?? ''), search) },
 ];
 

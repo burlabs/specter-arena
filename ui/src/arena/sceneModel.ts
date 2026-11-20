@@ -1,5 +1,6 @@
-import type { HeroId, RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { HeroId, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
 import type { SourceMode } from '../host';
+import type { WorkRowV1 as WorkItemV1 } from '../work/model';
 import { nameOf } from '../observatory/model';
 
 export const ON_FIELD_STATES: ReadonlySet<string> = new Set(['open', 'awaiting-review', 'blocked', 'reopened']);

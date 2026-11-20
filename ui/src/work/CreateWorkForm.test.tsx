@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreateWorkForm } from './CreateWorkForm';
 import { bots, flush } from './testHarness';
-import { BRINDLE, itemOf } from './testData';
+import { BRINDLE, itemOf, rowOf } from './testData';
 import type { WorkActions } from './useWorkActions';
 
 beforeEach(() => vi.useFakeTimers());
@@ -13,7 +13,7 @@ afterEach(() => {
 
 const created = itemOf({ workId: 'wrk_new' });
 
-function setup(overrides: Partial<WorkActions> = {}, existing = [itemOf({ workId: 'wrk_a', title: 'Open parent' })]) {
+function setup(overrides: Partial<WorkActions> = {}, existing = [rowOf({ workId: 'wrk_a', title: 'Open parent' })]) {
   const create = vi.fn().mockResolvedValue({ ok: true, item: created });
   const actions: WorkActions = { busy: false, create, linkAttempt: vi.fn(), setMilestone: vi.fn(), decide: vi.fn(), ...overrides };
   const onCreated = vi.fn();
@@ -79,10 +79,11 @@ describe('CreateWorkForm (CF-1..CF-9)', () => {
   });
 
   it('offers only parents that are open and have no accepted decision (CF-6)', () => {
-    const accepted = itemOf({ workId: 'wrk_b', title: 'Done before', state: 'accepted' });
-    const reopened = itemOf({ workId: 'wrk_c', title: 'Once accepted', state: 'reopened', decisions: [{ decisionId: 'dec_1', seq: 1, action: 'accept', fromState: 'awaiting-review', toState: 'accepted', actor: 'app-owner', atMs: 1, note: null, evidenceRevision: null }] });
-    const cancelled = itemOf({ workId: 'wrk_d', title: 'Dropped', state: 'cancelled' });
-    setup({}, [itemOf({ workId: 'wrk_a', title: 'Open parent' }), accepted, reopened, cancelled]);
+    const accepted = rowOf({ workId: 'wrk_b', title: 'Done before', state: 'accepted' });
+    const reopened = rowOf({ workId: 'wrk_c', title: 'Once accepted', state: 'reopened', decisions: [{ decisionId: 'dec_1', seq: 1, action: 'accept', fromState: 'awaiting-review', toState: 'accepted', actor: 'app-owner', atMs: 1, note: null, evidenceRevision: null }] });
+    expect(reopened.everAccepted).toBe(true);
+    const cancelled = rowOf({ workId: 'wrk_d', title: 'Dropped', state: 'cancelled' });
+    setup({}, [rowOf({ workId: 'wrk_a', title: 'Open parent' }), accepted, reopened, cancelled]);
     expect(within(screen.getByRole('combobox', { name: /^Part of/ })).getAllByRole('option').map((option) => option.textContent)).toEqual(['Not part of another item', 'Open parent']);
   });
 

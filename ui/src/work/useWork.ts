@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { WorkItemV1, WorkItemsV1 } from '../contracts/types';
+import type { WorkItemV1, WorkItemsV2, WorkListItemV1 } from '../contracts/types';
 import { useHostApi, workListPath } from '../host';
-import { byCreated, parseWorkItems } from './model';
+import { byCreated, listItemOf, parseWorkListPage } from './model';
 import { usePagedPolled } from './usePagedPolled';
 import { xpFailureOf } from './useXp';
 import type { XpFailure } from './useXp';
@@ -10,27 +10,27 @@ export type WorkFailure = XpFailure;
 
 export interface WorkListState {
   status: 'loading' | 'ready' | 'failed';
-  /** Overrides applied, newest first. */
-  items: WorkItemV1[];
-  byId: ReadonlyMap<string, WorkItemV1>;
+  /** The list projection with overrides applied, newest first. Detail, review and evidence come from `useWorkItem`, never from here. */
+  items: WorkListItemV1[];
+  byId: ReadonlyMap<string, WorkListItemV1>;
   failure: WorkFailure | null;
   hasOlder: boolean;
   loadingOlder: boolean;
   olderFailed: boolean;
   loadOlder: () => void;
   refresh: () => void;
-  /** A write response wins over the poll until the poll reaches the same version. */
+  /** A write response (a full item) wins over the poll, as its list projection, until the poll reaches the same version. */
   apply: (next: WorkItemV1) => void;
 }
 
 export function useWork(stateFilter: string | null): WorkListState {
   const api = useHostApi();
   const fetchPage = useCallback(
-    async (cursor: string | null) => parseWorkItems(await api.getJson<unknown>(workListPath(stateFilter, 25, cursor))),
+    async (cursor: string | null) => parseWorkListPage(await api.getJson<unknown>(workListPath(stateFilter, 25, cursor, 'created')), 'created'),
     [api, stateFilter],
   );
-  const paged = usePagedPolled<WorkItemV1, WorkItemsV1>({ key: `work:${stateFilter ?? 'all'}`, fetchPage, idOf: (item) => item.workId, order: byCreated });
-  const [overrides, setOverrides] = useState<ReadonlyMap<string, WorkItemV1>>(new Map());
+  const paged = usePagedPolled<WorkListItemV1, WorkItemsV2>({ key: `work:${stateFilter ?? 'all'}`, fetchPage, idOf: (item) => item.workId, order: byCreated });
+  const [overrides, setOverrides] = useState<ReadonlyMap<string, WorkListItemV1>>(new Map());
 
   const first = paged.firstPage?.items ?? null;
   useEffect(() => {
@@ -55,7 +55,7 @@ export function useWork(stateFilter: string | null): WorkListState {
   const byId = useMemo(() => new Map(items.map((item) => [item.workId, item])), [items]);
 
   const apply = useCallback((next: WorkItemV1) => {
-    setOverrides((previous) => new Map(previous).set(next.workId, next));
+    setOverrides((previous) => new Map(previous).set(next.workId, listItemOf(next)));
   }, []);
 
   const failure = paged.error === null ? null : xpFailureOf(paged.error);

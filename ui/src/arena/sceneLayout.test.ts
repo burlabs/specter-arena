@@ -1,6 +1,6 @@
 import { setArenaScenario, useAppApi } from '@kirocrew/app-sdk';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import type { RosterItemV1, WorkListItemV1 } from '../contracts/types';
 import { rosterPath, workListPath } from '../host/paths';
 import { ARENA_INTRINSIC } from './mapLayout';
 import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
@@ -25,11 +25,11 @@ const read = async <T>(path: string): Promise<T> => (await ((await client.get(pa
 async function modelOf(scenario: 'arena' | 'arena-perf-1') {
   setArenaScenario(scenario);
   const roster = (await read<{ items: RosterItemV1[] }>(rosterPath(100, null))).items;
-  const work: WorkItemV1[] = [];
+  const work: WorkListItemV1[] = [];
   for (const state of ['open', 'awaiting-review', 'blocked', 'reopened', 'accepted']) {
     let cursor: string | null = null;
     do {
-      const page: { items: WorkItemV1[]; nextCursor: string | null } = await read(workListPath(state, 25, cursor));
+      const page: { items: WorkListItemV1[]; nextCursor: string | null } = await read(workListPath(state, 25, cursor, 'updated'));
       work.push(...page.items);
       cursor = page.nextCursor;
     } while (cursor !== null);

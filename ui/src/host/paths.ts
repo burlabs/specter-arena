@@ -1,3 +1,4 @@
+import type { WorkListOrderV2 } from '../contracts/types';
 export const APP_API_PREFIX = '/apps/specter-arena/api';
 
 export function appApiPath(suffix: `/${string}`): string {
@@ -35,8 +36,12 @@ export const sceneAssetPath = (key: string): string => appApiPath(`/scene-assets
 
 export const WORK_PATH = appApiPath('/work');
 export const XP_PATH = appApiPath('/xp');
+/** One page of the paged `xp-summaries.v2` read; `useXp` walks every page. */
+export const xpPagedPath = (limit: number, cursor: string | null): string => withQuery(XP_PATH, { view: 'paged', limit, cursor });
 
-export const workListPath = (state: string | null, limit: number, cursor: string | null): string => withQuery(WORK_PATH, { state, limit, cursor });
+/** The lighter `work-items.v2` read. `order` is explicit so a server default can never change what a caller sees. */
+export const workListPath = (state: string | null, limit: number, cursor: string | null, order: WorkListOrderV2): string =>
+  withQuery(WORK_PATH, { state, view: 'list', order, limit, cursor });
 export const workPath = (workId: string): string => appApiPath(`/work/${enc(workId)}`);
 export const workAttemptsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/attempts`);
 export const workMilestonesPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/milestones`);

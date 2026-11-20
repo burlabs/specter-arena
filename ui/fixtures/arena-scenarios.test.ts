@@ -3,8 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../src/contracts/types.ts';
-import { PING_PATH, ROSTER_PATH, SPECTERS_PATH, WORK_PATH, XP_PATH, workListPath, workPath } from '../src/host/paths.ts';
+import type { RosterItemV1, SpecterV2, WorkItemV1, WorkItemsV2, XpSummariesV2, XpSummaryV1 } from '../src/contracts/types.ts';
+import { PING_PATH, ROSTER_PATH, SPECTERS_PATH, WORK_PATH, XP_PATH, workListPath, workPath, xpPagedPath } from '../src/host/paths.ts';
 import {
   ARENA_PERF_1,
   ARENA_SCENARIO_NAMES,
@@ -21,8 +21,8 @@ const ajv = new Ajv({ strict: true });
 for (const name of readdirSync(schemasDir).filter((file) => file.endsWith('.schema.json'))) {
   ajv.addSchema(JSON.parse(readFileSync(`${schemasDir}${name}`, 'utf8')) as object);
 }
-const valid = (schema: string, body: unknown): boolean => {
-  const validate = ajv.getSchema(`urn:specter-arena:contract:${schema}:v1`);
+const valid = (schema: string, body: unknown, version = 1): boolean => {
+  const validate = ajv.getSchema(`urn:specter-arena:contract:${schema}:v${version}`);
   if (validate === undefined) throw new Error(`no schema ${schema}`);
   return validate(body) === true;
 };
@@ -38,11 +38,14 @@ interface WorkPage {
   nextCursor: string | null;
 }
 
+/** The unchanged v1 read: full items, validated against the FROZEN work-item.v1 schema. */
+const v1ListPath = (state: string, cursor: string | null): string => `${WORK_PATH}?state=${state}&limit=25${cursor === null ? '' : `&cursor=${cursor}`}`;
+
 async function allOf(state: string): Promise<WorkItemV1[]> {
   const out: WorkItemV1[] = [];
   let cursor: string | null = null;
   do {
-    const page: { status: number; body: WorkPage } = await read<WorkPage>(workListPath(state, 25, cursor));
+    const page: { status: number; body: WorkPage } = await read<WorkPage>(v1ListPath(state, cursor));
     expect(page.status).toBe(200);
     expect(page.body.items.length).toBeLessThanOrEqual(25);
     out.push(...page.body.items);
@@ -94,7 +97,7 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
 
   it('has 100 on-field items, 10 of them containers, paged 25 at a time with cursors', async () => {
     setArenaScenario('arena-perf-1');
-    const first = await read<WorkPage>(workListPath('open', 25, null));
+    const first = await read<WorkPage>(v1ListPath('open', null));
     expect(first.body.items).toHaveLength(25);
     expect(first.body.nextCursor).not.toBeNull();
     const onField = (await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened'].map(allOf))).flat();
@@ -140,7 +143,7 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
   it('builds one work page quickly enough for the preview', async () => {
     setArenaScenario('arena-perf-1');
     const started = performance.now();
-    await read(workListPath('open', 25, null));
+    await read(workListPath('open', 25, null, 'updated'));
     expect(performance.now() - started).toBeLessThan(500);
   });
 
@@ -191,3 +194,83 @@ describe('the other arena scenarios', () => {
     expect((await client.get(PING_PATH)) as unknown).toBeDefined();
   });
 });
+
+describe('view=list and view=paged on the fixture routes (FP-18)', () => {
+  const FULL_ONLY = ['acceptanceCondition', 'policyVersion', 'milestones', 'evidenceRevision', 'review', 'decisions'];
+
+  async function listAll(state: string, order: 'created' | 'updated'): Promise<WorkItemsV2['items']> {
+    const out: WorkItemsV2['items'] = [];
+    let cursor: string | null = null;
+    do {
+      const page: { status: number; body: WorkItemsV2 } = await read<WorkItemsV2>(workListPath(state, 25, cursor, order));
+      expect(page.status).toBe(200);
+      expect(page.body).toMatchObject({ contractVersion: 2, order });
+      expect(valid('work-items', page.body, 2), JSON.stringify(ajv.errors)).toBe(true);
+      out.push(...page.body.items);
+      cursor = page.body.nextCursor;
+    } while (cursor !== null);
+    return out;
+  }
+
+  it('serves the list projection: the v1 list fields of every item, nothing else, plus everAccepted', async () => {
+    setArenaScenario('arena-perf-1');
+    const full = new Map((await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened', 'accepted'].map(allOf))).flat().map((item) => [item.workId, item]));
+    const rows = (await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened', 'accepted'].map((state) => listAll(state, 'updated')))).flat();
+    expect(rows).toHaveLength(112);
+    for (const row of rows) {
+      const item = full.get(row.workId) as WorkItemV1;
+      for (const key of FULL_ONLY) expect(key in row, key).toBe(false);
+      expect(Object.keys(row).sort()).toEqual(
+        ['attempts', 'bountyXp', 'childCount', 'childrenAccepted', 'contractVersion', 'contributors', 'createdAtMs', 'everAccepted', 'parentId', 'progress', 'rewardable', 'state', 'title', 'updatedAtMs', 'version', 'workId'],
+      );
+      const { everAccepted, ...rest } = row;
+      expect(everAccepted).toBe(item.decisions.some((decision) => decision.action === 'accept'));
+      for (const [key, value] of Object.entries(rest)) expect(value, key).toEqual(item[key as keyof WorkItemV1]);
+    }
+  });
+
+  it('orders by update time or creation time and refuses a cursor from the other order', async () => {
+    setArenaScenario('arena-perf-1');
+    const updated = await listAll('accepted', 'updated');
+    expect(updated.map((row) => row.updatedAtMs)).toEqual([...updated.map((row) => row.updatedAtMs)].sort((a, b) => b - a));
+    const created = await listAll('open', 'created');
+    expect(created.map((row) => row.createdAtMs)).toEqual([...created.map((row) => row.createdAtMs)].sort((a, b) => b - a));
+    const first = await read<WorkItemsV2>(workListPath('open', 25, null, 'updated'));
+    const cursor = first.body.nextCursor;
+    expect(cursor).not.toBeNull();
+    const crossed = await read<{ error: string }>(workListPath('open', 25, cursor, 'created'));
+    expect(crossed).toMatchObject({ status: 400, body: { error: 'invalid_cursor' } });
+  });
+
+  it('answers a bad view or an order without view=list with 400 and leaves the v1 read unchanged', async () => {
+    setArenaScenario('arena-perf-1');
+    expect((await read(`${WORK_PATH}?view=full`)).status).toBe(400);
+    expect((await read(`${WORK_PATH}?order=updated`)).status).toBe(400);
+    expect((await read(`${WORK_PATH}?view=list&order=newest`)).status).toBe(400);
+    const v1 = await read<{ contractVersion: number; items: WorkItemV1[] }>(v1ListPath('open', null));
+    expect(v1.body.contractVersion).toBe(1);
+    expect(v1.body.items[0]).toHaveProperty('decisions');
+  });
+
+  it('pages xp summaries by binding id and keeps the unpaged read as it was', async () => {
+    setArenaScenario('arena-perf-1');
+    const unpaged = await read<{ contractVersion: number; items: XpSummaryV1[] }>(XP_PATH);
+    expect(unpaged.body.contractVersion).toBe(1);
+    const small = await read<XpSummariesV2>(xpPagedPath(1, null));
+    expect(small.body).toMatchObject({ contractVersion: 2 });
+    expect(small.body.items).toHaveLength(1);
+    expect(small.body.nextCursor).not.toBeNull();
+    const walked: XpSummaryV1[] = [];
+    let cursor: string | null = null;
+    do {
+      const page: { body: XpSummariesV2 } = await read<XpSummariesV2>(xpPagedPath(2, cursor));
+      expect(valid('xp-summaries', page.body, 2), JSON.stringify(ajv.errors)).toBe(true);
+      walked.push(...page.body.items);
+      cursor = page.body.nextCursor;
+    } while (cursor !== null);
+    expect(walked).toEqual(unpaged.body.items);
+    expect((await read(`${XP_PATH}?view=all`)).status).toBe(400);
+    expect((await read(`${XP_PATH}?view=paged&cursor=zzz`)).status).toBe(400);
+  });
+});
+

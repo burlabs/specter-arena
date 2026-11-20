@@ -206,3 +206,30 @@ describe('reopen and accept again (FP-09-AC03)', () => {
     expect(onLedger).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('list rows and the full item (FP-18)', () => {
+  it('reads the detail pane from the item route, never from a list row', async () => {
+    await openWork('work');
+    const get = vi.spyOn(useAppApi(), 'get');
+    fireEvent.click(within(workList()).getByRole('button', { name: /^Migrate the nightly report/ }));
+    // Before the item route answers there is nothing to draw: a row has no acceptance condition, decisions or review.
+    expect(within(detail()).getByRole('status').textContent).toBe('Loading work items…');
+    expect(within(detail()).queryByText('Acceptance condition')).toBeNull();
+    await flush();
+    expect(within(detail()).getByText('Acceptance condition')).toBeTruthy();
+    expect(within(detail()).getByRole('list', { name: 'Decisions, oldest first' })).toBeTruthy();
+    expect(get.mock.calls.map(([path]) => String(path)).some((path) => /\/work\/wrk_[0-9a-f]+$/.test(path))).toBe(true);
+  });
+
+  it('keeps a created item in the list as a row and opens its full detail from the write response', async () => {
+    await openWork('work');
+    fireEvent.click(screen.getByRole('button', { name: 'New work item' }));
+    await flush();
+    fireEvent.change(screen.getByRole('textbox', { name: /^Title/ }), { target: { value: 'Fresh item' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /^Acceptance condition/ }), { target: { value: 'It is fresh.' } });
+    await click('Create work item', () => screen.getByRole('form', { name: 'New work item' }));
+    expect(rowTitles()[0]).toBe('Fresh item');
+    expect(within(detail()).getByText('It is fresh.')).toBeTruthy();
+  });
+});
+

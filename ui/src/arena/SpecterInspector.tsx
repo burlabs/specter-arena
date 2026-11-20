@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
 import { ActivityPanel } from '../observatory/ActivityPanel';
 import { AttemptsList, AttemptsStatus } from '../observatory/AttemptsList';
 import { ConditionBadge } from '../observatory/ConditionBadge';
@@ -12,6 +12,7 @@ import { Button } from '../observatory/ui';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { entryKindWords } from '../work/copy';
 import { amountWords } from '../work/model';
+import type { WorkRowV1 as WorkItemV1 } from '../work/model';
 import { useXpHistory } from '../work/useXpHistory';
 import { HandoffRow } from './HandoffRow';
 import { ARENA, INSPECTOR } from './copy';

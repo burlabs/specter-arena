@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { workListPath } from '../host';
 import { arenaFailureOf, useArenaWork } from './useArenaWork';
-import { ShapeError } from '../work/model';
+import { ShapeError, listItemOf } from '../work/model';
 import { HostApiError } from '../host';
 import { workOf } from './testData';
 
@@ -17,7 +17,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const page = (items: unknown[], nextCursor: string | null = null, asOfMs = 5) => new Response(JSON.stringify({ contractVersion: 1, items, nextCursor, asOfMs }));
+// The stubs answer as the backend does for view=list: list items only, `work-items.v2`.
+const page = (items: ReturnType<typeof workOf>[], nextCursor: string | null = null, asOfMs = 5) =>
+  new Response(JSON.stringify({ contractVersion: 2, order: 'updated', items: items.map(listItemOf), nextCursor, asOfMs }));
 
 describe('failure mapping', () => {
   it('maps shapes, statuses and everything else', () => {
@@ -72,7 +74,7 @@ describe('useArenaWork against stubbed pages', () => {
     expect(urls.filter((url) => url.includes('state=open'))).toHaveLength(8);
     expect(urls.filter((url) => url.includes('state=accepted'))).toHaveLength(1);
     expect(result.current.state.snapshot?.truncated).toBe(true);
-    expect(urls[0]).toBe(workListPath('open', 25, null));
+    expect(urls[0]).toBe(workListPath('open', 25, null, 'updated'));
   });
 
   it('reads the accepted stream once even when it has more', async () => {
@@ -95,7 +97,7 @@ describe('useArenaWork against stubbed pages', () => {
     );
     const { result } = renderHook(() => useArenaWork());
     await flush();
-    expect(result.current.state.snapshot?.items).toEqual([newer]);
+    expect(result.current.state.snapshot?.items).toEqual([listItemOf(newer)]);
     expect(result.current.state.snapshot?.asOfMs).toBe(9);
   });
 
@@ -118,6 +120,7 @@ describe('useArenaWork against stubbed pages', () => {
     ['unsupported', new Response('{}', { status: 404 })],
     ['unavailable', new Response('{}', { status: 500 })],
     ['unexpected', new Response(JSON.stringify({ nope: true }))],
+    ['unexpected', new Response(JSON.stringify({ contractVersion: 1, items: [], nextCursor: null, asOfMs: 1 }))],
   ])('is failed with %s when the first read fails', async (failure, response) => {
     vi.spyOn(useAppApi(), 'get').mockImplementation(() => Promise.resolve(response.clone()));
     const { result } = renderHook(() => useArenaWork());
@@ -130,5 +133,46 @@ describe('useArenaWork against stubbed pages', () => {
     const { result } = renderHook(() => useArenaWork());
     await flush();
     expect(result.current.state).toMatchObject({ status: 'failed', failure: 'offline' });
+  });
+});
+
+describe('useArenaWork reads the list projection in update order (FP-18)', () => {
+  it('sends view=list&order=updated on every request and never a v1 read', async () => {
+    const urls: string[] = [];
+    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) => {
+      urls.push(path);
+      return Promise.resolve(page([]));
+    });
+    renderHook(() => useArenaWork());
+    await flush();
+    expect(urls).toHaveLength(5);
+    for (const url of urls) expect(url).toMatch(/[?&]view=list&order=updated&limit=25/);
+  });
+
+  it('finds an item created long ago and accepted today on the one accepted page (KL-09)', async () => {
+    // 30 accepted items: item 30 is the oldest by creation but the newest by update. A creation-ordered page of 25 would drop it.
+    const all = Array.from({ length: 30 }, (_, i) => workOf(i + 1, { state: 'accepted', createdAtMs: 1_000_000 - i, updatedAtMs: i === 29 ? 9_000_000 : 5_000_000 - i }));
+    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) => {
+      const params = new URL(path, 'http://x').searchParams;
+      if (params.get('state') !== 'accepted') return Promise.resolve(page([]));
+      const key = params.get('order') === 'updated' ? 'updatedAtMs' : 'createdAtMs';
+      const sorted = [...all].sort((a, b) => b[key] - a[key]);
+      return Promise.resolve(page(sorted.slice(0, 25), 'u_25'));
+    });
+    const { result } = renderHook(() => useArenaWork());
+    await flush();
+    const ids = result.current.state.snapshot?.items.map((item) => item.workId) ?? [];
+    expect(ids).toHaveLength(25);
+    expect(ids).toContain(all[29]?.workId);
+    expect(result.current.state.snapshot?.truncated).toBe(false);
+  });
+
+  it('keeps no full-item field on the snapshot, so a consumer cannot read evidence from the list', async () => {
+    vi.spyOn(useAppApi(), 'get').mockImplementation(() => Promise.resolve(page([workOf(1, { state: 'open' })])));
+    const { result } = renderHook(() => useArenaWork());
+    await flush();
+    const row = result.current.state.snapshot?.items[0] as unknown as Record<string, unknown>;
+    for (const dropped of ['decisions', 'review', 'milestones', 'evidenceRevision', 'acceptanceCondition', 'policyVersion']) expect(dropped in row).toBe(false);
+    expect(row.everAccepted).toBe(false);
   });
 });

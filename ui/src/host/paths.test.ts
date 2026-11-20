@@ -19,6 +19,7 @@ import {
   workMilestonesPath,
   workPath,
   xpHistoryPath,
+  xpPagedPath,
 } from './paths';
 
 describe('roster and attempts paths', () => {
@@ -65,8 +66,13 @@ describe('work and xp paths', () => {
   });
 
   it('omits a null state and cursor and encodes a cursor', () => {
-    expect(workListPath(null, 25, null)).toBe(`${WORK_PATH}?limit=25`);
-    expect(workListPath('awaiting-review', 25, 'a b/c')).toBe(`${WORK_PATH}?state=awaiting-review&limit=25&cursor=a%20b%2Fc`);
+    expect(workListPath(null, 25, null, 'created')).toBe(`${WORK_PATH}?view=list&order=created&limit=25`);
+    expect(workListPath('awaiting-review', 25, 'a b/c', 'updated')).toBe(`${WORK_PATH}?state=awaiting-review&view=list&order=updated&limit=25&cursor=a%20b%2Fc`);
+  });
+
+  it('names the paged xp path and omits a null cursor', () => {
+    expect(xpPagedPath(200, null)).toBe(`${XP_PATH}?view=paged&limit=200`);
+    expect(xpPagedPath(200, 'b_x y')).toBe(`${XP_PATH}?view=paged&limit=200&cursor=b_x%20y`);
   });
 
   it('encodes the work id in every item path', () => {

@@ -1,20 +1,21 @@
 import { useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterItemV1, WorkItemV1 } from '../contracts/types';
+import type { RosterItemV1 } from '../contracts/types';
 import { targetIndex } from '../observatory/RosterList';
 import { LIST, ROW } from './copy';
 import { botNameOf } from './model';
+import type { WorkRowV1 } from './model';
 import { ProgressLine } from './ProgressLine';
 import { StateBadge } from './StateBadge';
 
 interface Props {
-  items: readonly WorkItemV1[];
+  items: readonly WorkRowV1[];
   selectedId: string | null;
   bots: readonly RosterItemV1[];
   onSelect: (workId: string) => void;
 }
 
-export const xpChipOf = (item: WorkItemV1): string => {
+export const xpChipOf = (item: WorkRowV1): string => {
   if (item.childCount > 0) return ROW.groups;
   if (!item.rewardable) return ROW.noXp;
   const awarded = item.contributors.reduce((sum, contributor) => sum + contributor.xpNet, 0);
