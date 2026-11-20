@@ -39,7 +39,8 @@ describe('ArenaRail', () => {
     expect(within(rail).getByText('100 XP')).toBeTruthy();
     expect(within(rail).getByText('1 open attempt')).toBeTruthy();
     expect(within(rail).getAllByText('Level 1')).toHaveLength(2);
-    expect(within(rail).getAllByRole('progressbar')).toHaveLength(1);
+    expect(within(rail).queryAllByRole('progressbar')).toHaveLength(0);
+    expect(rail.querySelectorAll('.sa-xp-bar[aria-hidden="true"]')).toHaveLength(1);
     const pressed = within(rail).getAllByRole('button', { pressed: true });
     expect(pressed).toHaveLength(1);
     fireEvent.click(within(rail).getByText('Vesper'));

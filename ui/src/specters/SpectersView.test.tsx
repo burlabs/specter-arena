@@ -38,7 +38,7 @@ async function open(scenario: SpecterScenarioName, props: Parameters<typeof Harn
   await flush();
 }
 
-const list = () => screen.getByRole('list', { name: 'Bots with Specters' });
+const list = () => screen.getByRole('list', { name: 'Specter collection' });
 const rowFor = (name: string) => within(list()).getByRole('button', { name: new RegExp(`^${name}`) });
 
 describe('SpectersView states', () => {
@@ -47,7 +47,7 @@ describe('SpectersView states', () => {
     render(<Harness />);
     expect(screen.getByRole('status').textContent).toBe('Loading Specters…');
     await flush();
-    expect(within(list()).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(list()).getAllByRole('button')).toHaveLength(7);
     expect(screen.getAllByText('No Specter yet')).toHaveLength(7);
     expect(screen.getByText('Select a bot to see its Specter.')).toBeTruthy();
   });

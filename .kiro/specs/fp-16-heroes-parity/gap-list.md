@@ -20,7 +20,7 @@ CLOSED = ported with a test. PARTIAL = part ported, the rest named. OUT = not po
 | G12 | Arena page overflows to 506 px at 390 px | CLOSED | PR-C; `A-18`: `scrollWidth` 390 on all four tabs (506 before). The cause was the two list tables, not the header actions: hiding `.sa-arena-list` took the page from 506 to 390. The header actions also wrap now |
 | G13 | Encounter legend | OUT | "What the states mean" is already on the page |
 | G14 | Battlefield team panel with five positions | PARTIAL | PR-C: read-only "Bots on the field" list (`BotsOnField.test.tsx` scans for position words). Position assignment: OUT |
-| G15 | Specters collection cards | PARTIAL | PR-A hero card and picker, PR-C card grid with thumbnail, epithet and progression. Search, filter, sort and unassigned heroes: DEFERRED (unassigned heroes need a roster route and contract, or a second copy of the hero text) |
+| G15 | Specters collection cards | CLOSED | PR-A hero card and picker, PR-C card grid with thumbnail, epithet and progression; FP-17 PR-B (#155) search, filter, sort and unassigned heroes: `collection.test.ts`, `SpectersCollection.test.tsx`, `tests/e2e/specters.spec.ts` FP17-E1 to FP17-E7, `AX-7` |
 | G16 | Customize Specter / summoning page | OUT | Summoning removed (PA-2) |
 | G17 | Progression block on cards | CLOSED | PR-C; `SpecterProgression.test.tsx` equals `XpMeter` |
 | G18 | Observatory dashboard | PARTIAL | PR-B thumbnails in rows, PR-C summary of three counts. Attention list and table: OUT, they are fixture-model views |

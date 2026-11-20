@@ -34,7 +34,7 @@ async function open(scenario: SpecterScenarioName, bot: string) {
   setSpecterScenario(scenario);
   render(<Harness />);
   await flush();
-  fireEvent.click(within(screen.getByRole('list', { name: 'Bots with Specters' })).getByRole('button', { name: new RegExp(`^${bot}`) }));
+  fireEvent.click(within(screen.getByRole('list', { name: 'Specter collection' })).getByRole('button', { name: new RegExp(`^${bot}`) }));
   await flush();
 }
 

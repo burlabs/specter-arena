@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as copy from './copy';
-import { ACTIONS, ERROR_WORDS, FIELD_LABELS, HERO_NOTE, HERO_PENDING, PICKER, TOKEN_CAPTION, errorWords } from './copy';
+import { ACTIONS, COLLECTION, ERROR_WORDS, FIELD_LABELS, HERO_NOTE, HERO_PENDING, PICKER, TOKEN_CAPTION, errorWords } from './copy';
 
 const flatten = (value: unknown): string[] => {
   if (typeof value === 'string') return [value];
@@ -29,6 +29,15 @@ describe('specter copy', () => {
     expect(PICKER.heading).toBe('Choose an avatar');
     expect(TOKEN_CAPTION).toBe('Placeholder token, not a portrait');
     expect(Object.values(FIELD_LABELS)).toEqual(['Bot', 'Progression', 'Personality', 'Appearance']);
+  });
+
+  it('uses no role, class, lane or tier word', () => {
+    expect(allStrings.filter((text) => /\b(class|role|lane|tank|healer|archetype|tier)\b/i.test(text))).toEqual([]);
+  });
+
+  it('pins the filter and sort option labels', () => {
+    expect(Object.values(COLLECTION.filters)).toEqual(['All', 'Assigned', 'Unassigned', 'Avatar changed']);
+    expect(Object.values(COLLECTION.sorts)).toEqual(['Roster order', 'Name', 'Level', 'XP']);
   });
 
   it('gives every error code words and flags an unknown one', () => {
