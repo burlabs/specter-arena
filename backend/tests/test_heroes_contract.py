@@ -88,7 +88,7 @@ def test_the_heroes_text_limits_equal_the_specter_v2_limits() -> None:
         assert ours[field] == specter["properties"][field], field
 
 
-def test_the_roster_validates_as_heroes_v1_at_every_count_and_other_order_fails() -> None:
+def test_the_roster_validates_as_heroes_v1_and_ten_items_fail() -> None:
     validate = compile_schema(HEROES_V1, REGISTRY)
     items = [
         {
