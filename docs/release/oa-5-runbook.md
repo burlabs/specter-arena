@@ -2,13 +2,13 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2). The artifact the sitting runs on is built from RC-2, the merge commit of the RC-2 docs PR for FP-14 (#136). Its SHA, file name and sha256 are in `docs/release/evidence-checklist.md` section 4 and in the build record the agent hands you (step 0).
+Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2). The artifact the sitting runs on is built from RC-2, the merge commit on `main` of the RC-2 docs PR (#151, for FP-14 issue #136). Its SHA, file name and sha256 are in `docs/release/evidence-checklist.md` section 4 and in the build record the agent hands you (step 0).
 
 This is one sitting with two parts. Part 1 is OA-5 (issue #140): the update of your existing install to RC-2 and the integrated journey. It replaces the separate owner checks OA-2 (issue #101) and OA-4 (issue #124); OA-3 (issue #109, live summoning) is closed because summoning was removed (FP-16). It is the evidence for FP-14-AC01 and AC06 and closes BLK-01 in `docs/release/blockers.md`. Part 2 is OA-6 (issue #133): uninstall, reinstall and a clean install from the tarball. It is the evidence for FP-15-AC01 and confirms the "to be confirmed in OA-6" facts in `docs/release/install.md`. Part 2 ends by putting your own data back.
 
 Who does what: steps 1 to 17 are yours, in your own terminal and browser. Crew refuses install, update and uninstall from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). The agent runs step 0, writes down what you report and does not run your steps.
 
-Starting state. Your installed app is RC-1 (`de533eb`, version `0.0.0`) with the `/api/chat` grant approved, the summoner agent registered and schema `user_version` 6 (5 bindings and 32 observations when the RC-1 migration ran on 2026-11-19). RC-2 is version `0.1.0`, so `kirocrew app list` shows the change. If the store reads 4 instead of 6, the same steps hold.
+Starting state. Your installed app is RC-1 (`de533eb`, version `0.0.0`) with the `/api/chat` grant approved, the summoner agent registered and schema `user_version` 6 (you reported 5 bindings and 32 observations after the RC-1 migration on 2026-11-19, recorded in the FP-14 handoff). RC-2 is version `0.1.0`, so `kirocrew app list` shows the change. If the store reads 4 instead of 6, the same steps hold.
 
 Crew version. The install facts in `docs/release/install.md` were read from the Kiro Crew 0.12.2 source. The Crew on this machine read `kirocrew 0.13.0` on 2026-11-20. Record `kirocrew --version` in step 2; the result file and the release record name the version the sitting actually ran on.
 
@@ -18,7 +18,7 @@ The sitting is budgeted at 25 minutes: Part 1 (steps 1 to 12) 18 minutes, Part 2
 
 ## Rollback (read before step 2)
 
-Disable the app. Replace `~/.kiro/crew/apps/specter-arena/data` with `~/specter-data-backup-OA5` (the copy made in step 2). Enable the app. If the app is no longer installed, install the RC-2 folder first, then do the same.
+Disable the app. Replace `~/.kiro/crew/apps/specter-arena/data` with `~/specter-data-backup-OA5` (the copy made in step 2). Enable the app. If the app is no longer installed, install the RC-2 folder first, then do the same. If Part 2 fails after step 13, use `~/specter-data-after-OA5` instead, so the step 9 work and XP are kept.
 
 ## Part 1: OA-5, update and integrated journey
 
@@ -45,9 +45,9 @@ Disable the app. Replace `~/.kiro/crew/apps/specter-arena/data` with `~/specter-
 | 13 | 1 | Disable the app. Copy the whole `data` folder to `~/specter-data-after-OA5` (your data with the step 9 XP, schema 7) | The folder exists |
 | 14 | 2 | `kirocrew app uninstall specter-arena` (no `--purge-data`). Check `~/.kiro/crew/apps/specter-arena/` holds only `data/`. Then `kirocrew app install <extracted folder>` and open Apps, Library, Specter Arena | The uninstall keeps `data/`. The app reinstalls disabled and untrusted. The Trust modal appears again: screenshot it (title text, and whether the declared permissions are listed). Choose "Trust this app and enable". Your heroes, work item and XP are back |
 | 15 | 1 | Disable it from the Library toggle and reload the page, then enable it | While disabled the page reads "Enable this app from Apps to use it." Re-enable asks for no second trust; the page and backend return |
-| 16 | 2 | Clean install: `kirocrew app uninstall specter-arena --purge-data`. Check that `~/.kiro/crew/apps/specter-arena/` is gone. Then `kirocrew app install <extracted folder>`, open Library, screenshot the Trust modal and the permissions view, and choose "Trust this app and enable" | No "Approve new permissions" step: the grants are approved at install. The permissions view lists exactly `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`. The page renders; the roster fills with your bots, each with a hero, and no work or XP yet |
+| 16 | 2 | Clean install: `kirocrew app uninstall specter-arena --purge-data`. Check that `~/.kiro/crew/apps/specter-arena/` is gone. Then `kirocrew app install <extracted folder>`, open Library, screenshot the Trust modal and the permissions view, and choose "Trust this app and enable" | No "Approve new permissions" step: the grants are approved at install. If Crew does ask for a grant approval, screenshot what it lists, approve only those three entries, and record it as a difference from `install.md` section 5. The permissions view lists exactly `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`. The page renders; the roster fills with your bots, each with a hero, and no work or XP yet |
 | 17 | 1 | Put your data back: disable the app, replace `~/.kiro/crew/apps/specter-arena/data` with a copy of `~/specter-data-after-OA5`, enable | Your heroes, avatar choice, work item and XP from step 9 are back. This is also the first live run of a whole-folder restore (KL-08) |
 
 ## What you hand back
 
-For each step: pass or fail, the exact text of anything that failed, a screenshot path where one helps (steps 6, 14 and 16 at least), the Crew version and the time. The agent writes it into `docs/release/oa-5-result.md` and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate RC-3 is cut, and only the failed steps are repeated. If step 7 fails, issues #101 and #124 stay open and the scope decision goes to Eric first.
+For each step: pass or fail, the exact text of anything that failed, a screenshot path where one helps (steps 6, 14 and 16 at least), the Crew version and the time. The agent writes it into `docs/release/oa-5-result.md` and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate RC-3 is cut, and only the failed steps are repeated. If step 7 (heroes and avatars, OA-2) fails, issue #101 stays open; if step 11 (Open Bots in Crew, OA-4) fails, issue #124 stays open. Either way the scope decision goes to Eric first.

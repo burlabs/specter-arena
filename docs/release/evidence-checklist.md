@@ -4,7 +4,7 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
 
-This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on RC-2 (the merge commit of the RC-2 docs PR for FP-14 #136; section 4) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
+This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on RC-2 (the merge commit of the RC-2 docs PR #151, for FP-14 issue #136; section 4) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
 
 ## 1. Criterion table
 
