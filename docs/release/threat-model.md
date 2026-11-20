@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
+Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
 
 This is the release threat model for Specter Arena (FP-14-AC02). Every control and test named below was found in the repository at the commit above. Where a limit is disclosed rather than fixed, the last column gives its ID in `docs/release/blockers.md`. Nothing here was verified on a live Crew install; that is the job of OA-5 (`docs/release/oa-5-runbook.md`).
 
@@ -95,4 +95,4 @@ What the summary can contain: ids, states, ISO times, counts and contract versio
 
 ## 5. Result
 
-No unresolved authorization or cross-scope data exposure is recorded. BLK-03 (credential exclusion) and BLK-07 (body read before signature) are fixed in PR-B (#142) and PR-A (#141). BLK-05 (the `/api/chat` slot-list reach) is `moot (FP-16)`: the grant no longer exists. The tests above are the evidence. BLK-01 (OA-5 not run) and BLK-02 (gates not yet approved) are open at RC-1, so this is not a statement that the release candidate is approved. This sentence is generated from `docs/release/blockers.md`; if that file changes, this section must change with it.
+No unresolved authorization or cross-scope data exposure is recorded. BLK-03 (credential exclusion) and BLK-07 (body read before signature) are fixed in PR-B (#142) and PR-A (#141). BLK-05 (the `/api/chat` slot-list reach) is `moot (FP-16)`: the grant no longer exists. The tests above are the evidence. BLK-01 (OA-5 not run) and BLK-02 (gates not yet approved) are open at RC-2, so this is not a statement that the release candidate is approved. This sentence is generated from `docs/release/blockers.md`; if that file changes, this section must change with it.
