@@ -2,30 +2,30 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
+Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
 
-This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on RC-1 (the head of commit C1 of FP-14 PR-C) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
+This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on RC-2 (the merge commit of the RC-2 docs PR #151, for FP-14 issue #136; section 4) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
 
 ## 1. Criterion table
 
 | ID | Criterion (verbatim from the FP-14 intake) | Evidence | Result | SHA | Date | Who | Environment |
 |---|---|---|---|---|---|---|---|
-| FP-14-AC01 | All selected required capabilities pass on a fresh supported Crew installation and across the agreed restart/reconnect cases. | `docs/release/oa-5-result.md` (steps 1 to 12, and Part B if run); restart and reconnect tests in section 2 | pending (OA-5) | pending | pending | Eric (owner sitting) | pending |
-| FP-14-AC02 | No acceptance/XP invariant fails in property-based and concurrency tests; unresolved authorization or cross-scope data exposure is release-blocking. | `backend/tests/test_store_xp_properties.py`; `backend/tests/test_store_work_concurrency.py`; `docs/release/threat-model.md`; `docs/release/blockers.md` | pending, measured at RC-1 | pending | pending | agent | pending |
+| FP-14-AC01 | All selected required capabilities pass on a fresh supported Crew installation and across the agreed restart/reconnect cases. | `docs/release/oa-5-result.md` (steps 1 to 12; the fresh installation is Part 2, steps 14 to 16, shared with OA-6); restart and reconnect tests in section 2 | pending (OA-5) | pending | pending | Eric (owner sitting) | pending |
+| FP-14-AC02 | No acceptance/XP invariant fails in property-based and concurrency tests; unresolved authorization or cross-scope data exposure is release-blocking. | `backend/tests/test_store_xp_properties.py`; `backend/tests/test_store_work_concurrency.py`; `docs/release/threat-model.md`; `docs/release/blockers.md` | pending, measured at RC-2 | pending | pending | agent | pending |
 | FP-14-AC03 | The agreed new-code coverage threshold is met and both independent quality gates approve the committed release candidate. | Coverage rows below; the two gate verdict files | pending (BLK-02) | pending | pending | orchestrator (gates run as sub-agents) | pending |
-| FP-14-AC04 | Backup/restore and retention tests retain correct identity/progression and report intentionally unavailable historical details. | `backend/tests/test_store_release_hardening.py` (restore tests); `docs/release/data-and-recovery.md` sections 2, 5 and 6 | pending, measured at RC-1 | pending | pending | agent | pending |
-| FP-14-AC05 | Keyboard/reduced-motion operation works end to end; performance results name workload and environment instead of unsupported claims. | `tests/e2e/a11y.spec.ts`; `docs/release/a11y-checklist.md`; the performance record added with the result; `.kiro/specs/fp-16-heroes-parity/performance.md` (FIXTURE preview, FP-16 PR-C) | pending, measured at RC-1; manual items pending (OA-5) | pending | pending | agent, then Eric | pending |
+| FP-14-AC04 | Backup/restore and retention tests retain correct identity/progression and report intentionally unavailable historical details. | `backend/tests/test_store_release_hardening.py` (restore tests); `docs/release/data-and-recovery.md` sections 2, 5 and 6 | pending, measured at RC-2 | pending | pending | agent | pending |
+| FP-14-AC05 | Keyboard/reduced-motion operation works end to end; performance results name workload and environment instead of unsupported claims. | `tests/e2e/a11y.spec.ts`; `docs/release/a11y-checklist.md`; the performance record added with the result; `.kiro/specs/fp-16-heroes-parity/performance.md` (FIXTURE preview, FP-16 PR-C); `.kiro/specs/fp-10-11-live-arena/performance.md` ("Re-run for RC-2", FIXTURE preview) | pending, measured at RC-2; manual items pending (OA-5) | pending | pending | agent, then Eric | pending |
 | FP-14-AC06 | The integrated journey uses real generation and observed work, with explicit fixture/recorded-mode separation. | OA-5 steps 7 to 9; the release build must carry no fixture marker and exactly the release grants (`npm run check:fixtures`) | pending (OA-5) | pending | pending | Eric | pending |
 
 "New-code threshold" means the repository's existing 90 percent gate per tool. No separate diff-coverage gate exists.
 
-### Coverage at RC-1
+### Coverage at RC-2
 
 | Tool | Measure | Gate | Result |
 |---|---|---|---|
-| Node scripts (`npm run coverage`) | lines | 90 percent | pending, measured at RC-1 |
-| UI (vitest) | statements, branches, lines | 90 percent | pending, measured at RC-1 |
-| Backend (pytest-cov) | total | 90 percent | pending, measured at RC-1 |
+| Node scripts (`npm run coverage`) | lines | 90 percent | pending, measured at RC-2 |
+| UI (vitest) | statements, branches, lines | 90 percent | pending, measured at RC-2 |
+| Backend (pytest-cov) | total | 90 percent | pending, measured at RC-2 |
 
 ### Quality gates
 
@@ -69,3 +69,11 @@ One warm in-process run on Apple M5 Pro, macOS 26.6 (25G72), Python 3.12.16, SQL
 | Database file | 4,661,248 bytes | 4,648,960 bytes |
 
 The migration added one `count(*)` and one insert per first-seen binding and dropped three tables, so no visible change was expected, and none appeared.
+
+## 4. Release candidate build record
+
+RC-1 (`de533eb2744935148d5ae613110287188f93ac55`, FP-14 PR-C) is superseded because it still carried summoning. RC-2 is built with `npm run package -- --commit <RC-2 SHA>` from a clean clone after the RC-2 docs PR merges. The row is filled from that run's output only.
+
+| Candidate | Commit | Artifact | sha256 | Files | Built on |
+|---|---|---|---|---|---|
+| RC-2 | pending | pending | pending | pending | pending |

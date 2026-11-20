@@ -41,7 +41,7 @@ def test_manifest_has_identity_backend_and_ui_only() -> None:
 def test_manifest_identity() -> None:
     manifest = load_manifest()
     assert manifest["name"] == "specter-arena"
-    assert manifest["version"] == "0.0.0"
+    assert manifest["version"] == "0.1.0"
 
 
 def test_manifest_pins_the_probed_crew_version() -> None:

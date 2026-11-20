@@ -2,7 +2,7 @@
 
 Draft for Eric's review. Eric records and uploads; the agent does not. Record the real installed app in Kiro Crew on the Mac it runs on (Crew 0.12.2). Use harmless bots and work only; no credentials or personal data on screen. No music, or only music you made or licensed.
 
-Last verified commit: `65e0f549691af2c6f4c9425f021d4b17b6b76a82` (`main` after FP-16 PR-B #149; the changes of FP-16 PR-C were re-read at that PR's head)
+Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
 
 Labels: anything from the FIXTURE preview or any prerecorded clip carries an on-screen label for its whole duration: "FIXTURE (sample data)" or "PRERECORDED". The default plan uses neither.
 
