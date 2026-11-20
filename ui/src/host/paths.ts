@@ -24,6 +24,7 @@ export const attemptsPath = (bindingId: string, limit = 50, cursor: string | nul
 const enc = encodeURIComponent;
 
 export const SPECTERS_PATH = appApiPath('/specters');
+export const HEROES_PATH = appApiPath('/heroes');
 export const PORTRAITS_PATH = appApiPath('/portraits');
 export const ASSETS_PATH = appApiPath('/assets');
 

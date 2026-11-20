@@ -1,4 +1,4 @@
-"""The seven signed Specter routes over a real store, and the seven that no longer exist."""
+"""The eight signed Specter routes over a real store, and the seven that no longer exist."""
 
 import base64
 import hashlib
@@ -15,6 +15,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from backend.specter_arena.specter_routes import MAX_BODY_BYTES, specter_routes
+from backend.specter_arena.specters.heroes import load_heroes
 from backend.specter_arena.specters.service import SpecterService
 from backend.specter_arena.store import Store, open_store
 
@@ -24,6 +25,7 @@ from .specter_fakes import ALPHA, BETA, FakeClock, bind, table_counts
 
 SECRET = "specter-route-secret"
 REGISTRY = load_registry()
+HEROES_V1 = compile_schema("urn:specter-arena:contract:heroes:v1", REGISTRY)
 URN = "urn:specter-arena:contract:"
 AVATAR_TABLES = ("hero_assignment", "avatar_revision", "asset")
 
@@ -114,6 +116,7 @@ AID = "ast_" + "b" * 24
 RID = "req_" + "0" * 23 + "1"
 ROUTES: list[tuple[str, str, Any]] = [
     ("GET", "/api/specters", None),
+    ("GET", "/api/heroes", None),
     ("GET", f"/api/specters/{BID}", None),
     ("POST", f"/api/specters/{BID}/portrait", {"expectedVersion": 1, "assetId": None}),
     ("GET", "/api/portraits", None),
@@ -123,6 +126,7 @@ ROUTES: list[tuple[str, str, Any]] = [
 ]
 EXPECTED_CALLS = [
     ("list_specters", ()),
+    ("list_heroes", ()),
     ("get_specter", (BID,)),
     ("set_portrait", (BID, 1, None)),
     ("list_portraits", ()),
@@ -140,10 +144,11 @@ REMOVED: list[tuple[str, str, Any]] = [
 ]
 
 
-def test_the_route_table_has_exactly_seven_routes() -> None:
+def test_the_route_table_has_exactly_eight_routes() -> None:
     assert sorted(getattr(route, "path", "") for route in specter_routes()) == [
         "/api/assets",
         "/api/assets/{asset_id}",
+        "/api/heroes",
         "/api/portraits",
         "/api/scene-assets/{key}",
         "/api/specters",
@@ -182,6 +187,48 @@ def test_removed_routes_answer_404_even_when_signed(method: str, target: str, bo
     assert recorder.calls == []
 
 
+def test_a_heroes_service_that_is_not_running_is_503_store_not_ready() -> None:
+    app = Starlette(routes=specter_routes())
+    app.state.specters = None
+    with TestClient(app) as client:
+        response = Api(client).get("/api/heroes")
+    assert response.status_code == 503
+    assert response.json() == {"contractVersion": 1, "error": "store_not_ready"}
+
+
+def test_heroes_over_http_is_the_whole_roster_and_follows_the_bots(rig: tuple[Rig, Api]) -> None:
+    made, api = rig
+    before = table_counts(made.store, except_prefixes=())
+    empty_start = api.get("/api/heroes")
+    assert empty_start.status_code == 200
+    assert empty_start.headers["x-content-type-options"] == "nosniff"
+    validator("heroes")(empty_start.json())
+    HEROES_V1(empty_start.json())
+    items = empty_start.json()["items"]
+    assert [item["heroId"] for item in items] == [hero.id for hero in load_heroes()]
+    assert [item["assignedCount"] for item in items][:3] == [1, 0, 0]  # one bot: Vell
+
+    bind(made.store, BETA, "Second Bot")
+    after = api.get("/api/heroes").json()
+    HEROES_V1(after)
+    assert [item["assigned"] for item in after["items"]][:3] == [True, True, False]
+    assert [item["assignedCount"] for item in after["items"]][:3] == [1, 1, 0]
+    assert table_counts(made.store, except_prefixes=("hero_assignment", "bot_", "binding")) == {
+        name: count
+        for name, count in before.items()
+        if not name.startswith(("hero_assignment", "bot_", "binding"))
+    }
+
+
+def test_a_closed_store_makes_heroes_503_store_unavailable(rig: tuple[Rig, Api]) -> None:
+    made, api = rig
+    made.store.close()
+    response = api.get("/api/heroes")
+    assert response.status_code == 503
+    assert response.json() == {"contractVersion": 1, "error": "store_unavailable"}
+    validator("api-error")(response.json())
+
+
 def test_upload_returns_201() -> None:
     app, _ = recorded_app()
     with TestClient(app) as client:
@@ -206,7 +253,7 @@ def test_a_missing_proxy_secret_is_503(monkeypatch: pytest.MonkeyPatch) -> None:
     assert response.json()["error"] == "proxy_secret_missing"
 
 
-@pytest.mark.parametrize("path", [f"/api/specters/{BID}/portrait", "/api/portraits"])
+@pytest.mark.parametrize("path", [f"/api/specters/{BID}/portrait", "/api/portraits", "/api/heroes"])
 def test_the_wrong_method_is_405(path: str) -> None:
     app, _ = recorded_app()
     with TestClient(app) as client:

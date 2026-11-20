@@ -196,6 +196,22 @@ export interface SpectersV2 {
   items: SpecterV2[];
 }
 
+/** One roster hero in `heroes.v1`. `assignedCount` is how many bots were ever given it; `assigned` is `assignedCount > 0`. */
+export interface HeroesItemV1 {
+  heroId: HeroId;
+  name: string;
+  epithet: string;
+  personality: string;
+  assigned: boolean;
+  assignedCount: number;
+}
+
+/** Body of GET /api/heroes: all 11 roster heroes, in roster order. */
+export interface HeroesV1 {
+  contractVersion: 1;
+  items: HeroesItemV1[];
+}
+
 /** Body of GET /api/portraits. The route has no schema of its own. */
 export interface PortraitsV1 {
   contractVersion: 1;
@@ -225,6 +241,8 @@ export const PORTRAIT_ASSET_KEYS: Record<keyof PortraitAssetV1, true> = { contra
 export const SCENE_ASSET_KEYS: Record<keyof SceneAssetV1, true> = { contractVersion: true, key: true, mediaType: true, width: true, height: true, sha256: true, byteLength: true, dataBase64: true };
 export const SPECTER_KEYS: Record<keyof SpecterV2, true> = { contractVersion: true, bindingId: true, version: true, heroId: true, ordinal: true, displayName: true, name: true, epithet: true, personality: true, appearance: true, portrait: true, avatarChosen: true, source: true, createdAtMs: true, updatedAtMs: true };
 export const SPECTERS_KEYS: Record<keyof SpectersV2, true> = { contractVersion: true, items: true };
+export const HEROES_ITEM_KEYS: Record<keyof HeroesItemV1, true> = { heroId: true, name: true, epithet: true, personality: true, assigned: true, assignedCount: true };
+export const HEROES_KEYS: Record<keyof HeroesV1, true> = { contractVersion: true, items: true };
 
 /** startedMs, endedMs and endSignal are null for an attempt that is no longer in the attempts record (present: false). */
 export interface WorkAttemptV1 {

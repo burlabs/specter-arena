@@ -76,6 +76,11 @@ async def list_specters(request: Request) -> Response:
 
 
 @signed
+async def list_heroes(request: Request) -> Response:
+    return await _call(request, "list_heroes")
+
+
+@signed
 async def get_specter(request: Request) -> Response:
     return await _call(request, "get_specter", _p(request, "binding_id"))
 
@@ -129,6 +134,7 @@ async def get_scene_asset(request: Request) -> Response:
 def specter_routes() -> list[BaseRoute]:
     return [
         Route("/api/specters", list_specters, methods=["GET"]),
+        Route("/api/heroes", list_heroes, methods=["GET"]),
         Route("/api/specters/{binding_id}", get_specter, methods=["GET"]),
         Route("/api/specters/{binding_id}/portrait", set_portrait, methods=["POST"]),
         Route("/api/portraits", list_portraits, methods=["GET"]),

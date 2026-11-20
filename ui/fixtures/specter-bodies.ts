@@ -1,6 +1,6 @@
 // SPECTER-FIXTURE-ONLY: FIXTURE Specter routes for the preview harness and unit tests; never imported by ui/src.
 import { appApiPath } from '../src/host/paths.ts';
-import type { PortraitAssetV1, SpecterV2 } from '../src/contracts/types.ts';
+import type { HeroesV1, PortraitAssetV1, SpecterV2 } from '../src/contracts/types.ts';
 import roster from '../../backend/specter_arena/specters/heroes.json';
 import { canonicalArenaScenario } from './arena-scenarios.ts';
 
@@ -335,9 +335,23 @@ function getAsset(state: FixtureState, assetId: string): Response {
   return asset === undefined ? apiError(404, 'unknown_asset') : json({ ...asset.meta, dataBase64: asset.data });
 }
 
+/** `heroes.v1`: the whole roster, with each hero's count taken from the specters this scenario serves, so the two bodies always agree. */
+function heroesBody(state: FixtureState): HeroesV1 {
+  const held = new Map<string, number>();
+  for (const specter of state.specters.values()) held.set(specter.heroId, (held.get(specter.heroId) ?? 0) + 1);
+  return {
+    contractVersion: 1,
+    items: HEROES.map((hero) => {
+      const assignedCount = held.get(hero.id) ?? 0;
+      return { heroId: hero.id as SpecterV2['heroId'], name: hero.name, epithet: hero.epithet, personality: hero.personality, assigned: assignedCount > 0, assignedCount };
+    }),
+  };
+}
+
 const SEGMENT = '([^/]+)';
 const routes: ReadonlyArray<{ pattern: RegExp; method: 'GET' | 'POST'; handle: (state: FixtureState, match: RegExpExecArray, body: unknown) => Response }> = [
   { pattern: new RegExp(`^${appApiPath('/specters')}$`), method: 'GET', handle: (state) => json({ contractVersion: 2, items: [...state.specters.values()] }) },
+  { pattern: new RegExp(`^${appApiPath('/heroes')}$`), method: 'GET', handle: (state) => json(heroesBody(state)) },
   {
     pattern: new RegExp(`^${appApiPath('/specters')}/${SEGMENT}$`),
     method: 'GET',
