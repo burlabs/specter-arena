@@ -52,4 +52,25 @@ export const PICKER = {
   failed: 'Portraits could not be loaded.',
 } as const;
 
-export const LIST = { botsLabel: 'Bots with Specters', detailLabel: 'Specter detail', noBots: 'No bots are on the roster yet', noBotsBody: 'Specters belong to bots. Create or open a bot in Crew, then refresh.' } as const;
+export const LIST = { collectionLabel: 'Specter collection', detailLabel: 'Specter detail', noBots: 'No bots are on the roster yet', noBotsBody: 'Specters belong to bots. Create or open a bot in Crew, then refresh.' } as const;
+
+export const COLLECTION = {
+  searchLabel: 'Search Specters',
+  searchPlaceholder: 'Search hero, epithet or bot',
+  filterLabel: 'Filter',
+  sortLabel: 'Sort',
+  filters: { all: 'All', assigned: 'Assigned', unassigned: 'Unassigned', avatar: 'Avatar changed' },
+  sorts: { roster: 'Roster order', name: 'Name', level: 'Level', xp: 'XP' },
+  count: (shown: number, total: number): string => `Showing ${shown} of ${total}`,
+  sortHeld: 'Level and XP order wait for XP to load. Showing roster order.',
+  noBotYet: 'No bot yet',
+  emptyTitle: 'No Specters match',
+  emptyBody: 'Try another name or epithet, or clear the search and filters.',
+  clear: 'Clear search and filters',
+  everyHeroTitle: 'Every hero has a bot',
+  everyHeroBody: 'Each of the 11 heroes is already held by a bot.',
+  heroesLoading: 'Loading heroes without a bot…',
+  heroesFailed: 'Heroes without a bot could not be loaded. Bot cards are not affected.',
+  heroesUnsupported: 'This version of the app backend cannot list heroes without a bot yet. Bot cards are not affected.',
+  retry: 'Retry',
+} as const;

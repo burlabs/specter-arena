@@ -316,6 +316,91 @@
   box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
 }
 
+.specter-arena-root .sa-collection-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 190px) minmax(150px, 190px);
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid #40334f;
+  border-radius: 11px;
+  background: #1a1527;
+}
+
+.specter-arena-root .sa-collection-toolbar > label:not(.sa-search) {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-collection-toolbar select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid #514165;
+  border-radius: 8px;
+  background: #241c35;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.specter-arena-root .sa-collection-count {
+  margin: 10px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-collection-held {
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-collection-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-hero-card {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px dashed #3a2f49;
+  border-radius: 12px;
+  background: rgba(27, 22, 41, 0.6);
+}
+
+.specter-arena-root .sa-hero-card__names {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-hero-card__epithet {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-hero-card__state {
+  color: var(--violet);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 @media (max-width: 900px) {
   .specter-arena-root .sa-specters {
     grid-template-columns: minmax(0, 1fr);
@@ -329,6 +414,12 @@
 
   .specter-arena-root .sa-row__select > .sa-portrait {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .specter-arena-root .sa-collection-toolbar {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

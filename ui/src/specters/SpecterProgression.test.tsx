@@ -48,4 +48,28 @@ describe('SpecterProgression', () => {
     const { container } = render(<SpecterProgression summary={summaryOf()} compact />);
     expect(container.querySelector('.sa-progression--compact')).not.toBeNull();
   });
+
+  it('draws the compact bar as decoration, with no progressbar role and no block element, so it can sit inside a button', () => {
+    const { container } = render(
+      <button type="button">
+        <SpecterProgression summary={summaryOf()} compact />
+      </button>,
+    );
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(container.querySelector('button div')).toBeNull();
+    const bar = container.querySelector('.sa-xp-bar');
+    expect(bar?.tagName).toBe('SPAN');
+    expect(bar?.getAttribute('aria-hidden')).toBe('true');
+    expect((bar?.firstElementChild as HTMLElement).style.width).toBe('33%');
+    expect(screen.getByText('Level 2')).toBeTruthy();
+    expect(screen.getByText('150 / 250 XP')).toBeTruthy();
+  });
+
+  it('keeps the words-only and loading variants phrasing-only when compact', () => {
+    const { container, rerender } = render(<SpecterProgression summary={undefined} compact unavailable="loading" />);
+    expect(container.querySelector('div')).toBeNull();
+    rerender(<SpecterProgression summary={undefined} compact />);
+    expect(container.querySelector('div')).toBeNull();
+    expect(container.textContent).toBe('Level 10 XP');
+  });
 });

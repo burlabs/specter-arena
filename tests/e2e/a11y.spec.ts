@@ -40,7 +40,7 @@ test('AX-2 selected states have no violation: bot, Specter, Work item, and every
   expect(await violations(page), 'progression').toEqual([]);
 
   await sectionTab(page, 'Specters').click();
-  await page.getByRole('list', { name: 'Bots with Specters' }).getByRole('button').first().click();
+  await page.getByRole('list', { name: 'Specter collection' }).getByRole('button').first().click();
   expect(await violations(page), 'Specter detail').toEqual([]);
 
   await sectionTab(page, 'Work').click();
@@ -62,7 +62,7 @@ test('AX-2 selected states have no violation: bot, Specter, Work item, and every
 test('AX-3 the avatar picker has no violation', async ({ page }) => {
   await open(page, 'specters');
   await sectionTab(page, 'Specters').click();
-  await page.getByRole('list', { name: 'Bots with Specters' }).getByRole('button').first().click();
+  await page.getByRole('list', { name: 'Specter collection' }).getByRole('button').first().click();
   await page.getByRole('button', { name: 'Change avatar' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Portraits' })).toBeVisible();
   expect(await violations(page)).toEqual([]);
@@ -117,7 +117,7 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
   await open(page, 'arena');
   const ready: Record<(typeof SECTIONS)[number], Locator> = {
     Roster: rosterList(page),
-    Specters: page.getByRole('list', { name: 'Bots with Specters' }),
+    Specters: page.getByRole('list', { name: 'Specter collection' }),
     Work: page.getByRole('button', { name: 'New work item' }),
     Arena: page.getByRole('group', { name: 'Arena map' }),
   };
@@ -134,4 +134,17 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
   }
   await page.keyboard.press('ArrowRight');
   await expect(sectionTab(page, 'Roster')).toHaveAttribute('aria-selected', 'true');
+});
+
+test('AX-7 the Specter collection controls and their states have no WCAG 2.1 A or AA axe violation', async ({ page }) => {
+  await open(page, 'arena');
+  await sectionTab(page, 'Specters').click();
+  await expect(page.getByRole('list', { name: 'Specter collection' })).toBeVisible();
+  expect(await violations(page), 'default').toEqual([]);
+  await page.getByRole('combobox', { name: 'Filter' }).selectOption('unassigned');
+  expect(await violations(page), 'unassigned heroes').toEqual([]);
+  await page.getByRole('combobox', { name: 'Sort' }).selectOption('xp');
+  await page.getByRole('searchbox', { name: 'Search Specters' }).fill('no such hero');
+  await expect(page.getByText('No Specters match')).toBeVisible();
+  expect(await violations(page), 'empty result').toEqual([]);
 });

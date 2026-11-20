@@ -51,3 +51,5 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP16-CI` | FP-16 crew-integration requirements | crew-integration | 1-99 | open |
 | `FP16-WL` | FP-16 work-ledger requirements | work-ledger | 1-99 | open |
 | `FP16-DEL` | FP-16 delivery requirements | delivery | 1-99 | open |
+| `FP17-REQ` | FP-17 requirements: Specters collection search, filter, sort and unassigned heroes | delivery | 1-99 | open |
+| `FP17-DEL` | FP-17 delivery requirements | delivery | 1-99 | open |

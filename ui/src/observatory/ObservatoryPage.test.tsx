@@ -421,10 +421,10 @@ describe('sections', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'atl' } });
     fireEvent.click(specterTab());
     expect(screen.getByRole('tabpanel', { name: 'Specters' })).toBeTruthy();
-    expect(await screen.findByRole('list', { name: 'Bots with Specters' })).toBeTruthy();
+    expect(await screen.findByRole('list', { name: 'Specter collection' })).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Bots' })).toBeNull();
     fireEvent.click(rosterTab());
-    expect(screen.queryByRole('list', { name: 'Bots with Specters' })).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Specter collection' })).toBeNull();
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('atl');
     expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
   });
@@ -469,6 +469,6 @@ describe('Specters in the roster rows', () => {
     expect(document.head.querySelectorAll('style[data-specter-arena]')).toHaveLength(1);
     expect(document.head.querySelectorAll('style[data-specter-arena-specters]')).toHaveLength(1);
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Sections' })).getByRole('tab', { name: 'Specters' }));
-    expect(await screen.findByRole('list', { name: 'Bots with Specters' })).toBeTruthy();
+    expect(await screen.findByRole('list', { name: 'Specter collection' })).toBeTruthy();
   });
 });
