@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:work-list-item:v1",
+  "title": "Work list item v1",
+  "description": "One WorkItem as a list reads it: the projection of work-item v1 that GET /api/work?view=list returns, with no acceptanceCondition, policyVersion, milestone labels, evidenceRevision, review or decisions. Every field it shares with work-item v1 is a $ref to that field, so the two cannot drift: the same values, bounds and meaning (see work-item v1 for attempts, contributors, progress, bountyXp and state). A list must not act on this body alone: accepting or rejecting needs the evidenceRevision and review of GET /api/work/{workId}, which this body does not carry. everAccepted is true when any decision on the item has action accept, now or earlier: it stays true after a reopen, and it is false for an item that was only rejected, blocked or cancelled. It says nothing about the current state, and it is not acceptance (acceptance is the human decision, and the current state is state). updatedAtMs is the time of the last change the ledger recorded (a link, a milestone mark or a decision); a change in an attempt the item links is not a change to the item.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "workId": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/workId"
+    },
+    "parentId": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/parentId"
+    },
+    "title": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/title"
+    },
+    "rewardable": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/rewardable"
+    },
+    "bountyXp": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/bountyXp"
+    },
+    "state": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/state"
+    },
+    "version": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/version"
+    },
+    "createdAtMs": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/createdAtMs"
+    },
+    "updatedAtMs": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/updatedAtMs"
+    },
+    "attempts": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/attempts"
+    },
+    "contributors": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/contributors"
+    },
+    "progress": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/progress"
+    },
+    "childCount": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/childCount"
+    },
+    "childrenAccepted": {
+      "$ref": "urn:specter-arena:contract:work-item:v1#/properties/childrenAccepted"
+    },
+    "everAccepted": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "contractVersion",
+    "workId",
+    "parentId",
+    "title",
+    "rewardable",
+    "bountyXp",
+    "state",
+    "version",
+    "createdAtMs",
+    "updatedAtMs",
+    "attempts",
+    "contributors",
+    "progress",
+    "childCount",
+    "childrenAccepted",
+    "everAccepted"
+  ],
+  "additionalProperties": false
+}

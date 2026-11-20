@@ -123,7 +123,9 @@ def test_the_v5_fixture_upgrades_with_empty_work_tables_and_one_backup(tmp_path:
                 assert conn.execute(f"SELECT count(*) FROM {table}").fetchone() == (0,)
     finally:
         opened.close()
-    assert list((data_dir / "store" / "backups").glob("pre-migrate-v5-to-v7-*.db"))
+    assert list(
+        (data_dir / "store" / "backups").glob(f"pre-migrate-v5-to-v{latest_version()}-*.db")
+    )
 
 
 def test_the_v6_fixture_opens_and_serves_its_work(tmp_path: Path) -> None:

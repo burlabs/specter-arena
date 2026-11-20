@@ -1,0 +1,164 @@
+[
+  {
+    "file": "valid/open-no-attempts.json",
+    "valid": true
+  },
+  {
+    "file": "valid/accepted-two-bots-split.json",
+    "valid": true
+  },
+  {
+    "file": "valid/reopened-ever-accepted-net-zero.json",
+    "valid": true
+  },
+  {
+    "file": "valid/container-with-children.json",
+    "valid": true
+  },
+  {
+    "file": "valid/milestone-progress.json",
+    "valid": true
+  },
+  {
+    "file": "valid/missing-attempt-projection-rebuilt.json",
+    "valid": true
+  },
+  {
+    "file": "valid/sixteen-attempts-eight-contributors.json",
+    "valid": true
+  },
+  {
+    "file": "valid/child-of-a-container.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-decisions.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-review.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-evidence-revision.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-acceptance-condition.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-milestones.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-policy-version.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/ever-accepted-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/ever-accepted-text.json",
+    "valid": false,
+    "instancePath": "/everAccepted"
+  },
+  {
+    "file": "invalid/ever-accepted-null.json",
+    "valid": false,
+    "instancePath": "/everAccepted"
+  },
+  {
+    "file": "invalid/state-uppercase.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/work-id-malformed.json",
+    "valid": false,
+    "instancePath": "/workId"
+  },
+  {
+    "file": "invalid/parent-id-malformed.json",
+    "valid": false,
+    "instancePath": "/parentId"
+  },
+  {
+    "file": "invalid/title-with-control-character.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/title-empty.json",
+    "valid": false,
+    "instancePath": "/title"
+  },
+  {
+    "file": "invalid/seventeen-attempts.json",
+    "valid": false,
+    "instancePath": "/attempts"
+  },
+  {
+    "file": "invalid/attempt-missing-present.json",
+    "valid": false,
+    "instancePath": "/attempts/0"
+  },
+  {
+    "file": "invalid/contributor-xp-negative.json",
+    "valid": false,
+    "instancePath": "/contributors/0/xpNet"
+  },
+  {
+    "file": "invalid/contributor-extra-share.json",
+    "valid": false,
+    "instancePath": "/contributors/0"
+  },
+  {
+    "file": "invalid/progress-total-zero.json",
+    "valid": false,
+    "instancePath": "/progress/total"
+  },
+  {
+    "file": "invalid/progress-percent.json",
+    "valid": false,
+    "instancePath": "/progress"
+  },
+  {
+    "file": "invalid/child-count-negative.json",
+    "valid": false,
+    "instancePath": "/childCount"
+  },
+  {
+    "file": "invalid/updated-negative.json",
+    "valid": false,
+    "instancePath": "/updatedAtMs"
+  },
+  {
+    "file": "invalid/version-zero.json",
+    "valid": false,
+    "instancePath": "/version"
+  },
+  {
+    "file": "invalid/bounty-text.json",
+    "valid": false,
+    "instancePath": "/bountyXp"
+  }
+]

@@ -53,3 +53,7 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP16-DEL` | FP-16 delivery requirements | delivery | 1-99 | open |
 | `FP17-REQ` | FP-17 requirements: Specters collection search, filter, sort and unassigned heroes | delivery | 1-99 | open |
 | `FP17-DEL` | FP-17 delivery requirements | delivery | 1-99 | open |
+| `FP18-REQ` | FP-18 experience requirements: the arena, the Work tab and the XP page walk on the new reads | experience | 1-99 | open |
+| `FP18-CI` | FP-18 crew-integration requirements | crew-integration | 1-99 | open |
+| `FP18-WL` | FP-18 work-ledger requirements | work-ledger | 1-99 | open |
+| `FP18-DEL` | FP-18 delivery requirements | delivery | 1-99 | open |

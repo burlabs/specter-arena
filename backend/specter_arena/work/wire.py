@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING
 from ..attempts_view import end_signal_wire
 
 if TYPE_CHECKING:
-    from ..store import Page, WorkRecord, XpEntryView, XpHistory, XpSummary
+    from ..store import Page, WorkListRecord, WorkRecord, XpEntryView, XpHistory, XpSummary
     from ..store.work import WorkAttemptView
 
 CONTRACT_VERSION = 1
+CONTRACT_VERSION_V2 = 2
 MAX_DECISIONS = 50
 MAX_BLOCKERS = 8
 
@@ -107,6 +108,51 @@ def work_items_wire(page: Page[WorkRecord], as_of_ms: int) -> dict[str, object]:
     }
 
 
+def work_list_item_wire(view: WorkListRecord) -> dict[str, object]:
+    """One `work-list-item.v1` body: the fields a list reads, plus `everAccepted`. It has no
+    acceptance condition, milestone labels, evidence revision, review or decisions."""
+    return {
+        "contractVersion": CONTRACT_VERSION,
+        "workId": view.work_id,
+        "parentId": view.parent_id,
+        "title": view.title,
+        "rewardable": view.rewardable,
+        "bountyXp": view.bounty_xp,
+        "state": _token(view.state),
+        "version": view.version,
+        "createdAtMs": view.created_ms,
+        "updatedAtMs": view.updated_ms,
+        "attempts": [_attempt_wire(attempt) for attempt in view.attempts],
+        "contributors": [
+            {
+                "bindingId": contributor.binding_id,
+                "attemptCount": contributor.attempt_count,
+                "xpNet": contributor.xp_net,
+            }
+            for contributor in view.contributors
+        ],
+        "progress": (
+            None
+            if view.progress is None
+            else {"done": view.progress.done, "total": view.progress.total}
+        ),
+        "childCount": view.child_count,
+        "childrenAccepted": view.children_accepted,
+        "everAccepted": view.ever_accepted,
+    }
+
+
+def work_items_v2_wire(page: Page[WorkListRecord], order: str, as_of_ms: int) -> dict[str, object]:
+    """The `work-items.v2` body: one keyset page of `work-list-item` bodies in `order`."""
+    return {
+        "contractVersion": CONTRACT_VERSION_V2,
+        "order": order,
+        "items": [work_list_item_wire(view) for view in page.items],
+        "nextCursor": page.next_cursor,
+        "asOfMs": as_of_ms,
+    }
+
+
 def xp_summary_wire(view: XpSummary) -> dict[str, object]:
     """One `xp-summary.v1` body. The store derives the level from net XP at read time."""
     return {
@@ -126,6 +172,16 @@ def xp_summaries_wire(views: Sequence[XpSummary], as_of_ms: int) -> dict[str, ob
     return {
         "contractVersion": CONTRACT_VERSION,
         "items": [xp_summary_wire(view) for view in views],
+        "asOfMs": as_of_ms,
+    }
+
+
+def xp_summaries_v2_wire(page: Page[XpSummary], as_of_ms: int) -> dict[str, object]:
+    """The `xp-summaries.v2` body: one keyset page of `xp-summary.v1` bodies by binding id."""
+    return {
+        "contractVersion": CONTRACT_VERSION_V2,
+        "items": [xp_summary_wire(view) for view in page.items],
+        "nextCursor": page.next_cursor,
         "asOfMs": as_of_ms,
     }
 
