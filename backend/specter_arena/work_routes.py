@@ -60,6 +60,7 @@ def _p(request: Request, name: str) -> str:
 @signed
 async def list_work(request: Request) -> Response:
     query = request.query_params
+    extra = {name: query[name] for name in ("view", "order") if name in query}
     return await _call(
         request,
         "list_work",
@@ -67,6 +68,7 @@ async def list_work(request: Request) -> Response:
         binding_id=query.get("bindingId"),
         cursor=query.get("cursor"),
         limit=query.get("limit"),
+        **extra,
     )
 
 
@@ -101,7 +103,16 @@ async def decide(request: Request) -> Response:
 
 @signed
 async def get_xp(request: Request) -> Response:
-    return await _call(request, "xp_summaries")
+    query = request.query_params
+    if "view" not in query:
+        return await _call(request, "xp_summaries")
+    return await _call(
+        request,
+        "xp_summaries",
+        view=query["view"],
+        cursor=query.get("cursor"),
+        limit=query.get("limit"),
+    )
 
 
 @signed

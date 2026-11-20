@@ -175,12 +175,12 @@ def seeded_v6(data_dir: Path) -> dict[str, object]:
 
 
 def test_the_migration_is_the_seventh_and_names_the_hero_tables() -> None:
-    assert latest_version() == 7
+    assert latest_version() >= 7
     assert PACKAGED[6].name == "hero_roster"
 
 
 def test_a_fresh_store_has_the_hero_tables_and_no_summoning_tables(tmp_path: Path) -> None:
-    opened = open_store(tmp_path / "data")
+    opened = open_store(tmp_path / "data", migrations=PACKAGED[:7])
     try:
         assert opened.status() == StoreStatus("ready", 7, 7)
         with opened.read() as conn:
@@ -225,7 +225,7 @@ def test_the_migration_file_passes_the_runner_validation_and_drops_in_child_firs
 def test_the_v6_fixture_gets_a_hero_keeps_its_portrait_and_loses_its_text(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V6)
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=PACKAGED[:7])
     try:
         assert opened.status().state == "ready"
         hero = get_hero(opened, FIXTURE_BINDING)
@@ -258,7 +258,7 @@ def test_the_v6_fixture_gets_a_hero_keeps_its_portrait_and_loses_its_text(tmp_pa
 def test_the_v5_fixture_upgrades_to_v7_in_one_open_with_one_backup(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V5)
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=PACKAGED[:7])
     try:
         assert opened.status() == StoreStatus("ready", 7, 7)
         hero = get_hero(opened, FIXTURE_BINDING)
@@ -345,7 +345,7 @@ def test_only_the_newest_specters_newest_portrait_is_kept(tmp_path: Path) -> Non
 def test_no_generated_text_remains_in_any_table_but_survives_in_the_backup(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     seeded_v6(data_dir)
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=PACKAGED[:7])
     try:
         with opened.read() as conn:
             dump = "\n".join(conn.iterdump())
@@ -436,11 +436,12 @@ def test_the_frozen_v7_fixture_has_the_schema_the_migrations_create(tmp_path: Pa
     fixture = sqlite3.connect(tmp_path / "fixture.db", isolation_level=None)
     fixture.executescript(FIXTURE_V7.read_text(encoding="utf-8"))
     migrated = sqlite3.connect(tmp_path / "migrated.db", isolation_level=None)
-    migrate(migrated, ALL)
+    through_v7 = ALL[:7]  # the fixture is the v7 schema; later migrations have their own tests
+    migrate(migrated, through_v7)
     try:
         assert normalised(fixture) == normalised(migrated)
-        verify_checksums(fixture, ALL)
-        assert pending(fixture, ALL) == []
+        verify_checksums(fixture, through_v7)
+        assert pending(fixture, through_v7) == []
         assert fixture.execute("PRAGMA foreign_key_check").fetchall() == []
     finally:
         fixture.close()
@@ -450,7 +451,7 @@ def test_the_frozen_v7_fixture_has_the_schema_the_migrations_create(tmp_path: Pa
 def test_the_v7_fixture_opens_and_serves_its_heroes_and_avatar(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V7)
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=PACKAGED[:7])
     try:
         assert opened.status() == StoreStatus("ready", 7, 7)
         heroes = list_heroes(opened)

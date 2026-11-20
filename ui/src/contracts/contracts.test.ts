@@ -32,6 +32,8 @@ import {
   WORK_CONTRIBUTOR_KEYS,
   WORK_DECISION_KEYS,
   WORK_ITEMS_KEYS,
+  WORK_ITEMS_V2_KEYS,
+  WORK_LIST_ITEM_KEYS,
   WORK_ITEM_KEYS,
   WORK_MILESTONE_KEYS,
   WORK_PROGRESS_KEYS,
@@ -39,6 +41,7 @@ import {
   XP_ENTRY_KEYS,
   XP_HISTORY_KEYS,
   XP_SUMMARIES_KEYS,
+  XP_SUMMARIES_PAGED_KEYS,
   XP_SUMMARY_KEYS,
 } from './types.ts';
 import type {
@@ -164,8 +167,11 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'work-item', path: ['properties', 'review'], keys: WORK_REVIEW_KEYS },
   { schema: 'work-item', path: ['properties', 'decisions', 'items'], keys: WORK_DECISION_KEYS },
   { schema: 'work-items', path: [], keys: WORK_ITEMS_KEYS },
+  { schema: 'work-list-item', path: [], keys: WORK_LIST_ITEM_KEYS },
+  { schema: 'work-items', version: 2, path: [], keys: WORK_ITEMS_V2_KEYS },
   { schema: 'xp-summary', path: [], keys: XP_SUMMARY_KEYS },
   { schema: 'xp-summaries', path: [], keys: XP_SUMMARIES_KEYS },
+  { schema: 'xp-summaries', version: 2, path: [], keys: XP_SUMMARIES_PAGED_KEYS },
   { schema: 'xp-history', path: [], keys: XP_HISTORY_KEYS },
   { schema: 'xp-history', path: ['properties', 'items', 'items'], keys: XP_ENTRY_KEYS },
 ];

@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:work-items:v2",
+  "title": "Work items list v2",
+  "description": "Body of GET /api/work?view=list: one keyset page of work-list-item, at most 25 per page, optionally filtered by state or by a bot's bindingId. order says how the page is sorted and is the order the request asked for (created when the request named none): created is createdAtMs newest first and updated is updatedAtMs newest first, each with workId descending as the tie-break. nextCursor is an opaque cursor for the next page of the same order, or null on the last page; a cursor made for the other order, or taken from work-items v1, is refused with invalid_cursor. A page is read at one instant, but pages are read one after another: in updated order an item changed between two page reads moves to the head, so a later page can show it a second time or miss one item until the next read of the first page, which a poller repeats. It repeats the contractVersion, items and nextCursor members of page.v1 with a typed item, because a closed schema cannot be composed with allOf. GET /api/work without view still returns work-items v1 unchanged. asOfMs is the server time the page was read.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "order": {
+      "type": "string",
+      "enum": [
+        "created",
+        "updated"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:specter-arena:contract:work-list-item:v1"
+      },
+      "maxItems": 25
+    },
+    "nextCursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "asOfMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "contractVersion",
+    "order",
+    "items",
+    "nextCursor",
+    "asOfMs"
+  ],
+  "additionalProperties": false
+}

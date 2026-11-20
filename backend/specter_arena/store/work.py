@@ -8,6 +8,7 @@ import sqlite3
 import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from . import xp
 from .errors import (
@@ -49,6 +50,7 @@ from .xp_policy import (
 
 ACTOR = "app-owner"
 MAX_LIST_PAGE = 25
+LIST_ORDERS: tuple[str, ...] = ("created", "updated")
 MAX_DECISIONS_SHOWN = 50
 
 STATES: tuple[str, ...] = (
@@ -175,6 +177,28 @@ class WorkRecord:
     children_accepted: int
     review: WorkReview
     decisions: tuple[WorkDecisionView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class WorkListRecord:
+    """The `work-list-item.v1` projection: what a list shows, nothing a detail view reads.
+    No acceptance condition, milestone labels, evidence revision, review or decisions."""
+
+    work_id: str
+    parent_id: str | None
+    title: str
+    rewardable: bool
+    bounty_xp: int
+    state: str
+    version: int
+    created_ms: int
+    updated_ms: int
+    attempts: tuple[WorkAttemptView, ...]
+    contributors: tuple[WorkContributorView, ...]
+    progress: WorkProgress | None
+    child_count: int
+    children_accepted: int
+    ever_accepted: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -346,6 +370,30 @@ def _blockers(
     return tuple(found)
 
 
+def _attempt_view(row: Sequence[Any]) -> WorkAttemptView:
+    """One `work_attempt LEFT JOIN attempt` row: attempt id, binding, kind, started, ended,
+    running, end signal, present. Shared by the full read and the list projection."""
+    return WorkAttemptView(
+        attempt_id=row[0],
+        binding_id=row[1],
+        kind=row[2],
+        started_ms=row[3],
+        ended_ms=row[4],
+        end_signal=row[6],
+        ended=bool(row[7]) and row[5] == 0,
+        present=bool(row[7]),
+    )
+
+
+def _contributor_views(
+    attempts: Sequence[WorkAttemptView], net: Mapping[str, int]
+) -> tuple[WorkContributorView, ...]:
+    counts: dict[str, int] = {}
+    for view in attempts:
+        counts[view.binding_id] = counts.get(view.binding_id, 0) + 1
+    return tuple(WorkContributorView(b, counts[b], net.get(b, 0)) for b in sorted(counts))
+
+
 def _load(conn: sqlite3.Connection, item: _Item) -> WorkRecord:
     work_id = item.work_id
     attempt_rows = conn.execute(
@@ -355,19 +403,7 @@ def _load(conn: sqlite3.Connection, item: _Item) -> WorkRecord:
         " ORDER BY w.rowid",
         (work_id,),
     ).fetchall()
-    attempts = tuple(
-        WorkAttemptView(
-            attempt_id=r[0],
-            binding_id=r[1],
-            kind=r[2],
-            started_ms=r[3],
-            ended_ms=r[4],
-            end_signal=r[6],
-            ended=bool(r[7]) and r[5] == 0,
-            present=bool(r[7]),
-        )
-        for r in attempt_rows
-    )
+    attempts = tuple(_attempt_view(r) for r in attempt_rows)
     net = {
         str(b): int(total)
         for b, total in conn.execute(
@@ -375,10 +411,7 @@ def _load(conn: sqlite3.Connection, item: _Item) -> WorkRecord:
             (work_id,),
         )
     }
-    counts: dict[str, int] = {}
-    for view in attempts:
-        counts[view.binding_id] = counts.get(view.binding_id, 0) + 1
-    contributors = tuple(WorkContributorView(b, counts[b], net.get(b, 0)) for b in sorted(counts))
+    contributors = _contributor_views(attempts, net)
     milestones = tuple(
         WorkMilestoneView(int(p), str(label), None if done is None else int(done))
         for p, label, done in conn.execute(
@@ -871,3 +904,156 @@ def list_work(
             for r in fetched
         ]
     return build_page(records, size, lambda rec: (rec.created_ms, rec.work_id))
+
+
+# Order tag (first cursor value) -> the work_item column that orders the list. Fixed text, never
+# built from request input; `list_work_view` rejects any other order before it reaches here.
+_ORDER_COLUMN = {"created": "created_ms", "updated": "updated_ms"}
+_ORDER_TAG = {"created": "c", "updated": "u"}
+
+# The list query is built once, at import, from these fixed fragments: one variant for each
+# combination of the two optional filters, so SQLite sees plain equality and can pick an index.
+# The keyset bound is always present: the first page uses `_FIRST_KEY`, which sorts after every
+# valid millisecond value (2**53 is above the contract maximum), so `(key, id) < (bound)` is a
+# range seek instead of an OR chain.
+_FIRST_KEY = 2**53
+_VIEW_SQL = """
+SELECT {columns},
+  (SELECT count(*) FROM work_milestone m WHERE m.work_id = w.work_id),
+  (SELECT count(m.done_ms) FROM work_milestone m WHERE m.work_id = w.work_id),
+  (SELECT count(*) FROM work_item c WHERE c.parent_id = w.work_id),
+  (SELECT count(*) FROM work_item c WHERE c.parent_id = w.work_id AND c.state = 'accepted'),
+  EXISTS (SELECT 1 FROM work_decision d WHERE d.work_id = w.work_id AND d.action = 'accept')
+FROM work_item w
+WHERE (w.{key}, w.work_id) < (:after_ms, :after_id){state}{binding}
+ORDER BY w.{key} DESC, w.work_id DESC
+LIMIT :n
+"""
+_VIEW_COLUMNS = (
+    "w.work_id, w.parent_id, w.title, w.rewardable, w.bounty_xp, w.state, w.version,"
+    " w.created_ms, w.updated_ms"
+)
+_STATE_FILTER = "\n  AND w.state = :state"
+_BINDING_FILTER = (
+    "\n  AND EXISTS (SELECT 1 FROM work_attempt a"
+    " WHERE a.work_id = w.work_id AND a.binding_id = :binding)"
+)
+_VIEW_SQL_BY_SHAPE = {
+    (order, has_state, has_binding): _VIEW_SQL.format(
+        columns=_VIEW_COLUMNS,
+        key=column,
+        state=_STATE_FILTER if has_state else "",
+        binding=_BINDING_FILTER if has_binding else "",
+    )
+    for order, column in _ORDER_COLUMN.items()
+    for has_state in (False, True)
+    for has_binding in (False, True)
+}
+
+
+def _view_after(cursor: str | None, order: str) -> tuple[int, str]:
+    """The order-tagged cursor `[tag, key_ms, work_id]`. A cursor made for the other order, or a
+    `work-items.v1` cursor (two values), is `InvalidCursor`."""
+    if cursor is None:
+        return _FIRST_KEY, ""
+    tag, key_ms, work_id = decode_cursor(cursor, 3)
+    if (
+        tag != _ORDER_TAG[order]
+        or not isinstance(key_ms, int)
+        or key_ms < 0
+        or not isinstance(work_id, str)
+        or _WORK_ID.fullmatch(work_id) is None
+    ):
+        raise InvalidCursor
+    return key_ms, work_id
+
+
+def _view_records(conn: sqlite3.Connection, rows: Sequence[Sequence[Any]]) -> list[WorkListRecord]:
+    """Complete the page's rows with two queries for the whole page (attempts, XP net), not
+    per item. Nothing here reads `work_decision` rows or the evidence."""
+    ids = [str(r[0]) for r in rows]
+    marks = ",".join("?" * len(ids))
+    attempts: dict[str, list[WorkAttemptView]] = {i: [] for i in ids}
+    net: dict[str, dict[str, int]] = {i: {} for i in ids}
+    if ids:
+        for r in conn.execute(
+            "SELECT w.attempt_id, w.binding_id, w.kind, a.started_ms, a.ended_ms, a.running,"
+            " a.end_signal, a.attempt_id IS NOT NULL, w.work_id FROM work_attempt w"
+            " LEFT JOIN attempt a ON a.attempt_id = w.attempt_id"
+            f" WHERE w.work_id IN ({marks}) ORDER BY w.rowid",
+            ids,
+        ):
+            attempts[str(r[8])].append(_attempt_view(r))
+        for work_id, binding_id, total in conn.execute(
+            "SELECT work_id, binding_id, sum(amount) FROM xp_entry"
+            f" WHERE work_id IN ({marks}) GROUP BY work_id, binding_id",
+            ids,
+        ):
+            net[str(work_id)][str(binding_id)] = int(total)
+    records: list[WorkListRecord] = []
+    for r in rows:
+        work_id = str(r[0])
+        total, done = int(r[9]), int(r[10])
+        records.append(
+            WorkListRecord(
+                work_id=work_id,
+                parent_id=r[1],
+                title=str(r[2]),
+                rewardable=bool(r[3]),
+                bounty_xp=int(r[4]),
+                state=str(r[5]),
+                version=int(r[6]),
+                created_ms=int(r[7]),
+                updated_ms=int(r[8]),
+                attempts=tuple(attempts[work_id]),
+                contributors=_contributor_views(attempts[work_id], net[work_id]),
+                progress=WorkProgress(done, total) if total else None,
+                child_count=int(r[11]),
+                children_accepted=int(r[12]),
+                ever_accepted=bool(r[13]),
+            )
+        )
+    return records
+
+
+def list_work_view(
+    store: Store,
+    *,
+    state: str | None,
+    binding_id: str | None,
+    order: str,
+    cursor: str | None,
+    limit: int | None,
+) -> Page[WorkListRecord]:
+    """The `work-list-item.v1` projection, 25 a page at most, newest first by creation
+    (`order="created"`) or by last update (`order="updated"`); same filters as `list_work`.
+    Runs the item query plus one query each for the page's attempts and XP net."""
+    if order not in _ORDER_COLUMN:
+        raise StoreUsageError("order")
+    if state is not None and state not in STATES:
+        raise StoreUsageError("state")
+    if binding_id is not None:
+        _need_id(_BINDING_ID, binding_id, "binding id")
+    size = clamp_limit(limit, default=MAX_LIST_PAGE, maximum=MAX_LIST_PAGE)
+    after_ms, after_id = _view_after(cursor, order)
+    with translate_errors(), store.read() as conn:
+        if binding_id is not None and (
+            conn.execute("SELECT 1 FROM bot_binding WHERE binding_id = ?", (binding_id,)).fetchone()
+            is None
+        ):
+            raise UnknownBinding
+        params: dict[str, object] = {"after_ms": after_ms, "after_id": after_id, "n": size + 1}
+        if state is not None:
+            params["state"] = state
+        if binding_id is not None:
+            params["binding"] = binding_id
+        rows = conn.execute(
+            _VIEW_SQL_BY_SHAPE[(order, state is not None, binding_id is not None)], params
+        ).fetchall()
+        records = _view_records(conn, rows)
+    tag = _ORDER_TAG[order]
+
+    def cursor_of(rec: WorkListRecord) -> tuple[str, int, str]:
+        return (tag, rec.created_ms if order == "created" else rec.updated_ms, rec.work_id)
+
+    return build_page(records, size, cursor_of)

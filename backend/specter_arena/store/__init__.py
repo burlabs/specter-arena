@@ -125,6 +125,7 @@ from .work import (
     WorkContributorView,
     WorkDecisionResult,
     WorkDecisionView,
+    WorkListRecord,
     WorkMilestoneView,
     WorkProgress,
     WorkRecord,
@@ -134,9 +135,18 @@ from .work import (
     get_work,
     link_attempt,
     list_work,
+    list_work_view,
     set_milestone,
 )
-from .xp import XpEntryView, XpHistory, XpSummary, xp_history, xp_summaries, xp_summary
+from .xp import (
+    XpEntryView,
+    XpHistory,
+    XpSummary,
+    xp_history,
+    xp_summaries,
+    xp_summaries_page,
+    xp_summary,
+)
 from .xp_policy import (
     BOUNTY_XP,
     LEVEL_FLOORS,
@@ -253,6 +263,7 @@ __all__ = [
     "WorkContributorView",
     "WorkDecisionResult",
     "WorkDecisionView",
+    "WorkListRecord",
     "WorkMilestoneView",
     "WorkProgress",
     "WorkRecord",
@@ -286,6 +297,7 @@ __all__ = [
     "list_assets",
     "list_heroes",
     "list_work",
+    "list_work_view",
     "migrating_status",
     "open_store",
     "parse_dm_key",
@@ -307,5 +319,6 @@ __all__ = [
     "unconfigured_status",
     "xp_history",
     "xp_summaries",
+    "xp_summaries_page",
     "xp_summary",
 ]

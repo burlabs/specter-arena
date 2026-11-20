@@ -13,8 +13,10 @@ from ..store import xp as db_xp
 from ..store import xp_policy as policy
 from .wire import (
     work_item_wire,
+    work_items_v2_wire,
     work_items_wire,
     xp_history_wire,
+    xp_summaries_v2_wire,
     xp_summaries_wire,
 )
 
@@ -28,6 +30,10 @@ REVISION: Final = re.compile(r"[0-9a-f]{24}")
 MAX_VERSION: Final = 2**53 - 1
 WORK_PAGE: Final = db_work.MAX_LIST_PAGE
 HISTORY_PAGE: Final = db_xp.MAX_HISTORY_PAGE
+XP_PAGE: Final = db_xp.MAX_SUMMARY_PAGE
+VIEWS: Final = frozenset({"list"})
+XP_VIEWS: Final = frozenset({"paged"})
+ORDERS: Final = frozenset(db_work.LIST_ORDERS)
 MAX_LIMIT_DIGITS: Final = 6
 RAW_TEXT_FACTOR: Final = 4
 STATES: Final = frozenset(db_work.STATES)
@@ -200,25 +206,62 @@ class WorkService:
         return min(max(int(raw), 1), maximum)
 
     async def list_work(
-        self, *, state: str | None, binding_id: str | None, cursor: str | None, limit: str | None
+        self,
+        *,
+        state: str | None,
+        binding_id: str | None,
+        cursor: str | None,
+        limit: str | None,
+        view: str | None = None,
+        order: str | None = None,
     ) -> dict[str, Any]:
+        """`work-items.v1` without `view`; `work-items.v2` for `view=list`, whose `order` is
+        `created` (default) or `updated`. `order` without `view=list` is refused rather than
+        ignored, so a client cannot believe it asked for an order it did not get."""
+        if view is not None and view not in VIEWS:
+            raise WorkError("invalid_view", 400)
+        if order is not None and (view is None or order not in ORDERS):
+            raise WorkError("invalid_order", 400)
         if state is not None and state not in STATES:
             raise WorkError("invalid_state", 400)
         binding = None if binding_id is None else self._binding(binding_id)
         size = self._limit(limit, WORK_PAGE)
         as_of_ms = self._clock()
-        page = await self._call(
-            db_work.list_work, state=state, binding_id=binding, cursor=cursor, limit=size
+        if view is None:
+            page = await self._call(
+                db_work.list_work, state=state, binding_id=binding, cursor=cursor, limit=size
+            )
+            return work_items_wire(page, as_of_ms)
+        chosen = "created" if order is None else order
+        listed = await self._call(
+            db_work.list_work_view,
+            state=state,
+            binding_id=binding,
+            order=chosen,
+            cursor=cursor,
+            limit=size,
         )
-        return work_items_wire(page, as_of_ms)
+        return work_items_v2_wire(listed, chosen, as_of_ms)
 
     async def get_work(self, work_id: str) -> dict[str, Any]:
         record = await self._call(db_work.get_work, self._work_id(work_id))
         return work_item_wire(record)
 
-    async def xp_summaries(self) -> dict[str, Any]:
+    async def xp_summaries(
+        self, *, view: str | None = None, cursor: str | None = None, limit: str | None = None
+    ) -> dict[str, Any]:
+        """`xp-summaries.v1` (capped at 500, no cursor) without `view`; `xp-summaries.v2` pages
+        of `XP_PAGE` for `view=paged`. `cursor` and `limit` only apply to the paged view and are
+        ignored without it, as before."""
+        if view is not None and view not in XP_VIEWS:
+            raise WorkError("invalid_view", 400)
+        if view is None:
+            as_of_ms = self._clock()
+            return xp_summaries_wire(await self._call(db_xp.xp_summaries), as_of_ms)
+        size = self._limit(limit, XP_PAGE)
         as_of_ms = self._clock()
-        return xp_summaries_wire(await self._call(db_xp.xp_summaries), as_of_ms)
+        page = await self._call(db_xp.xp_summaries_page, cursor=cursor, limit=size)
+        return xp_summaries_v2_wire(page, as_of_ms)
 
     async def xp_history(
         self, binding_id: str, *, cursor: str | None, limit: str | None

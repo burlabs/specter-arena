@@ -8,12 +8,13 @@ from dataclasses import dataclass
 
 from .errors import InvalidCursor, StoreUsageError, UnknownBinding
 from .guard import translate_errors
-from .paging import Page, build_page, clamp_limit, decode_cursor
+from .paging import MAX_LIMIT, Page, build_page, clamp_limit, decode_cursor
 from .store import Store
 from .xp_policy import LEVEL_TABLE_VERSION, POLICY_VERSION, level_for
 
 MAX_SUMMARIES = 500
 MAX_HISTORY_PAGE = 50
+MAX_SUMMARY_PAGE = MAX_LIMIT
 AWARD = "award"
 CORRECTION = "correction"
 REINSTATEMENT = "reinstatement"
@@ -113,6 +114,39 @@ def xp_summaries(store: Store) -> tuple[XpSummary, ...]:
             (MAX_SUMMARIES,),
         ).fetchall()
     return tuple(_summary(str(b), int(total), int(count)) for b, total, count in rows)
+
+
+def _summary_after(cursor: str | None) -> str | None:
+    if cursor is None:
+        return None
+    (binding_id,) = decode_cursor(cursor, 1)
+    if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
+        raise InvalidCursor
+    return binding_id
+
+
+_SUMMARIES_PAGE_SQL = """
+SELECT e.binding_id, sum(e.amount),
+  (SELECT count(*) FROM (SELECT work_id FROM xp_entry WHERE binding_id = e.binding_id
+   GROUP BY work_id HAVING sum(amount) > 0))
+FROM xp_entry e
+WHERE (:after IS NULL OR e.binding_id > :after)
+GROUP BY e.binding_id
+ORDER BY e.binding_id
+LIMIT :n
+"""
+
+
+def xp_summaries_page(store: Store, *, cursor: str | None, limit: int | None) -> Page[XpSummary]:
+    """Bindings with at least one ledger entry, ascending by binding id, `MAX_SUMMARY_PAGE` a
+    page at most. Same membership and values as `xp_summaries`, with no 500 cap: a binding
+    whose id sorts after the cursor is always on a later page."""
+    size = clamp_limit(limit, default=MAX_SUMMARY_PAGE, maximum=MAX_SUMMARY_PAGE)
+    after = _summary_after(cursor)
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(_SUMMARIES_PAGE_SQL, {"after": after, "n": size + 1}).fetchall()
+    views = [_summary(str(b), int(total), int(count)) for b, total, count in rows]
+    return build_page(views, size, lambda v: (v.binding_id,))
 
 
 def _after(cursor: str | None) -> tuple[int | None, str | None]:

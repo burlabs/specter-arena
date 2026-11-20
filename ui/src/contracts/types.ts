@@ -325,6 +325,44 @@ export interface WorkItemsV1 {
   asOfMs: number;
 }
 
+/**
+ * One work item as a list reads it (`GET /api/work?view=list`). The shared fields are the `work-item` v1 fields of the same name.
+ * It has no acceptanceCondition, policyVersion, milestones, evidenceRevision, review or decisions: a screen that acts on an item
+ * (review, accept, reject) must read the full `WorkItemV1` from `GET /api/work/{workId}`.
+ * `everAccepted` is true when any decision on the item has action accept, now or earlier (it stays true after a reopen).
+ */
+export interface WorkListItemV1 {
+  contractVersion: 1;
+  workId: string;
+  parentId: string | null;
+  title: string;
+  rewardable: boolean;
+  bountyXp: number;
+  /** A documented token, not a closed list: open, awaiting-review, blocked, rejected, cancelled, accepted, reopened. */
+  state: string;
+  version: number;
+  createdAtMs: number;
+  updatedAtMs: number;
+  attempts: WorkAttemptV1[];
+  contributors: WorkContributorV1[];
+  progress: WorkProgressV1 | null;
+  childCount: number;
+  childrenAccepted: number;
+  everAccepted: boolean;
+}
+
+/** Which order a `work-items` v2 page was read in. `created` is createdAtMs newest first; `updated` is updatedAtMs newest first. */
+export type WorkListOrderV2 = 'created' | 'updated';
+
+/** Body of GET /api/work?view=list[&order=created|updated]: one keyset page of at most 25 list items. A cursor only fits the order it came from. */
+export interface WorkItemsV2 {
+  contractVersion: 2;
+  order: WorkListOrderV2;
+  items: WorkListItemV1[];
+  nextCursor: string | null;
+  asOfMs: number;
+}
+
 export interface XpSummaryV1 {
   contractVersion: 1;
   bindingId: string;
@@ -340,6 +378,14 @@ export interface XpSummaryV1 {
 export interface XpSummariesV1 {
   contractVersion: 1;
   items: XpSummaryV1[];
+  asOfMs: number;
+}
+
+/** Body of GET /api/xp?view=paged: one keyset page (200 at most, ascending bindingId) of every binding with an XP entry. Read pages until nextCursor is null. */
+export interface XpSummariesV2 {
+  contractVersion: 2;
+  items: XpSummaryV1[];
+  nextCursor: string | null;
   asOfMs: number;
 }
 
@@ -372,7 +418,10 @@ export const WORK_REVIEW_KEYS: Record<keyof WorkReviewV1, true> = { canAccept: t
 export const WORK_DECISION_KEYS: Record<keyof WorkDecisionV1, true> = { decisionId: true, seq: true, action: true, fromState: true, toState: true, actor: true, atMs: true, note: true, evidenceRevision: true };
 export const WORK_ITEM_KEYS: Record<keyof WorkItemV1, true> = { contractVersion: true, workId: true, parentId: true, title: true, acceptanceCondition: true, rewardable: true, bountyXp: true, policyVersion: true, state: true, version: true, createdAtMs: true, updatedAtMs: true, attempts: true, contributors: true, milestones: true, progress: true, evidenceRevision: true, childCount: true, childrenAccepted: true, review: true, decisions: true };
 export const WORK_ITEMS_KEYS: Record<keyof WorkItemsV1, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
+export const WORK_LIST_ITEM_KEYS: Record<keyof WorkListItemV1, true> = { contractVersion: true, workId: true, parentId: true, title: true, rewardable: true, bountyXp: true, state: true, version: true, createdAtMs: true, updatedAtMs: true, attempts: true, contributors: true, progress: true, childCount: true, childrenAccepted: true, everAccepted: true };
+export const WORK_ITEMS_V2_KEYS: Record<keyof WorkItemsV2, true> = { contractVersion: true, order: true, items: true, nextCursor: true, asOfMs: true };
 export const XP_SUMMARY_KEYS: Record<keyof XpSummaryV1, true> = { contractVersion: true, bindingId: true, totalXp: true, level: true, levelTableVersion: true, levelFloorXp: true, nextLevelXp: true, acceptedWorkCount: true, policyVersion: true };
 export const XP_SUMMARIES_KEYS: Record<keyof XpSummariesV1, true> = { contractVersion: true, items: true, asOfMs: true };
+export const XP_SUMMARIES_PAGED_KEYS: Record<keyof XpSummariesV2, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
 export const XP_ENTRY_KEYS: Record<keyof XpEntryV1, true> = { entryId: true, workId: true, workTitle: true, kind: true, amount: true, policyVersion: true, decisionId: true, createdAtMs: true };
 export const XP_HISTORY_KEYS: Record<keyof XpHistoryV1, true> = { contractVersion: true, bindingId: true, summary: true, items: true, nextCursor: true, asOfMs: true };
