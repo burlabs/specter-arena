@@ -179,6 +179,17 @@ def list_heroes(store: Store) -> tuple[HeroRecord, ...]:
         return tuple(_hero(row) for row in rows)
 
 
+def count_hero_assignments(store: Store) -> dict[str, int]:
+    """How many bindings were ever given each hero, by hero id; a hero nobody holds is absent.
+    One `GROUP BY` over every row, so `MAX_LISTED_HEROES` does not apply. Heroes are never
+    reclaimed, so a binding whose bot no longer shows in the roster still counts."""
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(
+            "SELECT hero_id, count(*) FROM hero_assignment GROUP BY hero_id"
+        ).fetchall()
+        return {str(row[0]): int(row[1]) for row in rows}
+
+
 def get_hero(store: Store, binding_id: str) -> HeroRecord:
     """The hero of one binding. Raises `UnknownBinding` for an unknown or malformed id."""
     if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:

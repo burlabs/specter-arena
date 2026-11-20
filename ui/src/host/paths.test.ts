@@ -3,6 +3,7 @@ import {
   ASSETS_PATH,
   PORTRAITS_PATH,
   ROSTER_PATH,
+  HEROES_PATH,
   SPECTERS_PATH,
   WORK_PATH,
   XP_PATH,
@@ -38,6 +39,7 @@ describe('roster and attempts paths', () => {
 describe('specter paths', () => {
   it('builds the fixed collection paths under the app prefix', () => {
     expect(SPECTERS_PATH).toBe('/apps/specter-arena/api/specters');
+    expect(HEROES_PATH).toBe('/apps/specter-arena/api/heroes');
     expect(PORTRAITS_PATH).toBe('/apps/specter-arena/api/portraits');
     expect(ASSETS_PATH).toBe('/apps/specter-arena/api/assets');
   });

@@ -17,6 +17,7 @@ from backend.specter_arena.specters.service import SpecterError, SpecterService
 from backend.specter_arena.store import DmKey, Store, open_store
 from backend.specter_arena.store import specters as db
 
+from .contract_support import compile_schema, load_registry
 from .png_support import png
 from .specter_fakes import ALPHA, BETA, FakeClock, bind, table_counts
 
@@ -253,6 +254,77 @@ def test_start_with_tampered_art_logs_once_by_type_only_and_reads_fail_503(
         assert db.list_assets(store) == ()  # none served
         assert await code_of(rig.service.get_specter(rig.b1)) == ("store_unavailable", 503)
         assert await code_of(rig.service.list_specters()) == ("store_unavailable", 503)
+
+    run(scenario)
+
+
+HEROES_V1 = "urn:specter-arena:contract:heroes:v1"
+
+
+def test_list_heroes_of_an_empty_store_is_the_whole_roster_unassigned(store: Store) -> None:
+    async def scenario() -> None:
+        listed = await SpecterService(store, clock=FakeClock()).list_heroes()
+        assert listed["contractVersion"] == 1
+        assert [item["heroId"] for item in listed["items"]] == [h.id for h in load_heroes()]
+        assert all(item["assigned"] is False for item in listed["items"])
+        assert all(item["assignedCount"] == 0 for item in listed["items"])
+
+    run(scenario)
+
+
+def test_list_heroes_counts_each_hero_and_carries_the_roster_text(store: Store) -> None:
+    async def scenario() -> None:
+        rig = Rig(store)  # two bots: vell and stitch
+        listed = await rig.service.list_heroes()
+        validate = compile_schema(HEROES_V1, load_registry())
+        validate(listed)
+        by_id = {item["heroId"]: item for item in listed["items"]}
+        assert [by_id[h]["assignedCount"] for h in ("vell", "stitch", "reeve")] == [1, 1, 0]
+        assert [by_id[h]["assigned"] for h in ("vell", "stitch", "reeve")] == [True, True, False]
+        for hero, item in zip(load_heroes(), listed["items"], strict=True):
+            assert (item["name"], item["epithet"], item["personality"]) == (
+                hero.name,
+                hero.epithet,
+                hero.personality,
+            )
+            assert set(item) == {
+                "heroId",
+                "name",
+                "epithet",
+                "personality",
+                "assigned",
+                "assignedCount",
+            }
+
+    run(scenario)
+
+
+def test_list_heroes_reads_without_writing_and_needs_no_bundled_art(store: Store) -> None:
+    async def scenario() -> None:
+        rig = Rig(store)  # start() was never called, so no portrait is installed
+        before = table_counts(store, except_prefixes=())
+        await rig.service.list_heroes()
+        assert table_counts(store, except_prefixes=()) == before
+
+    run(scenario)
+
+
+def test_list_heroes_refuses_a_stored_hero_the_roster_does_not_hold(
+    store: Store, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def scenario() -> None:
+        rig = Rig(store)
+        monkeypatch.setattr(db, "count_hero_assignments", lambda _store: {"nova": 1})
+        assert await code_of(rig.service.list_heroes()) == ("store_unavailable", 503)
+
+    run(scenario)
+
+
+def test_list_heroes_maps_a_closed_store_to_store_unavailable(store: Store) -> None:
+    async def scenario() -> None:
+        service = SpecterService(store, clock=FakeClock())
+        store.close()
+        assert await code_of(service.list_heroes()) == ("store_unavailable", 503)
 
     run(scenario)
 

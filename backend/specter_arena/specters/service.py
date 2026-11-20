@@ -5,7 +5,7 @@ import base64
 import binascii
 import logging
 import re
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, Final, TypeVar
 
 from ..store import Store
@@ -21,6 +21,7 @@ T = TypeVar("T")
 _LOG = logging.getLogger("specter_arena.specters.service")
 ASSET_CONTRACT_VERSION: Final = 1  # portrait-asset.v1 (FROZEN)
 SPECTER_CONTRACT_VERSION: Final = 2  # specter.v2 and specters.v2
+HEROES_CONTRACT_VERSION: Final = 1  # heroes.v1
 
 ASSET_ID: Final = re.compile(r"ast_[0-9a-f]{24}")
 BINDING_ID: Final = re.compile(r"bnd_[0-9a-f]{24}")
@@ -90,6 +91,24 @@ def specter_wire(record: db.HeroRecord, hero: Hero, portrait: db.AssetRecord) ->
         "source": "roster",
         "createdAtMs": record.assigned_ms,
         "updatedAtMs": record.updated_ms,
+    }
+
+
+def heroes_wire(heroes: Iterable[Hero], counts: Mapping[str, int]) -> dict[str, Any]:
+    """`heroes.v1`: every roster hero in roster order with how many bindings hold it."""
+    return {
+        "contractVersion": HEROES_CONTRACT_VERSION,
+        "items": [
+            {
+                "heroId": hero.id,
+                "name": hero.name,
+                "epithet": hero.epithet,
+                "personality": hero.personality,
+                "assigned": counts.get(hero.id, 0) > 0,
+                "assignedCount": counts.get(hero.id, 0),
+            }
+            for hero in heroes
+        ],
     }
 
 
@@ -163,6 +182,17 @@ class SpecterService:
             "contractVersion": SPECTER_CONTRACT_VERSION,
             "items": [self._wire(r, portraits) for r in records],
         }
+
+    async def list_heroes(self) -> dict[str, Any]:
+        counts = await self._call(self._hero_counts)
+        return heroes_wire(self._heroes.values(), counts)
+
+    def _hero_counts(self, store: Store) -> dict[str, int]:
+        """The stored counts, refused when they name a hero the roster file does not hold."""
+        counts = db.count_hero_assignments(store)
+        if not counts.keys() <= self._heroes.keys():
+            raise store_errors.StoreUnavailable("hero assignment names an unknown hero")
+        return counts
 
     async def get_specter(self, binding_id: str) -> dict[str, Any]:
         record = await self._call(db.get_hero, self._binding(binding_id))

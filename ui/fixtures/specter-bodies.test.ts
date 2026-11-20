@@ -110,6 +110,51 @@ describe.each(SPECTER_SCENARIO_NAMES)('%s bodies validate against the contracts'
   });
 });
 
+describe.each(SPECTER_SCENARIO_NAMES)('%s heroes body', (scenario: SpecterScenarioName) => {
+  it('validates against heroes.v1 and agrees with the specters the scenario serves', async () => {
+    setSpecterScenario(scenario);
+    const heroes = await call('GET', '/heroes');
+    const check = validator('heroes');
+    expect(heroes.status).toBe(200);
+    expect(check(heroes.body), JSON.stringify(check.errors)).toBe(true);
+    expect(heroes.body.items.map((item: { heroId: string }) => item.heroId)).toEqual([...HERO_IDS]);
+    const specters = (await call('GET', '/specters')).body.items as { heroId: string }[];
+    for (const item of heroes.body.items as { heroId: string; assigned: boolean; assignedCount: number }[]) {
+      expect(item.assignedCount, item.heroId).toBe(specters.filter((specter) => specter.heroId === item.heroId).length);
+      expect(item.assigned).toBe(item.assignedCount > 0);
+    }
+    expect((heroes.body.items as { assignedCount: number }[]).reduce((sum, item) => sum + item.assignedCount, 0)).toBe(FIXTURE_BOT_COUNT[scenario]);
+  });
+});
+
+describe('heroes body counts', () => {
+  it('leaves four heroes unassigned with seven bots (the screenshot scenario) and none with 13', async () => {
+    setSpecterScenario('specters');
+    const seven = (await call('GET', '/heroes')).body.items as { heroId: string; assigned: boolean }[];
+    expect(seven.filter((item) => !item.assigned).map((item) => item.heroId)).toEqual(['tide', 'lume', 'moss', 'bur']);
+    setSpecterScenario('heroes-wrapped');
+    const wrapped = (await call('GET', '/heroes')).body.items as { heroId: string; assignedCount: number }[];
+    expect(wrapped.map((item) => item.assignedCount)).toEqual([2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('keeps every count after an avatar choice, because the hero never changes', async () => {
+    setSpecterScenario('specters');
+    const before = (await call('GET', '/heroes')).body;
+    const bot = (await call('GET', '/specters')).body.items[0] as { bindingId: string };
+    const portraits = (await call('GET', '/portraits')).body.items as { assetId: string }[];
+    expect((await call('POST', `/specters/${bot.bindingId}/portrait`, { expectedVersion: 0, assetId: portraits[10]?.assetId })).status).toBe(200);
+    expect((await call('GET', '/heroes')).body).toEqual(before);
+  });
+
+  it('refuses a write on the route and serves it with no bots as eleven zeros', async () => {
+    expect((await call('POST', '/heroes', {})).status).toBe(405);
+    setSpecterScenario('specters-none');
+    const none = (await call('GET', '/heroes')).body.items as { assigned: boolean; assignedCount: number }[];
+    expect(none).toHaveLength(11);
+    expect(none.every((item) => !item.assigned && item.assignedCount === 0)).toBe(true);
+  });
+});
+
 describe('assignment', () => {
   it('gives binding n hero (n-1) mod 11 at ordinal (n-1) div 11 + 1', async () => {
     setSpecterScenario('arena-perf-specters');

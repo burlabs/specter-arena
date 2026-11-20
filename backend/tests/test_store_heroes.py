@@ -314,6 +314,52 @@ def test_list_heroes_of_an_empty_store_is_empty(store: Store) -> None:
     assert list_heroes(store) == ()
 
 
+def test_count_hero_assignments_of_an_empty_store_is_empty(store: Store) -> None:
+    assert sp.count_hero_assignments(store) == {}
+
+
+def test_count_hero_assignments_walks_the_roster_and_counts_each_lap(store: Store) -> None:
+    bind_many(store, 13)
+    counts = sp.count_hero_assignments(store)
+    assert counts == {hero_id: 2 if hero_id in ("vell", "stitch") else 1 for hero_id in HERO_IDS}
+    assert list(counts) != [] and set(counts) <= set(HERO_IDS)
+
+
+def test_count_hero_assignments_leaves_out_a_hero_nobody_holds(store: Store) -> None:
+    bind_many(store, 7)
+    counts = sp.count_hero_assignments(store)
+    assert counts == dict.fromkeys(HERO_IDS[:7], 1)
+    assert "bur" not in counts
+
+
+def test_count_hero_assignments_is_not_limited_by_the_listing_cap(store: Store) -> None:
+    total = sp.MAX_LISTED_HEROES + 11
+    for first in range(0, total, 100):
+        bind_many(store, min(100, total - first), first)
+    assert len(list_heroes(store)) == sp.MAX_LISTED_HEROES
+    counts = sp.count_hero_assignments(store)
+    assert sum(counts.values()) == total
+    assert counts["vell"] == total // 11 + 1
+
+
+def test_count_hero_assignments_counts_a_binding_that_left_the_roster(store: Store) -> None:
+    bind_many(store, 3)
+    with store.write() as conn:
+        conn.execute(
+            "INSERT INTO bot_presence (binding_id, state, since_ms)"
+            " SELECT binding_id, 'absent', ? FROM bot_binding",
+            (T0 + 1,),
+        )
+    assert sp.count_hero_assignments(store) == {"vell": 1, "stitch": 1, "reeve": 1}
+
+
+def test_count_hero_assignments_writes_nothing(store: Store) -> None:
+    bind_many(store, 4)
+    before = rows(store, "SELECT * FROM hero_assignment ORDER BY assignment_no")
+    sp.count_hero_assignments(store)
+    assert rows(store, "SELECT * FROM hero_assignment ORDER BY assignment_no") == before
+
+
 # --- avatar -------------------------------------------------------------------------------------
 
 

@@ -5,6 +5,8 @@ import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 import {
   HERO_IDS,
+  HEROES_ITEM_KEYS,
+  HEROES_KEYS,
   API_ERROR_KEYS,
   ATTEMPT_CONDITION_KEYS,
   ATTEMPT_ITEM_KEYS,
@@ -152,6 +154,8 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'scene-asset', path: [], keys: SCENE_ASSET_KEYS },
   { schema: 'specter', version: 2, path: [], keys: SPECTER_KEYS },
   { schema: 'specters', version: 2, path: [], keys: SPECTERS_KEYS },
+  { schema: 'heroes', path: [], keys: HEROES_KEYS },
+  { schema: 'heroes', path: ['properties', 'items', 'items'], keys: HEROES_ITEM_KEYS },
   { schema: 'work-item', path: [], keys: WORK_ITEM_KEYS },
   { schema: 'work-item', path: ['properties', 'attempts', 'items'], keys: WORK_ATTEMPT_KEYS },
   { schema: 'work-item', path: ['properties', 'contributors', 'items'], keys: WORK_CONTRIBUTOR_KEYS },

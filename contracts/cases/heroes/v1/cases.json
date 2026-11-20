@@ -1,0 +1,132 @@
+[
+  {
+    "file": "valid/none-assigned.json",
+    "valid": true
+  },
+  {
+    "file": "valid/seven-bots.json",
+    "valid": true
+  },
+  {
+    "file": "valid/wrapped-thirteen.json",
+    "valid": true
+  },
+  {
+    "file": "valid/count-at-maximum.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/contract-version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/contract-version-zero.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/ten-items.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/twelve-items.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/empty-items.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/items-null.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/hero-id-unknown.json",
+    "valid": false,
+    "instancePath": "/items/0/heroId"
+  },
+  {
+    "file": "invalid/hero-id-uppercase.json",
+    "valid": false,
+    "instancePath": "/items/3/heroId"
+  },
+  {
+    "file": "invalid/item-extra-role.json",
+    "valid": false,
+    "instancePath": "/items/1"
+  },
+  {
+    "file": "invalid/item-missing-assigned-count.json",
+    "valid": false,
+    "instancePath": "/items/2"
+  },
+  {
+    "file": "invalid/item-missing-assigned.json",
+    "valid": false,
+    "instancePath": "/items/2"
+  },
+  {
+    "file": "invalid/count-negative.json",
+    "valid": false,
+    "instancePath": "/items/0/assignedCount"
+  },
+  {
+    "file": "invalid/count-fraction.json",
+    "valid": false,
+    "instancePath": "/items/0/assignedCount"
+  },
+  {
+    "file": "invalid/count-text.json",
+    "valid": false,
+    "instancePath": "/items/0/assignedCount"
+  },
+  {
+    "file": "invalid/count-above-safe-integer.json",
+    "valid": false,
+    "instancePath": "/items/0/assignedCount"
+  },
+  {
+    "file": "invalid/assigned-number.json",
+    "valid": false,
+    "instancePath": "/items/0/assigned"
+  },
+  {
+    "file": "invalid/name-empty.json",
+    "valid": false,
+    "instancePath": "/items/0/name"
+  },
+  {
+    "file": "invalid/epithet-too-long.json",
+    "valid": false,
+    "instancePath": "/items/0/epithet"
+  },
+  {
+    "file": "invalid/personality-too-long.json",
+    "valid": false,
+    "instancePath": "/items/0/personality"
+  },
+  {
+    "file": "invalid/item-carries-contract-version.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/root-extra-cursor.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/contract-version-missing.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/count-nan.json",
+    "valid": false
+  }
+]

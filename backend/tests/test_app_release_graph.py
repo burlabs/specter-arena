@@ -103,6 +103,7 @@ def test_importing_the_release_app_loads_no_work_module(app_copy: Path) -> None:
 SPECTER_PATHS = frozenset(
     {
         "/api/specters",
+        "/api/heroes",
         "/api/specters/{binding_id}",
         "/api/specters/{binding_id}/portrait",
         "/api/portraits",
@@ -113,7 +114,7 @@ SPECTER_PATHS = frozenset(
 )
 
 
-def test_the_seven_specter_routes_are_mounted(app_copy: Path) -> None:
+def test_the_eight_specter_routes_are_mounted(app_copy: Path) -> None:
     assert set(inspect_app(app_copy)["paths"]) >= SPECTER_PATHS
 
 
