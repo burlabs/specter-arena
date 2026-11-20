@@ -11,9 +11,9 @@ This file maps each FP-14 acceptance criterion to the evidence for it, and each 
 | ID | Criterion (verbatim from the FP-14 intake) | Evidence | Result | SHA | Date | Who | Environment |
 |---|---|---|---|---|---|---|---|
 | FP-14-AC01 | All selected required capabilities pass on a fresh supported Crew installation and across the agreed restart/reconnect cases. | `docs/release/oa-5-result.md` (steps 1 to 12; the fresh installation is Part 2, steps 14 to 16, shared with OA-6); restart and reconnect tests in section 2 | pending (OA-5) | pending | pending | Eric (owner sitting) | pending |
-| FP-14-AC02 | No acceptance/XP invariant fails in property-based and concurrency tests; unresolved authorization or cross-scope data exposure is release-blocking. | `backend/tests/test_store_xp_properties.py`; `backend/tests/test_store_work_concurrency.py`; `docs/release/threat-model.md`; `docs/release/blockers.md` | pending, measured at RC-2 | pending | pending | agent | pending |
+| FP-14-AC02 | No acceptance/XP invariant fails in property-based and concurrency tests; unresolved authorization or cross-scope data exposure is release-blocking. | `backend/tests/test_store_xp_properties.py`; `backend/tests/test_store_work_concurrency.py`; `docs/release/threat-model.md`; `docs/release/blockers.md` | pass: the full backend suite (4,023 tests, these included) passed at RC-2 | `9d4581c9` | 2026-11-20 | agent | Apple M5 Pro, macOS 26.6, Node 26.13.0, Python 3.12.16, SQLite 3.53.1 |
 | FP-14-AC03 | The agreed new-code coverage threshold is met and both independent quality gates approve the committed release candidate. | Coverage rows below; the two gate verdict files | pending (BLK-02) | pending | pending | orchestrator (gates run as sub-agents) | pending |
-| FP-14-AC04 | Backup/restore and retention tests retain correct identity/progression and report intentionally unavailable historical details. | `backend/tests/test_store_release_hardening.py` (restore tests); `docs/release/data-and-recovery.md` sections 2, 5 and 6 | pending, measured at RC-2 | pending | pending | agent | pending |
+| FP-14-AC04 | Backup/restore and retention tests retain correct identity/progression and report intentionally unavailable historical details. | `backend/tests/test_store_release_hardening.py` (restore tests); `docs/release/data-and-recovery.md` sections 2, 5 and 6 | pass: the full backend suite passed at RC-2; the hand restore is OA-5 step 17 | `9d4581c9` | 2026-11-20 | agent | Apple M5 Pro, macOS 26.6, Node 26.13.0, Python 3.12.16, SQLite 3.53.1 |
 | FP-14-AC05 | Keyboard/reduced-motion operation works end to end; performance results name workload and environment instead of unsupported claims. | `tests/e2e/a11y.spec.ts`; `docs/release/a11y-checklist.md`; the performance record added with the result; `.kiro/specs/fp-16-heroes-parity/performance.md` (FIXTURE preview, FP-16 PR-C); `.kiro/specs/fp-10-11-live-arena/performance.md` ("Re-run for RC-2", FIXTURE preview) | pending, measured at RC-2; manual items pending (OA-5) | pending | pending | agent, then Eric | pending |
 | FP-14-AC06 | The integrated journey uses real generation and observed work, with explicit fixture/recorded-mode separation. | OA-5 steps 7 to 9; the release build must carry no fixture marker and exactly the release grants (`npm run check:fixtures`) | pending (OA-5) | pending | pending | Eric | pending |
 
@@ -23,16 +23,16 @@ This file maps each FP-14 acceptance criterion to the evidence for it, and each 
 
 | Tool | Measure | Gate | Result |
 |---|---|---|---|
-| Node scripts (`npm run coverage`) | lines | 90 percent | pending, measured at RC-2 |
-| UI (vitest) | statements, branches, lines | 90 percent | pending, measured at RC-2 |
-| Backend (pytest-cov) | total | 90 percent | pending, measured at RC-2 |
+| Node scripts (`npm run coverage`) | lines | 90 percent | 98.96 percent lines (394 tests) |
+| UI (vitest) | statements, branches, lines | 90 percent | 99.58 statements, 96.3 branches, 99.81 lines (1,863 tests) |
+| Backend (pytest-cov) | total | 90 percent | 99.84 percent (4,023 tests) |
 
 ### Quality gates
 
 | Gate | Head it approved | Verdict | Verdict file |
 |---|---|---|---|
-| `gate-requirements` | pending | pending | pending |
-| `gate-fit` | pending | pending | pending |
+| `gate-requirements` | `ae8f53ba` (PR #151 rev 2; same tree `1e6b94d6` as RC-2) | APPROVED (with note), after BLOCKED on rev 1 `f205e04b` | orchestrator project folder `2026-11-20-specter-release/gates/pr151-ae8f53b-requirements.md` (local, not committed) |
+| `gate-fit` | `ae8f53ba` (PR #151 rev 2; same tree `1e6b94d6` as RC-2) | APPROVED (with note) | orchestrator project folder `2026-11-20-specter-release/gates/pr151-ae8f53b-fit.md` (local, not committed) |
 
 Both gates run as sub-agents of the orchestrator on a clean checkout, because the implementer cannot reach `gate-requirements` and `gate-fit`. A PR description is not evidence. This file cites the verdict files and the head each one approved. The gates should read `docs/release/blockers.md`, `docs/release/threat-model.md` and this file as release evidence, because no CI job checks them.
 
@@ -76,4 +76,6 @@ RC-1 (`de533eb2744935148d5ae613110287188f93ac55`, FP-14 PR-C) is superseded beca
 
 | Candidate | Commit | Artifact | sha256 | Files | Built on |
 |---|---|---|---|---|---|
-| RC-2 | pending | pending | pending | pending | pending |
+| RC-2 | `9d4581c9402a098f4aef61e33c7c187b23dbfcb3` | `specter-arena-0.1.0-9d4581c9402a.tar.gz`, 6,033,464 bytes | `59ea8520f0905ca91cac83ea27603e6b0aec20e481b2790ee9e6332f2e30424f` | 1,283 | 2026-11-20, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0 |
+
+Two builds of RC-2 into separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` (`docs/release/install.md` section 3) both pass. The artifact has no `agents/` folder, `app.json` grants `/apps/specter-arena/api/*`, `/api/agents` and `slots:user` only, and it carries `0007_hero_roster.sql`. Coverage above was measured at RC-2 with `npm run coverage` on the same machine. The gates approved the PR #151 head whose tree equals RC-2's; BLK-02 stays open until FP-15 Stage B confirms the final candidate.
