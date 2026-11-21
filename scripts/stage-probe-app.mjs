@@ -6,8 +6,10 @@ import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from './check-fixtures.mjs';
 export const OVERLAY_PATH = 'probe/manifest-overlay.json';
 export const DEFAULT_OUT_DIR = '.probe-app';
 export const PHASES = ['v0', 'v1', 'v2', 'v3'];
-/** Phases that read their grants from another overlay file. v3 is the narrow 0.13.0 set (exact `=` entries). */
-/** @type {Record<string, string>} */
+/**
+ * Phases that read their grants from another overlay file. v3 is the narrow 0.13.0 set (exact `=` entries).
+ * @type {Record<string, string>}
+ */
 export const OVERLAY_BY_PHASE = { v3: 'probe/manifest-overlay-v3.json' };
 export const V2_EXTRA_API_ENTRY = '/api/version';
 export const INSTALL_COMMAND = 'kirocrew app install';

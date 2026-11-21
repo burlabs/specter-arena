@@ -111,6 +111,7 @@ from .records import (
     RosterRow,
     RosterRowIn,
     RunStart,
+    TokenReading,
 )
 from .roster import (
     NO_CUT,
@@ -120,6 +121,7 @@ from .roster import (
     roster_page,
     roster_revision,
     staleness_cut,
+    token_readings,
 )
 from .runs import (
     CollectorSetting,
@@ -311,6 +313,7 @@ __all__ = [
     "StoreUnavailable",
     "StoreUnconfigured",
     "StoreUsageError",
+    "TokenReading",
     "UnknownAsset",
     "UnknownAttempt",
     "UnknownBinding",
@@ -374,6 +377,7 @@ __all__ = [
     "staleness_cut",
     "start_run",
     "status_for_error",
+    "token_readings",
     "unconfigured_status",
     "xp_history",
     "xp_summaries",

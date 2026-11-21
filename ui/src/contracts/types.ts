@@ -92,6 +92,28 @@ export interface RosterV1 {
   notes: RosterNoteV1[];
 }
 
+/**
+ * `roster-item.v2` (`GET /api/roster?view=signals`): v1 plus `tokenReading`. condition.state also
+ * takes `waiting` (reasonCode approval-pending or question-pending), derived from Crew's row flags.
+ */
+export interface RosterTokenReadingV2 {
+  kind: 'context';
+  used: number;
+  window: number;
+  observedAt: number;
+}
+
+export interface RosterItemV2 extends Omit<RosterItemV1, 'contractVersion'> {
+  contractVersion: 2;
+  /** The context window in use: a gauge, never spend, a total or experience. Null is "Not collected". */
+  tokenReading: RosterTokenReadingV2 | null;
+}
+
+export interface RosterV2 extends Omit<RosterV1, 'contractVersion' | 'items'> {
+  contractVersion: 2;
+  items: RosterItemV2[];
+}
+
 /** state is a documented token, not a closed list: working, ended, unknown today. */
 export interface AttemptConditionV1 {
   state: string;
@@ -229,9 +251,12 @@ export const ROSTER_CONDITION_KEYS: Record<keyof RosterConditionV1, true> = { st
 export const ROSTER_COVERAGE_KEYS: Record<keyof RosterCoverageV1, true> = { state: true, sinceMs: true, reasonCode: true, openGapCount: true };
 export const ROSTER_WORKERS_KEYS: Record<keyof RosterWorkersV1, true> = { running: true, seen: true, unknown: true };
 export const ROSTER_ITEM_KEYS: Record<keyof RosterItemV1, true> = { contractVersion: true, bindingId: true, displayName: true, avatar: true, presence: true, condition: true, coverage: true, lastObservedAtMs: true, workers: true };
+export const ROSTER_ITEM_V2_KEYS: Record<keyof RosterItemV2, true> = { ...ROSTER_ITEM_KEYS, tokenReading: true };
+export const ROSTER_TOKEN_READING_KEYS: Record<keyof RosterTokenReadingV2, true> = { kind: true, used: true, window: true, observedAt: true };
 export const ROSTER_COLLECTOR_KEYS: Record<keyof RosterCollectorV1, true> = { state: true, reasonCode: true, sinceMs: true };
 export const ROSTER_NOTE_KEYS: Record<keyof RosterNoteV1, true> = { code: true, count: true };
 export const ROSTER_KEYS: Record<keyof RosterV1, true> = { contractVersion: true, items: true, nextCursor: true, rosterRevision: true, collector: true, notes: true };
+export const ROSTER_V2_KEYS: Record<keyof RosterV2, true> = ROSTER_KEYS;
 export const ATTEMPT_CONDITION_KEYS: Record<keyof AttemptConditionV1, true> = { state: true, reasonCode: true };
 export const ATTEMPT_ITEM_KEYS: Record<keyof AttemptItemV1, true> = { contractVersion: true, attemptId: true, kind: true, startedMs: true, endedMs: true, endSignal: true, condition: true };
 export const ATTEMPTS_WINDOW_KEYS: Record<keyof AttemptsWindowV1, true> = { fromMs: true, toMs: true, windowMs: true, observedFromMs: true, coveredMs: true, gapCount: true, botTurnsStarted: true, workersStarted: true, sampleSize: true, ended: true, stillOpen: true, unknown: true };

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Protocol
 
-from .condition import condition_rules_v1
+from .condition import Condition, condition_rules_v1, condition_rules_v2
 
 if TYPE_CHECKING:
-    from .store import Page, RosterRow
+    from .store import Page, RosterRow, TokenReading
 
 CONTRACT_VERSION = 1
+CONTRACT_VERSION_V2 = 2
 MAX_NAME_CHARS = 128
 MAX_NOTES = 8
 STANDING_NOTE = "cron-turns-not-observable"
@@ -51,11 +53,9 @@ def _avatar(row: RosterRow) -> dict[str, object] | None:
     return {"kind": kind, "ref": ref if ref is not None and _AVATAR_REF.fullmatch(ref) else None}
 
 
-def roster_item_wire(row: RosterRow, as_of_ms: int) -> dict[str, object]:
-    """One `roster-item.v1` body. Carries the opaque binding id and no Crew identifier."""
-    condition = condition_rules_v1(row, as_of_ms)
+def _item_wire(row: RosterRow, condition: Condition, version: int) -> dict[str, object]:
     return {
-        "contractVersion": CONTRACT_VERSION,
+        "contractVersion": version,
         "bindingId": row.binding_id,
         "displayName": _display_name(row),
         "avatar": _avatar(row),
@@ -81,6 +81,42 @@ def roster_item_wire(row: RosterRow, as_of_ms: int) -> dict[str, object]:
             "unknown": row.workers_unknown,
         },
     }
+
+
+def roster_item_wire(row: RosterRow, as_of_ms: int) -> dict[str, object]:
+    """One `roster-item.v1` body. Carries the opaque binding id and no Crew identifier."""
+    return _item_wire(row, condition_rules_v1(row, as_of_ms), CONTRACT_VERSION)
+
+
+def token_reading_wire(reading: TokenReading | None, row: RosterRow) -> dict[str, object] | None:
+    """The `tokenReading` of `roster-item.v2`: the bot's context window in use, or null.
+
+    It is a gauge of the live turn's context window (`context_usage`: `used_tokens` of
+    `window_tokens`), never spend and never a total. Null means "Not collected": no reading, a
+    bot the collector is not covering, or a reading older than the coverage that began after it.
+    """
+    if reading is None or row.coverage.state != "covered":
+        return None
+    since = row.coverage.since_ms
+    if since is not None and reading.observed_at_ms < since:
+        return None
+    if reading.used > reading.window or reading.window <= 0:
+        return None
+    return {
+        "kind": "context",
+        "used": reading.used,
+        "window": reading.window,
+        "observedAt": reading.observed_at_ms,
+    }
+
+
+def roster_item_v2_wire(
+    row: RosterRow, as_of_ms: int, reading: TokenReading | None = None
+) -> dict[str, object]:
+    """One `roster-item.v2` body: v1 plus the `waiting` condition and `tokenReading`."""
+    body = _item_wire(row, condition_rules_v2(row, as_of_ms), CONTRACT_VERSION_V2)
+    body["tokenReading"] = token_reading_wire(reading, row)
+    return body
 
 
 def _collector_wire(status: CollectorStatusLike | None, as_of_ms: int) -> dict[str, object]:
@@ -114,3 +150,19 @@ def roster_body(
         "collector": _collector_wire(status, as_of_ms),
         "notes": notes[:MAX_NOTES],
     }
+
+
+def roster_v2_body(
+    page: Page[RosterRow],
+    revision: int,
+    collector: CollectorLike | None,
+    as_of_ms: int,
+    readings: Mapping[str, TokenReading],
+) -> dict[str, object]:
+    """The `roster.v2` body: `roster.v1` with `roster-item.v2` items."""
+    body = roster_body(page, revision, collector, as_of_ms)
+    body["contractVersion"] = CONTRACT_VERSION_V2
+    body["items"] = [
+        roster_item_v2_wire(row, as_of_ms, readings.get(row.binding_id)) for row in page.items
+    ]
+    return body
