@@ -1,0 +1,29 @@
+{
+  "contractVersion": 1,
+  "asOfMs": 1800000000000,
+  "retention": {
+    "retentionDays": null,
+    "changedAtMs": null,
+    "revision": 0
+  },
+  "horizonMs": null,
+  "preview": null,
+  "running": null,
+  "lastPurge": null,
+  "lastCleanup": null,
+  "lastExport": null,
+  "uploads": {
+    "stored": 0,
+    "cap": 100,
+    "unused": 0
+  },
+  "exports": [
+    {
+      "fileName": "../export-v9-20261121T044200123456Z.db",
+      "byteLength": 4661248,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "createdMs": 1800000001000
+    }
+  ],
+  "paused": false
+}

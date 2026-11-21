@@ -33,6 +33,8 @@ Status `DRAFT` means the shape may still change in place. `FROZEN` means it chan
 | `xp-summaries` | 1 | work-ledger | FROZEN | `GET /api/xp`, the summary of every bot binding with an XP entry; consumed by the FP-08+09 PR-C UI (`ui/src/work/`, roster rows and detail); frozen by FP-08+09 |
 | `xp-summaries` | 2 | work-ledger | FROZEN | `GET /api/xp?view=paged`, one keyset page (200 at most, ascending `bindingId`) of `xp-summary` for every bot binding with an XP entry, with no 500 cap; `GET /api/xp` without `view` stays `xp-summaries` v1; built by `work/wire.py` (`xp_summaries_v2_wire`); consumed by `ui/src/work/useXp.ts`; frozen by FP-18 |
 | `xp-history` | 1 | work-ledger | FROZEN | `GET /api/roster/{bindingId}/xp`, the summary and one keyset page of XP entries (award, correction, reinstatement); consumed by the FP-08+09 PR-C UI (`ui/src/work/`, Progression panel); frozen by FP-08+09 |
+| `data-lifecycle` | 1 | work-ledger | DRAFT | `GET /api/data` and the body of `POST /api/data/retention`, `POST /api/data/purge`, `POST /api/data/export` and `POST /api/data/asset-cleanup`: retention setting, purge preview and last runs, exports, upload usage, collector pause flag; built by `lifecycle/service.py`; consumed by the FP-19 Data tab (`ui/src/data/`); DRAFT in FP-19 PR-A, FROZEN in PR-B |
+| `collector-control` | 1 | crew-integration | DRAFT | `POST /api/collector`: the stored pause setting, its revision and the collector state after an idempotent pause or resume; built by `lifecycle/service.py` (`DataService.set_collector`); consumed by the FP-19 Data tab (`ui/src/data/`); DRAFT in FP-19 PR-A, FROZEN in PR-B |
 
 ## Rules for schema authors
 

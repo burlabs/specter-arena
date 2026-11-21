@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
+import time
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager, suppress
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 from .backup import KEEP_PRE_MIGRATION, pre_migration_backup
 from .connection import connect, enable_wal, quick_check
 from .errors import SchemaNewer, StoreClosed, StoreUnavailable, StoreUsageError
+from .housekeeping import close_interrupted_runs, sweep_temp_files
 from .location import (
     BACKUPS_DIRNAME,
     check_sqlite_version,
@@ -55,6 +57,11 @@ class Store:
     @property
     def backups_dir(self) -> Path:
         return self._path.parent / BACKUPS_DIRNAME
+
+    @property
+    def data_dir(self) -> Path:
+        """The app data directory: the store directory's parent."""
+        return self._path.parent.parent
 
     @contextmanager
     def write(self) -> Iterator[sqlite3.Connection]:
@@ -143,12 +150,15 @@ def open_store(
 
     A database newer than this code is refused before anything writes to it. A non-empty
     database is backed up before any pending migration; if that backup fails, nothing migrates.
-    Every failure is a `StoreError`.
+    Every failure is a `StoreError`. Before anything opens, orphan temp files older than ten
+    minutes are swept (never an error); after migration, a lifecycle run a crash left open is
+    closed as interrupted.
     """
     check_sqlite_version()
     chosen = packaged_migrations() if migrations is None else check_sequence(migrations)
     ensure_private_dir(data_dir)
     ensure_private_dir(store_dir(data_dir))
+    sweep_temp_files(data_dir)
     path = db_path(data_dir)
     precreate_private_file(path)
     writer = connect(path, read_only=False)
@@ -161,6 +171,7 @@ def open_store(
         if version > 0 and pending(writer, chosen):
             pre_migration_backup(path, version, len(chosen), keep_backups)
         migrate(writer, chosen)
+        close_interrupted_runs(writer, int(time.time() * 1000))
         reader = connect(path, read_only=True)
     except BaseException as error:
         writer.close()

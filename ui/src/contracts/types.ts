@@ -425,3 +425,103 @@ export const XP_SUMMARIES_KEYS: Record<keyof XpSummariesV1, true> = { contractVe
 export const XP_SUMMARIES_PAGED_KEYS: Record<keyof XpSummariesV2, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
 export const XP_ENTRY_KEYS: Record<keyof XpEntryV1, true> = { entryId: true, workId: true, workTitle: true, kind: true, amount: true, policyVersion: true, decisionId: true, createdAtMs: true };
 export const XP_HISTORY_KEYS: Record<keyof XpHistoryV1, true> = { contractVersion: true, bindingId: true, summary: true, items: true, nextCursor: true, asOfMs: true };
+
+// data-lifecycle v1 and collector-control v1 (FP-19). The schemas are owned by the backend PR-A and are DRAFT until
+// PR-B freezes them; the key tables below join the schema-drift test in contracts.test.ts once those files exist.
+
+/** The retention windows the store accepts; null (kept out of this type) means keep everything. */
+export type RetentionDaysV1 = 30 | 90 | 180 | 365;
+
+export interface DataRetentionV1 {
+  retentionDays: RetentionDaysV1 | null;
+  changedAtMs: number | null;
+  revision: number;
+}
+
+/** What `POST /api/data/purge` would delete now. */
+export interface DataPreviewV1 {
+  cutoffMs: number;
+  observations: number;
+  quarantine: number;
+  attempts: number;
+}
+
+export interface DataDeletedV1 {
+  observations: number;
+  quarantine: number;
+  attempts: number;
+  assets: number;
+}
+
+export type LifecycleRunKindV1 = 'purge' | 'asset-cleanup';
+export type LifecycleRunStateV1 = 'running' | 'completed' | 'interrupted' | 'failed';
+
+export interface DataRunV1 {
+  kind: LifecycleRunKindV1;
+  state: LifecycleRunStateV1;
+  cutoffMs: number;
+  startedMs: number;
+  endedMs: number | null;
+  deleted: DataDeletedV1;
+}
+
+/** One file under `data/exports/`; `fileName` is a bare name, never a path. */
+export interface DataExportFileV1 {
+  fileName: string;
+  byteLength: number;
+  sha256: string;
+  createdMs: number;
+}
+
+export interface DataUploadsV1 {
+  stored: number;
+  cap: number;
+  unused: number;
+}
+
+/** Body of GET /api/data and of every successful PUT retention, POST purge, POST export and POST asset-cleanup. */
+export interface DataLifecycleV1 {
+  contractVersion: 1;
+  asOfMs: number;
+  retention: DataRetentionV1;
+  horizonMs: number | null;
+  preview: DataPreviewV1 | null;
+  running: DataRunV1 | null;
+  lastPurge: DataRunV1 | null;
+  lastCleanup: DataRunV1 | null;
+  lastExport: DataExportFileV1 | null;
+  uploads: DataUploadsV1;
+  exports: DataExportFileV1[];
+  paused: boolean;
+}
+
+/** Body of POST /api/collector. `state` is the supervisor state after the call, a pattern string like `roster.v1.collector.state`. */
+export interface CollectorControlV1 {
+  contractVersion: 1;
+  paused: boolean;
+  revision: number;
+  changedAtMs: number;
+  state: string;
+}
+
+export const DATA_RETENTION_KEYS: Record<keyof DataRetentionV1, true> = { retentionDays: true, changedAtMs: true, revision: true };
+export const DATA_PREVIEW_KEYS: Record<keyof DataPreviewV1, true> = { cutoffMs: true, observations: true, quarantine: true, attempts: true };
+export const DATA_DELETED_KEYS: Record<keyof DataDeletedV1, true> = { observations: true, quarantine: true, attempts: true, assets: true };
+export const DATA_RUN_KEYS: Record<keyof DataRunV1, true> = { kind: true, state: true, cutoffMs: true, startedMs: true, endedMs: true, deleted: true };
+export const DATA_EXPORT_FILE_KEYS: Record<keyof DataExportFileV1, true> = { fileName: true, byteLength: true, sha256: true, createdMs: true };
+export const DATA_UPLOADS_KEYS: Record<keyof DataUploadsV1, true> = { stored: true, cap: true, unused: true };
+export const DATA_LIFECYCLE_KEYS: Record<keyof DataLifecycleV1, true> = {
+  contractVersion: true,
+  asOfMs: true,
+  retention: true,
+  horizonMs: true,
+  preview: true,
+  running: true,
+  lastPurge: true,
+  lastCleanup: true,
+  lastExport: true,
+  uploads: true,
+  exports: true,
+  paused: true,
+};
+export const COLLECTOR_CONTROL_KEYS: Record<keyof CollectorControlV1, true> = { contractVersion: true, paused: true, revision: true, changedAtMs: true, state: true };

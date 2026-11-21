@@ -151,3 +151,15 @@ class RequestReused(StoreError):
 
 class LimitReached(StoreError):
     code = "limit-reached"
+
+
+class UploadLimitReached(StoreError):
+    """The store already holds the most uploaded assets it will keep, and the image is new."""
+
+    code = "upload-limit-reached"
+
+
+class LifecycleBusy(StoreError):
+    """Another purge or cleanup run is open on this store."""
+
+    code = "lifecycle-busy"
