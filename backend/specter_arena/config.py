@@ -51,6 +51,8 @@ REQUIRED_EVENTS = ("slots:user",)
 REQUIRED_API_PATHS = ("/apps/specter-arena/api/ping", AGENTS_API_ENTRY)
 RUN_OPTIONS_FILE = ".probe-run.json"
 _CHILDREN_SUFFIX = "/*"
+# Crew 0.13.0 reads an api entry that starts with this mark as one exact path (App Kit seam 7).
+_EXACT_MARK = "="
 
 
 def read_run_options_file(path: Path | None = None) -> object:
@@ -96,11 +98,15 @@ class Grants:
 
     def has_api(self, path: str) -> bool:
         """The host's matching rule: a bare entry matches the path and any child path;
-        `<prefix>/*` matches children of the prefix only."""
+        `<prefix>/*` matches children of the prefix only; `=<path>` matches that path alone."""
         if self.unknown:
             return True
         for entry in self.api:
-            if entry.endswith(_CHILDREN_SUFFIX):
+            if entry.startswith(_EXACT_MARK):
+                exact = entry[len(_EXACT_MARK) :]
+                if exact and exact == path:
+                    return True
+            elif entry.endswith(_CHILDREN_SUFFIX):
                 if path.startswith(entry[:-1]):
                     return True
             elif path == entry or path.startswith(f"{entry}/"):

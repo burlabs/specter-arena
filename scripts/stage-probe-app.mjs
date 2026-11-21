@@ -5,13 +5,19 @@ import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from './check-fixtures.mjs';
 
 export const OVERLAY_PATH = 'probe/manifest-overlay.json';
 export const DEFAULT_OUT_DIR = '.probe-app';
-export const PHASES = ['v0', 'v1', 'v2'];
+export const PHASES = ['v0', 'v1', 'v2', 'v3'];
+/** Phases that read their grants from another overlay file. v3 is the narrow 0.13.0 set (exact `=` entries). */
+/** @type {Record<string, string>} */
+export const OVERLAY_BY_PHASE = { v3: 'probe/manifest-overlay-v3.json' };
 export const V2_EXTRA_API_ENTRY = '/api/version';
 export const INSTALL_COMMAND = 'kirocrew app install';
 export const RUN_OPTIONS_FILE = '.probe-run.json';
 /** Never staged: the probe app must not carry the product store (RS-12, V2.1-8). */
 export const EXCLUDED_PATHS = ['backend/specter_arena/store', 'backend/specter_arena/store_runtime.py'];
 const HOST_VERSION = /^\d+\.\d+\.\d+$/;
+/** One opt-in probe step id; the backend's probe/options.py applies the same pattern and a 8-entry cap. */
+const STEP_ID = /^[a-z][a-z0-9-]{0,40}$/;
+const MAX_EXTRA_STEPS = 8;
 /** Flag, run-option key and inclusive range; the backend's probe/options.py applies the same ranges. */
 const NUMBER_FLAGS = [
   { flag: '--capture-seconds', key: 'captureSeconds', low: 1, high: 900 },
@@ -81,10 +87,10 @@ export function mergeManifest(base, overlay) {
  * v1 and v2 need a host version; v0 may omit it only when it sets no other option.
  * @param {string} phase
  * @param {Record<string, string | undefined>} flags raw flag values by flag name
- * @returns {Record<string, string | number> | null}
+ * @returns {Record<string, string | number | string[]> | null}
  */
 export function runOptions(phase, flags) {
-  /** @type {Record<string, string | number>} */
+  /** @type {Record<string, string | number | string[]>} */
   const options = {};
   const version = flags['--host-version'];
   if (version !== undefined) {
@@ -99,6 +105,14 @@ export function runOptions(phase, flags) {
       throw new Error(`${flag} must be a number from ${low} to ${high}, got ${raw}`);
     }
     options[key] = value;
+  }
+  const extra = flags['--extra-steps'];
+  if (extra !== undefined) {
+    const ids = extra.split(',');
+    if (ids.length > MAX_EXTRA_STEPS || !ids.every((id) => STEP_ID.test(id))) {
+      throw new Error(`--extra-steps must be up to ${MAX_EXTRA_STEPS} comma-separated step ids, got ${extra}`);
+    }
+    options.extraSteps = ids;
   }
   if (Object.keys(options).length === 0 && phase === 'v0') return null;
   if (version === undefined) throw new Error(`phase ${phase} needs --host-version (read it with kirocrew --version)`);
@@ -143,7 +157,7 @@ export function stage({ phase, flags = {}, root = '.', outDir = DEFAULT_OUT_DIR,
   let manifest;
   let options;
   try {
-    manifest = mergeManifest(readJson(join(repo, 'app.json')), overlayForPhase(readJson(join(repo, OVERLAY_PATH)), phase));
+    manifest = mergeManifest(readJson(join(repo, 'app.json')), overlayForPhase(readJson(join(repo, OVERLAY_BY_PHASE[phase] ?? OVERLAY_PATH)), phase));
     options = runOptions(phase, flags);
   } catch (error) {
     log(`probe:stage: ${error instanceof Error ? error.message : String(error)}`);
@@ -181,6 +195,8 @@ export function parseArgs(args) {
     return index === -1 ? undefined : (args[index + 1] ?? '');
   };
   const flags = Object.fromEntries(['--host-version', ...NUMBER_FLAGS.map(({ flag }) => flag)].map((name) => [name, value(name)]));
+  // Kept off the flag map unless given, so the map keeps the shape it had before the v3 phase.
+  if (value('--extra-steps') !== undefined) flags['--extra-steps'] = value('--extra-steps');
   return { phase: value('--phase') ?? 'v0', flags, outDir: DEFAULT_OUT_DIR };
 }
 

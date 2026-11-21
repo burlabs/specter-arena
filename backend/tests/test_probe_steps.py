@@ -1,4 +1,6 @@
 import asyncio
+import json
+import re
 
 import pytest
 
@@ -6,6 +8,7 @@ from backend.specter_arena.config import Grants
 from backend.specter_arena.probe.matrix import empty_run, to_host_facts_json, to_matrix_json
 from backend.specter_arena.probe.sanitise import digest, placeholder
 from backend.specter_arena.probe.steps import (
+    MEMBER_RECORD_TYPE,
     STEP_IDS,
     STEPS,
     StepContext,
@@ -63,6 +66,7 @@ def test_step_ids_match_the_design_order() -> None:
         "usage-endpoints",
         "chat-slots",
         "ws-capture",
+        "usage-turns",
         "member-record-write",
         "member-record-ungranted",
         "cli-compare",
@@ -1182,3 +1186,204 @@ def test_the_bot_id_excerpt_names_which_form_matched() -> None:
     run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), by_key)
     excerpt = by_key.run.cells["bot-id-observable"].evidence[0].excerpt
     assert excerpt == "probe bot slot present: DM slot key member-probe"
+
+
+V3_GRANTS = Grants(
+    api=frozenset(
+        {
+            "/apps/specter-arena/api/*",
+            "/api/agents",
+            "=/api/usage",
+            "=/api/sessions/usage",
+            "=/api/usage/turns",
+            "/api/member-records/*",
+        }
+    ),
+    events=frozenset({"slots:user", "subagent:user"}),
+    basis="manifest",
+)
+
+
+def test_the_member_record_body_names_a_type_and_a_data_object() -> None:
+    path = "/api/member-records/probe"
+    port = FakePort({("POST", path): (200, json_body({"ok": True}))})
+    run_one("member-record-write", port, make_ctx(grants=V3_GRANTS))
+    body = json.loads(port.bodies[0] or b"")
+    assert set(body) == {"type", "data"}
+    assert body["type"] == MEMBER_RECORD_TYPE
+    # Crew keys it as specter_arena__<type>: letters, digits, single underscores, 64 at most.
+    assert re.fullmatch(r"[A-Za-z0-9_]+", f"specter_arena__{body['type']}")
+    assert "__" not in body["type"]
+    assert len(f"specter_arena__{body['type']}") <= 64
+    assert body["data"]["source"] == "specter-probe"
+    ungranted = FakePort({("POST", path): DENY})
+    run_one("member-record-ungranted", ungranted, make_ctx(grants=Grants.none()))
+    assert json.loads(ungranted.bodies[0] or b"")["type"] == MEMBER_RECORD_TYPE
+
+
+def test_exact_usage_grants_let_the_usage_step_run() -> None:
+    port = FakePort(
+        {
+            ("GET", "/api/usage"): (
+                200,
+                json_body({"username": "x", "sessions": {}, "billing": {}}),
+            ),
+            ("GET", "/api/sessions/usage"): (200, json_body({"usage": {}})),
+        }
+    )
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("usage-endpoints", port, ctx)
+    assert state(ctx, "usage-api-app-token") == "ALLOWED"
+    assert state(ctx, "sessions-usage-api-app-token") == "ALLOWED"
+    assert [call[1] for call in port.calls] == ["/api/usage", "/api/sessions/usage"]
+
+
+def test_approval_resolved_is_counted_and_a_plain_refusal_is_not_a_distinct_signal() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        slots_frame(slot_row(DM, running=True, pending_approval=True)),
+        event_frame(
+            "approval_resolved", id="a-1", slot=DM, approved=False, origin="native", mid="m-1"
+        ),
+        event_frame("approval_resolved", id="a-2", slot=DM, approved=True, origin="native"),
+    ]
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    assert state(ctx, "user-signal-approval") == "ALLOWED"
+    resolved = ctx.run.cells["user-signal-approval-resolved"]
+    assert resolved.state == "ALLOWED"
+    assert (
+        "2 approval_resolved frame(s) on a probe slot, 1 with approved=false"
+        in resolved.evidence[0].excerpt
+    )
+    assert "origin=native" in resolved.evidence[0].excerpt
+    blocked = ctx.run.cells["user-signal-blocked-distinct"]
+    assert blocked.state == "UNSUPPORTED"
+    assert "only approved distinguished a refusal" in blocked.evidence[0].excerpt
+    assert "m-1" not in json.dumps(list(ctx.run.events.rows))
+
+
+def test_a_decision_word_is_a_distinct_signal_and_free_text_is_never_kept() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        event_frame(
+            "approval_resolved",
+            id="a-1",
+            slot=DM,
+            approved=False,
+            origin="coordinator",
+            decision="expired",
+            tool="rm -rf",
+        ),
+    ]
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    blocked = ctx.run.cells["user-signal-blocked-distinct"]
+    assert blocked.state == "ALLOWED"
+    assert "decision=expired" in blocked.evidence[0].excerpt
+    assert "rm -rf" not in json.dumps(list(ctx.run.events.rows))
+
+
+def test_approval_cells_stay_untested_without_a_frame_or_a_refusal() -> None:
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM, running=True))]), ctx)
+    assert state(ctx, "user-signal-approval-resolved") == "UNTESTED"
+    assert state(ctx, "user-signal-blocked-distinct") == "UNTESTED"
+    approved_only = make_ctx(grants=V3_GRANTS)
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("approval_resolved", id="a-1", slot=DM, approved=True),
+    ]
+    run_one("ws-capture", FakePort(frames=frames), approved_only)
+    assert state(approved_only, "user-signal-approval-resolved") == "ALLOWED"
+    assert state(approved_only, "user-signal-blocked-distinct") == "UNTESTED"
+    assert "no approval was refused" in note(approved_only, "user-signal-blocked-distinct")
+
+
+def test_context_usage_on_a_probe_slot_decides_the_context_cell_and_is_a_gauge() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("context_usage", slot=DM, pct=7.2, used_tokens=71806, window_tokens=1000000),
+        event_frame("context_usage", slot=DM, pct=9.0, used_tokens=90000, window_tokens=1000000),
+        event_frame("context_usage", slot="chat-9", pct=1.0, used_tokens=999999, window_tokens=1),
+    ]
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    cell = ctx.run.cells["bot-token-context-usage"]
+    assert cell.state == "ALLOWED"
+    excerpt = cell.evidence[0].excerpt
+    assert "2 context_usage frame(s)" in excerpt
+    assert "largest used_tokens 90000 of a 1000000 token window" in excerpt
+    assert "not cumulative spend" in excerpt
+    none = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), none)
+    assert state(none, "bot-token-context-usage") == "UNTESTED"
+    no_slots = make_ctx(grants=Grants.none())
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), no_slots)
+    assert note(no_slots, "bot-token-context-usage") == "no slots grant declared"
+
+
+def test_subagent_replay_after_a_reconnect_is_decided_only_after_a_reconnect() -> None:
+    frames = [
+        slots_frame(slot_row(DM, running=True)),
+        marker(),
+        slots_frame(slot_row(DM, running=True)),
+        event_frame("subagent_done", id="sa-1", slot=DM, outcome="completed"),
+        event_frame("subagent_snapshot", id="sa-2", slot=DM),
+    ]
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=frames), ctx)
+    cell = ctx.run.cells["subagent-replay-after-reconnect"]
+    assert cell.state == "ALLOWED"
+    assert "subagent_done 1, subagent_snapshot 1" in cell.evidence[0].excerpt
+    quiet = make_ctx(grants=V3_GRANTS)
+    run_one(
+        "ws-capture",
+        FakePort(frames=[slots_frame(slot_row(DM)), marker(), slots_frame(slot_row(DM))]),
+        quiet,
+    )
+    assert state(quiet, "subagent-replay-after-reconnect") == "UNTESTED"
+    assert "replayed nothing" in note(quiet, "subagent-replay-after-reconnect")
+    none = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM))]), none)
+    assert "no reconnect happened" in note(none, "subagent-replay-after-reconnect")
+    slots_only = Grants(frozenset(), frozenset({"slots:user"}), "manifest")
+    bare = make_ctx(grants=slots_only)
+    run_one(
+        "ws-capture",
+        FakePort(frames=[slots_frame(slot_row(DM)), marker(), slots_frame(slot_row(DM))]),
+        bare,
+    )
+    assert note(bare, "subagent-replay-after-reconnect") == "no subagent grant declared"
+
+
+def test_usage_turns_asks_once_for_the_bot_slot_and_records_shape_only() -> None:
+    target = f"/api/usage/turns?slot={DM}"
+    port = FakePort({("GET", target): (200, json_body({"slot": DM, "days": 7, "turns": []}))})
+    ctx = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM, running=True))]), ctx)
+    run_one("usage-turns", port, ctx)
+    cell = ctx.run.cells["bot-token-usage-turns-app-scoped"]
+    assert cell.state == "ALLOWED"
+    assert "0 turn row(s)" in cell.evidence[0].excerpt
+    assert [call[:2] for call in port.calls] == [("GET", target)]
+    assert DM not in cell.evidence[0].excerpt
+
+
+def test_usage_turns_denied_untested_without_grant_and_without_a_bot_slot() -> None:
+    denied = make_ctx(grants=V3_GRANTS)
+    run_one("ws-capture", FakePort(frames=[slots_frame(slot_row(DM, running=True))]), denied)
+    run_one("usage-turns", FakePort({("GET", f"/api/usage/turns?slot={DM}"): DENY}), denied)
+    assert state(denied, "bot-token-usage-turns-app-scoped") == "DENIED"
+    bare = make_ctx(grants=Grants.none())
+    run_one("usage-turns", FakePort(), bare)
+    assert note(bare, "bot-token-usage-turns-app-scoped") == "no /api/usage/turns grant declared"
+    no_bot = make_ctx(grants=V3_GRANTS)
+    port = FakePort()
+    run_one("usage-turns", port, no_bot)
+    assert "no probe bot slot" in note(no_bot, "bot-token-usage-turns-app-scoped")
+    assert port.calls == []
+
+
+def test_usage_turns_is_opt_in_so_a_default_run_does_not_ask() -> None:
+    assert "usage-turns" not in [step.id for step in select_steps(None)]

@@ -30,6 +30,7 @@ from .options import OptionsError, load_run_options
 from .questions import question_ids
 from .snapshot import SANITISATION, build_snapshot
 from .steps import (
+    DEFAULT_STEP_IDS,
     GatewayPort,
     StepContext,
     UnknownStep,
@@ -224,6 +225,9 @@ class ProbeService:
             raise BadRequest(reason) from error
         if options.host_version is None:
             raise HostVersionUnset
+        if step_ids is None and options.extra_steps:
+            step_ids = [*DEFAULT_STEP_IDS, *options.extra_steps]
+            select_steps(step_ids)
         port = self._port_factory()
         if not self._grants_resolved:
             self._resolve_grants(None)

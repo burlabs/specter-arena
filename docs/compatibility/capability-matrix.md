@@ -36,7 +36,9 @@ Evidence by run: 17 cells cite `evidence/S1-v1/export.json` and 8 cite `evidence
 | `bot-per-bot-opt-in` | UNTESTED | none | bot | none |
 | `bot-reimport-kirobot` | UNTESTED | none | bot | none |
 | `bot-scheduled-turn-origin` | UNTESTED | none | bot | none |
+| `bot-token-context-usage` | UNTESTED | none | bot | none |
 | `bot-token-usage-per-bot` | ALLOWED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-token-usage-per-bot |
+| `bot-token-usage-turns-app-scoped` | UNTESTED | none | bot | none |
 | `bot-worker-session-attribution` | ALLOWED | APP-TOKEN | bot | evidence/S1-v1/export.json#bot-worker-session-attribution |
 | `bot-worker-session-attribution-subagent` | UNTESTED | none | bot | none |
 | `closed-tab-collection` | UNTESTED | none | app-owned | none |
@@ -49,11 +51,14 @@ Evidence by run: 17 cells cite `evidence/S1-v1/export.json` and 8 cite `evidence
 | `reconnect-snapshot` | ALLOWED | APP-TOKEN | app-owned | evidence/S1-v1/export.json#reconnect-snapshot |
 | `sessions-usage-api-app-token` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#sessions-usage-api-app-token |
 | `subagent-events-visible` | UNTESTED | none | user-owned | none |
+| `subagent-replay-after-reconnect` | UNTESTED | none | bot | none |
 | `usage-api-app-token` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#usage-api-app-token |
 | `user-chat-slot-history` | UNTESTED | none | user-owned | none |
 | `user-chat-slots-api` | DENIED | APP-TOKEN | user-owned | evidence/L3-v1b/export.json#user-chat-slots-api |
 | `user-outcome-evidence` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#user-outcome-evidence |
 | `user-signal-approval` | UNTESTED | none | user-owned | none |
+| `user-signal-approval-resolved` | UNTESTED | none | user-owned | none |
+| `user-signal-blocked-distinct` | UNTESTED | none | user-owned | none |
 | `user-signal-progress` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#user-signal-progress |
 | `user-signal-start` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#user-signal-start |
 | `user-signal-terminal` | ALLOWED | APP-TOKEN | user-owned | evidence/S1-v1/export.json#user-signal-terminal |
@@ -99,7 +104,9 @@ Evidence by run: 17 cells cite `evidence/S1-v1/export.json` and 8 cite `evidence
 | `bot-per-bot-opt-in` | Not probed. Source reading expects UNSUPPORTED, but no evidence file backs that, so the cell stays UNTESTED. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-reimport-kirobot` | Not run. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `bot-scheduled-turn-origin` | No scheduled bot turn was triggered. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
+| `bot-token-context-usage` | Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it. |
 | `bot-token-usage-per-bot` | /api/usage, /api/sessions/usage: per-slot or per-bot field names present (session); what the figures mean is not concluded here; capture so far: context_usage rows 0, subagent_done rows 0 (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
+| `bot-token-usage-turns-app-scoped` | Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it. |
 | `bot-worker-session-attribution` | created_by chain reaches the probe bot; lineage_minted=True (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `bot-worker-session-attribution-subagent` | Not exercised: the probe bot has no spawn_run tool on Crew 0.12.2 and refused prompt C, so no subagent was started. Eric accepted this as a coverage limit on 2026-11-15. Run S1-v1. |
 | `closed-tab-collection` | Not exercised: the arena tab was not closed in the slice-1 sitting (step F skipped). The capture saw a 900 s gap with no page request, but the cell needs the owner to attest the tab was closed. Run S1-v1, 2026-11-15. |
@@ -112,11 +119,14 @@ Evidence by run: 17 cells cite `evidence/S1-v1/export.json` and 8 cite `evidence
 | `reconnect-snapshot` | 1 reconnect(s); probe rows before 2, after 2, present in both 2; running state carried over for 2 of 2; replayed within 10 s: none (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `sessions-usage-api-app-token` | GET /api/sessions/usage answered 200; object with fields usage (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `subagent-events-visible` | Not exercised: no spawn_run subagent was started (the probe bot has no spawn_run tool); subagent:user and subagent:all were granted. Run S1-v1, 2026-11-15. |
+| `subagent-replay-after-reconnect` | Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it. |
 | `usage-api-app-token` | GET /api/usage answered 200; object with fields billing, refreshing, sessions, username (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-chat-slot-history` | No worker slot was observed, so there was no history to fetch. A7 two-day timebox reached; Eric closed the run on 2026-11-12. |
 | `user-chat-slots-api` | GET /api/chat/slots answered 403; object with fields code, error; code="forbidden"; error="Forbidden" (export.json run 20261111T230641Z-4f743d) |
 | `user-outcome-evidence` | outcome text: I ran echo b, and it printed b with exit code 0. I called work_brief first. Then… (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-signal-approval` | Not exercised: prompt D (approval) was skipped in the shortened slice-1 sitting; question_card frames: 0. Run S1-v1, 2026-11-15. |
+| `user-signal-approval-resolved` | Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it. |
+| `user-signal-blocked-distinct` | Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it. |
 | `user-signal-progress` | signal observed on a probe slot: context-usage, progress, tool-call, tool-result; last_activity_ts is JSON str (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-signal-start` | signal observed on a probe slot: chat-status, start (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |
 | `user-signal-terminal` | signal observed on a probe slot: chat-done, terminal; a turn boundary, not an outcome (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set)) |

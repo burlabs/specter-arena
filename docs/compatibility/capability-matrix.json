@@ -277,6 +277,16 @@
       "notes": "No scheduled bot turn was triggered. A7 two-day timebox reached; Eric closed the run on 2026-11-12."
     },
     {
+      "id": "bot-token-context-usage",
+      "question": "Do context_usage frames on the bot slot give a per-bot token reading under slots:user?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it."
+    },
+    {
       "id": "bot-token-usage-per-bot",
       "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
       "scope": "bot",
@@ -286,6 +296,16 @@
       "probedAt": "2026-11-15T21:57:26.853739+00:00",
       "hostVersion": "0.12.2",
       "notes": "/api/usage, /api/sessions/usage: per-slot or per-bot field names present (session); what the figures mean is not concluded here; capture so far: context_usage rows 0, subagent_done rows 0 (export.json run 20261115T215658Z-8625d7; owner broad grant: api /api/*, every event declaration (not the D-P1 set))"
+    },
+    {
+      "id": "bot-token-usage-turns-app-scoped",
+      "question": "Does GET /api/usage/turns?slot=<bot DM key> give an app token per-turn rows for a bot slot?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it."
     },
     {
       "id": "bot-worker-session-attribution",
@@ -412,6 +432,16 @@
       "notes": "Not exercised: no spawn_run subagent was started (the probe bot has no spawn_run tool); subagent:user and subagent:all were granted. Run S1-v1, 2026-11-15."
     },
     {
+      "id": "subagent-replay-after-reconnect",
+      "question": "After a reconnect, does subscribe_subagents replay subagent_snapshot or subagent_done frames for the bot?",
+      "scope": "bot",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it."
+    },
+    {
       "id": "usage-api-app-token",
       "question": "Does GET /api/usage answer an app token granted that path (status and field names only)?",
       "scope": "user-owned",
@@ -462,6 +492,26 @@
       "evidenceRef": null,
       "probedAt": null,
       "notes": "Not exercised: prompt D (approval) was skipped in the shortened slice-1 sitting; question_card frames: 0. Run S1-v1, 2026-11-15."
+    },
+    {
+      "id": "user-signal-approval-resolved",
+      "question": "Does a pending approval end with an approval_resolved frame on the bot slot?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it."
+    },
+    {
+      "id": "user-signal-blocked-distinct",
+      "question": "Does Crew send a blocked, denied or timed-out signal distinct from approval_resolved approved=false?",
+      "scope": "user-owned",
+      "state": "UNTESTED",
+      "credential": null,
+      "evidenceRef": null,
+      "probedAt": null,
+      "notes": "Not yet probed on Crew 0.13.0. FP-20 PR-A adds the probe step; the owner sitting decides it."
     },
     {
       "id": "user-signal-progress",

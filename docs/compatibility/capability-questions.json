@@ -184,11 +184,25 @@
       "priority": "best-effort"
     },
     {
+      "id": "bot-token-context-usage",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Do context_usage frames on the bot slot give a per-bot token reading under slots:user?",
+      "priority": "best-effort"
+    },
+    {
       "id": "bot-token-usage-per-bot",
       "kind": "matrix",
       "scope": "bot",
       "question": "Does any app-token response carry a per-bot or per-slot token figure (field names only)?",
       "priority": "must"
+    },
+    {
+      "id": "bot-token-usage-turns-app-scoped",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "Does GET /api/usage/turns?slot=<bot DM key> give an app token per-turn rows for a bot slot?",
+      "priority": "best-effort"
     },
     {
       "id": "bot-worker-session-attribution",
@@ -371,6 +385,13 @@
       "priority": "must"
     },
     {
+      "id": "subagent-replay-after-reconnect",
+      "kind": "matrix",
+      "scope": "bot",
+      "question": "After a reconnect, does subscribe_subagents replay subagent_snapshot or subagent_done frames for the bot?",
+      "priority": "best-effort"
+    },
+    {
       "id": "usage-api-app-token",
       "kind": "matrix",
       "scope": "user-owned",
@@ -404,6 +425,20 @@
       "scope": "user-owned",
       "question": "Is a pending approval observable (pending_approval, needs_input)?",
       "priority": "must"
+    },
+    {
+      "id": "user-signal-approval-resolved",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does a pending approval end with an approval_resolved frame on the bot slot?",
+      "priority": "best-effort"
+    },
+    {
+      "id": "user-signal-blocked-distinct",
+      "kind": "matrix",
+      "scope": "user-owned",
+      "question": "Does Crew send a blocked, denied or timed-out signal distinct from approval_resolved approved=false?",
+      "priority": "best-effort"
     },
     {
       "id": "user-signal-progress",

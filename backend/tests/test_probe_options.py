@@ -78,3 +78,23 @@ def test_the_options_file_reader(tmp_path: Path) -> None:
     path.write_text("{")
     with pytest.raises(ValueError):
         read_run_options_file(path)
+
+
+def test_extra_steps_come_from_the_file_and_the_body_replaces_them() -> None:
+    assert load({}).extra_steps == ()
+    assert load({}, {"extraSteps": ["usage-turns", "member-record-write"]}).extra_steps == (
+        "usage-turns",
+        "member-record-write",
+    )
+    assert load({"extraSteps": ["cli-compare"]}, {"extraSteps": ["usage-turns"]}).extra_steps == (
+        "cli-compare",
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["usage-turns", [1], ["Usage"], ["a b"], ["-x"], [""], ["a"] * 9, None],
+)
+def test_extra_steps_must_be_a_short_list_of_step_ids(value: object) -> None:
+    with pytest.raises(OptionsError, match="extraSteps must be a short list of step ids"):
+        load({"extraSteps": value})

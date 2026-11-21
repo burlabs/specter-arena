@@ -69,7 +69,7 @@ def test_captured_at_defaults_to_now() -> None:
 def test_cells_use_the_sc3_names_and_no_host_scope() -> None:
     cells = build_snapshot(populated_run(), captured_at=NOW)["cells"]
     assert isinstance(cells, list)
-    assert len(cells) == 51
+    assert len(cells) == 56
     for cell in cells:
         assert list(cell) == ["key", "question", "scope", "state", "evidence"]
         assert cell["scope"] in SCOPES
