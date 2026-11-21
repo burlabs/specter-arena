@@ -59,9 +59,9 @@ describe('the FP-20 sitting runbook', () => {
     assert.ok(PHASES.includes('v3'));
   });
 
-  it('keeps both stop rules and the uninstall step', () => {
+  it('keeps both stop rules and the probe removal step', () => {
     assert.match(fp20, /Stop if the install screen/);
     assert.match(fp20, /Stop if the host version is not 0\.13\.0/);
-    assert.match(fp20, /Uninstall the probe app/);
+    assert.match(fp20, /Remove the probe: run `kirocrew app install <extracted release folder>`/);
   });
 });

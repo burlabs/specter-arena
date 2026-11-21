@@ -8,6 +8,7 @@ Preconditions:
 - One probe bot whose agent mounts the `kirocrew-core` server, so it has a `spawn_run` tool. Which bot templates include it is not established from source; check the bot's tool list first.
 - The crew log is switched on (restart attribution and subagent replay need it). Say so in the notes.
 - No other bot is used during the sitting.
+- The probe installs under the same app name as the release app. Crew keeps the app's `data/` folder across a reinstall (Crew `apps/manager_install.py`, data preserve and restore), and the probe build carries no store code. As a precaution, press Export on the release app's Data tab first.
 
 ## Steps
 
@@ -19,7 +20,7 @@ Preconditions:
 6. (5 min) Restart: while the two-minute subagent runs, restart the gateway yourself (FD-21: your decision at run time). Wait for the probe page to show the reconnect. Ask the bot one more question.
 7. (3 min) Press Export on the probe page. Copy the app's `.probe-out/` folder to `docs/compatibility/evidence/FP20-v3/` in the clone before any reinstall. Paste no token and no file contents into chat.
 8. (3 min, optional) Member-record render: bind a bot-dashboard page to `custom.latest.specter_arena__probe_ping.data.source` and confirm it shows `specter-probe`. Report yes or no.
-9. (2 min) Uninstall the probe app from the App Store detail page.
+9. (2 min) Remove the probe: run `kirocrew app install <extracted release folder>` with the same release folder you installed from before (`docs/release/install.md`). This replaces the probe and keeps `data/`. Confirm the detail page lists only `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`, and that the roster shows your bots.
 
 ## Stop rules
 
