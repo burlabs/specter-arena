@@ -9,6 +9,7 @@ from typing import Any, Literal
 from .errors import InvalidCursor, StoreUsageError, UnknownBinding
 from .fold import BOT_TURN, CHAT_DONE, ROW_IDLE, WORKER
 from .guard import translate_errors
+from .lifecycle import purge_horizon, with_purged_gap
 from .paging import Page, build_page, clamp_limit, decode_cursor
 from .records import HEARTBEAT_STALE_MS
 from .roster import NO_CUT, Feed, feed_coverage, staleness_cut
@@ -233,12 +234,16 @@ def attempts_page(
             },
         ).fetchall()
         widest_from = max(0, as_of_ms - max(length for _, length in WINDOWS))
-        intervals = [
-            (str(state), int(start), _effective_end(state, start, end, heartbeat, as_of_ms))
-            for state, start, end, heartbeat in conn.execute(
-                _INTERVAL_SQL, {"from": widest_from, "to": as_of_ms}
-            )
-        ]
+        # History a purge removed is a gap (reason `purged`), never covered time with no activity.
+        intervals = with_purged_gap(
+            (
+                (str(state), int(start), _effective_end(state, start, end, heartbeat, as_of_ms))
+                for state, start, end, heartbeat in conn.execute(
+                    _INTERVAL_SQL, {"from": widest_from, "to": as_of_ms}
+                )
+            ),
+            purge_horizon(conn),
+        )
         activity = tuple(
             _window(
                 conn,

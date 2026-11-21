@@ -9,7 +9,14 @@ from .attempts import (
     attempt_state,
     attempts_page,
 )
-from .backup import backup, restore
+from .backup import (
+    ExportFile,
+    backup,
+    export_database,
+    list_exports,
+    pre_lifecycle_backup,
+    restore,
+)
 from .bindings import get_binding, record_rebind
 from .dmkey import build_dm_key, parse_dm_key
 from .errors import (
@@ -22,6 +29,7 @@ from .errors import (
     ContributorsFrozen,
     InvalidCursor,
     InvalidTransition,
+    LifecycleBusy,
     LimitReached,
     MigrationError,
     MigrationFileError,
@@ -42,9 +50,27 @@ from .errors import (
     UnknownBinding,
     UnknownRun,
     UnknownWork,
+    UploadLimitReached,
     VersionConflict,
 )
 from .ingest import ingest
+from .lifecycle import (
+    RETENTION_CHOICES,
+    LifecycleRuns,
+    PurgePreview,
+    Retention,
+    RunRecord,
+    cutoff_for,
+    get_retention,
+    purge_preview,
+    read_horizon,
+    read_runs,
+    run_asset_cleanup,
+    run_purge,
+    set_retention,
+    unused_upload_count,
+    uploaded_asset_count,
+)
 from .location import resolve_data_dir
 from .migrate import latest_version
 from .paging import Page, build_page, clamp_limit, decode_cursor, encode_cursor
@@ -95,9 +121,17 @@ from .roster import (
     roster_revision,
     staleness_cut,
 )
-from .runs import end_run, heartbeat, set_paused, start_run
+from .runs import (
+    CollectorSetting,
+    end_run,
+    heartbeat,
+    read_collector_setting,
+    set_paused,
+    start_run,
+)
 from .specters import (
     HERO_IDS,
+    MAX_UPLOADED_ASSETS,
     ROSTER_SIZE,
     AssetRecord,
     HeroRecord,
@@ -165,6 +199,30 @@ from .xp_policy import (
 )
 
 __all__ = [
+    "CollectorSetting",
+    "ExportFile",
+    "LifecycleBusy",
+    "LifecycleRuns",
+    "MAX_UPLOADED_ASSETS",
+    "PurgePreview",
+    "RETENTION_CHOICES",
+    "Retention",
+    "RunRecord",
+    "UploadLimitReached",
+    "cutoff_for",
+    "export_database",
+    "get_retention",
+    "list_exports",
+    "pre_lifecycle_backup",
+    "purge_preview",
+    "read_collector_setting",
+    "read_horizon",
+    "read_runs",
+    "run_asset_cleanup",
+    "run_purge",
+    "set_retention",
+    "unused_upload_count",
+    "uploaded_asset_count",
     "ActivityWindow",
     "AssetRecord",
     "AttemptAlreadyLinked",

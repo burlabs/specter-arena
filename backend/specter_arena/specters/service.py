@@ -45,6 +45,7 @@ _ERRORS: Final[tuple[tuple[type[Exception], str, int], ...]] = (
     (store_errors.VersionConflict, "version_conflict", 409),
     (store_errors.UnknownAsset, "unknown_asset", 404),
     (store_errors.UnknownBinding, "unknown_binding", 404),
+    (store_errors.UploadLimitReached, "upload_limit_reached", 409),
     (store_errors.StoreUsageError, "invalid_body", 400),
     (store_errors.StoreError, "store_unavailable", 503),  # StoreUnavailable, StoreClosed, ...
 )

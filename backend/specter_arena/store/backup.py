@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import sqlite3
 import uuid
 from collections.abc import Sequence
+from contextlib import suppress
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from .connection import BUSY_TIMEOUT_S, quick_check
 from .errors import BackupError, RestoreError, SchemaNewer, StoreError
+from .housekeeping import EXPORTS_DIRNAME
 from .location import (
     BACKUPS_DIRNAME,
     check_sqlite_version,
@@ -33,6 +37,13 @@ if TYPE_CHECKING:
 KEEP_PRE_MIGRATION = 3
 _PRE_MIGRATION_NAME = re.compile(r"^pre-migrate-v\d+-to-v\d+-(\d{8}T\d{12}Z)\.db$")
 _BUSY_CODES = {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}
+KEEP_PRE_LIFECYCLE = 1
+LifecycleBackupKind = Literal["purge", "cleanup"]
+_STAMP = r"(\d{8}T\d{12}Z)"
+_PRE_LIFECYCLE_NAME = re.compile(rf"^pre-(purge|cleanup)-{_STAMP}\.db$")
+_EXPORT_NAME = re.compile(rf"^export-v(\d+)-{_STAMP}\.db$")
+MAX_LISTED_EXPORTS = 20
+_HASH_CHUNK = 1 << 20
 
 
 def _utc_stamp() -> str:
@@ -85,6 +96,103 @@ def pre_migration_backup(db: Path, from_version: int, to_version: int, keep: int
     made = copy_database(db, directory, name)
     prune_pre_migration(directory, keep)
     return made
+
+
+def pre_lifecycle_backup(store: Store, kind: LifecycleBackupKind) -> Path:
+    """A consistent copy taken before a purge or an upload cleanup, `pre-<kind>-<stamp>.db` in the
+    backups directory. Only the newest one of each kind is kept; the old one is pruned after the
+    new one is verified, so a failed copy never costs the previous undo point. Raises
+    `BackupError`: the caller deletes nothing then."""
+    made = copy_database(store.db_path, store.backups_dir, f"pre-{kind}-{_utc_stamp()}.db")
+    prune_pre_lifecycle(store.backups_dir, kind, KEEP_PRE_LIFECYCLE)
+    return made
+
+
+def prune_pre_lifecycle(directory: Path, kind: LifecycleBackupKind, keep: int) -> None:
+    """Delete all but the newest `keep` backups of this kind; no other file is touched."""
+    stamped = sorted(
+        (match[2], path)
+        for path in directory.iterdir()
+        if (match := _PRE_LIFECYCLE_NAME.fullmatch(path.name))
+        and match[1] == kind
+        and path.is_file()
+    )
+    for _, path in stamped[: max(0, len(stamped) - keep)]:
+        path.unlink(missing_ok=True)
+
+
+@dataclass(frozen=True, slots=True)
+class ExportFile:
+    file_name: str
+    byte_length: int
+    sha256: str
+    created_ms: int
+
+
+def _sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(_HASH_CHUNK):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _created_ms(name: str, path: Path) -> int:
+    match = _EXPORT_NAME.fullmatch(name)
+    if match is not None:
+        try:
+            stamp = datetime.strptime(match[2], "%Y%m%dT%H%M%S%fZ").replace(tzinfo=UTC)
+            return int(stamp.timestamp() * 1000)
+        except ValueError:
+            pass
+    return int(path.stat().st_mtime * 1000)
+
+
+def _describe_export(directory: Path, name: str) -> ExportFile:
+    path = directory / name
+    sidecar = directory / f"{name}.sha256"
+    digest = ""
+    with suppress(OSError, UnicodeDecodeError):
+        digest = sidecar.read_text(encoding="ascii").strip()
+    if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        digest = _sha256_of(path)
+        with suppress(OSError):
+            sidecar.write_text(digest + "\n", encoding="ascii")
+    return ExportFile(name, path.stat().st_size, digest, _created_ms(name, path))
+
+
+def export_database(store: Store) -> ExportFile:
+    """Write one verified, closed SQLite copy of the store to `<data>/exports/` (owner-only) and
+    record its sha256 beside it. No network. Raises `BackupError`."""
+    with store.read() as conn:
+        version = current_version(conn)
+    directory = store.data_dir / EXPORTS_DIRNAME
+    made = copy_database(store.db_path, directory, f"export-v{version}-{_utc_stamp()}.db")
+    try:
+        return _describe_export(directory, made.name)
+    except OSError as error:
+        raise BackupError("export could not be read back") from error
+
+
+def list_exports(data_dir: Path) -> tuple[ExportFile, ...]:
+    """The export files in `<data>/exports/`, newest first, at most `MAX_LISTED_EXPORTS`. A file
+    whose name is not `export-v<N>-<stamp>.db` is not listed."""
+    directory = data_dir / EXPORTS_DIRNAME
+    try:
+        names = sorted(
+            (m[2], p.name)
+            for p in directory.iterdir()
+            if (m := _EXPORT_NAME.fullmatch(p.name)) and p.is_file() and not p.is_symlink()
+        )
+    except OSError:
+        return ()
+    found: list[ExportFile] = []
+    for _, name in reversed(names[-MAX_LISTED_EXPORTS:]):
+        try:
+            found.append(_describe_export(directory, name))
+        except OSError:
+            continue
+    return tuple(found)
 
 
 def prune_pre_migration(directory: Path, keep: int) -> None:

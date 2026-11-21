@@ -11,6 +11,7 @@ from .errors import (
     StoreUsageError,
     UnknownAsset,
     UnknownBinding,
+    UploadLimitReached,
     VersionConflict,
 )
 from .guard import translate_errors
@@ -37,6 +38,9 @@ HERO_IDS: tuple[str, ...] = (
 ROSTER_SIZE = len(HERO_IDS)
 MAX_LISTED_HEROES = 500
 MAX_LISTED_ASSETS = 200
+# Uploaded assets only; the bundled gallery is not counted. 11 bundled + 100 uploaded stays under
+# `MAX_LISTED_ASSETS`, so no stored asset drops out of the gallery list (KL-14).
+MAX_UPLOADED_ASSETS = 100
 MAX_ASSET_BYTES = 1_048_576
 MAX_ASSET_SIDE = 1024
 MAX_ASSET_LABEL_CHARS = 80
@@ -239,6 +243,14 @@ def set_avatar(
         return _hero(again)
 
 
+def _upload_would_exceed_cap(conn: sqlite3.Connection, asset_id: str) -> bool:
+    """True when the image is new and `MAX_UPLOADED_ASSETS` uploads are already stored."""
+    if conn.execute("SELECT 1 FROM asset WHERE asset_id = ?", (asset_id,)).fetchone():
+        return False
+    stored = conn.execute("SELECT count(*) FROM asset WHERE origin = 'uploaded'").fetchone()
+    return int(stored[0]) >= MAX_UPLOADED_ASSETS
+
+
 def insert_asset(
     store: Store,
     *,
@@ -267,6 +279,8 @@ def insert_asset(
     digest = hashlib.sha256(data).hexdigest()
     asset_id = "ast_" + digest[:24]
     with translate_errors(), store.write() as conn:
+        if origin == "uploaded" and _upload_would_exceed_cap(conn, asset_id):
+            raise UploadLimitReached
         inserted = conn.execute(
             "INSERT INTO asset (asset_id, sha256, media_type, width, height, byte_length, origin,"
             " label, bytes, created_ms) VALUES (?, ?, 'image/png', ?, ?, ?, ?, ?, ?, ?)"

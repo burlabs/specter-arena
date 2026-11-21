@@ -409,22 +409,51 @@ def test_the_gallery_lists_bundled_art_first(store: Store) -> None:
     run(scenario)
 
 
-def test_more_than_200_assets_still_resolves_a_chosen_upload(store: Store) -> None:
+def test_uploads_stop_at_the_cap_so_no_stored_asset_leaves_the_gallery(store: Store) -> None:
     async def scenario() -> None:
         rig = Rig(store)
         await rig.service.start()
         ids = []
-        for n in range(1, 206):
+        for n in range(1, 101):
             ids.append(
                 (await rig.service.upload_asset(up(png(1 + n % 50, 1 + n // 50))))["assetId"]
             )
-        assert len(set(ids)) == 205
+        assert len(set(ids)) == 100
+        with pytest.raises(SpecterError) as refused:
+            await rig.service.upload_asset(up(png(60, 60)))
+        assert (refused.value.code, refused.value.status) == ("upload_limit_reached", 409)
+        again = await rig.service.upload_asset(up(png(1 + 7 % 50, 1 + 7 // 50)))
+        assert again["assetId"] == ids[6]  # the same image is not new, so it is not refused
+        listed = {i["assetId"] for i in (await rig.service.list_portraits())["items"]}
+        assert len(listed) == 111 and set(ids) <= listed
+
+    run(scenario)
+
+
+def test_a_store_that_already_holds_more_than_200_assets_still_resolves_a_chosen_upload(
+    store: Store,
+) -> None:
+    """A store from before the cap (KL-14): the list stops at 200 but a chosen asset resolves."""
+
+    async def scenario() -> None:
+        rig = Rig(store)
+        await rig.service.start()
+        data = png()
+        with store.write() as conn:
+            for n in range(205):
+                digest = f"{n:04x}".ljust(64, "0")
+                conn.execute(
+                    "INSERT INTO asset (asset_id, sha256, media_type, width, height, byte_length,"
+                    " origin, label, bytes, created_ms) VALUES (?, ?, 'image/png', 1, 1, ?,"
+                    " 'uploaded', 'legacy', ?, ?)",
+                    (f"ast_{digest[:24]}", digest, len(data), data, 2_000_000_000_000 + n),
+                )
         listed = {i["assetId"] for i in (await rig.service.list_portraits())["items"]}
         assert len(listed) == 200
-        unlisted = next(asset_id for asset_id in ids if asset_id not in listed)
+        unlisted = "ast_" + f"{204:04x}".ljust(24, "0")
+        assert unlisted not in listed
         chosen = await rig.service.set_portrait(rig.b1, 0, unlisted)
         assert chosen["portrait"]["assetId"] == unlisted
-        assert (await rig.service.list_specters())["items"][0]["portrait"]["assetId"] == unlisted
 
     run(scenario)
 

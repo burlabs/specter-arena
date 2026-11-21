@@ -225,12 +225,14 @@ def test_a_newer_database_is_refused_untouched(data_dir: Path) -> None:
     open_store(data_dir).close()
     seed = sqlite3.connect(db_file(data_dir), isolation_level=None)
     seed.execute("PRAGMA journal_mode = DELETE")
-    seed.execute("PRAGMA user_version = 9")
+    seed.execute(f"PRAGMA user_version = {len(PACKAGED) + 1}")
     seed.close()
     before = db_file(data_dir).read_bytes()
     with pytest.raises(SchemaNewer) as caught:
         open_store(data_dir)
-    assert status_for_error(caught.value, 9) == StoreStatus("schema-newer", 9, len(PACKAGED))
+    assert status_for_error(caught.value, len(PACKAGED) + 1) == StoreStatus(
+        "schema-newer", len(PACKAGED) + 1, len(PACKAGED)
+    )
     assert db_file(data_dir).read_bytes() == before
     assert sorted(p.name for p in (data_dir / "store").iterdir()) == ["specter-arena.db"]
 

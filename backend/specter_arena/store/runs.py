@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from dataclasses import dataclass
 
 from .bindings import store_id
 from .errors import StoreUsageError, UnknownRun
@@ -192,6 +193,22 @@ def set_paused(store: Store, paused: bool, now_ms: int) -> None:
             "UPDATE collector_setting SET paused = ?, changed_at_ms = ?, revision = revision + 1",
             (int(paused), now_ms),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class CollectorSetting:
+    paused: bool
+    changed_at_ms: int
+    revision: int
+
+
+def read_collector_setting(store: Store) -> CollectorSetting:
+    """The pause flag with the time and revision of its newest change (0 and 0 until the first)."""
+    with translate_errors(), store.read() as conn:
+        row = conn.execute(
+            "SELECT paused, changed_at_ms, revision FROM collector_setting"
+        ).fetchone()
+        return CollectorSetting(bool(row[0]), int(row[1]), int(row[2]))
 
 
 def is_paused(store: Store) -> bool:

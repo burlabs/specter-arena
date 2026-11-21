@@ -53,7 +53,7 @@ def digest(conn: sqlite3.Connection) -> dict[str, list[tuple[object, ...]]]:
 
 
 def test_the_migration_is_the_eighth_and_only_creates_two_indexes() -> None:
-    assert latest_version() == 8
+    assert latest_version() >= 8
     assert PACKAGED[7].name == "work_by_updated"
     statements = [
         " ".join(
@@ -70,7 +70,7 @@ def test_the_migration_is_the_eighth_and_only_creates_two_indexes() -> None:
 def test_a_fresh_store_has_both_indexes_on_the_columns_the_list_orders_by(tmp_path: Path) -> None:
     opened = open_store(tmp_path / "data")
     try:
-        assert opened.status() == StoreStatus("ready", 8, 8)
+        assert opened.status() == StoreStatus("ready", latest_version(), latest_version())
         with opened.read() as conn:
             for name, columns in (
                 ("work_item_by_updated", ["updated_ms", "work_id"]),
@@ -91,7 +91,8 @@ def test_a_v7_store_upgrades_in_one_open_with_one_backup_and_no_row_changes(
     before_conn = sqlite3.connect(path)
     before = digest(before_conn)
     before_conn.close()
-    opened = open_store(data_dir)
+    # Stopped at 8 on purpose: this test is about 0008; 0009 has its own migration test.
+    opened = open_store(data_dir, migrations=PACKAGED[:8])
     try:
         assert opened.status() == StoreStatus("ready", 8, 8)
         with opened.read() as conn:
