@@ -38,6 +38,17 @@ Not shipped, with the reason: subagent attribution (PR-B-2), "Blocked", the memb
 
 An `api` entry that starts with `=` matches that one path only; `<base>/*` matches the base and any child; a bare entry matches itself and children. A host below App Kit seam level 7 reads an `=` entry as a literal that matches nothing, so it fails closed there. Source: `dashboard/token_auth_app_scope.py:186-213`. The repo's `Grants.has_api` models `=` and keeps the older children-only reading of `/*`.
 
+## App icons on 0.13.0
+
+Read from the installed 0.13.0 bundle (`static/dist/assets/main-*.js`, `first-load-1-*.js`) and backend (`apps/manifest_sections.py`, `apps/routes_static.py`, `apps/routes_art.py`), 2026-11-21. Source reading, not yet checked live; the RC-3 owner sitting checks it.
+
+- A third-party app's `ui.pages[].icon` glyph name is ignored (`glyphAllowed` is false), which is why the default box showed.
+- The sidebar uses, in order: the top-level `iconPath`/`iconPathDark` when set, then `ui.pages[0].iconUrl`, then the default box, all at 20 x 20. `ui.pages[0].iconInactiveUrl` replaces the icon while the row is not selected.
+- `iconPath`/`iconPathDark` are relative to the app root and served by `GET /apps/<name>/art/<path>` for any installed app, local installs included, but only for paths the manifest declares (image types, at most 8 MiB). `iconUrl`/`iconInactiveUrl` are relative to `ui/` and served by `GET /apps/<name>/ui/<path>` (unauthenticated, image types allowed).
+- `UIPage.from_dict` reads `route`, `label`, `icon`, `iconUrl`, `iconInactiveUrl`, `entryPoint` and `mountFunction`; any other page key is dropped without an error.
+
+Specter Arena sets all four: `iconPath` and `iconPathDark` to `ui/icons/logo-active@3x.png`, `iconUrl` to `icons/logo-active@2x.png`, and `iconInactiveUrl` to `icons/logo-inactive@2x.png`.
+
 ## Not shipped on this reading
 
 - **Subagent attribution (PR-B-2).** It needs a new collector frame path, new stored event types, a new attempt kind and end signal, `attempt-item.v2`, and a liveness rule for a `subagent:<id>` slot that has no row. That puts the PR well past the ~1,000-line limit, and the frames could not be checked on a live gateway. It stays in the probe.

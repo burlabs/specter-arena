@@ -7,9 +7,10 @@ import { dirname, join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 import { DIAGNOSTIC_MARKER, FIXTURE_MARKER } from '../check-fixtures.mjs';
-import { QA_ART } from '../check-provenance.mjs';
+import { QA_ART, UI_ICON_RASTERS } from '../check-provenance.mjs';
 import {
   FORBIDDEN_RULES,
+  RELEASE_EXCLUDED,
   assertRelease,
   buildTarGz,
   checkEntries,
@@ -66,6 +67,7 @@ function baseFiles(overrides = {}) {
     'docs/provenance.md': 'provenance\n',
     'docs/release/install.md': 'install\n',
     'docs/release/blockers.md': 'blockers\n',
+    ...Object.fromEntries(UI_ICON_RASTERS.map((path) => [path, 'icon\n'])),
     'backend/app.py': 'app = 1\n',
     'ui/src/a.ts': 'export const a = 1;\n',
     '.env.example': 'KEY=\n',
@@ -194,6 +196,33 @@ describe('packageRelease content', () => {
     assert.equal(existsSync(join(dir, 'untracked.txt')), false);
     assert.equal(existsSync(join(dir, 'node_modules')), false);
     assert.ok(existsSync(join(dir, '.env.example')));
+  });
+
+  it('ships the sidebar icons at their declared paths and leaves the README banner out', () => {
+    const repo = gitRepo(baseFiles({ 'docs/images/banner.png': 'banner\n', 'README.md': '![banner](docs/images/banner.png)\n' }));
+    const result = pack(repo);
+    assert.equal(result.code, 0, result.text);
+    const root = extract(tarballIn(result.out));
+    const dir = join(root, /** @type {string} */ (readdirSync(root)[0]));
+    const page = realApp.ui.pages[0];
+    for (const path of [`ui/${page.iconUrl}`, `ui/${page.iconInactiveUrl}`, realApp.iconPath, realApp.iconPathDark, ...UI_ICON_RASTERS]) {
+      assert.ok(existsSync(join(dir, path)), path);
+    }
+    assert.equal(existsSync(join(dir, 'docs/images')), false);
+    assert.ok(existsSync(join(dir, 'README.md')));
+    assert.doesNotMatch(readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8'), /docs\/images\//);
+  });
+
+  it('excludes only docs/images/ from the artifact', () => {
+    assert.ok(RELEASE_EXCLUDED.test('docs/images/banner.png'));
+    for (const path of ['docs/release/install.md', 'ui/icons/logo-active@2x.png', 'x/docs/images/a.png']) assert.equal(RELEASE_EXCLUDED.test(path), false, path);
+  });
+
+  it('refuses a commit that lacks a sidebar icon', () => {
+    const repo = gitRepo(baseFiles({ [UI_ICON_RASTERS[0] ?? '']: null }));
+    const result = pack(repo);
+    assert.equal(result.code, 1);
+    assert.match(result.text, /ui\/icons\/logo-active@2x\.png: required file missing/);
   });
 
   it('keeps the executable bit of a tracked script', () => {

@@ -4,6 +4,8 @@
   "minKiroCrewVersion": "0.12.0",
   "displayName": "Specter Arena",
   "description": "Monitor your Kiro Crew bots: condition, attempts and collection coverage.",
+  "iconPath": "ui/icons/logo-active@3x.png",
+  "iconPathDark": "ui/icons/logo-active@3x.png",
   "backend": {
     "entryPoint": "backend/app.py",
     "type": "asgi",
@@ -25,7 +27,9 @@
       {
         "route": "/apps/specter-arena",
         "label": "Specter Arena",
-        "icon": "Package"
+        "icon": "Package",
+        "iconUrl": "icons/logo-active@2x.png",
+        "iconInactiveUrl": "icons/logo-inactive@2x.png"
       }
     ]
   }

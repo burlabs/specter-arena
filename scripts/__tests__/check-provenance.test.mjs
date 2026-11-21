@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
-import { ART_STATEMENT, DENYLIST, checkArt, checkPortedRows, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
+import { ART_STATEMENT, DENYLIST, UI_ICON_RASTERS, checkArt, checkPortedRows, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
 
 // Markers are assembled at runtime so this file never contains them literally.
 const scopedImport = `import x from '@${'dragonboat'}-cms/app';`;
@@ -149,6 +149,16 @@ describe('checkArt (B13)', () => {
       'docs/provenance.md: retired art wording "derived non-generatively"',
       'docs/provenance.md: retired art wording "no licensing determination"',
     ]);
+  });
+
+  it('allows only the named sidebar icons as rasters under ui/', () => {
+    const icon = 'ui/icons/logo-active@2x.png';
+    const stray = 'ui/src/arena/leak.png';
+    const doc2 = doc(`${row(PNG, PNG_SHA)}\n${row(icon, PNG_SHA)}\n${row(stray, PNG_SHA)}`);
+    const problems = checkArt(artRepo({ 'docs/provenance.md': doc2 }, { [PNG]: PNG_BYTES, [icon]: PNG_BYTES, [stray]: PNG_BYTES }));
+    assert.deepEqual(problems, [`${stray}: raster under ui/ that is not a named sidebar icon`]);
+    assert.equal(UI_ICON_RASTERS.length, 4);
+    for (const path of UI_ICON_RASTERS) assert.match(path, /^ui\/icons\/logo-(?:active|inactive)@[23]x\.png$/);
   });
 
   it('fails QA art files even when the doc is fine', () => {

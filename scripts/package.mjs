@@ -7,13 +7,15 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { run as checkFixtures } from './check-fixtures.mjs';
-import { QA_ART } from './check-provenance.mjs';
+import { QA_ART, UI_ICON_RASTERS } from './check-provenance.mjs';
 
 export const DEFAULT_OUT_DIR = '.release';
 export const APP_NAME = 'specter-arena';
 export const MANIFEST_NAME = 'RELEASE-MANIFEST.txt';
 export const BUILT_ENTRY = 'ui/dist/index.mjs';
-export const REQUIRED_FILES = ['LICENSE', 'requirements.txt', 'package-lock.json', 'docs/provenance.md', 'DEPENDENCIES.md', 'docs/release/install.md', 'docs/release/blockers.md'];
+export const REQUIRED_FILES = ['LICENSE', 'requirements.txt', 'package-lock.json', 'docs/provenance.md', 'DEPENDENCIES.md', 'docs/release/install.md', 'docs/release/blockers.md', ...UI_ICON_RASTERS];
+/** Tracked paths left out of the artifact: repository-only art such as the README banner, which adds install weight and no runtime use. */
+export const RELEASE_EXCLUDED = /^docs\/images\//;
 const BLOCK = 512;
 const USTAR_NAME_MAX = 100;
 const USTAR_PREFIX_MAX = 155;
@@ -354,7 +356,7 @@ export function packageRelease({ repo = '.', ref = 'HEAD', outDir = DEFAULT_OUT_
       log('package: --out must not be inside the temporary build clone');
       return 1;
     }
-    const entries = parseLsFiles(run('git', ['-C', src, 'ls-files', '-s', '-z']));
+    const entries = parseLsFiles(run('git', ['-C', src, 'ls-files', '-s', '-z'])).filter(({ path }) => !RELEASE_EXCLUDED.test(path));
     const problems = checkEntries(entries);
     if (problems.length > 0) {
       for (const problem of problems) log(`package: ${problem}`);
