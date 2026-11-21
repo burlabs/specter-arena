@@ -59,6 +59,9 @@ export const ARENA = {
   level: (level: number): string => `Lv. ${level}`,
   xpAward: (xp: number): string => `+${xp} XP`,
   xpCommitted: (xp: number): string => `${xp} XP`,
+  attackLegend: 'Attacks show live activity, not progress. A stronger recoil marks a milestone the ledger recorded. A waiting marker is Crew\'s own flag.',
+  xpLoading: 'Loading',
+  xpUnavailable: 'Unavailable',
   noXp: 'No XP',
   partOf: 'Part of',
   contributors: 'Contributors',
@@ -154,3 +157,10 @@ export const INSPECTOR = {
   forBot: (name: string): string => `for ${name}`,
   entryLine: (kind: string, amount: string, workTitle: string): string => `${kind} ${amount} · ${workTitle}`,
 } as const;
+
+/** "Lv. 3 · 250 XP", or the word for why the numbers are not known yet. Never a made-up "Lv. 1 · 0 XP". */
+export function levelXpText(reading: 'ready' | 'loading' | 'failed', level: number, xp: number, suffix = ''): string {
+  if (reading === 'loading') return ARENA.xpLoading;
+  if (reading === 'failed') return ARENA.xpUnavailable;
+  return `${ARENA.level(level)} · ${ARENA.xpCommitted(xp)}${suffix}`;
+}

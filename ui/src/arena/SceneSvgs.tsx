@@ -76,6 +76,21 @@ export function MarkerCoverageUnknownSvg(props: SceneSvgProps) {
   );
 }
 
+/** Drawn only for a `waiting` bot whose Crew flag says a tool approval is pending. It is Crew's flag, not an approval this app saw. */
+export function MarkerAwaitingApprovalSvg(props: SceneSvgProps) {
+  return (
+    <Frame {...props} viewBox="0 0 24 24">
+      {() => (
+        <>
+          <path d="M5 4h14v16H5Z" fill="#2c2340" stroke="#b49aff" strokeWidth="1.8" />
+          <path d="M9 8v8m6-8v8" stroke="#f7f3ff" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="12" cy="12" r="8.5" fill="none" stroke="#88dde6" strokeWidth="1.2" strokeDasharray="2 3" />
+        </>
+      )}
+    </Frame>
+  );
+}
+
 export function MarkerOutcomeAcceptedSvg(props: SceneSvgProps) {
   return (
     <Frame {...props} viewBox="0 0 24 24">

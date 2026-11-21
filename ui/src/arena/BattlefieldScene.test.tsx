@@ -365,3 +365,22 @@ describe('exchanges and the paused collector', () => {
     expect(plate?.textContent).toBe('Collection paused. Nothing new is being recorded.');
   });
 });
+
+describe('the waiting marker and XP words', () => {
+  const waiting = (reasonCode: string) => botOf(4, { displayName: 'Fenn', state: 'waiting', condition: { ...botOf(4).condition, state: 'waiting', reasonCode } });
+  const scene = (bot: ReturnType<typeof botOf>, xpStatus?: 'loading' | 'failed') => buildSceneModel(inputsOf({ roster: [bot], xpStatus }));
+  const draw = (m: ReturnType<typeof scene>) => render(<BattlefieldScene model={m} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+
+  it('draws the awaiting-approval marker for approval-pending only, as a hidden drawing', () => {
+    const approval = draw(scene(waiting('approval-pending')));
+    expect(approval.container.querySelectorAll('svg.sa-token__marker')).toHaveLength(1);
+    expect(approval.container.querySelector('svg.sa-token__marker')?.getAttribute('aria-hidden')).toBe('true');
+    approval.unmount();
+    expect(draw(scene(waiting('question-pending'))).container.querySelectorAll('svg.sa-token__marker')).toHaveLength(0);
+  });
+
+  it('leaves the level out of the name while the ledger has not been read', () => {
+    draw(scene(botOf(1, { displayName: 'Atlas' }), 'loading'));
+    expect(screen.getByRole('button', { name: /^Atlas, no Specter yet, Placeholder token, not a portrait, No turn running$/ })).toBeTruthy();
+  });
+});

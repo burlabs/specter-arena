@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
-import type { WorkRowV1 as WorkItemV1 } from '../work/model';
+import type { WorkRowV1 } from '../work/model';
 import { Button } from '../observatory/ui';
 import { SpecterInspector } from './SpecterInspector';
 import { WorkInspector } from './WorkInspector';
@@ -18,7 +18,7 @@ interface Props {
   rosterRevision: number;
   specters: ReadonlyMap<string, SpecterV2>;
   xp: ReadonlyMap<string, XpSummaryV1>;
-  items: ReadonlyMap<string, WorkItemV1>;
+  items: ReadonlyMap<string, WorkRowV1>;
   onSelect: (selection: ArenaSelection) => void;
   onClose: () => void;
   onLedgerChanged: () => void;

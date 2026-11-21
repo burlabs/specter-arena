@@ -7,9 +7,9 @@ import { StateBadge } from '../work/StateBadge';
 import { xpChipOf } from '../work/WorkList';
 import { ROW } from '../work/copy';
 import { botNameOf } from '../work/model';
-import type { WorkRowV1 as WorkItemV1 } from '../work/model';
+import type { WorkRowV1 } from '../work/model';
 import { ModeBadge } from './ModeBadge';
-import { ARENA, FILTERS } from './copy';
+import { ARENA, FILTERS, levelXpText } from './copy';
 import type { FilterValue } from './copy';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
@@ -19,7 +19,7 @@ interface Props {
   /** Built without the scene's enemy cap, so every on-field item has a row. */
   model: SceneModel;
   bots: readonly RosterItemV1[];
-  items: ReadonlyMap<string, WorkItemV1>;
+  items: ReadonlyMap<string, WorkRowV1>;
   /** Work ids the scene draws; the other rows say they are not drawn. */
   drawn: ReadonlySet<string>;
   selection: ArenaSelection | null;
@@ -89,7 +89,7 @@ export function ArenaListView({ model, bots, items, drawn, selection, onSelect }
                 </th>
                 <td>{bot !== undefined && <ConditionBadge view={botCondition(bot.condition)} />}</td>
                 <td>{specter.openAttemptIds.length}</td>
-                <td>{`${ARENA.level(specter.level)} · ${ARENA.xpCommitted(specter.xpTotal)}`}</td>
+                <td>{levelXpText(specter.xpReading, specter.level, specter.xpTotal)}</td>
               </tr>
             );
           })}

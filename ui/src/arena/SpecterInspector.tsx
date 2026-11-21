@@ -12,10 +12,10 @@ import { Button } from '../observatory/ui';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { entryKindWords } from '../work/copy';
 import { amountWords } from '../work/model';
-import type { WorkRowV1 as WorkItemV1 } from '../work/model';
+import type { WorkRowV1 } from '../work/model';
 import { useXpHistory } from '../work/useXpHistory';
 import { HandoffRow } from './HandoffRow';
-import { ARENA, INSPECTOR } from './copy';
+import { INSPECTOR, levelXpText } from './copy';
 import { diagnosticSummary } from './diagnosticSummary';
 import type { SceneModel, SceneSpecter } from './sceneModel';
 import type { ArenaSelection } from './selection';
@@ -29,13 +29,13 @@ interface Props {
   list: SceneModel;
   collector: RosterCollectorV1;
   rosterRevision: number;
-  items: ReadonlyMap<string, WorkItemV1>;
+  items: ReadonlyMap<string, WorkRowV1>;
   onSelect: (selection: ArenaSelection) => void;
   onClose: () => void;
 }
 
 /** Work this bot has an open attempt on, drawn from the arena's own snapshot. */
-function openWorkOf(bindingId: string, items: ReadonlyMap<string, WorkItemV1>): WorkItemV1[] {
+function openWorkOf(bindingId: string, items: ReadonlyMap<string, WorkRowV1>): WorkRowV1[] {
   return [...items.values()]
     .filter((item) => item.state !== 'accepted' && item.attempts.some((attempt) => attempt.bindingId === bindingId && attempt.present && !attempt.ended))
     .sort((a, b) => (a.workId < b.workId ? -1 : 1));
@@ -61,7 +61,7 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
       </div>
       <p className="sa-arena-inspector__state">
         <ConditionBadge view={botCondition(bot.condition)} />
-        <span>{`${ARENA.level(specter.level)} · ${ARENA.xpCommitted(specter.xpTotal)} committed`}</span>
+        <span>{levelXpText(specter.xpReading, specter.level, specter.xpTotal, ' committed')}</span>
       </p>
       <p className="sa-help">{botCondition(bot.condition).reason}</p>
 

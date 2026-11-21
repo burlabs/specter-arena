@@ -395,6 +395,66 @@ test('A-13 arena-perf-1 measured: first render, poll update, sprite nodes, anima
   expect(median(full.map((sample) => sample.updateMs))).toBeLessThanOrEqual(budget.updateMs);
 });
 
+test('A-20 FP-21 a working hero attacks its enemy on a cadence, the enemy recoils, nothing shows damage, and the legend says so', async ({ page }) => {
+  await openArena(page, 'arena');
+  await expect(arena(page).getByText(/^Attacks show live activity, not progress\./)).toBeVisible();
+  await expect(page.locator('.sa-hero__fx')).toHaveCount(1, { timeout: 8000 });
+  const attacker = page.locator('.sa-hero.sa-is-attack');
+  await expect(attacker).toHaveCount(1);
+  await expect(page.locator('.sa-strike--attack')).toHaveCount(1);
+  await expect(page.locator('.sa-minion.sa-is-hit')).toHaveCount(1, { timeout: 2000 });
+  await expect(page.locator('.sa-hero__fx')).toHaveCount(0, { timeout: 3000 });
+  await expect(page.locator('.sa-strike')).toHaveCount(0, { timeout: 3000 });
+  await expect(page.locator('.sa-minion.sa-is-hit')).toHaveCount(0, { timeout: 3000 });
+  const text = (await arena(page).textContent()) ?? '';
+  expect(text).not.toMatch(/\bHP\b|damage|health|\d\s?%/i);
+  expect(await writes(page)).toEqual([]);
+});
+
+test('A-21 FP-21 with reduced motion no attack, cast or effect layer is ever drawn', async ({ browser }) => {
+  const context = await browser.newContext({ locale: 'en-US', timezoneId: 'UTC', baseURL: 'http://127.0.0.1:4173/', reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  await openArena(page, 'arena');
+  await page.waitForTimeout(6000);
+  expect(await page.locator('.sa-hero__fx, .sa-strike').count()).toBe(0);
+  expect(await page.locator('.sa-hero.sa-is-attack, .sa-hero.sa-is-cast, .sa-minion.sa-is-hit').count()).toBe(0);
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  await context.close();
+});
+
+test('A-22 FP-21 a paused collector shows the plate and plays nothing', async ({ page }) => {
+  await page.goto('./?scenario=paused');
+  await sectionTab(page, 'Arena').click();
+  await expect(arena(page).locator('.sa-arena-plate--paused')).toHaveText('Collection paused. Nothing new is being recorded.');
+  await page.waitForTimeout(6000);
+  expect(await page.locator('.sa-hero__fx, .sa-strike').count()).toBe(0);
+});
+
+test('A-23 FP-21 the user pause button stops attacks and resuming starts a fresh cadence', async ({ page }) => {
+  await openArena(page, 'arena');
+  await page.getByRole('button', { name: 'Pause animation' }).click();
+  await page.waitForTimeout(6000);
+  expect(await page.locator('.sa-hero__fx, .sa-strike').count()).toBe(0);
+  await page.getByRole('button', { name: 'Resume animation' }).click();
+  expect(await page.locator('.sa-hero__fx, .sa-strike').count()).toBe(0);
+  await expect(page.locator('.sa-hero__fx')).toHaveCount(1, { timeout: 8000 });
+});
+
+test('A-24 FP-21 a bot waiting on a Crew approval flag shows the marker and the reason, never "Blocked", and does not attack', async ({ page }) => {
+  await page.goto('./?scenario=crew-signals');
+  await sectionTab(page, 'Arena').click();
+  await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
+  const approval = page.locator('[data-sprite="specter"]', { hasText: 'Approval' });
+  await expect(approval.locator('svg.sa-token__marker')).toHaveCount(1);
+  await expect(page.locator('[data-sprite="specter"]', { hasText: 'Question' }).locator('svg.sa-token__marker')).toHaveCount(0);
+  await approval.click();
+  await expect(page.getByRole('complementary', { name: 'Encounter inspector' })).toContainText("Crew's row flag says a tool approval is waiting for you");
+  await page.waitForTimeout(5000);
+  await expect(page.locator('.sa-hero.sa-is-attack')).toHaveCount(0);
+  await expect(approval).not.toContainText('Blocked');
+  await expect(page.getByRole('complementary', { name: 'Encounter inspector' })).not.toContainText('Blocked');
+});
+
 const CHROMIUM_CUSTOM_PROPERTY_LIMIT = 2 * 1024 * 1024;
 
 test('A-14 the arena map paints a background image above 2 MiB', async ({ page }) => {

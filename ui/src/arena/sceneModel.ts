@@ -1,6 +1,6 @@
 import type { HeroId, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
 import type { SourceMode } from '../host';
-import type { WorkRowV1 as WorkItemV1 } from '../work/model';
+import type { WorkRowV1 } from '../work/model';
 import { nameOf } from '../observatory/model';
 
 export const ON_FIELD_STATES: ReadonlySet<string> = new Set(['open', 'awaiting-review', 'blocked', 'reopened']);
@@ -14,10 +14,15 @@ export interface SceneInputs {
   roster: readonly RosterItemV1[];
   specters: readonly SpecterV2[];
   xp: readonly XpSummaryV1[];
-  work: readonly WorkItemV1[];
+  work: readonly WorkRowV1[];
   /** A work stream still had a cursor after the page cap, so counts are a minimum. */
   workTruncated?: boolean;
+  /** Whether the XP ledger has been read. While it has not, a bot's level and XP are unknown, never "Level 1" and "0 XP". Default `ready`. */
+  xpStatus?: XpReading;
 }
+
+export type XpReading = 'ready' | 'loading' | 'failed';
+export type WaitingReason = 'approval-pending' | 'question-pending';
 
 export type Progress = { kind: 'milestones'; done: number; total: number } | { kind: 'unknown' };
 
@@ -33,6 +38,10 @@ export interface SceneSpecter {
   engagedWorkIds: string[];
   xpTotal: number;
   level: number;
+  /** `loading` or `failed` means `xpTotal` and `level` are placeholders and must not be shown as numbers. */
+  xpReading: XpReading;
+  /** Crew's row flag behind a `waiting` condition, or null. A reading from Crew, not something this app checked. */
+  waitingReason: WaitingReason | null;
 }
 
 export interface SceneEnemy {
@@ -40,7 +49,7 @@ export interface SceneEnemy {
   parentId: string | null;
   title: string;
   size: 'minion' | 'encounter';
-  state: WorkItemV1['state'];
+  state: WorkRowV1['state'];
   progress: Progress;
   /** Encounters only: how many parts are accepted, a count and never a health value. */
   parts: { accepted: number; total: number } | null;
@@ -59,6 +68,9 @@ export interface SceneModel {
   coverage: { gaps: number; unknownBots: number };
 }
 
+const waitingReasonOf = (item: RosterItemV1): WaitingReason | null =>
+  item.condition.state === 'waiting' && (item.condition.reasonCode === 'approval-pending' || item.condition.reasonCode === 'question-pending') ? item.condition.reasonCode : null;
+
 const conditionOf = (item: RosterItemV1): SceneSpecter['condition'] => {
   const state = item.condition.state;
   return state === 'working' || state === 'settled' || state === 'waiting' ? state : 'unknown';
@@ -71,15 +83,15 @@ const running = (bot: RosterItemV1, kind: string): boolean =>
 const PRIORITY: Readonly<Record<string, number>> = { blocked: 0, 'awaiting-review': 1, reopened: 2, open: 3 };
 const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 const byId = <T extends { workId: string }>(a: T, b: T): number => compareText(a.workId, b.workId);
-const byPriority = (a: WorkItemV1, b: WorkItemV1): number =>
+const byPriority = (a: WorkRowV1, b: WorkRowV1): number =>
   (PRIORITY[a.state] ?? 9) - (PRIORITY[b.state] ?? 9) || b.createdAtMs - a.createdAtMs || byId(a, b);
 
-function progressOf(item: WorkItemV1): Progress {
+function progressOf(item: WorkRowV1): Progress {
   return item.progress === null || item.progress.total <= 0 ? { kind: 'unknown' } : { kind: 'milestones', done: item.progress.done, total: item.progress.total };
 }
 
 /** Net of corrections already written by the ledger. Containers and unrewarded items carry no XP. */
-export const committedXpOf = (item: WorkItemV1): number | null =>
+export const committedXpOf = (item: WorkRowV1): number | null =>
   !item.rewardable || item.childCount > 0 ? null : item.contributors.reduce((sum, contributor) => sum + contributor.xpNet, 0);
 
 function addTo(map: Map<string, Set<string>>, key: string, value: string): void {
@@ -140,6 +152,8 @@ export function buildSceneModel(inputs: SceneInputs, enemyCap: number = ENEMY_CA
         engagedWorkIds: sorted(engagedByBot.get(bot.bindingId)),
         xpTotal: summary?.totalXp ?? 0,
         level: summary?.level ?? 1,
+        xpReading: summary === undefined ? (inputs.xpStatus ?? 'ready') : 'ready',
+        waitingReason: waitingReasonOf(bot),
       };
     });
 

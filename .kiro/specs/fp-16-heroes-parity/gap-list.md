@@ -11,7 +11,7 @@ CLOSED = ported with a test. PARTIAL = part ported, the rest named. OUT = not po
 | G3 | Specters at lane positions on the map | OUT | The app has no position data and heroes imply no lane |
 | G4 | Minimap overlaid inside the map frame | CLOSED | PR-C; `A-17`. Placed top left, not bottom right as in the export: at bottom right it hid the Shard and Poly tokens in the default scenario (crop before and after in the PR-C report) |
 | G5 | Frame letterboxes the map | CLOSED | PR-C; `aspect-ratio: 1672 / 941`, `max-height: 70vh`; `A-17` checks the ratio |
-| G6 | Idle motion on tokens | CLOSED (idle) | PR-B; `A-16`. Attack and cast: OUT, they need combat events the app cannot observe |
+| G6 | Idle motion on tokens | CLOSED (idle, attack, cast) | PR-B; `A-16`. Attack and cast: IN as of FP-21 (`.kiro/specs/fp-21-battle-animations/`, `A-20` to `A-24`). They are presentation only, driven by a working bot's open attempt and a milestone count seen rising, and they show live activity, not progress |
 | G7 | Structures | CLOSED | PR-B; three minimap markers, `svgAndBadge.test.tsx`. The export draws none on the Arena |
 | G8 | Arena stat cards | CLOSED (three cards) | PR-C; `ArenaStats.test.tsx`, `ArenaView.test.tsx`. Replay button: OUT, replay is cut |
 | G9 | Rail cards: thumbnail, level, XP bar | CLOSED | PR-B thumbnail, PR-C progression; `railMinimapList.test.tsx`. Position tag: OUT (G3) |

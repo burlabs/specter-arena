@@ -8,7 +8,7 @@ import { ArenaMinimap } from './ArenaMinimap';
 import { PresentationCueLayer } from './PresentationCueLayer';
 import { StrikeLayer, strikeShotsOf } from './StrikeLayer';
 import type { PresentationCue } from './PresentationCueLayer';
-import { MarkerAssistanceSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
+import { MarkerAssistanceSvg, MarkerAwaitingApprovalSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
 import { ARENA, HUD, PLACEHOLDER_TOKEN } from './copy';
 import { CONDITION_LABEL, collectorWords } from '../observatory/copy';
 import { enemyEffect, specterStance } from './effectMap';
@@ -49,6 +49,7 @@ interface Props {
 function MarkerIcon({ kind }: { kind: MarkerKind }) {
   const common = { title: '', decorative: true, className: 'sa-token__marker' } as const;
   if (kind === 'blocked') return <MarkerBlockedSvg {...common} />;
+  if (kind === 'awaiting-approval') return <MarkerAwaitingApprovalSvg {...common} />;
   if (kind === 'evidence') return <MarkerEvidenceSvg {...common} />;
   if (kind === 'outcome-accepted') return <MarkerOutcomeAcceptedSvg {...common} />;
   if (kind === 'assistance') return <MarkerAssistanceSvg {...common} />;
@@ -62,7 +63,7 @@ function specterName(specter: SceneSpecter): string {
 }
 
 function specterLabel(specter: SceneSpecter, conditionLabel: string): string {
-  const parts = [specterName(specter), specter.specterName === null ? PLACEHOLDER_TOKEN : null, conditionLabel, `Level ${specter.level}`];
+  const parts = [specterName(specter), specter.specterName === null ? PLACEHOLDER_TOKEN : null, conditionLabel, specter.xpReading === 'ready' ? `Level ${specter.level}` : null];
   if (specter.openAttemptIds.length > 0) parts.push(ARENA.linked(specter.openAttemptIds.length));
   return parts.filter((part): part is string => part !== null).join(', ');
 }
@@ -124,6 +125,7 @@ function SpecterToken({ specter, position, selected, roving, animate, animation,
         </>
       )}
       {stance === 'coverage-unknown' && <MarkerIcon kind="coverage-unknown" />}
+      {specter.waitingReason === 'approval-pending' && <MarkerIcon kind="awaiting-approval" />}
     </button>
   );
 }

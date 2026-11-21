@@ -3,7 +3,7 @@ import { PROGRESS_TEXT, STATE_TEXT } from './copy';
 import { stateView } from '../work/model';
 
 export type Stance = 'engaging' | 'at-rest' | 'coverage-unknown';
-export type MarkerKind = 'blocked' | 'evidence' | 'coverage-unknown' | 'outcome-accepted' | 'assistance';
+export type MarkerKind = 'blocked' | 'evidence' | 'coverage-unknown' | 'outcome-accepted' | 'assistance' | 'awaiting-approval';
 
 export interface EnemyEffect {
   pose: 'idle' | 'engaged' | 'defeated';
@@ -19,7 +19,10 @@ export const EFFECT_MAP: ReadonlyArray<{ fact: string; effect: string; changes: 
   { fact: 'Roster condition working, settled or unknown', effect: 'Specter stance: engaging, at rest or a coverage-unknown marker', changes: 'none' },
   { fact: 'WorkItem on-field state, leaf', effect: 'Patchling enemy', changes: 'none' },
   { fact: 'WorkItem with children', effect: 'Patchbrute encounter, children grouped around it', changes: 'none' },
-  { fact: 'Linked attempt working', effect: 'Engagement line from Specter to enemy; optional decorative hit loop', changes: 'none' },
+  { fact: 'Linked attempt working, bot working', effect: 'Engagement line from Specter to enemy; the hero attacks its enemy every 2.5 to 4 s and the enemy recoils (live activity, not progress)', changes: 'none' },
+  { fact: 'Milestone count rose between two visible polls', effect: 'The first working hero engaged on it casts once and the enemy recoils harder (a milestone the ledger recorded)', changes: 'none' },
+  { fact: 'Bot waiting, Crew flag approval-pending', effect: 'Waiting marker on the Specter; it does not attack, and the inspector gives the reason', changes: 'none' },
+  { fact: 'Collection paused', effect: 'No attacks or casts; a "Collection paused" plate over the field', changes: 'none' },
   { fact: 'Milestones done and total', effect: 'Discrete count "N of M milestones"', changes: 'none' },
   { fact: 'No milestones', effect: 'Indeterminate text "Progress unknown"', changes: 'none' },
   { fact: 'blocked', effect: 'Blocked marker and the decision reason in the inspector', changes: 'none' },

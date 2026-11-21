@@ -15,4 +15,12 @@ describe('ArenaStats', () => {
     const { container } = render(<ArenaStats botsObserved={0} coverageUnknown={0} committedXp={0} />);
     expect([...container.querySelectorAll('dd')].map((cell) => cell.textContent)).toEqual(['0', '0', '0']);
   });
+
+  it('says Loading or Unavailable instead of a zero while the ledger is not read', () => {
+    const loading = render(<ArenaStats botsObserved={3} coverageUnknown={0} committedXp={0} xpReading="loading" />);
+    expect(loading.getByText('Committed XP').nextElementSibling?.textContent).toBe('Loading');
+    loading.unmount();
+    const failed = render(<ArenaStats botsObserved={3} coverageUnknown={0} committedXp={0} xpReading="failed" />);
+    expect(failed.getByText('Committed XP').nextElementSibling?.textContent).toBe('Unavailable');
+  });
 });
