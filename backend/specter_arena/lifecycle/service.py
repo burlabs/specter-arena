@@ -115,6 +115,11 @@ class DataService:
                     raise DataError(code, status) from error
             raise
 
+    def _ensure_idle(self) -> None:
+        """A run another process left open, or one still going, refuses before any backup."""
+        if read_runs(self._store).running is not None:
+            raise DataError("lifecycle_busy", 409)
+
     def _exclusively(self, fn: Callable[[], T]) -> Callable[[], T]:
         def guarded() -> T:
             if not self._exclusive.acquire(blocking=False):
@@ -198,6 +203,7 @@ class DataService:
             if saved != requested:
                 raise DataError("retention_mismatch", 409)
             cutoff = cutoff_for(saved, self._clock())
+            self._ensure_idle()
             try:
                 pre_lifecycle_backup(self._store, "purge")
             except BackupError as error:
@@ -225,6 +231,7 @@ class DataService:
             raise DataError("invalid_body", 400)
 
         def action() -> dict[str, Any]:
+            self._ensure_idle()
             try:
                 pre_lifecycle_backup(self._store, "cleanup")
             except BackupError as error:

@@ -59,7 +59,7 @@ async def get_data(request: Request) -> Response:
 
 @capped
 @signed
-async def put_retention(request: Request) -> Response:
+async def post_retention(request: Request) -> Response:
     return await _call(request, "set_retention")
 
 
@@ -90,7 +90,7 @@ async def post_collector(request: Request) -> Response:
 def data_routes() -> list[BaseRoute]:
     return [
         Route("/api/data", get_data, methods=["GET"]),
-        Route("/api/data/retention", put_retention, methods=["PUT"]),
+        Route("/api/data/retention", post_retention, methods=["POST"]),
         Route("/api/data/purge", post_purge, methods=["POST"]),
         Route("/api/data/export", post_export, methods=["POST"]),
         Route("/api/data/asset-cleanup", post_asset_cleanup, methods=["POST"]),

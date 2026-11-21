@@ -9,7 +9,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pytest
 
@@ -123,7 +123,11 @@ def test_a_v8_store_migrates_to_v9_with_one_pre_migrate_backup(tmp_path: Path) -
 def test_nothing_deletes_outside_a_running_lifecycle_run(tmp_path: Path) -> None:
     seeded = build(tmp_path)
     store = seeded.store
-    for origin, side in (("bundled", 2), ("uploaded", 3)):
+    origins: tuple[tuple[Literal["bundled", "uploaded"], int], ...] = (
+        ("bundled", 2),
+        ("uploaded", 3),
+    )
+    for origin, side in origins:
         insert_asset(
             store,
             data=png(side, side),
@@ -132,7 +136,7 @@ def test_nothing_deletes_outside_a_running_lifecycle_run(tmp_path: Path) -> None
             origin=origin,
             label="a",
             now_ms=OLD,
-        )  # type: ignore[arg-type]
+        )
     lc.end_run(store, lc.begin_run(store, "purge", 0, 1), "completed", 2)  # a row to protect
     before = counts(store)
     refuses(store, "DELETE FROM observation")
@@ -487,12 +491,12 @@ def test_a_failed_purge_closes_the_run_and_keeps_what_was_deleted(tmp_path: Path
     def boom(*args: Any, **kwargs: Any) -> int:
         raise RuntimeError("disk")
 
-    lc.purge_attempts = boom  # type: ignore[assignment]
+    lc.purge_attempts = boom
     try:
         with pytest.raises(RuntimeError):
             run_purge(store, CUT, CLOCK_AT_CUT)
     finally:
-        lc.purge_attempts = real  # type: ignore[assignment]
+        lc.purge_attempts = real
     runs = read_runs(store)
     assert runs.running is None and runs.last_purge is not None
     assert runs.last_purge.state == "failed" and runs.last_purge.observations > 0
@@ -862,7 +866,10 @@ def test_cleanup_deletes_only_old_unreferenced_uploads(tmp_path: Path) -> None:
     young = fill_uploads_at(store, NEW)
     set_avatar(store, seeded.bindings[0], 0, ids[0], OLD + 50)
     set_avatar(store, seeded.bindings[0], 1, ids[1], OLD + 60)  # ids[0] is now only historical
-    clock = lambda: NEW + 10 * 60 * 1000  # noqa: E731 - young is 10 minutes old
+
+    def clock() -> int:
+        return NEW + 10 * 60 * 1000  # young is 10 minutes old
+
     assert unused_upload_count(store, clock()) == 4
     run = run_asset_cleanup(store, clock, batch=2)
     assert (run.state, run.assets, run.kind) == ("completed", 4, "asset-cleanup")
