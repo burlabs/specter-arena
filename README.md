@@ -1,3 +1,5 @@
+![Specter Arena banner art: Specters of the Abyss, a haunted Kiro Crew arena](docs/images/banner.png)
+
 # Specter Arena
 
 A Kiro Crew app, built in the open for Kiroween 2026. Specter Arena watches the Kiro Crew bots you choose, gives each one a named Specter, turns the work items you accept into XP, and shows the result in a small read-only arena with an evidence inspector. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).

@@ -7,6 +7,19 @@ from backend.specter_arena.config import read_grants
 MANIFEST_PATH = Path(__file__).resolve().parents[2] / "app.json"
 
 IDENTITY_FIELDS = {"name", "version", "displayName", "description", "minKiroCrewVersion"}
+ICON_FIELDS = {"iconPath", "iconPathDark"}
+# The fields Crew 0.13.0's `UIPage.from_dict` reads (kiro_crew/apps/manifest_sections.py); any
+# other page key is dropped silently, so a misspelt icon field would fall back to the default box.
+HOST_UI_PAGE_FIELDS = {
+    "route",
+    "label",
+    "icon",
+    "iconUrl",
+    "iconInactiveUrl",
+    "entryPoint",
+    "mountFunction",
+}
+APP_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_FIELDS = {"entryPoint", "type", "healthCheck", "routes"}
 OWN_NAMESPACE_API = "/apps/specter-arena/api/*"
 AGENTS_API_ENTRY = "/api/agents"
@@ -35,7 +48,7 @@ def load_manifest() -> dict[str, Any]:
 
 
 def test_manifest_has_identity_backend_and_ui_only() -> None:
-    assert set(load_manifest()) == IDENTITY_FIELDS | {"backend", "permissions", "ui"}
+    assert set(load_manifest()) == IDENTITY_FIELDS | ICON_FIELDS | {"backend", "permissions", "ui"}
 
 
 def test_manifest_identity() -> None:
@@ -112,8 +125,32 @@ def test_entry_point_exists() -> None:
 def test_ui_section_points_at_the_library_bundle_and_app_route() -> None:
     assert load_manifest()["ui"] == {
         "entry": "dist/index.mjs",
-        "pages": [{"route": "/apps/specter-arena", "label": "Specter Arena", "icon": "Package"}],
+        "pages": [
+            {
+                "route": "/apps/specter-arena",
+                "label": "Specter Arena",
+                "icon": "Package",
+                "iconUrl": "icons/logo-active@2x.png",
+                "iconInactiveUrl": "icons/logo-inactive@2x.png",
+            }
+        ],
     }
+
+
+def test_every_page_key_is_one_the_host_ui_page_reads() -> None:
+    for page in load_manifest()["ui"]["pages"]:
+        assert set(page) <= HOST_UI_PAGE_FIELDS
+
+
+def test_page_icons_resolve_under_ui_and_app_icons_under_the_app_root() -> None:
+    # Crew serves `iconUrl`/`iconInactiveUrl` from /apps/<name>/ui/<path> and the top-level
+    # `iconPath`/`iconPathDark` from /apps/<name>/art/<path>, relative to the install root.
+    manifest = load_manifest()
+    page = manifest["ui"]["pages"][0]
+    for key in ("iconUrl", "iconInactiveUrl"):
+        assert (APP_ROOT / "ui" / page[key]).is_file(), key
+    for key in sorted(ICON_FIELDS):
+        assert (APP_ROOT / manifest[key]).is_file(), key
 
 
 def test_ui_entry_is_where_the_build_writes_it() -> None:

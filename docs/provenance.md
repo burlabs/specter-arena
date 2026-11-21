@@ -109,6 +109,21 @@ Each shipped raster has one row below with its repo path and sha256. The check f
 | `backend/specter_arena/specters/scene/hero-moss-thumbnail.png` | `a03-moss-thumbnail.png` | 96 x 96 RGBA | 9686 | `24a7b1025a0d95e9983a2e2eac2a952e5ed7d8c29c6e3a7a2030976835234257` | hero thumbnail |
 | `backend/specter_arena/specters/scene/hero-bur-thumbnail.png` | `bur-thumbnail.png` | 96 x 96 RGBA | 13024 | `fdd4655829f953bcbb6f1ff1da8371022c072c46b23987f22dcafefebd347909` | hero thumbnail |
 
+### Brand art: sidebar logo and README banner
+
+These files are not from the Figma Make export. Eric supplied them on 2026-11-21.
+
+- Sidebar logo. Source: Eric's `specters-arena-logo.png` (1254 x 1254 RGBA, sha256 `e5852cb226d7d8077817d81f2c56fdcc1d1f408f6f7785d9577b1afaf7089d24`, not shipped). Its embedded C2PA manifest names ChatGPT/OpenAI `gpt-image`. The four icons were created by Eric Jeffers using ChatGPT (OpenAI) image generation, then cropped, resized and recoloured: the source's transparent margin was cropped to the drawing's bounding box plus 8% padding on each side (a 740 px square), the square was resized with macOS `sips -z`, and the inactive pair has every lavender pixel set to the drawing's median outline gray (`#817d86`). The derivation used the Python standard library and `sips`; no image was generated again. The C2PA chunk is not carried into the icons.
+- README banner. Source: Eric's `specters-of-the-abyss-banner.png`, committed byte for byte. It was created by Eric Jeffers using ChatGPT (OpenAI) image generation. The file carries no C2PA metadata, so the tool attribution is Eric's statement (the 2026-11-18 art-release decision covers all his art). It is title art: the app's name is Specter Arena. The banner is kept out of the release artifact (`RELEASE_EXCLUDED` in `scripts/package.mjs`).
+
+| File in this repository | Source | Pixels | Bytes | sha256 | Use |
+|---|---|---|---|---|---|
+| `ui/icons/logo-active@2x.png` | `specters-arena-logo.png` | 40 x 40 RGBA | 2560 | `20ef05c7327611a56541e8e965a441c86505c01c7a986f18009174a933f90073` | sidebar icon, selected (`ui.pages[0].iconUrl`) |
+| `ui/icons/logo-active@3x.png` | `specters-arena-logo.png` | 60 x 60 RGBA | 4577 | `f807cca7cbfa443c22d25507bfc37f279cc277d0847d0c53d1ad7603712d5c2e` | app icon (`iconPath`, `iconPathDark`) |
+| `ui/icons/logo-inactive@2x.png` | `specters-arena-logo.png`, recoloured gray | 40 x 40 RGBA | 2527 | `43f10784804e8290b1ec4334de49d44f08a4aac7c3be9e37bd3042ee3ad5e46b` | sidebar icon, not selected (`ui.pages[0].iconInactiveUrl`) |
+| `ui/icons/logo-inactive@3x.png` | `specters-arena-logo.png`, recoloured gray | 60 x 60 RGBA | 4467 | `f656c937b05decc1dabfbe1e368040a20a8e939bc7bea80010c8be3eff0f6f61` | spare 3x inactive icon for a host that asks for one |
+| `docs/images/banner.png` | `specters-of-the-abyss-banner.png` | 1568 x 784 RGBA | 2483077 | `bad00b84163c66bcd55feac653ccf5b516321639e25ab549c8a3e902290e77da` | README banner (repository only, not in the release artifact) |
+
 ## Figma Make-authored vector code, ported as TSX
 
 This is not ChatGPT image output, and the statement above does not cover it. The small SVG files in the export's `public/assets/scene/` (markers, five structures and two enemy drawings) were authored as vector markup inside the Figma Make project. The export's own catalog labels them "Original vector prototype authored for Specters of the Abyss" (`src/data/sceneAssets.ts`, field `source`). They fall under "Generated code: Figma Make export" above and are covered by the Figma AI Terms check recorded under "Terms checked" below. They ship only as TSX components in `ui/src/arena/SceneSvgs.tsx`, never as image files, so the image check does not list them. `marker-awaiting-approval.svg` was held back until FP-20 let the app read Crew's row flags; FP-21 ports it for `waiting` with `approval-pending` only. The three structures are ported in FP-16 as minimap landmarks; they are not drawn over the painted map.

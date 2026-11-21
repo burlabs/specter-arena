@@ -34,6 +34,11 @@ export const RETIRED_ART_WORDING = [
   { pattern: /no licensing determination/i, label: 'retired art wording "no licensing determination"' },
 ];
 export const ART_STATEMENT = 'created by Eric Jeffers using ChatGPT (OpenAI) image generation';
+/**
+ * The only rasters allowed under ui/: the sidebar icons Crew serves from the app's ui/ folder. Every
+ * other image is served by the backend so that no art can drift into ui/dist (FP-10+11 raster guard).
+ */
+export const UI_ICON_RASTERS = ['ui/icons/logo-active@2x.png', 'ui/icons/logo-active@3x.png', 'ui/icons/logo-inactive@2x.png', 'ui/icons/logo-inactive@3x.png'];
 const ALLOWED_ENV_FILES = new Set(['.env.example']);
 
 /**
@@ -70,6 +75,9 @@ export function checkArt({ trackedFiles, readFile, readBytes }) {
   const problems = [];
   const rasters = trackedFiles.filter((path) => RASTER.test(path));
   for (const path of rasters) if (QA_ART.test(path)) problems.push(`${path}: QA art file must not ship`);
+  for (const path of rasters) {
+    if (path.startsWith('ui/') && !UI_ICON_RASTERS.includes(path)) problems.push(`${path}: raster under ui/ that is not a named sidebar icon`);
+  }
   if (rasters.length === 0 || readBytes === undefined) return problems;
   let doc;
   try {
