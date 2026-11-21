@@ -273,6 +273,7 @@ export function ObservatoryPage() {
               rosterRevision={roster.rosterRevision}
               specters={specters.byBinding}
               xp={xp.byBinding}
+              xpStatus={xp.status}
               onLedgerChanged={xp.refresh}
             />
           )}

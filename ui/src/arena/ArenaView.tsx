@@ -15,6 +15,7 @@ import { ModeBadge } from './ModeBadge';
 import { ARENA } from './copy';
 import { MARKS, mark } from './marks';
 import { buildSceneModel } from './sceneModel';
+import type { XpReading } from './sceneModel';
 import type { ArenaSelection } from './selection';
 import { useArenaExchanges } from './useArenaExchanges';
 import { useArenaMotion } from './useArenaMotion';
@@ -29,6 +30,8 @@ interface Props {
   rosterRevision: number;
   specters: ReadonlyMap<string, SpecterV2>;
   xp: ReadonlyMap<string, XpSummaryV1>;
+  /** Whether the XP ledger has been read. Without it a bot with no entry would read as Level 1 and 0 XP. Default `ready`. */
+  xpStatus?: XpReading;
   /** Called after the in-app decision flow changes the ledger, so the XP numbers elsewhere refresh. */
   onLedgerChanged: () => void;
 }
@@ -45,7 +48,7 @@ const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: str
  * The Arena tab: a read-only projection of the roster, the Specters, the XP ledger and the work list. It starts
  * its own work poll while mounted, so leaving the tab stops the poll and returning is a fresh baseline.
  */
-export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, onLedgerChanged }: Props) {
+export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, xpStatus = 'ready', onLedgerChanged }: Props) {
   const mode = useSourceMode();
   const { state, refresh } = useArenaWork();
   const motion = useArenaMotion();
@@ -75,9 +78,10 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
       xp: [...xp.values()],
       work: snapshot.items,
       workTruncated: snapshot.truncated,
+      xpStatus,
     };
     return { scene: buildSceneModel(inputs), list: buildSceneModel(inputs, Infinity) };
-  }, [snapshot, mode, bots, specters, xp]);
+  }, [snapshot, mode, bots, specters, xp, xpStatus]);
   const celebrations = useArenaScene(models?.scene ?? null, snapshot?.receivedAtMs ?? null, motion.animate);
   const collectorPaused = collector.state === 'paused';
   const exchanges = useArenaExchanges(models?.scene ?? null, motion.animate && !collectorPaused, celebrations.rises);
@@ -109,6 +113,7 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
         )}
       </div>
       <p className="sa-help">{collectorWords(collector.state, collector.reasonCode)}</p>
+      <p className="sa-help">{ARENA.attackLegend}</p>
       {models !== null && <p className="sa-help">{ARENA.coverage(models.scene.coverage.gaps, models.scene.coverage.unknownBots)}</p>}
       {!complete && <p className="sa-help">{PARTIAL_ROSTER}</p>}
     </header>
@@ -141,7 +146,7 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
             <Button onClick={refresh}>{ARENA.retry}</Button>
           </div>
         )}
-        <ArenaStats botsObserved={bots.length} coverageUnknown={models.scene.coverage.unknownBots} committedXp={[...xp.values()].reduce((sum, summary) => sum + summary.totalXp, 0)} />
+        <ArenaStats botsObserved={bots.length} coverageUnknown={models.scene.coverage.unknownBots} committedXp={[...xp.values()].reduce((sum, summary) => sum + summary.totalXp, 0)} xpReading={xpStatus} />
         <BotsOnField bots={bots} specters={specters} />
         <div className="sa-arena-layout">
           <ArenaRail model={models.scene} bots={bots} specters={specters} xp={xp} selection={selection} onSelect={setSelection} />

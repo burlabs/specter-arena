@@ -230,4 +230,32 @@ describe('celebrations', () => {
     expect(again.container.querySelectorAll('[data-cue]')).toHaveLength(0);
     expect(screen.getAllByText('Defeated').length).toBeGreaterThan(0);
   });
+
+});
+
+describe('FP-21 fold-ins', () => {
+  it('shows the attack legend and Loading or Unavailable XP until the ledger has been read, then the real numbers', async () => {
+    setArenaScenario('arena');
+    const first = bots[0]!;
+    const { rerender } = render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="loading" onLedgerChanged={vi.fn()} />);
+    await settle();
+    expect(screen.getByText(/^Attacks show live activity, not progress\./)).toBeTruthy();
+    const stats = screen.getByRole('group', { name: 'Arena summary' });
+    expect(within(stats).getByText('Committed XP').nextElementSibling?.textContent).toBe('Loading');
+    expect(document.body.textContent).not.toMatch(/Lv\. 1 · 0 XP/);
+    expect(document.body.textContent).not.toContain('Level 1, ');
+    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="failed" onLedgerChanged={vi.fn()} />);
+    expect(within(screen.getByRole('group', { name: 'Arena summary' })).getByText('Committed XP').nextElementSibling?.textContent).toBe('Unavailable');
+    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map([[first.bindingId, xpOf(first, 120, 2)]])} xpStatus="ready" onLedgerChanged={vi.fn()} />);
+    expect(within(screen.getByRole('group', { name: 'Arena summary' })).getByText('Committed XP').nextElementSibling?.textContent).toBe('120');
+  });
+
+  it('shows the paused plate and starts no exchange timer while the collector is paused', async () => {
+    setArenaScenario('arena');
+    render(<ArenaView bots={bots} complete collector={{ state: 'paused', reasonCode: null, sinceMs: 1 }} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    await settle();
+    const plates = document.querySelectorAll('.sa-arena-plate--paused');
+    expect(plates).toHaveLength(1);
+    expect(document.querySelector('.sa-hero__fx')).toBeNull();
+  });
 });

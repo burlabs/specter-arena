@@ -52,7 +52,7 @@ export function ArenaRail({ model, bots, specters, xp, selection, onSelect }: Pr
                   <strong>{specter.specterName ?? specter.displayName}</strong>
                   {specter.specterName !== null && <span className="sa-help">{`for ${specter.displayName}`}</span>}
                   {bot !== undefined && <ConditionBadge view={botCondition(bot.condition)} />}
-                  <SpecterProgression compact summary={xp.get(specter.bindingId)} />
+                  <SpecterProgression compact summary={xp.get(specter.bindingId)} unavailable={specter.xpReading === 'ready' ? undefined : specter.xpReading} />
                   <span className="sa-help">{ARENA.linked(specter.openAttemptIds.length)}</span>
                 </span>
               </button>

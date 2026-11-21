@@ -91,3 +91,17 @@ Arena poll bytes, one poll on arena-perf-1 (7 requests, 112 items: 4 on-field st
 The seeded fixture items carry few decisions, so the first pair understates a long-lived install: a work item at the 50-decision cap adds about 23 KB of JSON, which the list projection never carries (the after figure moves by 10 bytes, the version numbers). Reading the numbers: the first pair is a 39% byte cut on the fixture profile; the second pair shows the poll no longer grows with decision history. Neither pair says anything about the installed app, whose proxy and database are not part of this run.
 
 All budgets pass with a wide margin on both sides (first render <= 500 ms, poll update <= 50 ms, sprite nodes <= 160, zero rAF callbacks and animations with reduced motion). The poll update and refresh script medians are within run noise of each other (2.6 vs 2.4 ms, 8.0 vs 7.9 ms): in the FIXTURE the parse and render cost was never the bottleneck, so the win FP-18 claims is bytes on the wire and the per-item queries the backend no longer runs, not browser milliseconds. First render shows the same warm/cold split as before (about 9 ms and 25 to 60 ms) and the medians (27.9 vs 9.2) differ only by how many loads fell into the cold group, so no first-render claim is made.
+
+## Re-run for FP-21 (2026-11-21): hero attacks, travelling strikes, casts and recoils running
+
+Change under test: the FP-21 PR-B prototype on branch `fp21/pr-b` (parent `fp21/pr-a`, which sits on `main` 5b57ca46889685803512399c859bcf1dee890b79). A-13 now also watches ten seconds with the attacks running (12 working bots, 30 working attempts), polling the page every 40 ms for the most hero effect layers and travelling strikes on screen at once and for long tasks. Same machine and versions as above (Apple M5 Pro, macOS 26.6, Node v26.13.0, Playwright 1.65.0, Chromium 158.0.8127.18). Same method (`npm run build:preview`, then `npx playwright test tests/e2e/arena.spec.ts -g "A-13"`), five fresh loads.
+
+| Run | First render (ms) | Poll update (ms) | Refresh script (ms) | Longest task (ms) | Peak concurrent exchanges | Peak strikes | Longest task with attacks (ms) |
+|---|---|---|---|---|---|---|---|
+| 1 | 47.0 | 1.9 | 5.8 | 0.0 | 4 | 4 | 0.0 |
+| 2 | 9.2 | 2.9 | 10.7 | 0.0 | 4 | 4 | 0.0 |
+| 3 | 25.0 | 3.1 | 10.7 | 0.0 | 4 | 4 | 0.0 |
+| 4 | 44.6 | 2.8 | 10.5 | 0.0 | 4 | 4 | 0.0 |
+| 5 | 8.8 | 2.8 | 10.2 | 0.0 | 4 | 4 | 0.0 |
+
+Summary: first render median 25.0 ms (the same cold and warm split as the earlier records: warm about 9 ms, cold 45 to 47 ms), poll update median 2.8 ms, longest task 0.0 ms in every window, peak concurrent exchanges 4 of the cap of 8 and one strike per exchange (each hero plays one animation at a time, and the 30 attempts belong to 12 heroes). Reduced motion: 0 rAF callbacks, 0 running animations, 0 animated elements in all five loads. UI bundle: 341,258 characters against the cap of 419,000.

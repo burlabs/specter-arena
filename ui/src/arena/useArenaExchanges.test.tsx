@@ -5,7 +5,7 @@ import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { useArenaExchanges } from './useArenaExchanges';
 
 const hero = (id: string, work: string[]): SceneSpecter => ({
-  bindingId: id, displayName: id, specterName: id, heroId: 'vell', portraitAssetId: null, condition: 'working', openAttemptIds: [], engagedWorkIds: work, xpTotal: 0, level: 1,
+  bindingId: id, displayName: id, specterName: id, heroId: 'vell', portraitAssetId: null, condition: 'working', openAttemptIds: [], engagedWorkIds: work, xpTotal: 0, level: 1, xpReading: 'ready', waitingReason: null,
 });
 const minion = (id: string): SceneEnemy => ({ workId: id, parentId: null, title: id, size: 'minion', state: 'open', progress: { kind: 'unknown' }, parts: null, blocked: false, engagedBy: [], defeated: false, committedXp: null });
 const model = (specters: SceneSpecter[], enemies: SceneEnemy[]): SceneModel => ({ mode: 'FIXTURE', asOfMs: 1, specters, enemies, overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } });

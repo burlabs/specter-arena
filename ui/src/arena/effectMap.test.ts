@@ -18,8 +18,8 @@ const enemy = (extra: Partial<SceneEnemy> = {}): SceneEnemy => ({
 });
 
 describe('effect map', () => {
-  it('has the thirteen rows, none of which changes any state', () => {
-    expect(EFFECT_MAP).toHaveLength(13);
+  it('has the sixteen rows, none of which changes any state', () => {
+    expect(EFFECT_MAP).toHaveLength(16);
     expect(EFFECT_MAP.every((row) => row.changes === 'none')).toBe(true);
   });
 

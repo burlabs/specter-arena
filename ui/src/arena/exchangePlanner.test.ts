@@ -30,6 +30,8 @@ const specter = (id: string, over: Partial<SceneSpecter> = {}): SceneSpecter => 
   engagedWorkIds: [],
   xpTotal: 0,
   level: 1,
+  xpReading: 'ready',
+  waitingReason: null,
   ...over,
 });
 const enemy = (id: string, over: Partial<SceneEnemy> = {}): SceneEnemy => ({

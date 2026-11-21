@@ -174,3 +174,24 @@ describe('purity and no health values', () => {
     expect(keys.filter((key) => /percent|ratio|health|hp|score/i.test(key))).toEqual([]);
   });
 });
+
+describe('FP-21 readings', () => {
+  it('marks XP as loading or failed only for a bot with no summary, and ready otherwise', () => {
+    const known = botOf(1);
+    const unknown = botOf(2);
+    const loading = buildSceneModel(inputsOf({ roster: [known, unknown], xp: [xpOf(known, 50, 2)], xpStatus: 'loading' }));
+    expect(loading.specters.map((specter) => specter.xpReading)).toEqual(['ready', 'loading']);
+    expect(buildSceneModel(inputsOf({ roster: [unknown], xpStatus: 'failed' })).specters[0]?.xpReading).toBe('failed');
+    expect(buildSceneModel(inputsOf({ roster: [unknown] })).specters[0]?.xpReading).toBe('ready');
+  });
+
+  it('carries the waiting reason only for a waiting bot with a known Crew flag', () => {
+    const waiting = (reasonCode: string) => botOf(1, { state: 'waiting', condition: { ...botOf(1).condition, state: 'waiting', reasonCode } });
+    const reason = (bot: ReturnType<typeof botOf>) => buildSceneModel(inputsOf({ roster: [bot] })).specters[0]?.waitingReason;
+    expect(reason(waiting('approval-pending'))).toBe('approval-pending');
+    expect(reason(waiting('question-pending'))).toBe('question-pending');
+    expect(reason(waiting('something-new'))).toBeNull();
+    expect(reason(botOf(1, { state: 'working' }))).toBeNull();
+    expect(reason(botOf(1, { condition: { ...botOf(1).condition, state: 'settled', reasonCode: 'approval-pending' } }))).toBeNull();
+  });
+});
