@@ -479,7 +479,7 @@ export interface DataUploadsV1 {
   unused: number;
 }
 
-/** Body of GET /api/data and of every successful PUT retention, POST purge, POST export and POST asset-cleanup. */
+/** Body of GET /api/data and of every successful POST retention, POST purge, POST export and POST asset-cleanup. */
 export interface DataLifecycleV1 {
   contractVersion: 1;
   asOfMs: number;
