@@ -3,13 +3,17 @@ import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } 
 import { tokenInitials } from '../specters/model';
 import { AnimatedMinion } from './AnimatedMinion';
 import { AnimatedSpecter } from './AnimatedSpecter';
+import type { HeroAnimation } from './AnimatedSpecter';
 import { ArenaMinimap } from './ArenaMinimap';
 import { PresentationCueLayer } from './PresentationCueLayer';
 import type { PresentationCue } from './PresentationCueLayer';
 import { MarkerAssistanceSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
 import { ARENA, HUD, PLACEHOLDER_TOKEN } from './copy';
-import { CONDITION_LABEL } from '../observatory/copy';
+import { CONDITION_LABEL, collectorWords } from '../observatory/copy';
 import { enemyEffect, specterStance } from './effectMap';
+import { EMPTY_SNAPSHOT } from './exchangePlanner';
+import type { ExchangeSnapshot } from './exchangePlanner';
+import { effectAngle } from './heroCombat';
 import type { MarkerKind } from './effectMap';
 import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect } from './geometry';
 import { ARENA_INTRINSIC } from './mapLayout';
@@ -35,6 +39,10 @@ interface Props {
   /** Work ids whose defeat animation is playing right now. */
   celebrating: ReadonlySet<string>;
   onCueComplete: (id: string) => void;
+  /** Hero attacks and minion recoils to draw right now, from `useArenaExchanges`. Empty when nothing is playing. */
+  exchanges?: ExchangeSnapshot;
+  /** The collector is paused: nothing plays and the plate says so, so the field never looks live. */
+  collectorPaused?: boolean;
 }
 
 function MarkerIcon({ kind }: { kind: MarkerKind }) {
@@ -72,11 +80,14 @@ interface SpecterTokenProps {
   selected: boolean;
   roving: boolean;
   animate: boolean;
+  animation: HeroAnimation;
+  angle: number;
+  flip: 1 | -1;
   onSelect: () => void;
   register: (element: HTMLButtonElement | null) => void;
 }
 
-function SpecterToken({ specter, position, selected, roving, animate, onSelect, register }: SpecterTokenProps) {
+function SpecterToken({ specter, position, selected, roving, animate, animation, angle, flip, onSelect, register }: SpecterTokenProps) {
   const stance = specterStance(specter);
   const conditionLabel =
     specter.condition === 'waiting' ? CONDITION_LABEL.waiting : stance === 'coverage-unknown' ? ARENA.unknownCondition : stance === 'engaging' ? ARENA.engaging : ARENA.atRest;
@@ -96,7 +107,7 @@ function SpecterToken({ specter, position, selected, roving, animate, onSelect, 
       onClick={onSelect}
     >
       {specter.heroId !== null ? (
-        <AnimatedSpecter heroId={specter.heroId} animate={animate} initials={tokenInitials(specter.specterName ?? specter.displayName)} />
+        <AnimatedSpecter heroId={specter.heroId} animate={animate} animation={animation} angle={angle} flip={flip} initials={tokenInitials(specter.specterName ?? specter.displayName)} />
       ) : (
         <span className="sa-token__placeholder" aria-hidden="true" data-initials={tokenInitials(specter.displayName)} />
       )}
@@ -125,11 +136,13 @@ interface EnemyTokenProps {
   celebrating: boolean;
   spriteReady: boolean;
   facing: 'left' | 'right';
+  /** Set while the enemy recoils from a hero's hit or a milestone. */
+  hit: { exchangeId: number; strong: boolean; recoil: -1 | 1 } | null;
   onSelect: () => void;
   register: (element: HTMLButtonElement | null) => void;
 }
 
-function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, onSelect, register }: EnemyTokenProps) {
+function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, hit, onSelect, register }: EnemyTokenProps) {
   const effect = enemyEffect(enemy);
   const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
   return (
@@ -148,11 +161,14 @@ function EnemyToken({ enemy, position, selected, roving, animate, celebrating, s
     >
       <AnimatedMinion
         minionType={enemy.size === 'encounter' ? 'patchbrute' : 'patchling'}
-        animation={celebrating ? 'defeat' : effect.pose === 'engaged' ? 'engaged' : 'idle'}
+        animation={celebrating ? 'defeat' : hit !== null && !enemy.defeated ? 'hit' : effect.pose === 'engaged' ? 'engaged' : 'idle'}
         animate={animate}
         spriteReady={spriteReady}
         defeated={enemy.defeated}
         facing={facing}
+        requestId={hit?.exchangeId ?? 0}
+        recoil={hit?.recoil ?? 1}
+        strong={hit?.strong ?? false}
       />
       <span className="sa-token__label" aria-hidden="true">
         {enemy.title}
@@ -190,7 +206,7 @@ const cssUrl = (url: string): string | null => (url.length > MAX_CSS_VAR_URL_CHA
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model, selection, onSelect, motion, cues, celebrating, onCueComplete }: Props) {
+export function BattlefieldScene({ model, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false }: Props) {
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
   const patchbrute = useSceneAsset('minion-patchbrute-sprite');
@@ -277,6 +293,24 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
     }),
   );
 
+  /** Which way the effect layer points, from the placements: toward the enemy, mirrored when it stands to the left. */
+  const heroFx = (bindingId: string): { animation: HeroAnimation; angle: number; flip: 1 | -1 } => {
+    const view = exchanges.heroes.get(bindingId);
+    const from = placement.specters.get(bindingId);
+    const to = view === undefined ? undefined : placement.enemies.get(view.workId);
+    if (view === undefined || from === undefined || to === undefined) return { animation: 'idle', angle: 0, flip: 1 };
+    const dx = (to.x - from.x) * ARENA_INTRINSIC.width;
+    const dy = (to.y - from.y) * ARENA_INTRINSIC.height;
+    return { animation: view.kind, angle: effectAngle(dx, dy), flip: dx < 0 ? -1 : 1 };
+  };
+  const enemyHit = (enemy: SceneEnemy): EnemyTokenProps['hit'] => {
+    const view = exchanges.enemies.get(enemy.workId);
+    if (view === undefined) return null;
+    const here = placement.enemies.get(enemy.workId);
+    const there = view.bindingId === null ? undefined : placement.specters.get(view.bindingId);
+    return { exchangeId: view.exchangeId, strong: view.strong, recoil: here !== undefined && there !== undefined && here.x < there.x ? -1 : 1 };
+  };
+
   const sceneStyle: CSSProperties & Record<string, string> = {};
   const mapUrl = mapArt.status === 'ready' ? cssUrl(mapArt.art.url) : null;
   const patchlingUrl = patchling.status === 'ready' ? cssUrl(patchling.art.url) : null;
@@ -346,6 +380,7 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
                 selected={isSelected(selection, 'specter', specter.bindingId)}
                 roving={activeId === specter.bindingId}
                 animate={motion.animate}
+                {...heroFx(specter.bindingId)}
                 onSelect={() => onSelect({ kind: 'specter', bindingId: specter.bindingId })}
                 register={register(specter.bindingId)}
               />
@@ -361,12 +396,18 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
                 celebrating={celebrating.has(enemy.workId)}
                 spriteReady={(enemy.size === 'encounter' ? patchbrute : patchling).status === 'ready'}
                 facing={engagementFacing(enemy, placement)}
+                hit={enemyHit(enemy)}
                 onSelect={() => onSelect({ kind: 'work', workId: enemy.workId })}
                 register={register(enemy.workId)}
               />
             ))}
           </div>
           {(mapArt.status === 'failed' || (mapArt.status === 'ready' && mapUrl === null)) && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
+          {collectorPaused && (
+            <p className="sa-arena-plate sa-arena-plate--paused" role="status">
+              {collectorWords('paused', null)}
+            </p>
+          )}
           <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
         </div>
         <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />

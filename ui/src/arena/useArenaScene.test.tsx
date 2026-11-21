@@ -119,4 +119,30 @@ describe('useArenaScene', () => {
     rerender({ scene: model([enemy(1, true)], 2_000), at: 10_000 + POLL_MS, animate: true });
     expect(result.current.cues).toEqual([]);
   });
+
+  describe('rises', () => {
+    const risen = (done: number, asOfMs: number): SceneModel => model([{ ...enemy(1, false), progress: { kind: 'milestones', done, total: 4 } }], asOfMs);
+
+    it('reports a milestone rise seen between two visible polls, once, and clears with motion off', () => {
+      const { result, rerender } = start(risen(1, 1_000), 10_000);
+      expect(result.current.rises).toEqual([]);
+      rerender({ scene: risen(2, 2_000), at: 10_000 + POLL_MS, animate: true });
+      expect(result.current.rises).toEqual([{ id: `wrk_1@${10_000 + POLL_MS}`, workId: 'wrk_1' }]);
+      rerender({ scene: risen(2, 3_000), at: 10_000 + 2 * POLL_MS, animate: true });
+      expect(result.current.rises).toHaveLength(1);
+      rerender({ scene: risen(2, 3_000), at: 10_000 + 2 * POLL_MS, animate: false });
+      expect(result.current.rises).toEqual([]);
+    });
+
+    it('reports nothing with motion off, after a hidden tab, or on the first model', () => {
+      const off = start(risen(1, 1_000), 10_000, false);
+      off.rerender({ scene: risen(2, 2_000), at: 10_000 + POLL_MS, animate: false });
+      expect(off.result.current.rises).toEqual([]);
+      const hidden = start(risen(1, 1_000), 10_000);
+      setVisibility('hidden');
+      setVisibility('visible');
+      hidden.rerender({ scene: risen(2, 2_000), at: 10_000 + POLL_MS, animate: true });
+      expect(hidden.result.current.rises).toEqual([]);
+    });
+  });
 });

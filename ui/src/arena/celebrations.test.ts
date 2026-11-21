@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_CELEBRATIONS_PER_POLL, nextCelebrations } from './celebrations';
+import { MAX_CELEBRATIONS_PER_POLL, nextCelebrations, nextMilestoneRises } from './celebrations';
 import type { SceneEnemy, SceneModel } from './sceneModel';
 
 const POLL = 15_000;
@@ -69,5 +69,31 @@ describe('nextCelebrations', () => {
     const afterReopen = model([enemy(1, false)], 2_000);
     expect(nextCelebrations(model([enemy(1, true)]), afterReopen, ctx)).toEqual([]);
     expect(nextCelebrations(afterReopen, model([enemy(1, true)], 3_000), ctx)).toEqual(['wrk_1']);
+  });
+});
+
+describe('nextMilestoneRises', () => {
+  const progressed = (n: number, done: number, total = 4, defeated = false): SceneModel['enemies'][number] => ({
+    workId: `wrk_${n}`, parentId: null, title: `T${n}`, size: 'minion', state: defeated ? 'accepted' : 'open', progress: { kind: 'milestones', done, total }, parts: null, blocked: false, engagedBy: [], defeated, committedXp: null,
+  });
+  const withEnemies = (enemies: SceneModel['enemies'], asOfMs = 1_000): SceneModel => ({ mode: 'FIXTURE', asOfMs, specters: [], enemies, overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } });
+  const ctx = { visibleSincePrev: true, gapMs: 10_000, pollMs: 10_000 };
+
+  it('reports an enemy whose done count rose, sorted, at most three', () => {
+    const prev = withEnemies([1, 2, 3, 4, 5].map((n) => progressed(n, 1)));
+    const next = withEnemies([5, 4, 3, 2, 1].map((n) => progressed(n, 2)), 2_000);
+    expect(nextMilestoneRises(prev, next, ctx)).toEqual(['wrk_1', 'wrk_2', 'wrk_3']);
+  });
+
+  it('ignores a first model, a hidden tab, a long gap, a clock that went back, unchanged, lower, defeated, new and unknown progress', () => {
+    const prev = withEnemies([progressed(1, 1), progressed(2, 1), progressed(3, 2), { ...progressed(4, 0), progress: { kind: 'unknown' } }]);
+    const next = withEnemies([progressed(1, 1), progressed(2, 3, 4, true), progressed(3, 1), { ...progressed(4, 0), progress: { kind: 'milestones', done: 1, total: 2 } }, progressed(5, 2)], 2_000);
+    expect(nextMilestoneRises(prev, next, ctx)).toEqual([]);
+    const rose = withEnemies([progressed(1, 2)], 2_000);
+    expect(nextMilestoneRises(null, rose, ctx)).toEqual([]);
+    expect(nextMilestoneRises(prev, rose, { ...ctx, visibleSincePrev: false })).toEqual([]);
+    expect(nextMilestoneRises(prev, rose, { ...ctx, gapMs: 20_001 })).toEqual([]);
+    expect(nextMilestoneRises(withEnemies([progressed(1, 1)], 5_000), rose, ctx)).toEqual([]);
+    expect(nextMilestoneRises(withEnemies([progressed(1, 1)]), rose, ctx)).toEqual(['wrk_1']);
   });
 });

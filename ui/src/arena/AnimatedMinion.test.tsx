@@ -68,4 +68,20 @@ describe('AnimatedMinion', () => {
     render(<AnimatedMinion minionType="patchling" animation="hit" animate spriteReady />);
     act(() => void vi.advanceTimersByTime(1_000));
   });
+
+  it('carries the recoil direction and strength of a hit as custom properties, and nothing for other poses', () => {
+    const { container, rerender } = render(<AnimatedMinion minionType="patchbrute" animation="hit" animate spriteReady requestId={4} recoil={-1} strong />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('sa-is-hit');
+    expect(root.className).toContain('sa-is-strong');
+    expect(root.style.getPropertyValue('--sa-recoil')).toBe('-1');
+    expect(root.style.getPropertyValue('--sa-recoil-mag')).toBe('1.8');
+    rerender(<AnimatedMinion minionType="patchling" animation="hit" animate spriteReady requestId={5} />);
+    const plain = container.firstElementChild as HTMLElement;
+    expect(plain.className).not.toContain('sa-is-strong');
+    expect(plain.style.getPropertyValue('--sa-recoil')).toBe('1');
+    expect(plain.style.getPropertyValue('--sa-recoil-mag')).toBe('1');
+    rerender(<AnimatedMinion minionType="patchling" animation="engaged" animate spriteReady />);
+    expect((container.firstElementChild as HTMLElement).getAttribute('style')).toBeNull();
+  });
 });

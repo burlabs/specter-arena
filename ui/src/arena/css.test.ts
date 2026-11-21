@@ -89,6 +89,22 @@ describe('arena.css', () => {
     expect(keyframes.filter((name) => name.endsWith('-idle'))).toHaveLength(11);
   });
 
+  it('defines an attack and a cast keyframe and animation rule for each of the 11 heroes', () => {
+    for (const id of HERO_IDS) {
+      for (const move of ['attack', 'cast']) {
+        expect(keyframes, `${id} ${move}`).toContain(`sa-arena-${id}-${move}`);
+        expect(selectors, `${id} ${move}`).toContain(`.specter-arena-root .sa-hero--${id}.sa-is-${move}.sa-is-animated .sa-hero__img`);
+      }
+    }
+    expect(keyframes).toEqual(expect.arrayContaining(['sa-arena-patchling-hit', 'sa-arena-patchbrute-hit']));
+  });
+
+  it('declares every keyframe a rule uses, and uses every keyframe it declares', () => {
+    const used = new Set([...css.matchAll(/animation(?:-name)?:\s*(sa-arena-[a-z0-9-]+)/g)].map((match) => match[1]));
+    expect(keyframes.filter((name) => !used.has(name))).toEqual([]);
+    expect([...used].filter((name) => !keyframes.includes(name ?? ''))).toEqual([]);
+  });
+
   it('keeps every font size at 12px or more', () => {
     const sizes = [...css.matchAll(/font-size:\s*(\d+)px/g)].map((match) => Number(match[1]));
     expect(sizes.length).toBeGreaterThan(0);

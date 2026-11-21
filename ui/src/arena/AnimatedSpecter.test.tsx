@@ -60,4 +60,29 @@ describe('AnimatedSpecter', () => {
     await waitFor(() => expect(sprite(container)).not.toBeNull());
     expect(sprite(container)?.getAttribute('aria-hidden')).toBe('true');
   });
+
+  it('plays an attack or a cast with its effect layer only while animate is true', async () => {
+    const attack = render(<AnimatedSpecter heroId="vell" animate animation="attack" angle={-20} flip={-1} initials="V" />);
+    await waitFor(() => expect(sprite(attack.container)).not.toBeNull());
+    expect(sprite(attack.container)?.className).toContain('sa-is-attack');
+    expect(sprite(attack.container)?.className).not.toContain('sa-is-idle');
+    expect(attack.container.querySelector('.sa-fx-vell-wave')).not.toBeNull();
+    const fx = attack.container.querySelector<HTMLElement>('.sa-hero__fx');
+    expect(fx?.style.getPropertyValue('--sa-fx-angle')).toBe('-20.0deg');
+    expect(fx?.style.getPropertyValue('--sa-fx-flip')).toBe('-1');
+    const cast = render(<AnimatedSpecter heroId="vell" animate animation="cast" initials="V" />);
+    await waitFor(() => expect(cast.container.querySelector('.sa-fx-vell-ward')).not.toBeNull());
+    expect(sprite(cast.container)?.className).toContain('sa-is-cast');
+    const still = render(<AnimatedSpecter heroId="vell" animate={false} animation="attack" initials="V" />);
+    await waitFor(() => expect(sprite(still.container)).not.toBeNull());
+    expect(sprite(still.container)?.className).toContain('sa-is-idle');
+    expect(sprite(still.container)?.className).toContain('sa-is-static');
+    expect(still.container.querySelector('.sa-hero__fx')).toBeNull();
+  });
+
+  it('stays idle for a hero with no combat timing', async () => {
+    const { container } = render(<AnimatedSpecter heroId="newcomer" animate animation="attack" initials="N" />);
+    await act(async () => undefined);
+    expect(container.querySelector('.sa-hero__fx')).toBeNull();
+  });
 });
