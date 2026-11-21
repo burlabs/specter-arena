@@ -43,6 +43,14 @@ import {
   XP_SUMMARIES_KEYS,
   XP_SUMMARIES_PAGED_KEYS,
   XP_SUMMARY_KEYS,
+  DATA_LIFECYCLE_KEYS,
+  DATA_RETENTION_KEYS,
+  DATA_PREVIEW_KEYS,
+  DATA_RUN_KEYS,
+  DATA_DELETED_KEYS,
+  DATA_EXPORT_FILE_KEYS,
+  DATA_UPLOADS_KEYS,
+  COLLECTOR_CONTROL_KEYS,
 } from './types.ts';
 import type {
   ApiErrorV1,
@@ -174,6 +182,14 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'xp-summaries', version: 2, path: [], keys: XP_SUMMARIES_PAGED_KEYS },
   { schema: 'xp-history', path: [], keys: XP_HISTORY_KEYS },
   { schema: 'xp-history', path: ['properties', 'items', 'items'], keys: XP_ENTRY_KEYS },
+  { schema: 'data-lifecycle', path: [], keys: DATA_LIFECYCLE_KEYS },
+  { schema: 'data-lifecycle', path: ['properties', 'retention'], keys: DATA_RETENTION_KEYS },
+  { schema: 'data-lifecycle', path: ['properties', 'preview', 'oneOf', '1'], keys: DATA_PREVIEW_KEYS },
+  { schema: 'data-lifecycle', path: ['properties', 'uploads'], keys: DATA_UPLOADS_KEYS },
+  { schema: 'data-lifecycle', path: ['definitions', 'run'], keys: DATA_RUN_KEYS },
+  { schema: 'data-lifecycle', path: ['definitions', 'run', 'properties', 'deleted'], keys: DATA_DELETED_KEYS },
+  { schema: 'data-lifecycle', path: ['definitions', 'export'], keys: DATA_EXPORT_FILE_KEYS },
+  { schema: 'collector-control', path: [], keys: COLLECTOR_CONTROL_KEYS },
 ];
 /** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
 const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
