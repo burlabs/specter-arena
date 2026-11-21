@@ -24,3 +24,23 @@ export function nextCelebrations(prev: SceneModel | null, next: SceneModel, ctx:
     .sort()
     .slice(0, MAX_CELEBRATIONS_PER_POLL);
 }
+
+export const MAX_RISES_PER_POLL = 3;
+
+/**
+ * The work ids whose milestone count rose between two visible polls, under the same gating as `nextCelebrations`.
+ * A rise is a fact the ledger recorded, so it earns one strong recoil; the first poll, a hidden tab, a long gap or a
+ * clock that moved backwards all re-baseline silently. An enemy that was defeated or newly drawn is not a rise.
+ */
+export function nextMilestoneRises(prev: SceneModel | null, next: SceneModel, ctx: CelebrationContext): string[] {
+  if (prev === null || !ctx.visibleSincePrev || ctx.gapMs > 2 * ctx.pollMs || next.asOfMs < prev.asOfMs) return [];
+  const before = new Map(prev.enemies.map((enemy) => [enemy.workId, enemy.progress]));
+  return next.enemies
+    .filter((enemy) => {
+      const was = before.get(enemy.workId);
+      return !enemy.defeated && enemy.progress.kind === 'milestones' && was?.kind === 'milestones' && enemy.progress.done > was.done;
+    })
+    .map((enemy) => enemy.workId)
+    .sort()
+    .slice(0, MAX_RISES_PER_POLL);
+}

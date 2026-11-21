@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setSceneAssetsFailing } from '@kirocrew/app-sdk';
 import { BattlefieldScene } from './BattlefieldScene';
+import type { ExchangeSnapshot } from './exchangePlanner';
 import type { PresentationCue } from './PresentationCueLayer';
 import { clearSceneArtCache } from './sceneAssetCache';
 import { buildSceneModel } from './sceneModel';
@@ -324,5 +325,43 @@ describe('celebration', () => {
     act(() => void vi.advanceTimersByTime(1_800));
     expect(onCueComplete).toHaveBeenCalledExactlyOnceWith('c1');
     vi.useRealTimers();
+  });
+});
+
+describe('exchanges and the paused collector', () => {
+  const attacking = (kind: 'attack' | 'cast', recoilFrom: string | null = atlas.bindingId): ExchangeSnapshot => ({
+    heroes: new Map([[atlas.bindingId, { exchangeId: 7, kind, workId: model.enemies[0]!.workId }]]),
+    enemies: new Map([[model.enemies[0]!.workId, { exchangeId: 7, strong: kind === 'cast', bindingId: recoilFrom }]]),
+    layers: 1,
+  });
+
+  it('draws the hero attack layer and the enemy hit for the exchange, and nothing without one', async () => {
+    const { container, rerender } = show();
+    await waitFor(() => expect(container.querySelector('.sa-hero')).not.toBeNull());
+    expect(container.querySelector('.sa-hero__fx')).toBeNull();
+    expect(container.querySelector('.sa-is-hit')).toBeNull();
+    expect(container.querySelector('.sa-strike')).toBeNull();
+    const props = { model, selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
+    rerender(<BattlefieldScene {...props} exchanges={attacking('attack')} />);
+    await waitFor(() => expect(container.querySelector('.sa-hero.sa-is-attack')).not.toBeNull());
+    expect(container.querySelector('.sa-hero__fx')).not.toBeNull();
+    expect(container.querySelectorAll('.sa-strike--attack')).toHaveLength(1);
+    const hit = container.querySelector<HTMLElement>('.sa-minion.sa-is-hit');
+    expect(hit).not.toBeNull();
+    expect(['-1', '1']).toContain(hit?.style.getPropertyValue('--sa-recoil'));
+    rerender(<BattlefieldScene {...props} exchanges={attacking('cast', null)} />);
+    await waitFor(() => expect(container.querySelector('.sa-hero.sa-is-cast')).not.toBeNull());
+    expect(container.querySelectorAll('.sa-strike--cast')).toHaveLength(1);
+    expect(container.querySelector('.sa-minion.sa-is-hit.sa-is-strong')).not.toBeNull();
+    expect(container.querySelector<HTMLElement>('.sa-minion.sa-is-hit')?.style.getPropertyValue('--sa-recoil')).toBe('1');
+  });
+
+  it('shows one status plate and no exchange effect when the collector is paused', () => {
+    const { container, rerender } = show();
+    expect(container.querySelector('.sa-arena-plate--paused')).toBeNull();
+    rerender(<BattlefieldScene model={model} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} collectorPaused />);
+    const plate = container.querySelector('.sa-arena-plate--paused');
+    expect(plate?.getAttribute('role')).toBe('status');
+    expect(plate?.textContent).toBe('Collection paused. Nothing new is being recorded.');
   });
 });

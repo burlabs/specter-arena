@@ -307,7 +307,7 @@ test('A-13 arena-perf-1 measured: first render, poll update, sprite nodes, anima
     node: process.version,
     chromium: browser.version(),
   };
-  const full: { firstRenderMs: number; updateMs: number; scriptMs: number; longestTaskMs: number; spriteNodes: number; enemies: number; specters: number }[] = [];
+  const full: { firstRenderMs: number; updateMs: number; scriptMs: number; longestTaskMs: number; spriteNodes: number; enemies: number; specters: number; peakExchanges: number; peakStrikes: number; exchangeLongestTaskMs: number }[] = [];
   const reduced: { rafCallbacks: number; runningAnimations: number; animatedClasses: number }[] = [];
 
   for (let run = 0; run < 5; run += 1) {
@@ -338,7 +338,26 @@ test('A-13 arena-perf-1 measured: first render, poll update, sprite nodes, anima
     const spriteNodes = await page.locator('[data-sprite]').count();
     const enemies = await page.locator('[data-sprite="enemy"]').count();
     const specters = await page.locator('[data-sprite="specter"]').count();
-    full.push({ firstRenderMs, updateMs, scriptMs, longestTaskMs, spriteNodes, enemies, specters });
+    // FP-21: ten seconds with the attacks running (30 working attempts). Peak is the most hero effect layers on screen at once.
+    await page.evaluate(() => {
+      const w = window as unknown as { __long: number[]; __peak: number; __peakStrikes: number };
+      w.__long.length = 0;
+      w.__peak = 0;
+      w.__peakStrikes = 0;
+      setInterval(() => {
+        w.__peak = Math.max(w.__peak, document.querySelectorAll('.sa-hero__fx').length);
+        w.__peakStrikes = Math.max(w.__peakStrikes, document.querySelectorAll('.sa-strike').length);
+      }, 40);
+    });
+    await page.waitForTimeout(10_000);
+    const peakExchanges = await page.evaluate(() => (window as unknown as { __peak: number }).__peak);
+    const peakStrikes = await page.evaluate(() => (window as unknown as { __peakStrikes: number }).__peakStrikes);
+    const exchangeLongestTaskMs = await page.evaluate(() => Math.max(0, ...(window as unknown as { __long: number[] }).__long));
+    full.push({ firstRenderMs, updateMs, scriptMs, longestTaskMs, spriteNodes, enemies, specters, peakExchanges, peakStrikes, exchangeLongestTaskMs });
+    expect(peakExchanges, 'attacks run with 30 working attempts').toBeGreaterThan(0);
+    expect(peakExchanges, 'the cap holds').toBeLessThanOrEqual(8);
+    expect(peakStrikes, 'one strike per playing exchange').toBe(peakExchanges);
+    expect(exchangeLongestTaskMs).toBeLessThan(50 * loose);
     expect(spriteNodes).toBeLessThanOrEqual(budget.nodes);
     await context.close();
   }

@@ -16,6 +16,7 @@ import { ARENA } from './copy';
 import { MARKS, mark } from './marks';
 import { buildSceneModel } from './sceneModel';
 import type { ArenaSelection } from './selection';
+import { useArenaExchanges } from './useArenaExchanges';
 import { useArenaMotion } from './useArenaMotion';
 import { useArenaScene } from './useArenaScene';
 import { useArenaWork } from './useArenaWork';
@@ -78,6 +79,8 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
     return { scene: buildSceneModel(inputs), list: buildSceneModel(inputs, Infinity) };
   }, [snapshot, mode, bots, specters, xp]);
   const celebrations = useArenaScene(models?.scene ?? null, snapshot?.receivedAtMs ?? null, motion.animate);
+  const collectorPaused = collector.state === 'paused';
+  const exchanges = useArenaExchanges(models?.scene ?? null, motion.animate && !collectorPaused, celebrations.rises);
   const items = useMemo(() => new Map((snapshot?.items ?? []).map((item) => [item.workId, item])), [snapshot]);
   const drawn = useMemo(() => new Set(models?.scene.enemies.map((enemy) => enemy.workId) ?? []), [models]);
 
@@ -142,7 +145,7 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
         <BotsOnField bots={bots} specters={specters} />
         <div className="sa-arena-layout">
           <ArenaRail model={models.scene} bots={bots} specters={specters} xp={xp} selection={selection} onSelect={setSelection} />
-          <BattlefieldScene model={models.scene} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} />
+          <BattlefieldScene model={models.scene} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} exchanges={exchanges} collectorPaused={collectorPaused} />
           <ArenaInspector
             selection={selection}
             list={models.list}
