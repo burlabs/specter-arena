@@ -9,6 +9,7 @@ export interface HostApi {
   readonly mode: HostSourceMode;
   getJson<T>(path: string): Promise<T>;
   postJson<T>(path: string, body: unknown): Promise<T>;
+  putJson<T>(path: string, body: unknown): Promise<T>;
 }
 
 /** A non-2xx reply. `error` is the `api-error.v1` code when the body carried one. */
@@ -86,6 +87,7 @@ export function useHostApi(): HostApi {
       mode: client.sourceMode === 'FIXTURE' ? ('FIXTURE' as const) : ('LIVE' as const),
       getJson: <T>(path: string) => unwrap<T>(client.get(path)),
       postJson: <T>(path: string, body: unknown) => unwrap<T>(client.post(path, body)),
+      putJson: <T>(path: string, body: unknown) => unwrap<T>(client.put(path, body)),
     }),
     [client],
   );

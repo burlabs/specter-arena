@@ -4,13 +4,14 @@ import { useAttempts } from '../observatory/useAttempts';
 import { useWorkItem } from '../work/useWorkItem';
 import { HostApiError, useHostApi } from './useHostApi';
 
-const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
+const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn() }));
 
 vi.mock('@kirocrew/app-sdk', () => ({ useAppApi: () => client }));
 
 beforeEach(() => {
   client.get.mockReset();
   client.post.mockReset();
+  client.put.mockReset();
 });
 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -26,6 +27,21 @@ describe('useHostApi mode', () => {
     expect(modeOf({ sourceMode: 'fixture' })).toBe('LIVE');
     expect(modeOf({ sourceMode: 'FIXTURE' })).toBe('FIXTURE');
     delete (client as { sourceMode?: unknown }).sourceMode;
+  });
+});
+
+describe('useHostApi putJson', () => {
+  it('sends the body through the client put and parses the reply', async () => {
+    client.put.mockResolvedValue({ ok: true });
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.putJson('/apps/specter-arena/api/data/retention', { retentionDays: 30 })).resolves.toEqual({ ok: true });
+    expect(client.put).toHaveBeenCalledWith('/apps/specter-arena/api/data/retention', { retentionDays: 30 });
+  });
+
+  it('carries the typed code of a refused write', async () => {
+    client.put.mockRejectedValue({ status: 409, body: JSON.stringify({ contractVersion: 1, error: 'lifecycle_busy' }) });
+    const { result } = renderHook(() => useHostApi());
+    await expect(result.current.putJson('/x', {})).rejects.toMatchObject({ status: 409, error: 'lifecycle_busy' });
   });
 });
 
@@ -92,9 +108,9 @@ describe('useHostApi', () => {
     await expect(result.current.getJson('/apps/specter-arena/api/ping')).rejects.toThrow('network down');
   });
 
-  it('exposes the mode and the two JSON methods, never the client', () => {
+  it('exposes the mode and the three JSON methods, never the client', () => {
     const { result } = renderHook(() => useHostApi());
-    expect(Object.keys(result.current).sort()).toEqual(['getJson', 'mode', 'postJson']);
+    expect(Object.keys(result.current).sort()).toEqual(['getJson', 'mode', 'postJson', 'putJson']);
   });
 
   it('keeps the same api object while the client is unchanged', () => {

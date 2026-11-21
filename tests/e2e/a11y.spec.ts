@@ -5,7 +5,7 @@ import type { Locator, Page } from '@playwright/test';
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-const SECTIONS = ['Roster', 'Specters', 'Work', 'Arena'] as const;
+const SECTIONS = ['Roster', 'Specters', 'Work', 'Arena', 'Data'] as const;
 
 const sectionTab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Sections' }).getByRole('tab', { name });
 const rosterList = (page: Page) => page.getByRole('list', { name: 'Bots' });
@@ -22,7 +22,7 @@ async function violations(page: Page, rules?: string[]) {
   return result.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target.join(' ')) }));
 }
 
-test('AX-1 each of the four tabs has no WCAG 2.1 A or AA axe violation', async ({ page }) => {
+test('AX-1 each of the five tabs has no WCAG 2.1 A or AA axe violation', async ({ page }) => {
   await open(page, 'arena');
   for (const section of SECTIONS) {
     await sectionTab(page, section).click();
@@ -113,13 +113,14 @@ test('AX-5 with reduced motion requested, Roster, Specters and Arena run no anim
   }
 });
 
-test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into each panel', async ({ page }) => {
+test('AX-6 one keyboard-only pass reaches all five tabs and moves focus into each panel', async ({ page }) => {
   await open(page, 'arena');
   const ready: Record<(typeof SECTIONS)[number], Locator> = {
     Roster: rosterList(page),
     Specters: page.getByRole('list', { name: 'Specter collection' }),
     Work: page.getByRole('button', { name: 'New work item' }),
     Arena: page.getByRole('group', { name: 'Arena map' }),
+    Data: page.getByRole('button', { name: 'Pause collection' }),
   };
   await sectionTab(page, 'Roster').focus();
   for (const section of SECTIONS) {

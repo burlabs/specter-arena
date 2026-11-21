@@ -8,9 +8,11 @@ declare module '@kirocrew/app-sdk' {
   export function setSpecterScenario(name: SpecterScenarioName | null): void;
   export type WorkScenarioName = import('../fixtures/work-bodies.ts').WorkScenarioName;
   export function setWorkScenario(name: WorkScenarioName | null): void;
+  export type DataScenarioName = import('../fixtures/data-bodies.ts').DataScenarioName;
+  export function setDataScenario(name: DataScenarioName | null): void;
   export function setSceneAssetsFailing(value: boolean): void;
   export type ArenaScenarioName = import('../fixtures/arena-scenarios.ts').ArenaScenarioName;
   export function setArenaScenario(name: ArenaScenarioName | null): void;
   export const fixtureNavigations: string[];
-  export const fixtureCalls: Array<{ method: 'GET' | 'POST'; path: string }>;
+  export const fixtureCalls: Array<{ method: 'GET' | 'POST' | 'PUT'; path: string }>;
 }
