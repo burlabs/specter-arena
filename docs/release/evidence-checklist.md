@@ -82,19 +82,19 @@ Two builds of RC-2 into separate output folders gave the same sha256. `shasum -a
 
 ## 5. RC-3
 
-RC-3 is the candidate built from `main` after Wave A (FP-17 to FP-21) and the logo PR #181. It is built with `npm run package -- --commit <RC-3 SHA>` from a clean clone after the RC-3 docs PR merges. The orchestrator fills every `TBD` cell below from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory. The build output folder is `/Users/ericjeffers/.kiro/crew/workspace/specter-rc3-artifact/`.
+RC-3 is the candidate built from `main` after Wave A (FP-17 to FP-21) and the logo PR #181. It is built with `npm run package -- --commit <RC-3 SHA>` from a clean clone after the RC-3 docs PR merges. The orchestrator fills every `pending` cell below from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|
-| Commit | TBD (filled after npm run package) |
-| Artifact name | TBD (filled after npm run package) |
-| Bytes | TBD (filled after npm run package) |
-| sha256 | TBD (filled after npm run package) |
-| File count | TBD (filled after npm run package) |
+| Commit | pending |
+| Artifact name | pending |
+| Bytes | pending |
+| sha256 | pending |
+| File count | pending |
 | Host | Kiro Crew 0.13.0 (`kirocrew --version` on the owner's machine, 2026-11-20) |
 | App version | 0.1.0 |
-| Coverage (Node scripts, UI, backend) | TBD (filled after npm run package) |
-| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | TBD (filled after npm run package) |
+| Coverage (Node scripts, UI, backend) | pending |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
 | Store version and migrations | 9 and 9 (`npm run check:schema`: 31 schemas, 9 migrations, read at `d53b16ea`) |
 | UI bundle cap | 419,000 characters (`ui/src/build-output.test.ts`) |
 | OA-5 and OA-6 result | `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` |

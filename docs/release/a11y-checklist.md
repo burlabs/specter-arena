@@ -4,7 +4,7 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
-This is the written half of FP-14-AC05 (keyboard and reduced-motion operation). Part 1 lists what runs in CI. Part 2 lists what a person must check on the installed app. The manual items run inside the OA-5 sitting for RC-3 (`docs/release/oa-5-runbook.md`, Part 1 steps 6 to 9), so there is no separate sitting.
+This is the written half of FP-14-AC05 (keyboard and reduced-motion operation). Part 1 lists what runs in CI. Part 2 lists what a person must check on the installed app. The manual items run inside the OA-5 sitting for RC-3 (`docs/release/oa-5-runbook.md`, Part 1 steps 6 to 10), so there is no separate sitting.
 
 ## 1. Automated, in CI
 

@@ -4,11 +4,11 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
-State of this file: the release-candidate state, called RC-3. RC-2 (`9d4581c1`) was a rehearsal: Wave A (FP-17 to FP-21) then merged, and RC-3 is the candidate built from `main` after that work. RC-1 (`de533eb`, FP-14 PR-C) is superseded: it still carried summoning, which FP-16 removed. At RC-3 two rows are open on purpose: BLK-01 (the owner sitting OA-5 has not run on RC-3) and BLK-02 (the two quality gates have not approved the RC-3 record). The commit that records the OA-5 result updates those two rows. The RC-3 SHA, artifact name and checksum are in `docs/release/evidence-checklist.md` section 5, once the orchestrator fills them in. This file is part of every packaged artifact (`scripts/package.mjs` `REQUIRED_FILES`), so a reader of an artifact sees the state that was true when it was built.
+State of this file: the release-candidate state, called RC-3. RC-2 (`9d4581c9`) was a rehearsal: Wave A (FP-17 to FP-21) then merged, and RC-3 is the candidate built from `main` after that work. RC-1 (`de533eb`, FP-14 PR-C) is superseded: it still carried summoning, which FP-16 removed. At RC-3 two rows are open on purpose: BLK-01 (the owner sitting OA-5 has not run on RC-3) and BLK-02 (the two quality gates have not approved the RC-3 record). The commit that records the OA-5 result updates those two rows. The RC-3 SHA, artifact name and checksum are in `docs/release/evidence-checklist.md` section 5, once the orchestrator fills them in. This file is part of every packaged artifact (`scripts/package.mjs` `REQUIRED_FILES`), so a reader of an artifact sees the state that was true when it was built.
 
 Rule: unresolved authorization or cross-scope data exposure is always a BLOCKER, never a KNOWN LIMITATION.
 
-Status vocabulary: `open`, `fixed in PR-X (#n)`, `accepted (decision, date)`, `disclosed`, `conditional`, `moot (FP-16)`. Entry condition for FP-15 Stage B: no BLOCKER row has the status `open`.
+Status vocabulary: `open`, `fixed in PR-X (#n)`, `fixed in FP-NN (#n, #m)`, `fixed in part in FP-NN (#n, #m)` (the row's text says what is left), `accepted (decision, date)`, `disclosed`, `conditional`, `moot (FP-16)`. Entry condition for FP-15 Stage B: no BLOCKER row has the status `open`.
 
 Criteria IDs (FP-14-AC01 to AC06) are listed with their wording in `docs/release/evidence-checklist.md`.
 
