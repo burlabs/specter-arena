@@ -70,6 +70,7 @@ describe('library build', () => {
     expect(bundle).toContain('data-specter-arena');
     expect(bundle).toContain('data-specter-arena-work');
     expect(bundle).toContain('data-specter-arena-scene');
+    expect(bundle).toContain('data-specter-arena-data');
     expect(bundle).toContain('.specter-arena-root');
     expect(bundle).not.toContain('@import');
   });
@@ -78,6 +79,7 @@ describe('library build', () => {
     expect(bundle).not.toContain('SPECTER-FIXTURE-ONLY');
     expect(bundle).not.toContain('SPECTER-DIAGNOSTIC-ONLY');
     expect(bundle).not.toContain('work-bodies');
+    expect(bundle).not.toContain('data-bodies');
     expect(bundle).not.toContain('arena-scenarios');
     expect(bundle).not.toContain('__specterFixtureCalls');
   });

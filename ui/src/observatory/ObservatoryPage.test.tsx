@@ -382,9 +382,9 @@ describe('sections', () => {
   const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
   const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
 
-  it('offers Roster, Specters, Work and Arena with Roster selected', async () => {
+  it('offers Roster, Specters, Work, Arena and Data with Roster selected', async () => {
     await open();
-    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work', 'Arena']);
+    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work', 'Arena', 'Data']);
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     expect(specterTab().getAttribute('aria-selected')).toBe('false');
     expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
@@ -397,6 +397,8 @@ describe('sections', () => {
     fireEvent.keyDown(specterTab(), { key: 'Home' });
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(rosterTab(), { key: 'End' });
+    expect(sections().getByRole('tab', { name: 'Data' }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(sections().getByRole('tab', { name: 'Data' }), { key: 'ArrowLeft' });
     expect(sections().getByRole('tab', { name: 'Arena' }).getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(sections().getByRole('tab', { name: 'Arena' }), { key: 'ArrowLeft' });
     expect(sections().getByRole('tab', { name: 'Work' }).getAttribute('aria-selected')).toBe('true');
@@ -413,6 +415,19 @@ describe('sections', () => {
     expect(get.mock.calls.filter(([path]) => String(path).includes('state=open')).length).toBeGreaterThan(0);
     fireEvent.click(rosterTab());
     expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
+  });
+
+  it('opens the Data tab as the fifth section with its scoped style, and polls Data only once it is opened', async () => {
+    await open();
+    const get = vi.spyOn(useAppApi(), 'get');
+    expect(get.mock.calls.filter(([path]) => String(path).endsWith('/data'))).toHaveLength(0);
+    expect(document.head.querySelectorAll('style[data-specter-arena-data]')).toHaveLength(1);
+    fireEvent.click(sections().getByRole('tab', { name: 'Data' }));
+    expect(await screen.findByRole('heading', { level: 3, name: 'Collection' })).toBeTruthy();
+    expect(document.querySelector('[data-mode="FIXTURE"]')).toBeTruthy();
+    expect(get.mock.calls.filter(([path]) => String(path).endsWith('/data')).length).toBeGreaterThan(0);
+    fireEvent.click(rosterTab());
+    expect(screen.queryByRole('heading', { level: 3, name: 'Collection' })).toBeNull();
   });
 
   it('shows the Specters panel and hides the roster, then restores it unchanged', async () => {

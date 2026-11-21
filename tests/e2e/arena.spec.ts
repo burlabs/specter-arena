@@ -25,7 +25,7 @@ async function openArena(page: Page, scenario: string) {
 test('A-1 Arena is the fourth tab, reached by keyboard, and the others keep their order', async ({ page }) => {
   await page.goto('./?scenario=arena');
   await expect(sectionTab(page, 'Roster')).toBeVisible();
-  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Work', 'Arena']);
+  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Work', 'Arena', 'Data']);
   await sectionTab(page, 'Roster').focus();
   for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowRight');
   await expect(sectionTab(page, 'Arena')).toHaveAttribute('aria-selected', 'true');

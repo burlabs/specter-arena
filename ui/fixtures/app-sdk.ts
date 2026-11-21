@@ -4,6 +4,7 @@
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { isArenaScenario } from './arena-scenarios.ts';
 import type { ArenaScenarioName } from './arena-scenarios.ts';
+import { dataResponse, setDataScenario } from './data-bodies.ts';
 import { attemptsBody, monitoringResponse, rosterBody, setFixtureScenario } from './monitoring-bodies.ts';
 import { sceneAssetResponse, setSceneAssetsFailing } from './scene-bodies.ts';
 import { setSpecterScenario, specterResponse } from './specter-bodies.ts';
@@ -47,6 +48,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
       );
     }
     return (
+      dataResponse(pathname, method, body) ??
       monitoringResponse(pathname) ??
       specterResponse(pathname, method, body) ??
       workResponse(pathname, method, body, search) ??
@@ -79,8 +81,9 @@ export { attemptsBody, rosterBody, setFixtureScenario };
 export type { ScenarioName } from './monitoring-bodies.ts';
 export { setSceneAssetsFailing, setSpecterScenario };
 export type { SpecterScenarioName } from './specter-bodies.ts';
-export { setWorkScenario };
+export { setDataScenario, setWorkScenario };
 export type { WorkScenarioName } from './work-bodies.ts';
+export type { DataScenarioName } from './data-bodies.ts';
 
 const client = createFixtureClient(DECLARED_API);
 

@@ -48,3 +48,10 @@ export const workMilestonesPath = (workId: string): string => appApiPath(`/work/
 export const workDecisionsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/decisions`);
 export const xpHistoryPath = (bindingId: string, limit = 50, cursor: string | null = null): string =>
   withQuery(appApiPath(`/roster/${enc(bindingId)}/xp`), { limit, cursor });
+
+export const DATA_PATH = appApiPath('/data');
+export const DATA_RETENTION_PATH = appApiPath('/data/retention');
+export const DATA_PURGE_PATH = appApiPath('/data/purge');
+export const DATA_EXPORT_PATH = appApiPath('/data/export');
+export const DATA_ASSET_CLEANUP_PATH = appApiPath('/data/asset-cleanup');
+export const COLLECTOR_PATH = appApiPath('/collector');

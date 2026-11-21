@@ -46,7 +46,7 @@ describe('specter copy', () => {
   });
 
   it('covers every error code the seven routes can answer', () => {
-    const codes = ['version_conflict', 'unknown_binding', 'unknown_asset', 'invalid_body', 'body_too_large', 'asset_too_large', 'unsupported_media', 'invalid_image', 'store_not_ready', 'store_unavailable'];
+    const codes = ['version_conflict', 'unknown_binding', 'unknown_asset', 'invalid_body', 'body_too_large', 'asset_too_large', 'unsupported_media', 'invalid_image', 'upload_limit_reached', 'store_not_ready', 'store_unavailable'];
     expect(codes.filter((code) => ERROR_WORDS[code] === undefined)).toEqual([]);
   });
 });
