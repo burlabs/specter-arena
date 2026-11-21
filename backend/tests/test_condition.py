@@ -62,8 +62,8 @@ def row(
     )
 
 
-def test_version_is_one() -> None:
-    assert CONDITION_RULES_VERSION == 1
+def test_the_latest_rules_version_is_two_and_v1_is_kept_for_roster_v1() -> None:
+    assert CONDITION_RULES_VERSION == 2
 
 
 def test_a_covered_present_running_bot_is_working() -> None:

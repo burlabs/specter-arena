@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 import sqlite3
+from collections.abc import Sequence
 from typing import Any, Literal
 
 from .errors import InvalidCursor, StoreUsageError
@@ -14,6 +16,7 @@ from .records import (
     Presence,
     QuarantineRecord,
     RosterRow,
+    TokenReading,
 )
 from .store import Store
 from .validate import is_time_ms
@@ -21,6 +24,7 @@ from .validate import is_time_ms
 CoverageState = Literal["covered", "gap", "unknown"]
 HEARTBEAT_STALE_REASON = "heartbeat-stale"
 NO_CUT = 2**62
+MAX_READING_BINDINGS = 200
 
 
 def roster_revision(store: Store) -> int:
@@ -202,6 +206,45 @@ def roster_page(store: Store, *, cursor: str | None, limit: int, as_of_ms: int) 
         for row in fetched
     ]
     return build_page(rows, size, lambda r: (r.binding_seq,))
+
+
+_READING_SQL = """
+SELECT o.payload, o.received_at_ms FROM observation o
+WHERE o.binding_id = ? AND o.slot_key = ? AND o.kind = 'event' AND o.event_type = 'context_usage'
+ORDER BY o.seq DESC LIMIT 1
+"""
+
+
+def _count(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def token_readings(store: Store, binding_ids: Sequence[str]) -> dict[str, TokenReading]:
+    """The newest `context_usage` reading on each bot's own DM slot, for the bots that have one.
+
+    Read from the stored events (no new table): the `(binding_id, slot_key, seq)` index finds the
+    newest DM-slot observation first. A worker slot's reading is never used, and a stored payload
+    that is not two non-negative integers is skipped, so a bad row reads as "no reading".
+    """
+    if len(binding_ids) > MAX_READING_BINDINGS:
+        raise StoreUsageError("too many bindings")
+    found: dict[str, TokenReading] = {}
+    with translate_errors(), store.read() as conn:
+        for binding_id in binding_ids:
+            bound = conn.execute(
+                "SELECT dm_key FROM bot_binding WHERE binding_id = ?", (binding_id,)
+            ).fetchone()
+            if bound is None:
+                continue
+            row = conn.execute(_READING_SQL, (binding_id, bound[0])).fetchone()
+            if row is None:
+                continue
+            payload = json.loads(row[0])  # the column is CHECKed json_valid
+            used = _count(payload.get("usedTokens")) if isinstance(payload, dict) else None
+            window = _count(payload.get("windowTokens")) if isinstance(payload, dict) else None
+            if used is not None and window is not None and is_time_ms(row[1]):
+                found[binding_id] = TokenReading(used, window, int(row[1]))
+    return found
 
 
 def recent_quarantine(store: Store, *, limit: int) -> tuple[QuarantineRecord, ...]:

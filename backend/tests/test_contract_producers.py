@@ -59,8 +59,10 @@ def schemas_without_a_producer(
     return missing
 
 
-def test_the_registry_lists_all_twenty_nine_schemas() -> None:
-    assert len(SCHEMA_IDS) == 29
+def test_the_registry_lists_all_thirty_one_schemas() -> None:
+    assert len(SCHEMA_IDS) == 31
+    assert "urn:specter-arena:contract:roster:v2" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:roster-item:v2" in SCHEMA_IDS
     assert "urn:specter-arena:contract:roster:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempts:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:attempt-item:v1" in SCHEMA_IDS

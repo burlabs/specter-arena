@@ -54,6 +54,13 @@ def _error(code: str, status: int) -> JSONResponse:
     return JSONResponse({"contractVersion": CONTRACT_VERSION, "error": code}, status_code=status)
 
 
+# `GET /api/roster` is `roster.v1`; `?view=signals` is `roster.v2` (the `waiting` condition and the
+# context reading), the way `?view=list` and `?view=paged` select `work-items.v2` and
+# `xp-summaries.v2`.
+SIGNALS_VIEW = "signals"
+ROSTER_VIEWS = frozenset({SIGNALS_VIEW})
+
+
 @signed
 async def roster(request: Request) -> JSONResponse:
     """Signed roster page for the UI: bindings, condition and coverage, never a slot key or Crew id.
@@ -73,6 +80,9 @@ async def roster(request: Request) -> JSONResponse:
         limit = store_api.clamp_limit(int(raw_limit) if raw_limit is not None else None)
     except ValueError:
         return _error("invalid_limit", 400)
+    wanted = request.query_params.get("view")
+    if wanted is not None and wanted not in ROSTER_VIEWS:
+        return _error("invalid_view", 400)
     as_of_ms = int(time.time() * 1000)
     try:
         revision = await asyncio.to_thread(store_api.roster_revision, store)
@@ -83,11 +93,21 @@ async def roster(request: Request) -> JSONResponse:
             limit=limit,
             as_of_ms=as_of_ms,
         )
+        readings = (
+            await asyncio.to_thread(
+                store_api.token_readings, store, [row.binding_id for row in page.items]
+            )
+            if wanted == SIGNALS_VIEW
+            else {}
+        )
     except store_api.InvalidCursor:
         return _error("invalid_cursor", 400)
     except store_api.StoreError:
         return _error("store_unavailable", 503)
-    return JSONResponse(view.roster_body(page, revision, request.app.state.collector, as_of_ms))
+    collector = request.app.state.collector
+    if wanted == SIGNALS_VIEW:
+        return JSONResponse(view.roster_v2_body(page, revision, collector, as_of_ms, readings))
+    return JSONResponse(view.roster_body(page, revision, collector, as_of_ms))
 
 
 _BINDING_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")

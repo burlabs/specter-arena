@@ -7,14 +7,22 @@ from typing import TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from .store import RosterRow
 
-CONDITION_RULES_VERSION = 1
+# The newest rules. `roster-item.v1` is still served from `condition_rules_v1`, which never reads
+# a flag; `roster-item.v2` is served from `condition_rules_v2`.
+CONDITION_RULES_VERSION = 2
+
+WAITING = "waiting"
+APPROVAL_PENDING = "approval-pending"
+QUESTION_PENDING = "question-pending"
 
 Basis = Literal["row", "event"]
 
 
 @dataclass(frozen=True)
 class Condition:
-    """A labelled state with its reason. `state` is `working`, `settled` or `unknown`.
+    """A labelled state with its reason.
+
+    `state` is `working`, `settled`, `unknown` or (rules v2) `waiting`.
 
     Never numeric except the two timestamps, so no score or health value can be derived from it.
     """
@@ -58,3 +66,41 @@ def condition_rules_v1(row: RosterRow, as_of_ms: int) -> Condition:
     if facts.running:
         return build("working", "running")
     return build("settled", "not-running")
+
+
+def condition_rules_v2(row: RosterRow, as_of_ms: int) -> Condition:
+    """Rules v1, plus `waiting` when Crew says the person owes the bot an answer.
+
+    `waiting` reads two flags and nothing else: `pendingApproval` (an approval future is open on
+    the DM slot, `kiro_crew/dashboard/slot_projection.py:381-382`) and `needsInput` (a question
+    card is open, `slot_projection.py:422`). `waitingForInput` is true for any bot whose last row
+    is an assistant reply (`slot_projection.py:415-420`) and `hasOptions` for any reply that ends
+    in options, so neither is read. Presence, never-observed and coverage rules come first and win:
+    a bot the collector is not covering stays `unknown` whatever its last flags said. A pending
+    approval needs a turn in flight, so it counts only while the row says `running`; a flag left
+    on a settled row is a stale reading and stays a signal. A question card outlives the turn
+    that asked it, so `needsInput` counts on a running or settled row.
+    """
+    base = condition_rules_v1(row, as_of_ms)
+    facts = row.facts
+    if base.state == "unknown" or facts is None:
+        return base
+    if facts.pending_approval is True and facts.running is True:
+        return Condition(
+            WAITING,
+            APPROVAL_PENDING,
+            base.basis,
+            base.source_time_ms,
+            base.observed_at_ms,
+            base.signals,
+        )
+    if facts.needs_input is True:
+        return Condition(
+            WAITING,
+            QUESTION_PENDING,
+            base.basis,
+            base.source_time_ms,
+            base.observed_at_ms,
+            base.signals,
+        )
+    return base

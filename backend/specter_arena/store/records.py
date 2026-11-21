@@ -293,6 +293,19 @@ class RosterRow:
 
 
 @dataclass(frozen=True, slots=True)
+class TokenReading:
+    """The newest `context_usage` event on a bot's own DM slot: the context window in use.
+
+    A gauge of the live turn (`used` of `window` tokens), not cumulative spend, so it is never a
+    total, a rank or experience (FD-29).
+    """
+
+    used: int
+    window: int
+    observed_at_ms: int
+
+
+@dataclass(frozen=True, slots=True)
 class RebuildReport:
     as_of_ms: int
     observations_folded: int

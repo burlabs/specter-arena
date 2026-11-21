@@ -31,7 +31,7 @@ Specter Arena is a Kiro Crew app (slug `specter-arena`). It has a React UI mount
 | `npm run build:diagnostic` | Dev-only diagnostic bundle to `ui/diagnostic-dist/` (never shipped; carries `SPECTER-DIAGNOSTIC-ONLY`) |
 | `npm run check:diagnostic` | Positive control: the diagnostic bundle still carries its marker, so the `check:fixtures` exclusion scan is meaningful |
 | `npm run probe:check` | Offline validation of the committed capability matrix and recorded payloads; not a live probe |
-| `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2`) for the owner to install; prints the install command, never installs |
+| `npm run probe:stage` | Assembles the git-ignored `.probe-app/` (release app plus probe overlay; `-- --phase v0\|v1\|v2\|v3`; v3 is the narrow Crew 0.13.0 grant set and takes `--extra-steps usage-turns`) for the owner to install; prints the install command, never installs |
 | `npm run check:schema` | Offline: contract schemas, their cases and owner table, the FP-02-AC06 denylist over `contracts/schemas/` and store migrations, and the spec-id registry; not a runtime check |
 | `npm run dev` | Vite dev server for the FIXTURE preview harness |
 
