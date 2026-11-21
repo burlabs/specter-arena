@@ -1,0 +1,34 @@
+{
+  "contractVersion": 1,
+  "asOfMs": 1800000000000,
+  "retention": {
+    "retentionDays": null,
+    "changedAtMs": null,
+    "revision": 0
+  },
+  "horizonMs": null,
+  "preview": null,
+  "running": {
+    "kind": "purge",
+    "state": "running",
+    "cutoffMs": 1797408000000,
+    "startedMs": 1800000000100,
+    "endedMs": null,
+    "deleted": {
+      "observations": 500,
+      "quarantine": 0,
+      "attempts": 0,
+      "assets": 0
+    }
+  },
+  "lastPurge": null,
+  "lastCleanup": null,
+  "lastExport": null,
+  "uploads": {
+    "stored": 0,
+    "cap": 100,
+    "unused": 0
+  },
+  "exports": [],
+  "paused": false
+}

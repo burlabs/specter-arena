@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:data-lifecycle:v1",
+  "title": "Data lifecycle v1",
+  "description": "Body of GET /api/data and of every successful PUT /api/data/retention, POST /api/data/purge, POST /api/data/export and POST /api/data/asset-cleanup: the owner's view of the local store's retention setting, the last purge and cleanup, the exports written to the app data directory, upload usage and the collector pause flag. retention.retentionDays is null (keep everything, the default) or 30, 90, 180 or 365; nothing is deleted until the owner asks for a purge. horizonMs is the largest cutoff of any purge that deleted a row (null when none did): history before it may be missing, and a read reports that span as unknown (reason purged), never as no activity. preview is null while retentionDays is null; otherwise the counts a purge would delete now. A run in running, lastPurge or lastCleanup carries the counts it deleted: a purge deletes only observations, quarantine rows and ended attempts no work item links to, and never an identity, hero assignment, avatar revision, work item, decision or XP entry. uploads.unused is the uploaded assets no avatar revision references that are older than one hour (what cleanup would delete now). exports lists at most 20 files, newest first, each a bare file name under data/exports/, never a path. A newer major fails closed.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "asOfMs": { "$ref": "#/definitions/timeMs" },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "retentionDays": { "type": ["integer", "null"], "enum": [null, 30, 90, 180, 365] },
+        "changedAtMs": { "oneOf": [{ "$ref": "#/definitions/timeMs" }, { "type": "null" }] },
+        "revision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      },
+      "required": ["retentionDays", "changedAtMs", "revision"],
+      "additionalProperties": false
+    },
+    "horizonMs": { "oneOf": [{ "$ref": "#/definitions/timeMs" }, { "type": "null" }] },
+    "preview": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "cutoffMs": { "$ref": "#/definitions/timeMs" },
+            "observations": { "$ref": "#/definitions/count" },
+            "quarantine": { "$ref": "#/definitions/count" },
+            "attempts": { "$ref": "#/definitions/count" }
+          },
+          "required": ["cutoffMs", "observations", "quarantine", "attempts"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "running": { "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/run" }] },
+    "lastPurge": { "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/run" }] },
+    "lastCleanup": { "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/run" }] },
+    "lastExport": { "oneOf": [{ "type": "null" }, { "$ref": "#/definitions/export" }] },
+    "uploads": {
+      "type": "object",
+      "properties": {
+        "stored": { "$ref": "#/definitions/count" },
+        "cap": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "unused": { "$ref": "#/definitions/count" }
+      },
+      "required": ["stored", "cap", "unused"],
+      "additionalProperties": false
+    },
+    "exports": { "type": "array", "maxItems": 20, "items": { "$ref": "#/definitions/export" } },
+    "paused": { "type": "boolean" }
+  },
+  "required": [
+    "contractVersion",
+    "asOfMs",
+    "retention",
+    "horizonMs",
+    "preview",
+    "running",
+    "lastPurge",
+    "lastCleanup",
+    "lastExport",
+    "uploads",
+    "exports",
+    "paused"
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "timeMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "count": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "run": {
+      "type": "object",
+      "properties": {
+        "kind": { "enum": ["purge", "asset-cleanup"] },
+        "state": { "enum": ["running", "completed", "interrupted", "failed"] },
+        "cutoffMs": { "$ref": "#/definitions/timeMs" },
+        "startedMs": { "$ref": "#/definitions/timeMs" },
+        "endedMs": { "oneOf": [{ "$ref": "#/definitions/timeMs" }, { "type": "null" }] },
+        "deleted": {
+          "type": "object",
+          "properties": {
+            "observations": { "$ref": "#/definitions/count" },
+            "quarantine": { "$ref": "#/definitions/count" },
+            "attempts": { "$ref": "#/definitions/count" },
+            "assets": { "$ref": "#/definitions/count" }
+          },
+          "required": ["observations", "quarantine", "attempts", "assets"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["kind", "state", "cutoffMs", "startedMs", "endedMs", "deleted"],
+      "additionalProperties": false
+    },
+    "export": {
+      "type": "object",
+      "properties": {
+        "fileName": { "type": "string", "pattern": "^export-v[0-9]{1,3}-[0-9]{8}T[0-9]{12}Z\\.db$" },
+        "byteLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "createdMs": { "$ref": "#/definitions/timeMs" }
+      },
+      "required": ["fileName", "byteLength", "sha256", "createdMs"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,82 @@
+[
+  {
+    "file": "valid/default-keep-everything.json",
+    "valid": true
+  },
+  {
+    "file": "valid/retention-set-with-preview.json",
+    "valid": true
+  },
+  {
+    "file": "valid/after-purge.json",
+    "valid": true
+  },
+  {
+    "file": "valid/cleanup-and-export-and-paused.json",
+    "valid": true
+  },
+  {
+    "file": "valid/running-purge.json",
+    "valid": true
+  },
+  {
+    "file": "valid/interrupted-purge-twenty-exports.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/contract-version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/retention-forty-five-days.json",
+    "valid": false,
+    "instancePath": "/retention/retentionDays"
+  },
+  {
+    "file": "invalid/retention-zero-days.json",
+    "valid": false,
+    "instancePath": "/retention/retentionDays"
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/missing-paused.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/export-file-name-is-a-path.json",
+    "valid": false,
+    "instancePath": "/exports/0/fileName"
+  },
+  {
+    "file": "invalid/export-sha256-uppercase.json",
+    "valid": false,
+    "instancePath": "/exports/0/sha256"
+  },
+  {
+    "file": "invalid/twenty-one-exports.json",
+    "valid": false,
+    "instancePath": "/exports"
+  },
+  {
+    "file": "invalid/run-state-unknown.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/run-kind-unknown.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/uploads-negative.json",
+    "valid": false,
+    "instancePath": "/uploads/stored"
+  },
+  {
+    "file": "invalid/time-is-a-string.json",
+    "valid": false,
+    "instancePath": "/asOfMs"
+  }
+]

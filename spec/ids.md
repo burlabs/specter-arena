@@ -57,3 +57,7 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP18-CI` | FP-18 crew-integration requirements | crew-integration | 1-99 | open |
 | `FP18-WL` | FP-18 work-ledger requirements | work-ledger | 1-99 | open |
 | `FP18-DEL` | FP-18 delivery requirements | delivery | 1-99 | open |
+| `FP19-REQ` | FP-19 requirements: one per criterion, plus specter-identity (upload cap) and experience (Data tab) rules | delivery | 1-99 | open |
+| `FP19-CI` | FP-19 crew-integration requirements | crew-integration | 1-99 | open |
+| `FP19-WL` | FP-19 work-ledger requirements | work-ledger | 1-99 | open |
+| `FP19-DEL` | FP-19 delivery requirements | delivery | 1-99 | open |

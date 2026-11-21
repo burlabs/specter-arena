@@ -7,6 +7,7 @@ from starlette.routing import BaseRoute, Route
 # Package-relative on purpose: Crew never installs this repo, so `specter_arena` is only
 # importable as `backend.specter_arena` from the repo root that uvicorn puts on sys.path.
 from .specter_arena.config import probe_enabled
+from .specter_arena.data_routes import data_routes
 from .specter_arena.routes import attempts, health, ping, ready, roster
 from .specter_arena.specter_routes import specter_routes
 from .specter_arena.store_runtime import StoreRuntime
@@ -23,6 +24,7 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
     started.state.collector = None
     started.state.specters = None
     started.state.work = None
+    started.state.lifecycle = None
     if not store_runtime.probe_on and store_runtime.store is not None:
         # Lazy: `import backend.app` loads neither the collector nor `websockets`.
         from .specter_arena.collector.boot import boot_collector
@@ -36,6 +38,11 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
         started.state.collector = await boot_collector(store_runtime.store)
         started.state.specters = await boot_specters(store_runtime.store)
         started.state.work = boot_work(store_runtime.store)
+
+        # Lazy: `import backend.app` loads no lifecycle or store module.
+        from .specter_arena.lifecycle.boot import boot_lifecycle
+
+        started.state.lifecycle = boot_lifecycle(store_runtime.store)
     try:
         yield
     finally:
@@ -54,6 +61,7 @@ routes: list[BaseRoute] = [
     Route("/api/roster/{binding_id}/attempts", attempts, methods=["GET"]),
     *specter_routes(),
     *work_routes(),
+    *data_routes(),
 ]
 if PROBE_ON:
     # Lazy: the release import graph must not contain the diagnostic-only probe package.
@@ -66,3 +74,4 @@ app.state.store_runtime = runtime
 app.state.collector = None
 app.state.specters = None
 app.state.work = None
+app.state.lifecycle = None

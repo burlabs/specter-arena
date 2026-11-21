@@ -65,15 +65,16 @@ class LifecycleRuns:
 #
 # An observation is deleted only when it is older than the cutoff and a later `rebuild_projection`
 # or collector start does not need it. Kept, whatever its age:
-#   1. the newest observation of each (binding, slot, kind): the newest row (`_is_duplicate`, the
-#      fold of `bot_state`) and the newest event;
-#   2. the newest `chat_done` of each (binding, slot): `last_terminal_turn` and `_gen`;
-#   3. the newest observation with a turn, and the newest with a turn generation, of each binding
+#   1. on each binding's DM slot, the newest observation of each kind (the newest row is what
+#      `observations._is_duplicate` compares and what `bot_state` folds; the newest event sets
+#      `event_observed_ms`) and the newest `chat_done` (`last_terminal_turn`, `_gen`). Other slots
+#      belong to worker attempts only, so they need no standing row;
+#   2. the newest observation with a turn, and the newest with a turn generation, of each binding
 #      (`runs._known_bindings`, `runs.start_run`);
-#   4. the observation `bot_state.observed_seq` names;
-#   5. the observation that opened each running attempt;
-#   6. every observation from a linked attempt's start to its end on its own slot (the evidence the
-#      inspector and a re-accept read).
+#   3. the observation `bot_state.observed_seq` names;
+#   4. the observation that opened each running attempt;
+#   5. every observation from a linked attempt's start to its end on its own slot (the evidence
+#      the inspector and a re-accept read; an open end runs to the newest).
 _OBSERVATION_CANDIDATES = """
 WITH keepers AS MATERIALIZED (
   SELECT binding_id, slot_key, started_seq, ended_seq, running,
@@ -83,9 +84,15 @@ WITH keepers AS MATERIALIZED (
 )
 SELECT o.seq FROM observation o
 WHERE o.received_at_ms < :cutoff AND o.seq > :after
-  AND o.seq NOT IN (SELECT max(seq) FROM observation GROUP BY binding_id, slot_key, kind)
   AND o.seq NOT IN (
-    SELECT max(seq) FROM observation WHERE event_type = 'chat_done' GROUP BY binding_id, slot_key
+    SELECT max(d.seq) FROM observation d JOIN bot_binding b
+      ON b.binding_id = d.binding_id AND d.slot_key = b.dm_key
+    GROUP BY d.binding_id, d.kind
+  )
+  AND o.seq NOT IN (
+    SELECT max(d.seq) FROM observation d JOIN bot_binding b
+      ON b.binding_id = d.binding_id AND d.slot_key = b.dm_key
+    WHERE d.event_type = 'chat_done' GROUP BY d.binding_id
   )
   AND o.seq NOT IN (SELECT max(seq) FROM observation WHERE turn IS NOT NULL GROUP BY binding_id)
   AND o.seq NOT IN (SELECT max(seq) FROM observation WHERE turn_gen IS NOT NULL GROUP BY binding_id)
