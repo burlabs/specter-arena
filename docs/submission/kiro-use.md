@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
+Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
 This page lists only what the repository shows. Anything Eric did outside the repository (for example in the Kiro IDE) must be added by Eric as his own statement, with his own evidence.
 

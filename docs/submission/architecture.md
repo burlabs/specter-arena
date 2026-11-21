@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
+Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
 ## One installable Crew app
 
@@ -10,7 +10,7 @@ Specter Arena is one Kiro Crew app. Crew copies the app folder, serves the UI bu
 
 ## UI
 
-A React bundle, `ui/dist/index.mjs`, built by Vite as a library. Host-provided modules stay external (`ui/host-modules.ts`, `HOST_EXTERNALS`). Crew does not build apps, so a release ships the built file. Art does not live in the bundle: portraits and scene images come from the backend, and a build guard fails if a raster ends up in `ui/dist`.
+A React bundle, `ui/dist/index.mjs`, built by Vite as a library. Host-provided modules stay external (`ui/host-modules.ts`, `HOST_EXTERNALS`). Crew does not build apps, so a release ships the built file. Art does not live in the bundle: portraits and scene images come from the backend, and a build guard fails if a raster ends up in `ui/dist`. A second guard caps the bundle at 419,000 characters (`ui/src/build-output.test.ts`); the cap was raised from 305,000 for the Arena attack effects (FP-21).
 
 ## Backend
 
@@ -22,7 +22,9 @@ The UI calls `/apps/specter-arena/api/*`. The Crew gateway proxies those to the 
 
 ## Data
 
-SQLite in the app's Crew data directory, `data/store/specter-arena.db`, with checksummed migrations 0001 to 0007 (`backend/specter_arena/store/`). The app copies the database to `data/store/backups/` before a migration and keeps three copies. A collector records bot attempts observed through Crew; the work ledger holds work items, decisions and XP entries; the Specter tables hold identities and assets.
+SQLite in the app's Crew data directory, `data/store/specter-arena.db`, with checksummed migrations 0001 to 0009 (`backend/specter_arena/store/`). The store version is 9. The app copies the database to `data/store/backups/` before a migration and keeps three copies. A collector records bot attempts observed through Crew; the work ledger holds work items, decisions and XP entries; the Specter tables hold identities and assets.
+
+Data lifecycle (FP-19, migration 0009). The Data tab and its signed routes (`GET /api/data`, `POST /api/data/retention`, `/purge`, `/export`, `/asset-cleanup`, and `POST /api/collector`) let the owner set a retention window, run an explicit purge of old observations, quarantine rows and ended unlinked attempts, export the database to `data/exports/`, remove unused uploads and pause or resume collection (`backend/specter_arena/lifecycle/`, `ui/src/lifecycle/`). Nothing runs on a schedule. A purge or cleanup takes a verified backup first. Deletes pass only inside a running `lifecycle_run`, enforced by SQL triggers, and identity, heroes, work items, decisions and the XP ledger can never be deleted. A store sweep removes orphan temp files at start. The routes sit under the existing `/apps/specter-arena/api/*` grant, so no grant was added.
 
 ## Contracts
 
@@ -30,7 +32,7 @@ Wire shapes are JSON Schema draft-07 files in `contracts/schemas/`, owned per `c
 
 ## Read-only arena
 
-The arena is a pure function of the polled reads (roster, specters, work, XP). Selection, camera and animation state live in React state only. Its one write is the Work tab's decision route, reached by an explicit click.
+The arena is a pure function of the polled reads (roster, specters, work, XP). Selection, camera and animation state live in React state only. Its one write is the Work tab's decision route, reached by an explicit click. Attacks, casts and strikes (FP-21) are drawn from the same polled reads and never change a number.
 
 ## Invariants
 
