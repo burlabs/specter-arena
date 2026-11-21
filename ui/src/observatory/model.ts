@@ -1,7 +1,7 @@
-import type { AttemptItemV1, AttemptsV1, AttemptsWindowV1, RosterCollectorV1, RosterItemV1, RosterConditionV1, RosterWorkersV1 } from '../contracts/types';
-import { reasonWords } from './copy';
+import type { AttemptItemV1, AttemptsV1, AttemptsWindowV1, RosterCollectorV1, RosterItemV1, RosterConditionV1, RosterItemV2, RosterTokenReadingV2, RosterWorkersV1 } from '../contracts/types';
+import { CONDITION_LABEL, reasonWords } from './copy';
 
-export type Tone = 'working' | 'settled' | 'unknown' | 'ended';
+export type Tone = 'working' | 'settled' | 'unknown' | 'ended' | 'waiting';
 
 export interface ConditionView {
   tone: Tone;
@@ -13,6 +13,7 @@ const BOT_LABELS: Readonly<Record<string, { tone: Tone; label: string }>> = {
   working: { tone: 'working', label: 'Working' },
   settled: { tone: 'settled', label: 'No turn running' },
   unknown: { tone: 'unknown', label: 'Unknown' },
+  waiting: { tone: 'waiting', label: CONDITION_LABEL.waiting },
 };
 
 const ATTEMPT_LABELS: Readonly<Record<string, { tone: Tone; label: string }>> = {
@@ -50,6 +51,9 @@ export function workerChips(workers: RosterWorkersV1): Chip[] {
   if (workers.unknown > 0) chips.push({ key: 'unknown', count: workers.unknown, text: `${plural(workers.unknown)} unknown` });
   return chips;
 }
+
+/** The context reading on a `roster-item.v2`; null on a v1 item or when Crew gave none (never zero). */
+export const readingOf = (item: RosterItemV1): RosterTokenReadingV2 | null => ('tokenReading' in item ? ((item as RosterItemV2).tokenReading ?? null) : null);
 
 export const UNNAMED = 'Unnamed bot';
 

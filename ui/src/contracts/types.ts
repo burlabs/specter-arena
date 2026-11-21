@@ -60,7 +60,8 @@ export interface RosterWorkersV1 {
 }
 
 export interface RosterItemV1 {
-  contractVersion: 1;
+  /** 1 on the v1 wire; 2 on an item from `?view=signals` (`RosterItemV2` adds only `tokenReading`). */
+  contractVersion: 1 | 2;
   bindingId: string;
   displayName: string | null;
   avatar: RosterAvatarV1 | null;

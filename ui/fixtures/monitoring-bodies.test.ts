@@ -11,6 +11,7 @@ import {
   attemptsBody,
   monitoringResponse,
   rosterBody,
+  rosterV2Body,
   setFixtureScenario,
 } from './monitoring-bodies.ts';
 
@@ -20,17 +21,27 @@ for (const name of readdirSync(schemasDir).filter((file) => file.endsWith('.sche
   ajv.addSchema(JSON.parse(readFileSync(`${schemasDir}${name}`, 'utf8')) as object);
 }
 const validateRoster = ajv.getSchema('urn:specter-arena:contract:roster:v1');
+const validateRosterV2 = ajv.getSchema('urn:specter-arena:contract:roster:v2');
 const validateAttempts = ajv.getSchema('urn:specter-arena:contract:attempts:v1');
 
 describe('fixture scenarios', () => {
-  it('lists the fourteen scenarios, two of them internal to the arena scenarios', () => {
-    expect(SCENARIO_NAMES).toHaveLength(14);
+  it('lists the fifteen scenarios, two of them internal to the arena scenarios', () => {
+    expect(SCENARIO_NAMES).toHaveLength(15);
   });
 
   describe.each(SCENARIO_NAMES)('%s', (scenario) => {
     it('serves a roster that validates against roster.v1', () => {
       const body = rosterBody(scenario);
       expect(validateRoster?.(body), JSON.stringify(validateRoster?.errors)).toBe(true);
+    });
+
+    it('serves a signals roster that validates against roster.v2 and matches v1 item for item', () => {
+      const body = rosterV2Body(scenario);
+      expect(validateRosterV2?.(body), JSON.stringify(validateRosterV2?.errors)).toBe(true);
+      const { items: v2Items, ...v2Rest } = body;
+      const { items: v1Items, ...v1Rest } = rosterBody(scenario);
+      expect({ ...v2Rest, contractVersion: 1 }).toEqual(v1Rest);
+      expect(v2Items.map(({ tokenReading, ...item }) => ({ ...item, contractVersion: 1 }))).toEqual(v1Items);
     });
 
     it('serves attempts that validate and keep the window invariants and the roster counts', () => {
@@ -72,6 +83,21 @@ describe('fixture scenarios', () => {
 
   it('carries one bot per reason in all-reasons', () => {
     expect(rosterBody('all-reasons').items.map((item) => item.condition.reasonCode)).toEqual([...ALL_BOT_REASONS]);
+  });
+
+  it('carries the crew-signals bots: a waiting bot per reason, a reading, none, and a real zero', () => {
+    const items = rosterV2Body('crew-signals').items;
+    const waiting = items.filter((item) => item.condition.state === 'waiting');
+    expect(waiting.map((item) => item.condition.reasonCode)).toEqual(['approval-pending', 'question-pending']);
+    expect(items.map((item) => item.tokenReading?.used ?? null)).toEqual([48_000, null, 0, 151_250, null, null]);
+    const flagOnly = items.find((item) => item.displayName === 'Flag only');
+    expect([flagOnly?.condition.state, flagOnly?.condition.signals.waitingForInput]).toEqual(['settled', true]);
+  });
+
+  it('serves v2 only for view=signals', async () => {
+    const v2 = (await (await monitoringResponse('/apps/specter-arena/api/roster', '?view=signals'))?.json()) as { contractVersion: number };
+    const v1 = (await (await monitoringResponse('/apps/specter-arena/api/roster', '?limit=200'))?.json()) as { contractVersion: number };
+    expect([v2.contractVersion, v1.contractVersion]).toEqual([2, 1]);
   });
 
   it('returns null for a binding that is not on the roster', () => {

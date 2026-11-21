@@ -79,7 +79,8 @@ test('a paused collector is named, and a bot with no collected time says Not col
   await page.goto('./?scenario=not-collected');
   await selectBot(page, 'Atlas');
   await page.getByRole('tab', { name: 'Activity' }).click();
-  await expect(page.getByText('Not collected')).toHaveCount(2);
+  await expect(page.locator('.sa-activity').getByText('Not collected')).toHaveCount(2);
+  await expect(page.getByRole('region', { name: 'Context in use' })).toContainText('Not collected.');
   await expect(page.getByText('No collected time in this window, so there are no counts.')).toHaveCount(2);
 });
 

@@ -41,6 +41,16 @@ describe('specters', () => {
     expect(model.enemies.find((e) => e.workId === work[1]?.workId)?.engagedBy).toEqual([working.bindingId]);
   });
 
+  it('keeps a waiting bot as waiting, not unknown, and never engages its bot turn', () => {
+    const waiting = botOf(1, { state: 'waiting' });
+    const odd = botOf(2, { state: 'blocked' });
+    const work = [workOf(1, { attempts: [attemptOf(waiting, 1)] })];
+    const model = buildSceneModel(inputsOf({ roster: [waiting, odd], work }));
+    expect(model.specters.map((s) => s.condition)).toEqual(['waiting', 'unknown']);
+    expect(model.specters[0]?.engagedWorkIds).toEqual([]);
+    expect(model.coverage.unknownBots).toBe(1);
+  });
+
   it('ignores ended, absent and off-roster attempts and attempts on accepted items', () => {
     const bot = botOf(1, { state: 'working' });
     const stranger = botOf(9, { state: 'working' });

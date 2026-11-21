@@ -36,10 +36,10 @@ test('a keyboard-only user can find a bot, select it, watch it and switch views'
   await expect(roster.getByRole('listitem')).toHaveCount(1);
 });
 
-test('the legend lists two states the app cannot observe', async ({ page }) => {
+test('the legend lists Waiting on you as observed and Blocked as not observable', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /What the states mean/ }).click();
-  await expect(page.getByText('Not observable yet.')).toHaveCount(2);
+  await expect(page.getByText('Not observable yet.')).toHaveCount(1);
 });
 
 test('an empty roster and an unreachable backend each get their own state', async ({ page }) => {

@@ -241,13 +241,14 @@ describe('detail and announcements', () => {
 });
 
 describe('header, collector and notes', () => {
-  it('shows the collector, both notes and a legend with two not-observable states', async () => {
+  it('shows the collector, both notes and a legend with one not-observable state', async () => {
     await open();
     expect(screen.getByText(/Collector is running\./)).toBeTruthy();
     expect(screen.getByText(/Scheduled \(cron\) turns are not observable/)).toBeTruthy();
     expect(screen.getByText('2 bots on Crew have no memory store and cannot be monitored.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /What the states mean/ }));
-    expect(screen.getAllByText(/Not observable yet/)).toHaveLength(2);
+    expect(screen.getAllByText(/Not observable yet/)).toHaveLength(1);
+    expect(screen.getByText(/Crew's approval or question flag is set/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /What the states mean/ }));
     expect(screen.queryByText('Blocked')).toBeNull();
   });

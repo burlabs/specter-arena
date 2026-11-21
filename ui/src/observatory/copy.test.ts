@@ -36,6 +36,8 @@ describe('reason words tripwire', () => {
     'presence-unknown',
     'running',
     'not-running',
+    'approval-pending',
+    'question-pending',
     'ended-row-idle',
     'ended-chat-done',
     'ended-other',

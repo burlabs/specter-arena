@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import type { RosterCollectorV1, RosterItemV1, RosterNoteV1, RosterV1 } from '../contracts/types';
-import { HostApiError, rosterPath, useHostApi } from '../host';
+import type { RosterCollectorV1, RosterItemV1, RosterNoteV1, RosterV1, RosterV2 } from '../contracts/types';
+import { HostApiError, rosterPath, rosterSignalsPath, useHostApi } from '../host';
 import { sortRoster } from './model';
 import { usePolled } from './usePolled';
 
@@ -36,27 +36,37 @@ export function failureOf(error: unknown): FailureKind {
 export function useRoster(): { state: RosterState; refresh: () => void } {
   const api = useHostApi();
   const load = useCallback(async (): Promise<RosterData> => {
-    const items: RosterItemV1[] = [];
-    let first: RosterV1 | null = null;
-    let cursor: string | null = null;
-    let pages = 0;
-    do {
-      const page: RosterV1 = await api.getJson<RosterV1>(rosterPath(PAGE_LIMIT, cursor));
-      first ??= page;
-      items.push(...page.items);
-      cursor = page.nextCursor;
-      pages += 1;
-    } while (cursor !== null && pages < MAX_ROSTER_PAGES);
-    const truncated = cursor !== null;
-    return {
-      items: sortRoster(items),
-      collector: first.collector,
-      notes: first.notes,
-      rosterRevision: first.rosterRevision,
-      truncated,
-      complete: !truncated,
-      fetchedAtMs: Date.now(),
+    const readAll = async (path: (limit: number, after: string | null) => string): Promise<RosterData> => {
+      const items: RosterItemV1[] = [];
+      let first: RosterV1 | RosterV2 | null = null;
+      let cursor: string | null = null;
+      let pages = 0;
+      do {
+        const page: RosterV1 | RosterV2 = await api.getJson<RosterV1 | RosterV2>(path(PAGE_LIMIT, cursor));
+        first ??= page;
+        items.push(...page.items);
+        cursor = page.nextCursor;
+        pages += 1;
+      } while (cursor !== null && pages < MAX_ROSTER_PAGES);
+      const truncated = cursor !== null;
+      return {
+        items: sortRoster(items),
+        collector: first.collector,
+        notes: first.notes,
+        rosterRevision: first.rosterRevision,
+        truncated,
+        complete: !truncated,
+        fetchedAtMs: Date.now(),
+      };
     };
+    // Fail closed: if the signals (v2) read fails for any reason but an expired session, the whole read is
+    // repeated on v1, which has no waiting state and no reading. A v1 failure is the failure.
+    try {
+      return await readAll(rosterSignalsPath);
+    } catch (error) {
+      if (error instanceof HostApiError && error.status === 403) throw error;
+      return readAll(rosterPath);
+    }
   }, [api]);
 
   const polled = usePolled(load, 'roster');

@@ -1,3 +1,5 @@
+export const CONDITION_LABEL = { waiting: 'Waiting on you' } as const;
+
 export const REASON_WORDS: Readonly<Record<string, string>> = {
   running: "Crew reports a turn running, and the collector saw this bot's chat recently.",
   'not-running': 'Crew reports no running turn. This is not a health reading.',
@@ -20,6 +22,8 @@ export const REASON_WORDS: Readonly<Record<string, string>> = {
   'no-slot-yet': "Collection is running, but this bot's chat has not appeared in an update yet.",
   'unsupported-store-less-bot': 'This bot has no memory store, so Crew gives the app no turn data for it.',
   'unobserved-turns': 'One or more turns happened between two observations and were not seen.',
+  'approval-pending': "Crew's row flag says a tool approval is waiting for you. Answer it in Crew. This app cannot approve for you, and this reading has not been checked against a live approval.",
+  'question-pending': "Crew's row flag says a question is waiting for your answer. Answer it in Crew. This app cannot answer for you, and this reading has not been checked against a live question.",
   'ended-row-idle': "Ended. Crew's row stopped reporting a running turn.",
   'ended-chat-done': "Ended when Crew's turn-complete event arrived.",
   'ended-other': 'Ended. The ending signal is not one this app recognizes.',
@@ -99,7 +103,7 @@ export const LEGEND: ReadonlyArray<{ term: string; meaning: string }> = [
   { term: 'Working', meaning: 'Crew reports a turn running and the collector saw the chat recently.' },
   { term: 'No turn running', meaning: 'Crew reports no running turn. This is not a health reading.' },
   { term: 'Unknown', meaning: 'The collector cannot tell, so the reason says why.' },
-  { term: 'Waiting on you', meaning: 'Not observable yet. Crew does not report this to apps, so the app does not guess it.' },
+  { term: CONDITION_LABEL.waiting, meaning: "Crew's approval or question flag is set for this bot, so Crew is waiting on you. The reason says which. Answer it in Crew; this app cannot approve or answer. The app reads the flag and has not checked it against a live approval." },
   { term: 'Blocked', meaning: 'Not observable yet. Crew does not report this to apps, so the app does not guess it.' },
 ];
 
@@ -119,3 +123,18 @@ export const METRIC_DEFINITIONS: ReadonlyArray<{ term: string; meaning: string }
   { term: 'Collector covered', meaning: 'Time in the window when the collector was recording, from the time this bot was first seen. It measures coverage only.' },
   { term: 'Duplicates', meaning: 'A reconnect replay does not create a second attempt for the same turn or worker.' },
 ];
+
+export const CONTEXT_COPY = {
+  heading: 'Context in use',
+  note: "How much of the model's context window this bot's latest turn is using, as Crew reported it. It is a gauge for one turn. It is not tokens spent, not a total, not XP and not a score, and it is never compared between bots.",
+  inUse: 'In use',
+  window: 'Window size',
+  read: 'Read',
+  notCollected: 'Not collected',
+  notCollectedWhy: 'Crew has not reported a context reading for this bot in the current collection period.',
+} as const;
+
+const count = (value: number): string => new Intl.NumberFormat().format(value);
+
+/** "12,000 of 200,000 tokens". The figure is a gauge, so it always comes with its window. */
+export const contextWords = (used: number, window: number): string => `${count(used)} of ${count(window)} tokens`;

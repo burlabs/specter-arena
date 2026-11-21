@@ -28,7 +28,7 @@ export interface SceneSpecter {
   specterName: string | null;
   heroId: HeroId | null;
   portraitAssetId: string | null;
-  condition: 'working' | 'settled' | 'unknown';
+  condition: 'working' | 'settled' | 'waiting' | 'unknown';
   openAttemptIds: string[];
   engagedWorkIds: string[];
   xpTotal: number;
@@ -59,8 +59,10 @@ export interface SceneModel {
   coverage: { gaps: number; unknownBots: number };
 }
 
-const conditionOf = (item: RosterItemV1): SceneSpecter['condition'] =>
-  item.condition.state === 'working' ? 'working' : item.condition.state === 'settled' ? 'settled' : 'unknown';
+const conditionOf = (item: RosterItemV1): SceneSpecter['condition'] => {
+  const state = item.condition.state;
+  return state === 'working' || state === 'settled' || state === 'waiting' ? state : 'unknown';
+};
 
 /** A bot-turn attempt is engaging only while the bot reports a running turn; a worker attempt only while a worker runs. */
 const running = (bot: RosterItemV1, kind: string): boolean =>

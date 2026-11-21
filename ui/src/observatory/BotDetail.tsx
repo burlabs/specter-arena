@@ -7,7 +7,8 @@ import { SourcePanel } from './SourcePanel';
 import { Tabs } from './Tabs';
 import { ProgressionPanel } from '../work/ProgressionPanel';
 import type { XpView } from '../work/useXp';
-import { nameOf } from './model';
+import { nameOf, readingOf } from './model';
+import { TokenStat } from './TokenStat';
 import type { AttemptsState } from './useAttempts';
 
 type DetailTab = 'attempts' | 'activity' | 'progression' | 'source';
@@ -44,7 +45,12 @@ export function BotDetail({ item, collector, rosterRevision, attempts, xp, onLoa
   } else if (attempts.status !== 'ready') {
     panel = attempts.status === 'idle' ? null : <AttemptsStatus state={attempts} onRetry={onRetry} />;
   } else if (tab === 'activity') {
-    panel = <ActivityPanel activity={attempts.data.activity} />;
+    panel = (
+      <>
+        <ActivityPanel activity={attempts.data.activity} />
+        <TokenStat reading={readingOf(item)} />
+      </>
+    );
   } else {
     panel = (
       <AttemptsList
