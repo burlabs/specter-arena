@@ -63,6 +63,7 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
         <ConditionBadge view={botCondition(bot.condition)} />
         <span>{`${ARENA.level(specter.level)} · ${ARENA.xpCommitted(specter.xpTotal)} committed`}</span>
       </p>
+      <p className="sa-help">{botCondition(bot.condition).reason}</p>
 
       {record !== undefined && (
         <figure className="sa-arena-fiction">

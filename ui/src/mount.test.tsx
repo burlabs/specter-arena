@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import * as entry from './mount';
 import SpecterArenaApp from './mount';
-import { ROSTER_PATH, attemptsPath, rosterPath } from './host/paths';
+import { ROSTER_PATH, attemptsPath, rosterSignalsPath } from './host/paths';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 
@@ -33,7 +33,7 @@ describe('release entry', () => {
     client.get.mockResolvedValue(new Response(JSON.stringify(rosterBody('default'))));
     render(<SpecterArenaApp />);
     expect(await screen.findByText('Atlas')).toBeTruthy();
-    expect(client.get).toHaveBeenCalledWith(rosterPath(200, null));
+    expect(client.get).toHaveBeenCalledWith(rosterSignalsPath(200, null));
     expect(client.post).not.toHaveBeenCalled();
   });
 

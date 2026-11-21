@@ -8,6 +8,7 @@ import { PresentationCueLayer } from './PresentationCueLayer';
 import type { PresentationCue } from './PresentationCueLayer';
 import { MarkerAssistanceSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
 import { ARENA, HUD, PLACEHOLDER_TOKEN } from './copy';
+import { CONDITION_LABEL } from '../observatory/copy';
 import { enemyEffect, specterStance } from './effectMap';
 import type { MarkerKind } from './effectMap';
 import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect } from './geometry';
@@ -77,7 +78,8 @@ interface SpecterTokenProps {
 
 function SpecterToken({ specter, position, selected, roving, animate, onSelect, register }: SpecterTokenProps) {
   const stance = specterStance(specter);
-  const conditionLabel = stance === 'coverage-unknown' ? ARENA.unknownCondition : stance === 'engaging' ? ARENA.engaging : ARENA.atRest;
+  const conditionLabel =
+    specter.condition === 'waiting' ? CONDITION_LABEL.waiting : stance === 'coverage-unknown' ? ARENA.unknownCondition : stance === 'engaging' ? ARENA.engaging : ARENA.atRest;
   const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
   return (
     <button

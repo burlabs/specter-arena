@@ -16,6 +16,7 @@ describe('ConditionBadge', () => {
     ['working', 'Working', 'working'],
     ['settled', 'No turn running', 'settled'],
     ['unknown', 'Unknown', 'unknown'],
+    ['waiting', 'Waiting on you', 'waiting'],
   ])('shows text and a distinct shape class for %s', (state, label, tone) => {
     const { container } = render(<ConditionBadge view={botCondition({ ...atlas.condition, state })} />);
     expect(container.textContent).toBe(label);
@@ -33,7 +34,7 @@ describe('Initials', () => {
 });
 
 describe('OperationalLegend', () => {
-  it('expands and collapses, and lists two states as not observable yet', () => {
+  it('expands and collapses, and names Waiting on you as observed and Blocked as not observable yet', () => {
     const onToggle = vi.fn();
     const { rerender } = render(<OperationalLegend open={false} onToggle={onToggle} />);
     const toggle = screen.getByRole('button', { name: /What the states mean/ });
@@ -43,7 +44,9 @@ describe('OperationalLegend', () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
     rerender(<OperationalLegend open onToggle={onToggle} />);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(screen.getAllByText(/Not observable yet/)).toHaveLength(2);
+    expect(screen.getAllByText(/Not observable yet/)).toHaveLength(1);
+    expect(screen.getByText('Blocked').nextElementSibling?.textContent).toMatch(/^Not observable yet/);
+    expect(screen.getByText('Waiting on you').nextElementSibling?.textContent).toMatch(/has not checked it against a live approval/);
     expect(screen.getByText('Waiting on you')).toBeTruthy();
   });
 });

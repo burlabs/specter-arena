@@ -35,7 +35,7 @@ describe('useRoster', () => {
     expect(state.data.complete).toBe(true);
     expect(state.data.truncated).toBe(false);
     expect(state.failure).toBeNull();
-    expect(client.get.mock.calls[0]?.[0]).toBe('/apps/specter-arena/api/roster?limit=200');
+    expect(client.get.mock.calls[0]?.[0]).toBe('/apps/specter-arena/api/roster?view=signals&limit=200');
   });
 
   it('follows nextCursor across pages', async () => {
@@ -46,7 +46,7 @@ describe('useRoster', () => {
     await flush();
     const { state } = result.current;
     expect(state.status === 'ready' && state.data.items.map((item) => item.displayName)).toEqual(['Alpha', 'Beta']);
-    expect(client.get.mock.calls[1]?.[0]).toBe('/apps/specter-arena/api/roster?limit=200&cursor=c1');
+    expect(client.get.mock.calls[1]?.[0]).toBe('/apps/specter-arena/api/roster?view=signals&limit=200&cursor=c1');
   });
 
   it('stops at the page cap and marks the roster truncated and incomplete', async () => {
@@ -87,8 +87,52 @@ describe('useRoster', () => {
   });
 
   it('reports a failed first load', async () => {
-    client.get.mockRejectedValueOnce(new HostApiError(503, 'store_not_ready'));
+    client.get.mockRejectedValueOnce(new HostApiError(500, null)).mockRejectedValueOnce(new HostApiError(503, 'store_not_ready'));
     const { result } = renderHook(() => useRoster());
+    await flush();
+    await flush();
+    expect(result.current.state).toEqual({ status: 'failed', data: null, failure: 'store-not-ready' });
+  });
+
+  it('falls back to the v1 roster when the signals read fails', async () => {
+    client.get.mockRejectedValueOnce(new HostApiError(400, 'invalid_view')).mockResolvedValueOnce(rosterBody('default'));
+    const { result } = renderHook(() => useRoster());
+    await flush();
+    await flush();
+    expect(client.get.mock.calls.map((call) => call[0])).toEqual([
+      '/apps/specter-arena/api/roster?view=signals&limit=200',
+      '/apps/specter-arena/api/roster?limit=200',
+    ]);
+    expect(result.current.state.status).toBe('ready');
+    expect(result.current.state.data?.items).toHaveLength(7);
+  });
+
+  it('restarts from the first page on v1 when the signals read fails on a later page', async () => {
+    const base = rosterBody('default');
+    client.get
+      .mockResolvedValueOnce(page(base, 'c1', ['Beta']))
+      .mockRejectedValueOnce(new HostApiError(500, null))
+      .mockResolvedValueOnce(page(base, null, ['Alpha']));
+    const { result } = renderHook(() => useRoster());
+    await flush();
+    await flush();
+    expect(result.current.state.data?.items.map((item) => item.displayName)).toEqual(['Alpha']);
+    expect(client.get.mock.calls[2]?.[0]).toBe('/apps/specter-arena/api/roster?limit=200');
+  });
+
+  it('does not retry on v1 after an expired session', async () => {
+    client.get.mockRejectedValueOnce(new HostApiError(403, null));
+    const { result } = renderHook(() => useRoster());
+    await flush();
+    await flush();
+    expect(client.get).toHaveBeenCalledTimes(1);
+    expect(result.current.state).toEqual({ status: 'failed', data: null, failure: 'expired' });
+  });
+
+  it('reports the v1 failure when both reads fail', async () => {
+    client.get.mockRejectedValueOnce(new HostApiError(500, null)).mockRejectedValueOnce(new HostApiError(503, 'store_not_ready'));
+    const { result } = renderHook(() => useRoster());
+    await flush();
     await flush();
     expect(result.current.state).toEqual({ status: 'failed', data: null, failure: 'store-not-ready' });
   });

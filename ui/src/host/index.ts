@@ -18,6 +18,7 @@ export {
   assetPath,
   attemptsPath,
   rosterPath,
+  rosterSignalsPath,
   sceneAssetPath,
   specterPath,
   specterPortraitPath,

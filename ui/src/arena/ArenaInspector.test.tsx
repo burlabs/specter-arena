@@ -124,6 +124,8 @@ describe('Specter selection', () => {
     expect(panel.getByRole('heading', { level: 3, name: 'Attempts' })).toBeTruthy();
     expect(panel.getByRole('heading', { level: 3, name: 'Coverage' })).toBeTruthy();
     expect(panel.getByRole('heading', { level: 3, name: 'Source details' })).toBeTruthy();
+    expect(panel.getByText(/^Crew reports a turn running/)).toBeTruthy();
+    expect(inspector().textContent).not.toMatch(/Context in use/);
     const entries = await panel.findAllByRole('button', { name: /^Open evidence: / });
     fireEvent.click(entries[0]!);
     const selected = await panel.findByRole('heading', { level: 2 });

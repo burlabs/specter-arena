@@ -5,9 +5,12 @@ import type {
   AttemptsWindowV1,
   RosterCollectorV1,
   RosterItemV1,
+  RosterItemV2,
   RosterNoteV1,
   RosterSignalsV1,
+  RosterTokenReadingV2,
   RosterV1,
+  RosterV2,
 } from '../src/contracts/types.ts';
 import { canonicalArenaScenario, perfBots } from './arena-scenarios.ts';
 
@@ -26,6 +29,7 @@ export const SCENARIO_NAMES = [
   'not-collected',
   'arena-perf-roster',
   'arena-stale-roster',
+  'crew-signals',
 ] as const;
 
 export type ScenarioName = (typeof SCENARIO_NAMES)[number];
@@ -83,6 +87,8 @@ export interface BotSpec {
   presence?: Presence;
   coverage?: Coverage;
   signals?: Partial<RosterSignalsV1>;
+  /** The context reading served on `?view=signals`; omitted means none (null, Not collected). */
+  reading?: RosterTokenReadingV2;
   attempts?: AttemptSpec[];
   firstSeenMs?: number;
   coveredMs?: number;
@@ -103,6 +109,7 @@ const ATLAS: BotSpec = {
   name: 'Atlas',
   state: 'working',
   reason: 'running',
+  reading: { kind: 'context', used: 48_000, window: 200_000, observedAt: FIXTURE_NOW_MS - 20_000 },
   attempts: [
     { kind: 'worker', state: 'working', reason: 'running', startedAgoMs: 300_000 },
     { kind: 'worker', state: 'unknown', reason: 'feed-absent', startedAgoMs: 2_400_000 },
@@ -164,6 +171,18 @@ const ALL_REASONS_BOTS: BotSpec[] = ALL_BOT_REASONS.map((reason, index) => ({
   attempts: [{ kind: 'bot-turn', state: reason === 'running' ? 'working' : 'unknown', reason, startedAgoMs: 600_000 }],
 }));
 
+const rowBasis = (state: string): boolean => state === 'working' || state === 'settled' || state === 'waiting';
+
+/** FIXTURE bots for the waiting condition (one per reason), a reading, no reading, and a real zero. */
+const CREW_SIGNALS_BOTS: BotSpec[] = [
+  { n: 1, name: 'Approval', state: 'waiting', reason: 'approval-pending', signals: { pendingApproval: true }, reading: { kind: 'context', used: 48_000, window: 200_000, observedAt: FIXTURE_NOW_MS - 30_000 } },
+  { n: 2, name: 'Question', state: 'waiting', reason: 'question-pending', signals: { needsInput: true } },
+  { n: 3, name: 'Zero reading', state: 'settled', reason: 'not-running', reading: { kind: 'context', used: 0, window: 200_000, observedAt: FIXTURE_NOW_MS - 90_000 } },
+  { n: 4, name: 'Busy', state: 'working', reason: 'running', reading: { kind: 'context', used: 151_250, window: 200_000, observedAt: FIXTURE_NOW_MS - 10_000 } },
+  { n: 5, name: 'No reading', state: 'settled', reason: 'not-running' },
+  { n: 6, name: 'Flag only', state: 'settled', reason: 'not-running', signals: { waitingForInput: true, hasOptions: true } },
+];
+
 const NOT_COLLECTED_BOT: BotSpec = {
   n: 1,
   name: 'Atlas',
@@ -212,7 +231,7 @@ function windowOf(items: AttemptItemV1[], spec: BotSpec, windowMs: number): Atte
 
 function rosterItem(spec: BotSpec): RosterItemV1 {
   const items = attemptItems(spec);
-  const working = spec.state === 'working';
+  const working = rowBasis(spec.state);
   return {
     contractVersion: 1,
     bindingId: bindingIdOf(spec.n),
@@ -222,13 +241,13 @@ function rosterItem(spec: BotSpec): RosterItemV1 {
     condition: {
       state: spec.state,
       reasonCode: spec.reason,
-      basis: working || spec.state === 'settled' ? 'row' : null,
-      sourceTimeMs: working || spec.state === 'settled' ? FIXTURE_NOW_MS - 60_000 : null,
-      observedAtMs: working || spec.state === 'settled' ? FIXTURE_NOW_MS - 59_000 : null,
+      basis: working ? 'row' : null,
+      sourceTimeMs: working ? FIXTURE_NOW_MS - 60_000 : null,
+      observedAtMs: working ? FIXTURE_NOW_MS - 59_000 : null,
       signals: { needsInput: false, hasOptions: false, pendingApproval: false, waitingForInput: false, ...spec.signals },
     },
     coverage: spec.coverage ?? COVERED,
-    lastObservedAtMs: working || spec.state === 'settled' ? FIXTURE_NOW_MS - 59_000 : null,
+    lastObservedAtMs: working ? FIXTURE_NOW_MS - 59_000 : null,
     workers: {
       running: countWhere(items, 'worker', 'working'),
       seen: items.filter((item) => item.kind === 'worker').length,
@@ -265,6 +284,8 @@ function scenarioData(name: ScenarioName): ScenarioData {
       return { bots: [], collector: { state: 'unavailable', reasonCode: 'collector-not-started', sinceMs: null }, notes: [CRON_NOTE] };
     case 'not-collected':
       return { bots: [NOT_COLLECTED_BOT], collector: RUNNING_COLLECTOR, notes: [CRON_NOTE] };
+    case 'crew-signals':
+      return { bots: CREW_SIGNALS_BOTS, collector: RUNNING_COLLECTOR, notes: [CRON_NOTE] };
     case 'arena-perf-roster':
       return { bots: perfBots(), collector: RUNNING_COLLECTOR, notes: [CRON_NOTE] };
     default:
@@ -284,6 +305,14 @@ export function rosterBody(name: ScenarioName): RosterV1 {
     collector: data.collector,
     notes: data.notes,
   };
+}
+
+/** `roster.v2` (`?view=signals`): the v1 items plus `tokenReading`, null when the scenario has none for the bot. */
+export function rosterV2Body(name: ScenarioName): RosterV2 {
+  const data = scenarioData(name);
+  const base = rosterBody(name);
+  const items: RosterItemV2[] = base.items.map((item, index) => ({ ...item, contractVersion: 2, tokenReading: data.bots[index]?.reading ?? null }));
+  return { ...base, contractVersion: 2, items };
 }
 
 /** Null means the binding id is not on this scenario's roster (404 unknown_binding). */
@@ -345,14 +374,14 @@ function safeDecode(segment: string): string {
 const ATTEMPTS_PATH = new RegExp(`^${API_PREFIX}/([^/]+)/attempts$`);
 
 /** Null for any path that is not the roster or an attempts path, so the caller can fall through. */
-export function monitoringResponse(pathname: string): Promise<Response> | null {
+export function monitoringResponse(pathname: string, search = ''): Promise<Response> | null {
   const attemptsMatch = ATTEMPTS_PATH.exec(pathname);
   if (pathname !== API_PREFIX && attemptsMatch === null) return null;
   const name = activeScenario();
   const failure = failureResponse(name);
   if (failure !== null) return failure;
   if (attemptsMatch === null) {
-    const body = rosterBody(name);
+    const body = new URLSearchParams(search).get('view') === 'signals' ? rosterV2Body(name) : rosterBody(name);
     rosterReads += 1;
     return Promise.resolve(json(name === 'arena-stale-roster' && rosterReads > 1 ? { ...body, items: body.items.slice(0, -1) } : body));
   }

@@ -674,3 +674,16 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+.specter-arena-root .sa-status--waiting {
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-status--waiting .sa-status__dot {
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent 1px, currentColor 1px 2px, transparent 2px 4px, currentColor 4px 5px, transparent 5px);
+}
+
+.specter-arena-root .sa-tokens {
+  margin-top: 12px;
+}

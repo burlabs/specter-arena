@@ -44,6 +44,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('a waiting Specter', () => {
+  it('is announced as Waiting on you, never as No turn running, and is not engaging', () => {
+    const fenn = botOf(4, { displayName: 'Fenn', state: 'waiting' });
+    const waitingModel = buildSceneModel(inputsOf({ roster: [fenn] }));
+    render(<BattlefieldScene model={waitingModel} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    const token = screen.getByRole('button', { name: /^Fenn, no Specter yet, Placeholder token, not a portrait, Waiting on you, Level 1$/ });
+    expect(token.className).not.toContain('sa-is-engaging');
+    expect(token.getAttribute('aria-label')).not.toContain('No turn running');
+  });
+});
+
 describe('tokens', () => {
   it('has one named button per specter and per enemy with a sprite marker each', () => {
     const { container } = show();

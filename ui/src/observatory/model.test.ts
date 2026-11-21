@@ -3,7 +3,7 @@ import { attemptsBody, rosterBody } from '@kirocrew/app-sdk';
 import type { AttemptItemV1, AttemptsWindowV1, RosterConditionV1, RosterItemV1 } from '../contracts/types';
 import * as copy from './copy';
 import * as model from './model';
-import { UNNAMED, attemptCondition, botCondition, coverageSentence, formatDuration, isOpen, mergeAttempts, sourceRows, formatTime, initialsOf, matchesQuery, nameOf, sortRoster, workerChips } from './model';
+import { UNNAMED, attemptCondition, botCondition, coverageSentence, formatDuration, isOpen, mergeAttempts, sourceRows, formatTime, initialsOf, matchesQuery, nameOf, readingOf, sortRoster, workerChips } from './model';
 
 const signals = { needsInput: null, hasOptions: null, pendingApproval: null, waitingForInput: null };
 const condition = (state: string, reasonCode: string): RosterConditionV1 => ({ state, reasonCode, basis: null, sourceTimeMs: null, observedAtMs: null, signals });
@@ -181,6 +181,29 @@ describe('formatTime', () => {
     expect(formatTime(ms, { locale: 'en-US', timeZone: 'UTC' })).toBe('Nov 17, 2026, 12:05 PM');
     expect(formatTime(ms, { locale: 'de-DE', timeZone: 'Asia/Tokyo' })).toContain('17.11.2026');
     expect(formatTime(ms, { locale: 'en-US', timeZone: 'UTC', long: true })).toContain('UTC');
+  });
+});
+
+describe('waiting and the context reading', () => {
+  const [atlas] = rosterBody('default').items;
+  it('labels waiting with its tone and words each reason from the flag, without a live claim', () => {
+    if (atlas === undefined) throw new Error('fixture');
+    for (const reasonCode of ['approval-pending', 'question-pending']) {
+      const view = botCondition({ ...atlas.condition, state: 'waiting', reasonCode });
+      expect([view.tone, view.label]).toEqual(['waiting', 'Waiting on you']);
+      expect(view.reason).toMatch(/^Crew's row flag says/);
+      expect(view.reason).toMatch(/has not been checked against a live/);
+      expect(view.reason).not.toMatch(/health|idle|available/i);
+    }
+    expect(botCondition({ ...atlas.condition, state: 'blocked', reasonCode: 'x' })).toMatchObject({ label: 'Unknown', reason: 'Reason code: blocked' });
+  });
+
+  it('reads the reading on a v2 item and null on a v1 item', () => {
+    if (atlas === undefined) throw new Error('fixture');
+    const reading = { kind: 'context' as const, used: 0, window: 10, observedAt: 1 };
+    expect(readingOf(atlas)).toBeNull();
+    expect(readingOf({ ...atlas, contractVersion: 2, tokenReading: reading } as RosterItemV1)).toEqual(reading);
+    expect(readingOf({ ...atlas, contractVersion: 2, tokenReading: null } as RosterItemV1)).toBeNull();
   });
 });
 

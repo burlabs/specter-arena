@@ -110,4 +110,21 @@ describe('BotDetail', () => {
     fireEvent.keyDown(tab('Attempts'), { key: 'End' });
     expect(tab('Source details').getAttribute('aria-selected')).toBe('true');
   });
+
+  it('shows the context reading on the Activity tab only, away from XP', () => {
+    view();
+    expect(screen.queryByRole('region', { name: 'Context in use' })).toBeNull();
+    fireEvent.click(tab('Activity'));
+    const gauge = screen.getByRole('region', { name: 'Context in use' });
+    expect(gauge.textContent).toContain('Not collected.');
+    fireEvent.click(tab('Progression'));
+    expect(screen.queryByRole('region', { name: 'Context in use' })).toBeNull();
+  });
+
+  it('shows the figure for a v2 item with a reading', () => {
+    const item = { ...(atlas as NonNullable<typeof atlas>), contractVersion: 2 as const, tokenReading: { kind: 'context' as const, used: 48_000, window: 200_000, observedAt: 1 } };
+    render(<BotDetail item={item} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={XP_NONE} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(tab('Activity'));
+    expect(screen.getByRole('region', { name: 'Context in use' }).textContent).toMatch(/48,000 of 200,000 tokens/);
+  });
 });
