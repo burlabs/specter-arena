@@ -1,8 +1,8 @@
 # Demo script (target 2:38, hard limit 3:00)
 
-Draft for Eric's review. Eric records and uploads; the agent does not. Record the real installed app in Kiro Crew on the Mac it runs on (Crew 0.12.2). Use harmless bots and work only; no credentials or personal data on screen. No music, or only music you made or licensed.
+Draft for Eric's review. Eric records and uploads; the agent does not. Record the real installed app in Kiro Crew on the Mac it runs on (Crew 0.13.0). Use harmless bots and work only; no credentials or personal data on screen. No music, or only music you made or licensed.
 
-Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
+Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
 Labels: anything from the FIXTURE preview or any prerecorded clip carries an on-screen label for its whole duration: "FIXTURE (sample data)" or "PRERECORDED". The default plan uses neither.
 
@@ -25,6 +25,6 @@ The UI can set a blocked state. In `ui/src/work/model.ts` the action table `ACTI
 
 ## Rules the footage must follow
 
-- Real supported behavior only. Do not show Waiting on you, a numeric health value, a classification, or XP from tokens.
+- Real supported behavior only. Do not show Blocked as a bot state (it is not observable), a numeric health value, a classification, or XP from tokens. "Waiting on you" is read from Crew's source, not live-tested (KL-21): show it only if the RC-3 sitting confirmed it, and say so. Arena attacks show live activity, not progress or damage (KL-22).
 - State plainly in the voice-over that the arena is read-only.
 - If the blocker shot cannot be recorded on the day, drop it and say in the checklist that the blocker is covered by tests, not by footage.

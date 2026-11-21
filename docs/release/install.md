@@ -2,17 +2,17 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `5e1e16380dd448b323b9e8fa6268c875be732ae8` (`main` after FP-16 PR-C #150; re-read for release candidate RC-2)
+Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
 
 Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "to be confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
 
 ## 1. Who this is for and what you get
 
-This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs: Roster, Specters, Work and Arena.
+This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with five tabs: Roster, Specters, Work, Arena and Data. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-3 sitting.
 
 ## 2. Requirements
 
-- Kiro Crew 0.12.2 is the tested version. `kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
+- Kiro Crew 0.13.0 is the host of the RC-3 sitting: `kirocrew --version` on the owner's machine read `kirocrew 0.13.0` on 2026-11-20. Kiro Crew 0.12.2 was the version the install facts below were first read from (`kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18). Nothing is confirmed on an installed RC-3 until `docs/release/oa-5-result.md` exists. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
 - macOS or Linux.
 - Network access to PyPI on the first enable. Crew installs the packages in `requirements.txt` with `pip --target` (`kiro_crew/apps/backend_runtime/provisioning.py`).
 - At least one Crew bot, to see a populated roster (`docs/compatibility/monitoring-scope.md`).
@@ -108,7 +108,8 @@ What stays:
 | Item | Location | After a default uninstall |
 |---|---|---|
 | Database (Specters, work items, XP) | `~/.kiro/crew/apps/specter-arena/data/store/specter-arena.db`, with `-wal` and `-shm` files while in use | Kept |
-| Pre-migration backups | `~/.kiro/crew/apps/specter-arena/data/store/backups/` | Kept |
+| Backups (pre-migration, pre-purge, pre-cleanup) | `~/.kiro/crew/apps/specter-arena/data/store/backups/` | Kept |
+| Exports from the Data tab | `~/.kiro/crew/apps/specter-arena/data/exports/` | Kept |
 | Provisioned Python packages | `data/.kirocrew-deps*` | Removed |
 | The rest of the app folder | `~/.kiro/crew/apps/specter-arena/` | Removed |
 
@@ -116,7 +117,7 @@ What stays:
 
 Reinstalling restores your Specters, work items and XP, asks for trust again and starts disabled (`install_app` preserves `data/`).
 
-To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. This deletes the whole folder including the database and cannot be undone. To keep a copy first, stop the app (disable it), then copy the whole `data` folder, not only the `.db` file. Recent writes can sit in the `-wal` file beside it:
+To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. This deletes the whole folder including the database, the backups and `data/exports/`, and cannot be undone. To keep a copy first, stop the app (disable it), then copy the whole `data` folder, not only the `.db` file. Recent writes can sit in the `-wal` file beside it:
 
 ```sh
 cp -R ~/.kiro/crew/apps/specter-arena/data BACKUP-FOLDER
