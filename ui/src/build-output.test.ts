@@ -5,8 +5,8 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
-// Measured bundle length at this PR's last code commit (243,430 characters; 235,558 after FP-16 PR-B; 223,534 after FP-16 PR-A; 243,224 at the FP-16 base cdd46a89), times 1.25, rounded up to the next 1,000.
-const BUNDLE_BUDGET_CHARS = 305_000;
+// FP-21 PR-A: 334,897 characters measured at the PR-A code commit (the ported hero attack and cast effect CSS alone is about 36,000 of the 52,000 added), times 1.25, rounded up to the next 1,000. Before it: 243,430 characters; 235,558 after FP-16 PR-B; 223,534 after FP-16 PR-A; 243,224 at the FP-16 base cdd46a89), times 1.25, rounded up to the next 1,000.
+const BUNDLE_BUDGET_CHARS = 419_000;
 
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
