@@ -242,7 +242,7 @@ def test_matrix_json_is_all_untested_for_an_empty_run() -> None:
     document = to_matrix_json(empty_run())
     cells = document["cells"]
     assert isinstance(cells, list)
-    assert len(cells) == 51
+    assert len(cells) == 56
     assert {cell["state"] for cell in cells} == {"UNTESTED"}
     assert all(
         cell["credential"] is None and cell["evidenceRef"] is None and cell["probedAt"] is None

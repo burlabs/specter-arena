@@ -9,6 +9,8 @@ from ..config import RUN_OPTIONS_FILE
 MARKER = "SPECTER-DIAGNOSTIC-ONLY"
 
 HOST_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
+STEP_ID_PATTERN = re.compile(r"[a-z][a-z0-9-]{0,40}")
+MAX_EXTRA_STEPS = 8
 DEFAULT_AGENTS_POLL_SECONDS = 15.0
 
 # Option key: (lowest, highest, nullable).
@@ -17,7 +19,7 @@ _RANGES: dict[str, tuple[float, float, bool]] = {
     "reconnectAfterStartSeconds": (1, 120, True),
     "agentsPollSeconds": (5, 120, False),
 }
-OPTION_KEYS = frozenset({"hostVersion", *_RANGES})
+OPTION_KEYS = frozenset({"hostVersion", "extraSteps", *_RANGES})
 
 
 class OptionsError(ValueError):
@@ -30,6 +32,8 @@ class RunOptions:
     capture_seconds: float
     reconnect_after_start: float | None
     agents_poll_seconds: float
+    # Opt-in step ids the staged build adds to the default run; the page has no step picker.
+    extra_steps: tuple[str, ...] = ()
 
 
 def _checked(source: str, options: object) -> dict[str, object]:
@@ -53,6 +57,13 @@ def _checked(source: str, options: object) -> dict[str, object]:
         isinstance(version, str) and HOST_VERSION_PATTERN.fullmatch(version)
     ):
         raise OptionsError(f"{source}: hostVersion must look like 0.12.2")
+    extra = options.get("extraSteps")
+    if "extraSteps" in options and not (
+        isinstance(extra, list)
+        and len(extra) <= MAX_EXTRA_STEPS
+        and all(isinstance(item, str) and STEP_ID_PATTERN.fullmatch(item) for item in extra)
+    ):
+        raise OptionsError(f"{source}: extraSteps must be a short list of step ids")
     return {str(key): value for key, value in options.items()}
 
 
@@ -66,6 +77,8 @@ def load_run_options(
     reconnect = merged.get("reconnectAfterStartSeconds")
     poll = merged.get("agentsPollSeconds", DEFAULT_AGENTS_POLL_SECONDS)
     version = merged.get("hostVersion")
+    extra = merged.get("extraSteps", [])
+    assert isinstance(extra, list)
     assert isinstance(capture, int | float) and isinstance(poll, int | float)
     assert reconnect is None or isinstance(reconnect, int | float)
     assert version is None or isinstance(version, str)
@@ -74,4 +87,5 @@ def load_run_options(
         capture_seconds=float(capture),
         reconnect_after_start=None if reconnect is None else float(reconnect),
         agents_poll_seconds=float(poll),
+        extra_steps=tuple(str(item) for item in extra),
     )

@@ -51,8 +51,12 @@ CHAT_SLOTS_PATH = "/api/chat/slots"
 AGENTS_PATH = "/api/agents"
 USAGE_PATH = "/api/usage"
 SESSIONS_USAGE_PATH = "/api/sessions/usage"
+USAGE_TURNS_PATH = "/api/usage/turns"
+# Crew keys the record as specter_arena__<type>; letters, digits and single underscores only.
+MEMBER_RECORD_TYPE = "probe_ping"
 # Produced only by live.py after it re-dials; any other frame type starting with "_" is dropped.
 RECONNECT_MARKER = "_probe_reconnect"
+REPLAY_CELL = "subagent-replay-after-reconnect"
 SUBSCRIBE_SUBAGENTS = '{"type":"subscribe_subagents"}'
 ALLOWED_CLIENT_TEXT = (SUBSCRIBE_SUBAGENTS,)
 REPLAY_SECONDS = 10.0
@@ -463,6 +467,12 @@ class _FeedTally:
     turns_before: dict[str, int] = field(default_factory=dict)
     seen_turns: set[tuple[str, int]] = field(default_factory=set)
     refilled: int = 0
+    approvals_resolved: int = 0
+    approvals_denied: int = 0
+    approval_words: set[str] = field(default_factory=set)
+    context_rows: int = 0
+    context_used_max: int = 0
+    context_window: int = 0
 
 
 def _attempt_for(run: Run, key: str, row: Row) -> Attempt:
@@ -594,6 +604,21 @@ def _probe_event(
         tally.tool_error_seen = tally.tool_error_seen or isinstance(data.get("is_error"), bool)
     elif event_type == "question_card":
         tally.question_cards += 1
+    elif event_type == "approval_resolved":
+        tally.approvals_resolved += 1
+        tally.approvals_denied += data.get("approved") is False
+        tally.approval_words.update(
+            f"{name}={data[name]}"
+            for name in ("origin", "decision")
+            if isinstance(data.get(name), str)
+        )
+    elif event_type == "context_usage":
+        used, window = data.get("used_tokens"), data.get("window_tokens")
+        if isinstance(used, int) and not isinstance(used, bool):
+            tally.context_rows += 1
+            tally.context_used_max = max(tally.context_used_max, used)
+            if isinstance(window, int) and not isinstance(window, bool):
+                tally.context_window = max(tally.context_window, window)
     elif event_type.startswith("subagent_"):
         tally.subagent_frames += 1
         rooted = _is_bot_slot(run, slot)
@@ -772,6 +797,10 @@ WS_CELLS = (
     "bot-id-stable-across-rename",
     "subagent-events-visible",
     "bot-worker-session-attribution-subagent",
+    "user-signal-approval-resolved",
+    "user-signal-blocked-distinct",
+    "bot-token-context-usage",
+    "subagent-replay-after-reconnect",
 )
 
 
@@ -805,7 +834,68 @@ def _signal_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
             cards = f"; question_card frames: {tally.question_cards}"
             excerpt, reason = excerpt + cards, reason + cards
         out.append(_seen(ctx, cell_id, excerpt) if hit else _untested(ctx, cell_id, reason))
+    out.extend(_approval_cells(ctx, tally))
+    out.append(_context_cell(ctx, tally))
     return out
+
+
+def _approval_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
+    """How an approval ends, and whether Crew says more than `approved` about a refusal.
+
+    A `decision` word on `approval_resolved` is a distinct source signal (Crew sends `expired`
+    for a coordinator approval nobody answered). A plain `approved=false` is a decision, not a
+    durable blocked state, so it records UNSUPPORTED with evidence; no frame leaves it UNTESTED.
+    """
+    resolved_id, blocked_id = "user-signal-approval-resolved", "user-signal-blocked-distinct"
+    if not tally.approvals_resolved:
+        reason = "no approval_resolved frame on a probe slot in the window"
+        return [_untested(ctx, resolved_id, reason), _untested(ctx, blocked_id, reason)]
+    words = ", ".join(sorted(tally.approval_words)) or "no origin or decision word"
+    counts = (
+        f"{tally.approvals_resolved} approval_resolved frame(s) on a probe slot, "
+        f"{tally.approvals_denied} with approved=false"
+    )
+    out = [_seen(ctx, resolved_id, f"{counts}; {words}")]
+    decisions = sorted(word for word in tally.approval_words if word.startswith("decision="))
+    if decisions:
+        out.append(
+            _seen(
+                ctx,
+                blocked_id,
+                f"a decision word accompanied approval_resolved: {', '.join(decisions)}",
+            )
+        )
+    elif tally.approvals_denied:
+        out.append(
+            Observation(
+                blocked_id,
+                "APP-TOKEN",
+                ctx.now(),
+                _ref(ctx, "ws-capture"),
+                f"{counts}; only approved distinguished a refusal, so no distinct blocked, denied "
+                "or timed-out signal was seen",
+                state="UNSUPPORTED",
+            )
+        )
+    else:
+        out.append(_untested(ctx, blocked_id, f"no approval was refused in the window; {counts}"))
+    return out
+
+
+def _context_cell(ctx: StepContext, tally: _FeedTally) -> Observation:
+    """`context_usage` is a gauge of the live turn's context window, not cumulative spend."""
+    cell = "bot-token-context-usage"
+    if not ctx.grants.has_event(SLOTS_EVENT):
+        return _untested(ctx, cell, "no slots grant declared")
+    if not tally.context_rows:
+        return _untested(ctx, cell, "no context_usage frame with used_tokens on a probe slot")
+    return _seen(
+        ctx,
+        cell,
+        f"{tally.context_rows} context_usage frame(s) on probe slots; largest used_tokens "
+        f"{tally.context_used_max} of a {tally.context_window} token window; a gauge of the live "
+        "turn, not cumulative spend",
+    )
 
 
 def _reconnect_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
@@ -816,6 +906,7 @@ def _reconnect_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
         return [
             _untested(ctx, "reconnect-snapshot", reason),
             _untested(ctx, "reconnect-cursor-history", reason),
+            _untested(ctx, REPLAY_CELL, reason),
         ]
     replay = ", ".join(f"{name} {count}" for name, count in sorted(tally.replayed.items()))
     snapshot = (
@@ -829,9 +920,21 @@ def _reconnect_cells(ctx: StepContext, tally: _FeedTally) -> list[Observation]:
         if tally.refilled
         else "no history frames after reconnect"
     )
+    replayed = sum(tally.replayed.values())
+    if not ctx.grants.has_event(SUBAGENT_EVENT):
+        replay_cell = _untested(ctx, REPLAY_CELL, "no subagent grant declared")
+    else:
+        replay_cell = _decided(
+            ctx,
+            REPLAY_CELL,
+            replayed > 0,
+            f"after the reconnect, subscribe_subagents replayed {replay or 'nothing'} within "
+            f"{REPLAY_SECONDS:g} s",
+        )
     return [
         _decided(ctx, "reconnect-snapshot", tally.resync_text is not None, snapshot),
         _decided(ctx, "reconnect-cursor-history", tally.refilled > 0, history),
+        replay_cell,
     ]
 
 
@@ -1069,6 +1172,44 @@ def _member_record_path(slug: str) -> str:
     return f"/api/member-records/{quote(slug, safe='')}"
 
 
+async def _usage_turns(port: GatewayPort, ctx: StepContext) -> list[Observation]:
+    """One GET of the per-turn usage reader for the bot's slot. Crew returns an app caller only
+    rows stamped with its own app, so an empty `turns` list is the expected app-scoped answer.
+    Only the status, the row count and field names are recorded."""
+    cell = "bot-token-usage-turns-app-scoped"
+    if not ctx.grants.has_api(USAGE_TURNS_PATH):
+        return [_untested(ctx, cell, f"no {USAGE_TURNS_PATH} grant declared")]
+    keys = sorted(ctx.run.bot_slots)
+    if not keys:
+        return [_untested(ctx, cell, "no probe bot slot was seen, so there is no slot to ask for")]
+    target = f"{USAGE_TURNS_PATH}?slot={quote(keys[0], safe='')}"
+    status, body = await port.http("GET", target)
+    parsed = _parse(body)
+    rows = parsed.get("turns") if isinstance(parsed, dict) else None
+    count = f"; {len(rows)} turn row(s)" if isinstance(rows, list) else ""
+    shape = describe(parsed) if body else "empty body"
+    excerpt = f"GET {USAGE_TURNS_PATH}?slot=<bot slot> answered {status}; {shape}{count}"
+    excerpt += refusal_reasons(status, parsed)
+    return [
+        Observation(
+            cell,
+            "APP-TOKEN",
+            ctx.now(),
+            _ref(ctx, "usage-turns"),
+            excerpt,
+            status=status,
+            body_shape=body_shape(status, parsed),
+        )
+    ]
+
+
+def _member_record_payload(ctx: StepContext) -> bytes:
+    """The door takes `{"type": <name>, "data": {...}}` and ignores any other key; a body without
+    a `type` was the 0.12.2 `bad_record_type` defect."""
+    data = {"source": "specter-probe", "at": ctx.now()}
+    return json.dumps({"type": MEMBER_RECORD_TYPE, "data": data}).encode()
+
+
 async def _member_record_write(port: GatewayPort, ctx: StepContext) -> list[Observation]:
     cell = "bot-dashboard-member-record"
     slug = ctx.run.probe_slug
@@ -1077,7 +1218,7 @@ async def _member_record_write(port: GatewayPort, ctx: StepContext) -> list[Obse
     path = _member_record_path(slug)
     if not ctx.grants.has_api(path):
         return [_untested(ctx, cell, "no member-records grant declared; see phase v1")]
-    payload = json.dumps({"source": "specter-probe", "at": ctx.now()}).encode()
+    payload = _member_record_payload(ctx)
     status, body = await port.http("POST", path, payload)
     observation = _http_observation(
         ctx, "member-record-write", cell, "POST", path, status, body, any_2xx=True
@@ -1095,7 +1236,7 @@ async def _member_record_ungranted(port: GatewayPort, ctx: StepContext) -> list[
         return [
             _untested(ctx, cell, "a member-records grant is declared; the refusal is probed in v0")
         ]
-    payload = json.dumps({"source": "specter-probe", "at": ctx.now()}).encode()
+    payload = _member_record_payload(ctx)
     status, body = await port.http("POST", path, payload)
     return [_http_observation(ctx, "member-record-ungranted", cell, "POST", path, status, body)]
 
@@ -1151,6 +1292,7 @@ STEPS: tuple[Step, ...] = (
     ),
     Step("chat-slots", ("user-chat-slots-api", "user-chat-slot-history"), _chat_slots),
     Step("ws-capture", WS_CELLS, _ws_capture),
+    Step("usage-turns", ("bot-token-usage-turns-app-scoped",), _usage_turns),
     Step("member-record-write", ("bot-dashboard-member-record",), _member_record_write),
     Step("member-record-ungranted", ("bot-dashboard-record-ungranted",), _member_record_ungranted),
     Step("cli-compare", ("external-cli-slot-appears",), _cli_compare),
@@ -1158,7 +1300,13 @@ STEPS: tuple[Step, ...] = (
 
 STEP_IDS = tuple(step.id for step in STEPS)
 # Steps whose grants the D-P1 overlay dropped: selectable by id, not part of the default run.
-OPT_IN_STEP_IDS = ("chat-slots", "member-record-write", "member-record-ungranted", "cli-compare")
+OPT_IN_STEP_IDS = (
+    "chat-slots",
+    "member-record-write",
+    "member-record-ungranted",
+    "cli-compare",
+    "usage-turns",
+)
 DEFAULT_STEP_IDS = tuple(step_id for step_id in STEP_IDS if step_id not in OPT_IN_STEP_IDS)
 
 

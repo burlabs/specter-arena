@@ -41,3 +41,27 @@ describe('the slice-1 owner runbook', () => {
     }
   });
 });
+
+describe('the FP-20 sitting runbook', () => {
+  const fp20 = readFileSync('docs/compatibility/fp20-sitting-runbook.md', 'utf8');
+  const minutes = [...fp20.matchAll(/^\d+\. \((\d+) min/gm)].map((match) => Number(match[1]));
+
+  it('has nine numbered steps that add up to at most 30 minutes', () => {
+    assert.equal(minutes.length, 9);
+    assert.ok(minutes.reduce((a, b) => a + b, 0) <= 30);
+  });
+
+  it('names only npm scripts that exist and stage flags the stager reads', () => {
+    for (const match of fp20.matchAll(/npm run ([\w:-]+)/g)) assert.ok(match[1] in scripts, match[1]);
+    const stage = fp20.split('\n').find((line) => line.includes('npm run probe:stage')) ?? '';
+    const flags = [...stage.matchAll(/ (--[a-z-]+)/g)].map((match) => match[1]);
+    for (const flag of flags) assert.ok([...KNOWN_FLAGS, '--extra-steps'].includes(flag), flag);
+    assert.ok(PHASES.includes('v3'));
+  });
+
+  it('keeps both stop rules and the probe removal step', () => {
+    assert.match(fp20, /Stop if the install screen/);
+    assert.match(fp20, /Stop if the host version is not 0\.13\.0/);
+    assert.match(fp20, /Remove the probe: run `kirocrew app install <extracted release folder>`/);
+  });
+});

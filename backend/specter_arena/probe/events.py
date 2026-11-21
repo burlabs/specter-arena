@@ -74,7 +74,7 @@ EVENT_FIELDS: dict[str, frozenset[str]] = {
     "tool_result": frozenset({"slot", "kind", "is_shell", "tool_call_id", "is_error"}),
     "context_usage": frozenset({"slot", "pct", "used_tokens", "window_tokens", "reset"}),
     "approval": frozenset({"id", "slot", "ts", "source"}),
-    "approval_resolved": frozenset({"id", "slot", "approved"}),
+    "approval_resolved": frozenset({"id", "slot", "approved", "origin", "decision"}),
     "question_card": frozenset({"slot"}),
     "subagent_spawn": frozenset({"id", "slot", "batch_id"}),
     "subagent_done": frozenset(
@@ -97,7 +97,9 @@ EVENT_FIELDS: dict[str, frozenset[str]] = {
 }
 
 # Allow-listed keys whose short lower-case word values are kept on probe-slot events.
-ENUM_FIELDS = frozenset({"kind", "source", "status", "outcome", "stop_reason", "stop_class"})
+ENUM_FIELDS = frozenset(
+    {"kind", "source", "status", "outcome", "stop_reason", "stop_class", "origin", "decision"}
+)
 
 PENDING_LIMIT = 100
 PENDING_TTL_SECONDS = 5.0

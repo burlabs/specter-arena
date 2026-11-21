@@ -492,6 +492,47 @@ def test_run_options_reach_the_run_and_the_body_wins_over_the_file(
     assert cells["app-owned-token-exchange"]["hostVersion"] == "0.12.3"
 
 
+def test_staged_extra_steps_join_the_default_run_and_a_request_list_wins(
+    make_client: MakeClient, tmp_path: Path
+) -> None:
+    staged = tmp_path / ".probe-run.json"
+    staged.write_text(json.dumps({"hostVersion": "0.13.0", "extraSteps": ["usage-turns"]}))
+    port = FakePort(
+        {
+            ("GET", "/api/usage"): (200, json_body({"sessions": {}})),
+            ("GET", "/api/sessions/usage"): (200, json_body({"usage": {}})),
+        }
+    )
+    svc = service(port, options_path=staged)
+    client = make_client(svc)
+    call(client, "POST", "/api/probe/run", {"captureSeconds": 1})
+    wait_until_done(client)
+    exported = call(client, "GET", "/api/probe/export").json()
+    cells = {cell["id"]: cell for cell in exported["matrix"]["cells"]}
+    # The default steps ran, and so did the staged opt-in step (no grant declared in this run).
+    assert cells["usage-api-app-token"]["state"] != "UNTESTED" or "usage" in str(
+        cells["usage-api-app-token"]
+    )
+    assert "usage/turns" in cells["bot-token-usage-turns-app-scoped"]["notes"]
+    svc2 = service(FakePort(), options_path=staged)
+    client2 = make_client(svc2)
+    call(client2, "POST", "/api/probe/run", {"steps": ["token-exchange"], "captureSeconds": 1})
+    wait_until_done(client2)
+    cells2 = {
+        c["id"]: c for c in call(client2, "GET", "/api/probe/export").json()["matrix"]["cells"]
+    }
+    assert cells2["bot-token-usage-turns-app-scoped"]["notes"] == "not yet probed"
+
+
+def test_an_unknown_staged_extra_step_is_422(make_client: MakeClient, tmp_path: Path) -> None:
+    staged = tmp_path / ".probe-run.json"
+    staged.write_text(json.dumps({"hostVersion": "0.13.0", "extraSteps": ["no-such-step"]}))
+    client = make_client(service(options_path=staged))
+    response = call(client, "POST", "/api/probe/run")
+    assert response.status_code == 422
+    assert "no-such-step" in response.json()["error"]
+
+
 def test_signed_page_requests_are_timed_and_bounded(make_client: MakeClient) -> None:
     svc = service()
     client = make_client(svc)

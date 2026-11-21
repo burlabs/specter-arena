@@ -153,6 +153,24 @@ def test_a_wildcard_api_entry_matches_children_but_not_the_prefix() -> None:
     assert not grants.has_api("/api/members/probe")
 
 
+def test_an_exact_api_entry_matches_that_path_alone() -> None:
+    grants = Grants(frozenset({"=/api/usage", "=/api/sessions/usage"}), frozenset(), "manifest")
+    assert grants.has_api("/api/usage")
+    assert grants.has_api("/api/sessions/usage")
+    assert not grants.has_api("/api/usage/turns")
+    assert not grants.has_api("/api/sessions/usage/refresh")
+    assert not grants.has_api("/api/usagex")
+    assert not grants.has_api("=/api/usage")
+
+
+def test_an_exact_mark_with_no_path_and_a_wildcard_inside_it_match_nothing_extra() -> None:
+    assert not Grants(frozenset({"="}), frozenset(), "manifest").has_api("/api/agents")
+    assert not Grants(frozenset({"="}), frozenset(), "manifest").has_api("")
+    star = Grants(frozenset({"=/api/*"}), frozenset(), "manifest")
+    assert not star.has_api("/api/agents")
+    assert star.has_api("/api/*")
+
+
 def test_events_match_exactly_and_unknown_grants_answer_yes() -> None:
     grants = Grants(frozenset(), frozenset({"slots:user"}), "manifest")
     assert grants.has_event("slots:user")

@@ -13,22 +13,22 @@ COMPAT = REPO_ROOT / "docs" / "compatibility"
 KEBAB = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 
 
-def test_there_are_67_unique_kebab_case_ids_sorted() -> None:
+def test_there_are_72_unique_kebab_case_ids_sorted() -> None:
     ids = questions.question_ids()
-    assert len(ids) == 67
-    assert len(set(ids)) == 67
+    assert len(ids) == 72
+    assert len(set(ids)) == 72
     assert list(ids) == sorted(ids)
     assert all(KEBAB.fullmatch(question_id) for question_id in ids)
 
 
 def test_counts_by_kind_and_priority() -> None:
-    assert Counter(q.kind for q in questions.QUESTIONS) == {"matrix": 51, "host-fact": 16}
+    assert Counter(q.kind for q in questions.QUESTIONS) == {"matrix": 56, "host-fact": 16}
     assert Counter(q.priority for q in questions.QUESTIONS) == {
         "must": 50,
-        "best-effort": 16,
+        "best-effort": 21,
         "deferred": 1,
     }
-    assert len(questions.matrix_questions()) == 51
+    assert len(questions.matrix_questions()) == 56
     assert len(questions.host_fact_questions()) == 16
 
 
@@ -73,6 +73,22 @@ def test_every_question_names_what_it_covers_and_who_drives_it() -> None:
 )
 def test_intake_and_pa1_coverage_ids_exist(tag: str) -> None:
     assert tag in questions.question_ids()
+
+
+@pytest.mark.parametrize(
+    ("question_id", "method", "scope"),
+    [
+        ("user-signal-approval-resolved", "ws-capture", "user-owned"),
+        ("user-signal-blocked-distinct", "ws-capture", "user-owned"),
+        ("bot-token-context-usage", "ws-capture", "bot"),
+        ("bot-token-usage-turns-app-scoped", "usage-turns", "bot"),
+        ("subagent-replay-after-reconnect", "ws-capture", "bot"),
+    ],
+)
+def test_fp20_cells_exist_with_their_probe_step(question_id: str, method: str, scope: str) -> None:
+    question = questions.question_by_id(question_id)
+    assert (question.kind, question.method, question.scope) == ("matrix", method, scope)
+    assert question.intake.startswith("FP-20")
 
 
 def test_the_webview_hook_is_committed_as_deferred_and_not_probed() -> None:

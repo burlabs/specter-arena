@@ -7,6 +7,7 @@ import {
   COPY_LIST,
   EXCLUDED_PATHS,
   INSTALL_COMMAND,
+  OVERLAY_BY_PHASE,
   OVERLAY_PATH,
   PHASES,
   V2_EXTRA_API_ENTRY,
@@ -23,6 +24,7 @@ const scratch = mkdtempSync(join(tmpdir(), 'stage-probe-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
 
 const realOverlay = JSON.parse(readFileSync(OVERLAY_PATH, 'utf8'));
+const narrowOverlay = JSON.parse(readFileSync(OVERLAY_BY_PHASE.v3, 'utf8'));
 const realManifest = JSON.parse(readFileSync('app.json', 'utf8'));
 
 /** @param {string} root @param {string} path @param {string} text */
@@ -37,6 +39,7 @@ function repo({ marker = true, diagnostic = true, release = true, overlay = real
   const root = mkdtempSync(join(scratch, 'repo-'));
   put(root, 'app.json', JSON.stringify(realManifest));
   put(root, OVERLAY_PATH, JSON.stringify(overlay));
+  put(root, OVERLAY_BY_PHASE.v3, JSON.stringify(narrowOverlay));
   put(root, 'requirements.txt', 'starlette==1\n');
   put(root, 'backend/app.py', 'app = 1\n');
   put(root, 'backend/__init__.py', '');
@@ -87,6 +90,40 @@ describe('the committed overlay', () => {
     assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
     assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] });
     assert.equal(realManifest.backend.hooks, undefined);
+  });
+});
+
+describe('the narrow 0.13.0 overlay (phase v3)', () => {
+  it('declares the own entry first, exact usage entries, the member-records prefix and two events', () => {
+    assert.deepEqual(narrowOverlay.permissions, {
+      api: [OWN_API_ENTRY, '/api/agents', '=/api/usage', '=/api/sessions/usage', '=/api/usage/turns', '/api/member-records/*'],
+      events: ['slots:user', 'subagent:user'],
+    });
+    assert.equal(narrowOverlay.version, '0.0.0-probe.3');
+  });
+
+  it('has no backend, no marker, and the same diagnostic page as the committed overlay', () => {
+    assert.equal(narrowOverlay.backend, undefined);
+    assert.equal(JSON.stringify(narrowOverlay).includes(DIAGNOSTIC_MARKER), false);
+    assert.deepEqual(narrowOverlay.ui, realOverlay.ui);
+  });
+
+  it('adds nothing to the release grants except the entries it names, and no entry is a bare usage path', () => {
+    for (const entry of narrowOverlay.permissions.api) {
+      assert.notEqual(entry, '/api/usage');
+      assert.notEqual(entry, '/api/sessions/usage');
+      assert.equal(entry.includes('*') && entry.startsWith('='), false, entry);
+    }
+  });
+
+  it('is the overlay as committed for v3, read from its own file', () => {
+    assert.deepEqual(overlayForPhase(narrowOverlay, 'v3'), narrowOverlay);
+    assert.equal(OVERLAY_BY_PHASE.v3, 'probe/manifest-overlay-v3.json');
+  });
+
+  it('leaves the other phases on the committed overlay', () => {
+    assert.deepEqual(Object.keys(OVERLAY_BY_PHASE), ['v3']);
+    assert.deepEqual(staged(repo(), 'v1').manifest().permissions, realOverlay.permissions);
   });
 });
 
@@ -185,6 +222,7 @@ describe('every staged phase', () => {
     v0: { api: [OWN_API_ENTRY] },
     v1: realOverlay.permissions,
     v2: { ...realOverlay.permissions, api: [...realOverlay.permissions.api, V2_EXTRA_API_ENTRY] },
+    v3: narrowOverlay.permissions,
   };
 
   for (const phase of PHASES) {
@@ -370,5 +408,29 @@ describe('parseArgs', () => {
 
   it('passes a missing phase value through so staging reports it', () => {
     assert.equal(parseArgs(['--phase']).phase, '');
+  });
+});
+
+describe('--extra-steps', () => {
+  it('stages the opt-in step ids into the run options', () => {
+    const flags = { ...HOST, '--extra-steps': 'usage-turns,member-record-write' };
+    assert.deepEqual(runOptions('v3', flags), { hostVersion: '0.12.2', extraSteps: ['usage-turns', 'member-record-write'] });
+  });
+
+  it('rejects an id that is not a lower-case step id, and more than eight ids', () => {
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': 'Usage Turns' }), /--extra-steps/);
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': '' }), /--extra-steps/);
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': 'a,b,c,d,e,f,g,h,i' }), /--extra-steps/);
+  });
+
+  it('is parsed from the command line and written to .probe-run.json', () => {
+    const args = ['--phase', 'v3', '--host-version', '0.13.0', '--extra-steps', 'usage-turns'];
+    const parsed = parseArgs(args);
+    assert.equal(parsed.flags['--extra-steps'], 'usage-turns');
+    const root = repo();
+    const result = staged(root, 'v3', parsed.flags);
+    assert.equal(result.code, 0);
+    const options = JSON.parse(readFileSync(join(root, '.probe-app', RUN_OPTIONS_FILE), 'utf8'));
+    assert.deepEqual(options, { hostVersion: '0.13.0', extraSteps: ['usage-turns'] });
   });
 });
