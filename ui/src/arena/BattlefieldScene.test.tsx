@@ -340,15 +340,18 @@ describe('exchanges and the paused collector', () => {
     await waitFor(() => expect(container.querySelector('.sa-hero')).not.toBeNull());
     expect(container.querySelector('.sa-hero__fx')).toBeNull();
     expect(container.querySelector('.sa-is-hit')).toBeNull();
+    expect(container.querySelector('.sa-strike')).toBeNull();
     const props = { model, selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
     rerender(<BattlefieldScene {...props} exchanges={attacking('attack')} />);
     await waitFor(() => expect(container.querySelector('.sa-hero.sa-is-attack')).not.toBeNull());
     expect(container.querySelector('.sa-hero__fx')).not.toBeNull();
+    expect(container.querySelectorAll('.sa-strike--attack')).toHaveLength(1);
     const hit = container.querySelector<HTMLElement>('.sa-minion.sa-is-hit');
     expect(hit).not.toBeNull();
     expect(['-1', '1']).toContain(hit?.style.getPropertyValue('--sa-recoil'));
     rerender(<BattlefieldScene {...props} exchanges={attacking('cast', null)} />);
     await waitFor(() => expect(container.querySelector('.sa-hero.sa-is-cast')).not.toBeNull());
+    expect(container.querySelectorAll('.sa-strike--cast')).toHaveLength(1);
     expect(container.querySelector('.sa-minion.sa-is-hit.sa-is-strong')).not.toBeNull();
     expect(container.querySelector<HTMLElement>('.sa-minion.sa-is-hit')?.style.getPropertyValue('--sa-recoil')).toBe('1');
   });

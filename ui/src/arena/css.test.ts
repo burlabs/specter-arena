@@ -100,7 +100,7 @@ describe('arena.css', () => {
   });
 
   it('declares every keyframe a rule uses, and uses every keyframe it declares', () => {
-    const used = new Set([...css.matchAll(/animation(?:-name)?:\s*(sa-arena-[a-z0-9-]+)/g)].map((match) => match[1]));
+    const used = new Set([...css.matchAll(/animation(?:-name)?:[^;]*;/g)].flatMap((declaration) => [...declaration[0].matchAll(/sa-arena-[a-z0-9-]+/g)].map((name) => name[0])));
     expect(keyframes.filter((name) => !used.has(name))).toEqual([]);
     expect([...used].filter((name) => !keyframes.includes(name ?? ''))).toEqual([]);
   });

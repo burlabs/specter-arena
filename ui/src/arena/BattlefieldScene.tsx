@@ -6,6 +6,7 @@ import { AnimatedSpecter } from './AnimatedSpecter';
 import type { HeroAnimation } from './AnimatedSpecter';
 import { ArenaMinimap } from './ArenaMinimap';
 import { PresentationCueLayer } from './PresentationCueLayer';
+import { StrikeLayer, strikeShotsOf } from './StrikeLayer';
 import type { PresentationCue } from './PresentationCueLayer';
 import { MarkerAssistanceSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
 import { ARENA, HUD, PLACEHOLDER_TOKEN } from './copy';
@@ -311,6 +312,9 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
     return { exchangeId: view.exchangeId, strong: view.strong, recoil: here !== undefined && there !== undefined && here.x < there.x ? -1 : 1 };
   };
 
+  const heroIds = new Map(model.specters.map((specter) => [specter.bindingId, specter.heroId]));
+  const strikes = strikeShotsOf(exchanges, (id) => heroIds.get(id) ?? null, (id) => placement.specters.get(id), (id) => placement.enemies.get(id), transform.displayed);
+
   const sceneStyle: CSSProperties & Record<string, string> = {};
   const mapUrl = mapArt.status === 'ready' ? cssUrl(mapArt.art.url) : null;
   const patchlingUrl = patchling.status === 'ready' ? cssUrl(patchling.art.url) : null;
@@ -401,6 +405,7 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
                 register={register(enemy.workId)}
               />
             ))}
+            <StrikeLayer shots={strikes} />
           </div>
           {(mapArt.status === 'failed' || (mapArt.status === 'ready' && mapUrl === null)) && <p className="sa-arena-plate">{ARENA.mapPlate}</p>}
           {collectorPaused && (

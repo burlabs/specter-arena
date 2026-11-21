@@ -26,6 +26,23 @@ export const HERO_COMBAT: Readonly<Record<HeroId, HeroCombatTiming>> = {
 /** A hero id a newer backend adds has no timing row, so it never attacks. */
 export const combatTimingOf = (heroId: string): HeroCombatTiming | null => (Object.hasOwn(HERO_COMBAT, heroId) ? HERO_COMBAT[heroId as HeroId] : null);
 
+/** The colour of each hero's travelling strike, taken from the glow of that hero's own effect layer. */
+export const STRIKE_RGB: Readonly<Record<HeroId, string>> = {
+  reeve: 'rgb(203, 185, 255)',
+  vell: 'rgb(225, 212, 255)',
+  stitch: 'rgb(255, 208, 128)',
+  poly: 'rgb(136, 221, 230)',
+  rattle: 'rgb(237, 232, 214)',
+  ember: 'rgb(255, 150, 70)',
+  shard: 'rgb(150, 230, 255)',
+  tide: 'rgb(112, 188, 232)',
+  lume: 'rgb(200, 255, 240)',
+  moss: 'rgb(146, 223, 184)',
+  bur: 'rgb(200, 235, 255)',
+};
+
+export const strikeColorOf = (heroId: string): string => (Object.hasOwn(STRIKE_RGB, heroId) ? STRIKE_RGB[heroId as HeroId] : 'rgb(255, 208, 128)');
+
 /** A recoil with no hero behind it (a milestone seen with nobody engaged) lands after this delay. */
 export const RECOIL_ONLY_IMPACT_MS = 280;
 
