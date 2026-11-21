@@ -17,18 +17,17 @@ export interface FixtureApiClient {
   readonly sourceMode: 'FIXTURE';
   get(path: string, init?: RequestInit): Promise<unknown>;
   post(path: string, body?: unknown, init?: RequestInit): Promise<unknown>;
-  put(path: string, body?: unknown, init?: RequestInit): Promise<unknown>;
 }
 
 export interface FixtureCall {
-  method: 'GET' | 'POST' | 'PUT';
+  method: 'GET' | 'POST';
   path: string;
 }
 
 /** Every request the fixture client received, newest last. The preview harness reads it as window.__specterFixtureCalls. */
 export const fixtureCalls: FixtureCall[] = [];
 
-function recordCall(method: 'GET' | 'POST' | 'PUT', pathname: string, search: string): void {
+function recordCall(method: 'GET' | 'POST', pathname: string, search: string): void {
   fixtureCalls.push({ method, path: `${pathname}${search}` });
   if (typeof window !== 'undefined') (window as unknown as { __specterFixtureCalls?: FixtureCall[] }).__specterFixtureCalls = fixtureCalls;
 }
@@ -40,7 +39,7 @@ export function resetFixtureCalls(): void {
 const CANNED_RESPONSE = { ok: true, at: '2000-01-01T00:00:00Z', source: FIXTURE_SDK_LABEL };
 
 export function createFixtureClient(declared: readonly string[]): FixtureApiClient {
-  const guard = (path: string, method: 'GET' | 'POST' | 'PUT', body?: unknown) => {
+  const guard = (path: string, method: 'GET' | 'POST', body?: unknown) => {
     const { pathname, search } = new URL(path, 'http://localhost');
     recordCall(method, pathname, search);
     if (!isPathPermitted(declared, pathname)) {
@@ -48,8 +47,6 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
         new Error(`[app-sdk] App "specter-arena" not permitted to access ${pathname}. Declared: [${declared.join(', ')}]`),
       );
     }
-    // PUT exists only on the Data routes; every other fixture module answers GET and POST.
-    if (method === 'PUT') return dataResponse(pathname, method, body) ?? Promise.resolve(CANNED_RESPONSE);
     return (
       dataResponse(pathname, method, body) ??
       monitoringResponse(pathname) ??
@@ -59,7 +56,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
       Promise.resolve(CANNED_RESPONSE)
     );
   };
-  return { sourceMode: 'FIXTURE', get: (path) => guard(path, 'GET'), post: (path, body) => guard(path, 'POST', body), put: (path, body) => guard(path, 'PUT', body) };
+  return { sourceMode: 'FIXTURE', get: (path) => guard(path, 'GET'), post: (path, body) => guard(path, 'POST', body) };
 }
 
 /** Unit-test seam for the arena scenarios: points the roster, work and Specter fixtures at one named scenario (null clears all three). */

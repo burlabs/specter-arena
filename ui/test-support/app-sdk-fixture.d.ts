@@ -14,5 +14,5 @@ declare module '@kirocrew/app-sdk' {
   export type ArenaScenarioName = import('../fixtures/arena-scenarios.ts').ArenaScenarioName;
   export function setArenaScenario(name: ArenaScenarioName | null): void;
   export const fixtureNavigations: string[];
-  export const fixtureCalls: Array<{ method: 'GET' | 'POST' | 'PUT'; path: string }>;
+  export const fixtureCalls: Array<{ method: 'GET' | 'POST'; path: string }>;
 }

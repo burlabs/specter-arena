@@ -57,7 +57,7 @@ export function useDataActions(): DataActions {
 
   return {
     busy,
-    setRetention: (days) => lifecycle(() => api.putJson(DATA_RETENTION_PATH, { retentionDays: days })),
+    setRetention: (days) => lifecycle(() => api.postJson(DATA_RETENTION_PATH, { retentionDays: days })),
     purge: (days) => lifecycle(() => api.postJson(DATA_PURGE_PATH, { retentionDays: days })),
     exportStore: () => lifecycle(() => api.postJson(DATA_EXPORT_PATH, {})),
     cleanupUploads: () => lifecycle(() => api.postJson(DATA_ASSET_CLEANUP_PATH, {})),

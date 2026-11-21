@@ -13,7 +13,7 @@ export const runOf = (extra: Partial<DataRunV1> = {}): DataRunV1 => ({
 });
 
 export const exportOf = (n: number, extra: Partial<DataExportFileV1> = {}): DataExportFileV1 => ({
-  fileName: `export-v9-2026111${n}T010203Z.db`,
+  fileName: `export-v9-2026111${n}T010203000000Z.db`,
   byteLength: 4_194_304,
   sha256: String(n).repeat(64).slice(0, 64),
   createdMs: NOW_MS - n * 3_600_000,

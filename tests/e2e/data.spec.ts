@@ -87,7 +87,7 @@ test('DT-3 a keyboard-only journey saves a window, previews, confirms and purges
   await expect(result).toBeFocused();
   await expect(history).toContainText(/^.*History before .* was purged\. Coverage for that time is unknown\./s);
   expect(await dataCalls(page)).toEqual([
-    { method: 'PUT', path: '/apps/specter-arena/api/data/retention' },
+    { method: 'POST', path: '/apps/specter-arena/api/data/retention' },
     { method: 'POST', path: '/apps/specter-arena/api/data/purge' },
   ]);
 });
@@ -108,7 +108,7 @@ test('DT-5 an export names the file under data/exports and lists it with its siz
   await expect(exports).toContainText('No export has been written yet.');
   await press(page, exports.getByRole('button', { name: 'Export the store' }), 'Enter');
   const name = await exports.getByRole('list', { name: 'Exports' }).getByRole('listitem').first().locator('code').innerText();
-  expect(name).toMatch(/^export-v9-\d{8}T\d{6}Z\.db$/);
+  expect(name).toMatch(/^export-v9-\d{8}T\d{12}Z\.db$/);
   await expect(exports).toContainText(`Saved to data/exports/${name} in the app folder.`);
   await expect(exports.getByText(/SHA-256 [0-9a-f]{64}/)).toBeVisible();
 });

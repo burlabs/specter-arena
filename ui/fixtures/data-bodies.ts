@@ -85,7 +85,8 @@ const hex64 = (seed: number): string => {
 };
 
 function exportFile(index: number, createdMs: number): DataExportFileV1 {
-  const stamp = new Date(createdMs).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  // export-v9-YYYYMMDDTHHMMSSffffffZ.db: the contract pattern has twelve digits after the T.
+  const stamp = new Date(createdMs).toISOString().replace(/[-:]/g, '').replace(/\.(\d{3})Z$/, '$1000Z');
   return { fileName: `export-v9-${stamp}.db`, byteLength: 4_194_304 + index * 4096, sha256: hex64(index + 1), createdMs };
 }
 
@@ -275,9 +276,9 @@ function postCollector(state: Store, body: unknown): Response {
   return json(control);
 }
 
-const ROUTES: ReadonlyArray<{ method: 'GET' | 'POST' | 'PUT'; path: string; handle: (state: Store, body: unknown) => Response }> = [
+const ROUTES: ReadonlyArray<{ method: 'GET' | 'POST'; path: string; handle: (state: Store, body: unknown) => Response }> = [
   { method: 'GET', path: ROOT, handle: (state) => json(viewOf(state)) },
-  { method: 'PUT', path: RETENTION, handle: putRetention },
+  { method: 'POST', path: RETENTION, handle: putRetention },
   { method: 'POST', path: PURGE, handle: postPurge },
   { method: 'POST', path: EXPORT, handle: postExport },
   { method: 'POST', path: CLEANUP, handle: postCleanup },
@@ -285,7 +286,7 @@ const ROUTES: ReadonlyArray<{ method: 'GET' | 'POST' | 'PUT'; path: string; hand
 ];
 
 /** Null for any path that is not a Data or collector route, so the caller can fall through. */
-export function dataResponse(pathname: string, method: 'GET' | 'POST' | 'PUT', body?: unknown): Promise<Response> | null {
+export function dataResponse(pathname: string, method: 'GET' | 'POST', body?: unknown): Promise<Response> | null {
   const onPath = ROUTES.filter((route) => route.path === pathname);
   if (onPath.length === 0) return null;
   const failure = failureFor(activeDataScenario(), method, pathname);

@@ -1,6 +1,9 @@
 // @vitest-environment node
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import Ajv from 'ajv';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { parseCollectorControl, parseDataLifecycle } from '../src/data/model.ts';
+import { parseCollectorControl, parseDataLifecycle } from '../src/lifecycle/model.ts';
 import { DATA_SCENARIO_NAMES, activeDataScenario, dataResponse, previewOf, resetDataFixtures, setDataScenario } from './data-bodies.ts';
 import type { DataScenarioName } from './data-bodies.ts';
 
@@ -11,7 +14,7 @@ interface Reply {
   body: any;
 }
 
-async function call(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<Reply> {
+async function call(method: 'GET' | 'POST', path: string, body?: unknown): Promise<Reply> {
   const response = await dataResponse(`${PREFIX}${path}`, method, body);
   if (response === null) throw new Error(`not a data route: ${path}`);
   return { status: response.status, body: response.status === 404 ? null : await response.json() };
@@ -30,6 +33,7 @@ describe('routing', () => {
   it('refuses a method the route does not offer with the api-error shape', async () => {
     expect((await call('POST', '/data', {})).status).toBe(405);
     expect((await call('GET', '/data/retention')).status).toBe(405);
+    expect((await call('GET', '/data/purge')).status).toBe(405);
   });
 
   it('defaults to data-none, honours the page URL name and treats `paused` as data-paused', () => {
@@ -72,22 +76,22 @@ describe('every scenario seeds a body the UI parser accepts', () => {
 describe('retention', () => {
   it('saves a window, bumps the revision once and builds the preview from it', async () => {
     open('data-none');
-    const saved = await call('PUT', '/data/retention', { retentionDays: 30 });
+    const saved = await call('POST', '/data/retention', { retentionDays: 30 });
     expect(saved.body.retention).toMatchObject({ retentionDays: 30, revision: 1 });
     expect(saved.body.preview).toEqual(previewOf(30));
-    const again = await call('PUT', '/data/retention', { retentionDays: 30 });
+    const again = await call('POST', '/data/retention', { retentionDays: 30 });
     expect(again.body.retention.revision).toBe(1);
-    const cleared = await call('PUT', '/data/retention', { retentionDays: null });
+    const cleared = await call('POST', '/data/retention', { retentionDays: null });
     expect(cleared.body.preview).toBeNull();
   });
 
   it.each([{}, { retentionDays: 7 }, { retentionDays: '30' }, { retentionDays: 30, extra: 1 }, null, []])('refuses the body %j', async (body) => {
-    expect((await call('PUT', '/data/retention', body)).body.error).toBe('invalid_body');
+    expect((await call('POST', '/data/retention', body)).body.error).toBe('invalid_body');
   });
 
   it('is busy while a purge runs', async () => {
     open('data-running');
-    expect((await call('PUT', '/data/retention', { retentionDays: 90 })).body.error).toBe('lifecycle_busy');
+    expect((await call('POST', '/data/retention', { retentionDays: 90 })).body.error).toBe('lifecycle_busy');
   });
 });
 
@@ -95,7 +99,7 @@ describe('purge', () => {
   it('needs a saved window that equals the body and records the horizon', async () => {
     open('data-none');
     expect((await call('POST', '/data/purge', { retentionDays: 30 })).body.error).toBe('retention_not_set');
-    await call('PUT', '/data/retention', { retentionDays: 90 });
+    await call('POST', '/data/retention', { retentionDays: 90 });
     expect((await call('POST', '/data/purge', { retentionDays: 30 })).body.error).toBe('retention_mismatch');
     expect((await call('POST', '/data/purge', { retentionDays: 7 })).body.error).toBe('invalid_body');
     expect((await call('POST', '/data/purge', {})).body.error).toBe('invalid_body');
@@ -116,7 +120,7 @@ describe('export and cleanup', () => {
     open('data');
     expect((await call('POST', '/data/export', { x: 1 })).body.error).toBe('invalid_body');
     let reply = await call('POST', '/data/export', {});
-    expect(reply.body.lastExport.fileName).toMatch(/^export-v9-\d{8}T\d{6}Z\.db$/);
+    expect(reply.body.lastExport.fileName).toMatch(/^export-v9-\d{8}T\d{12}Z\.db$/);
     expect(reply.body.exports[0].fileName).toBe(reply.body.lastExport.fileName);
     for (let index = 0; index < 25; index += 1) reply = await call('POST', '/data/export', {});
     expect(reply.body.exports).toHaveLength(20);
@@ -138,7 +142,7 @@ describe('export and cleanup', () => {
 
   it.each([
     ['data-busy', 'POST', '/data/purge', { retentionDays: 90 }, 409, 'lifecycle_busy'],
-    ['data-busy', 'PUT', '/data/retention', { retentionDays: 30 }, 409, 'lifecycle_busy'],
+    ['data-busy', 'POST', '/data/retention', { retentionDays: 30 }, 409, 'lifecycle_busy'],
     ['data-backup-failed', 'POST', '/data/purge', { retentionDays: 90 }, 500, 'backup_failed'],
     ['data-backup-failed', 'POST', '/data/asset-cleanup', {}, 500, 'backup_failed'],
     ['data-export-failed', 'POST', '/data/export', {}, 500, 'export_failed'],
@@ -167,5 +171,60 @@ describe('collector control', () => {
   it('is not blocked by a busy lifecycle', async () => {
     open('data-busy');
     expect((await call('POST', '/collector', { paused: true })).status).toBe(200);
+  });
+});
+
+describe('fixture bodies validate against the contract schemas', () => {
+  const schemasDir = fileURLToPath(new URL('../../contracts/schemas/', import.meta.url));
+  const ajv = new Ajv({ strict: true });
+  for (const name of readdirSync(schemasDir).filter((file) => file.endsWith('.schema.json'))) {
+    ajv.addSchema(JSON.parse(readFileSync(`${schemasDir}${name}`, 'utf8')) as object);
+  }
+  const validator = (name: string) => {
+    const validate = ajv.getSchema(`urn:specter-arena:contract:${name}:v1`);
+    if (validate === undefined) throw new Error(`no schema ${name}`);
+    return validate;
+  };
+  const lifecycle = validator('data-lifecycle');
+  const control = validator('collector-control');
+  const valid = (body: unknown, check: typeof lifecycle) => expect(check(body), JSON.stringify(check.errors)).toBe(true);
+  const SERVED = DATA_SCENARIO_NAMES.filter((name) => !['data-failure', 'data-offline', 'data-unsupported'].includes(name));
+
+  it.each(SERVED)('GET /api/data in %s', async (name) => {
+    open(name);
+    valid((await call('GET', '/data')).body, lifecycle);
+  });
+
+  it.each(SERVED)('every write reply in %s that succeeds', async (name) => {
+    open(name);
+    const writes: Array<[string, unknown]> = [
+      ['/data/retention', { retentionDays: 30 }],
+      ['/data/retention', { retentionDays: null }],
+      ['/data/retention', { retentionDays: 365 }],
+      ['/data/purge', { retentionDays: 365 }],
+      ['/data/export', {}],
+      ['/data/export', {}],
+      ['/data/asset-cleanup', {}],
+    ];
+    for (const [path, body] of writes) {
+      const reply = await call('POST', path, body);
+      if (reply.status === 200) valid(reply.body, lifecycle);
+      else expect(reply.body).toMatchObject({ contractVersion: 1 });
+    }
+  });
+
+  it.each(SERVED)('POST /api/collector in %s, pause then resume then repeat', async (name) => {
+    open(name);
+    for (const paused of [true, true, false, false]) valid((await call('POST', '/collector', { paused })).body, control);
+  });
+
+  it('a purge, a cleanup, a running and an interrupted run validate', async () => {
+    open('data-none');
+    await call('POST', '/data/retention', { retentionDays: 90 });
+    valid((await call('POST', '/data/purge', { retentionDays: 90 })).body, lifecycle);
+    for (const name of ['data-running', 'data-interrupted', 'data-full'] as const) {
+      open(name);
+      valid((await call('GET', '/data')).body, lifecycle);
+    }
   });
 });

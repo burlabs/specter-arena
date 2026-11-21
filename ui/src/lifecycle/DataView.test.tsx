@@ -263,7 +263,7 @@ describe('purge', () => {
   it('closes the confirmation when the saved window changes underneath it', async () => {
     await open('data');
     await press('Purge…');
-    await useAppApi().put(`${PREFIX}/data/retention`, { retentionDays: 30 });
+    await useAppApi().post(`${PREFIX}/data/retention`, { retentionDays: 30 });
     await act(async () => void (await vi.advanceTimersByTimeAsync(POLL_MS)));
     await flush();
     expect(screen.queryByRole('group', { name: 'Purge old history' })).toBeNull();
@@ -293,7 +293,7 @@ describe('export', () => {
     await press('Export the store');
     const list = within(section('Export')).getByRole('list', { name: 'Exports' });
     const name = within(list).getAllByRole('listitem')[0]?.querySelector('code')?.textContent ?? '';
-    expect(name).toMatch(/^export-v9-\d{8}T\d{6}Z\.db$/);
+    expect(name).toMatch(/^export-v9-\d{8}T\d{12}Z\.db$/);
     expect(screen.getByText(`Saved to data/exports/${name} in the app folder.`)).toBeTruthy();
     expect(within(list).getByText(/SHA-256 [0-9a-f]{64}/)).toBeTruthy();
     expect(within(list).getByText(/4 MB · /)).toBeTruthy();

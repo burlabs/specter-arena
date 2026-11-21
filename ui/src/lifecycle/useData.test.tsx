@@ -6,7 +6,7 @@ import { dataBody } from './testData';
 import { DataShapeError } from './model';
 import { dataFailureOf, useData } from './useData';
 
-const api = vi.hoisted(() => ({ getJson: vi.fn(), postJson: vi.fn(), putJson: vi.fn() }));
+const api = vi.hoisted(() => ({ getJson: vi.fn(), postJson: vi.fn() }));
 vi.mock('../host', async (original) => ({ ...(await original<typeof import('../host')>()), useHostApi: () => api }));
 
 const flush = () => act(async () => void (await vi.advanceTimersByTimeAsync(0)));

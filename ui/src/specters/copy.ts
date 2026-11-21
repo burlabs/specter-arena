@@ -17,6 +17,7 @@ export const ERROR_WORDS: Readonly<Record<string, string>> = {
   unknown_asset: 'That portrait could not be found.',
   invalid_body: 'The app could not use what was sent. Check the choice and try again.',
   body_too_large: 'That request was too large.',
+  upload_limit_reached: 'You already have 100 uploaded images. Remove unused uploads on the Data tab, then try again.',
   asset_too_large: 'That image is larger than 1 MB.',
   unsupported_media: 'Only PNG images can be used.',
   invalid_image: 'That file is not a valid PNG image the app can use.',

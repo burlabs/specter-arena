@@ -4,19 +4,17 @@ import { HostApiError } from '../host';
 import { dataBody } from './testData';
 import { codeOf, useDataActions } from './useDataActions';
 
-const api = vi.hoisted(() => ({ getJson: vi.fn(), postJson: vi.fn(), putJson: vi.fn() }));
+const api = vi.hoisted(() => ({ getJson: vi.fn(), postJson: vi.fn() }));
 vi.mock('../host', async (original) => ({ ...(await original<typeof import('../host')>()), useHostApi: () => api }));
 
 beforeEach(() => {
   api.postJson.mockReset();
-  api.putJson.mockReset();
 });
 
 const PREFIX = '/apps/specter-arena/api';
 
 describe('useDataActions', () => {
   it('sends each write to its route with the contract body', async () => {
-    api.putJson.mockResolvedValue(dataBody());
     api.postJson.mockResolvedValue(dataBody());
     const { result } = renderHook(() => useDataActions());
     await act(async () => void (await result.current.setRetention(30)));
@@ -24,11 +22,9 @@ describe('useDataActions', () => {
     await act(async () => void (await result.current.purge(90)));
     await act(async () => void (await result.current.exportStore()));
     await act(async () => void (await result.current.cleanupUploads()));
-    expect(api.putJson.mock.calls).toEqual([
+    expect(api.postJson.mock.calls).toEqual([
       [`${PREFIX}/data/retention`, { retentionDays: 30 }],
       [`${PREFIX}/data/retention`, { retentionDays: null }],
-    ]);
-    expect(api.postJson.mock.calls).toEqual([
       [`${PREFIX}/data/purge`, { retentionDays: 90 }],
       [`${PREFIX}/data/export`, {}],
       [`${PREFIX}/data/asset-cleanup`, {}],
