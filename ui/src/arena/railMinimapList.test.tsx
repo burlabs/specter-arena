@@ -67,11 +67,14 @@ describe('ArenaRail', () => {
     expect(onAssign).toHaveBeenCalledWith(dune.bindingId);
   });
 
-  it('uses the backend unassigned set when given: the group is exactly those roster bots', () => {
-    rail({ unassigned: new Set([dune.bindingId, 'bnd_not_on_the_roster']) });
-    const group = within(aside()).getByRole('region', { name: 'No Specter yet (1)' });
+  it('lists every bot that is not on the field; with the backend unassigned set, only those bots get Assign', () => {
+    const onAssign = vi.fn();
+    rail({ onAssign, unassigned: new Set([dune.bindingId, 'bnd_not_on_the_roster']) });
+    const group = within(aside()).getByRole('region', { name: 'No Specter yet (2)' });
     expect(within(group).getByText('Dune')).toBeTruthy();
-    expect(within(group).queryByText('Brindle')).toBeNull();
+    expect(within(group).getByText('Brindle')).toBeTruthy();
+    expect(within(group).getAllByRole('button', { name: /^Assign a Specter to / })).toHaveLength(1);
+    expect(within(group).getByRole('button', { name: 'Assign a Specter to Dune' })).toBeTruthy();
   });
 
   it('hides the group and says so while the Specters read is not done', () => {
@@ -83,9 +86,10 @@ describe('ArenaRail', () => {
     expect(screen.getByRole('status').textContent).toBe('Specters could not be read, so no hero is drawn yet.');
   });
 
-  it('omits the group when every bot has a Specter', () => {
-    rail({ unassigned: new Set() });
-    expect(screen.queryByText(/No Specter yet/)).toBeNull();
+  it('offers no Assign when the backend says no bot is unassigned', () => {
+    rail({ onAssign: vi.fn(), unassigned: new Set() });
+    expect(within(aside()).getByRole('region', { name: 'No Specter yet (2)' })).toBeTruthy();
+    expect(within(aside()).queryByRole('button', { name: /^Assign/ })).toBeNull();
   });
 
   it('collapses by prop: the toggle names its state, points at the body, and the body is hidden', () => {
