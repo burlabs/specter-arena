@@ -143,9 +143,9 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
                   <ul>
                     {holders.map(({ bot, specter }) => (
                       <li key={bot.bindingId}>
-                        <button type="button" className="sa-showcase__holder" aria-label={SHOWCASE.showInRoster(nameOf(bot))} onClick={() => onShowInRoster(bot.bindingId)}>
-                          <strong>{nameOf(bot)}</strong>
-                          <span>{specter.displayName}</span>
+                        <button type="button" className="sa-showcase__holder" onClick={() => onShowInRoster(bot.bindingId)}>
+                          <strong>{nameOf(bot)}</strong> <span>{specter.displayName}</span>{' '}
+                          <span className="sa-visually-hidden">{SHOWCASE.showInRoster}</span>
                         </button>
                       </li>
                     ))}

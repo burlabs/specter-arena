@@ -648,7 +648,7 @@ describe('assigning Specters', () => {
     fireEvent.click(sectionsTab('Specters'));
     await screen.findByRole('region', { name: 'Specter showcase' });
     fireEvent.click(await screen.findByRole('button', { name: 'Bots with this Specter (1)' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Show Atlas in the Roster' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Atlas .*Show in the Roster$/ }));
     expect(sectionsTab('Roster').getAttribute('aria-selected')).toBe('true');
     const row = await screen.findByRole('button', { name: /^Atlas/ });
     expect(row.getAttribute('aria-current')).toBe('true');
@@ -666,7 +666,7 @@ describe('assigning Specters', () => {
     await screen.findByRole('region', { name: 'Specter showcase' });
     fireEvent.click(await screen.findByRole('radio', { name: /^Stitch/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Bots with this Specter (1)' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Show Brindle in the Roster' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Brindle .*Show in the Roster$/ }));
     expect(screen.getByRole('tab', { name: 'All bots' }).getAttribute('aria-selected')).toBe('true');
     expect((await screen.findByRole('button', { name: /^Brindle/ })).getAttribute('aria-current')).toBe('true');
   });

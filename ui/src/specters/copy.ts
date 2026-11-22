@@ -88,7 +88,7 @@ export const SHOWCASE = {
   previewNote: 'These are previews. They do not show any bot’s work.',
   holders: (count: number): string => `Bots with this Specter (${count})`,
   noHolders: (name: string): string => `No bot holds ${name} yet.`,
-  showInRoster: (bot: string): string => `Show ${bot} in the Roster`,
+  showInRoster: 'Show in the Roster',
   heroesLoading: 'Loading heroes…',
   heroesFailed: 'The heroes could not be loaded.',
   heroesUnsupported: 'This version of the app backend cannot list the heroes yet.',

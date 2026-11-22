@@ -191,7 +191,7 @@ describe('bots with this Specter', () => {
     expect(document.getElementById(toggle.getAttribute('aria-controls') ?? '')?.hasAttribute('hidden')).toBe(true);
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    fireEvent.click(screen.getByRole('button', { name: 'Show Atlas in the Roster' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Atlas Vell Show in the Roster' }));
     expect(onShowInRoster).toHaveBeenCalledWith(bots[0]?.bindingId);
   });
 

@@ -51,7 +51,7 @@ describe('specter copy', () => {
     expect(SHOWCASE.holders(2)).toBe('Bots with this Specter (2)');
     expect(SHOWCASE.stageLabel('Vell')).toBe('Vell, large preview');
     expect(SHOWCASE.noHolders('Vell')).toBe('No bot holds Vell yet.');
-    expect(SHOWCASE.showInRoster('Atlas')).toBe('Show Atlas in the Roster');
+    expect(SHOWCASE.showInRoster).toBe('Show in the Roster');
     expect([SHOWCASE.attack, SHOWCASE.cast]).toEqual(['Attack', 'Cast']);
   });
 

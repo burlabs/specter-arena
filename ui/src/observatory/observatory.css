@@ -661,6 +661,15 @@
   .specter-arena-root .sa-legend__items {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* Five bot-detail tabs no longer fit one line at this width: they wrap instead of widening the page. */
+  .specter-arena-root .sa-tabs {
+    flex-wrap: wrap;
+  }
+
+  .specter-arena-root .sa-tab {
+    flex: 1 1 auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
