@@ -4,6 +4,7 @@ import { AnimatedSpecter } from '../arena/AnimatedSpecter';
 import { combatTimingOf } from '../arena/heroCombat';
 import { nameOf } from '../observatory/model';
 import { Button, EmptyState, ErrorState, Panel } from '../observatory/ui';
+import { avatarPackUrl } from './avatarPack';
 import { HeroChoice } from './HeroChoice';
 import { LOADING_SPECTERS, SHOWCASE, UNSUPPORTED_BACKEND, errorWords } from './copy';
 import { tokenInitials } from './model';
@@ -132,6 +133,16 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
                 </p>
               )}
               <p className="sa-help">{SHOWCASE.previewNote}</p>
+
+              <div className="sa-showcase__pack">
+                <p>{SHOWCASE.avatarPackLine}</p>
+                <a href={avatarPackUrl(hero.heroId)} target="_blank" rel="noopener noreferrer">
+                  {SHOWCASE.avatarPackLink(hero.name)}
+                </a>
+                <p className="sa-help">
+                  {SHOWCASE.avatarPackCopy} <code>{avatarPackUrl(hero.heroId)}</code>
+                </p>
+              </div>
 
               <Button aria-expanded={holdersOpen} aria-controls={holdersId} onClick={() => setHoldersOpen((open) => !open)}>
                 {SHOWCASE.holders(holders.length)}

@@ -14,8 +14,8 @@ export const APP_NAME = 'specter-arena';
 export const MANIFEST_NAME = 'RELEASE-MANIFEST.txt';
 export const BUILT_ENTRY = 'ui/dist/index.mjs';
 export const REQUIRED_FILES = ['LICENSE', 'requirements.txt', 'package-lock.json', 'docs/provenance.md', 'DEPENDENCIES.md', 'docs/release/install.md', 'docs/release/blockers.md', ...UI_ICON_RASTERS];
-/** Tracked paths left out of the artifact: repository-only art such as the README banner, which adds install weight and no runtime use. */
-export const RELEASE_EXCLUDED = /^docs\/images\//;
+/** Tracked paths left out of the artifact: repository-only art such as the README banner and the Kiro Crew avatar packs, which add install weight and no runtime use. */
+export const RELEASE_EXCLUDED = /^(?:docs\/images|avatar-packs)\//;
 const BLOCK = 512;
 const USTAR_NAME_MAX = 100;
 const USTAR_PREFIX_MAX = 155;

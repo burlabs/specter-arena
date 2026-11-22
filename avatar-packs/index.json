@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "collection": "Specters of the Abyss",
+  "author": "burlabs",
+  "format": "Kiro Crew portable appearance-pack bundles",
+  "packCount": 11,
+  "packs": [
+    {
+      "id": "specters-vell",
+      "name": "Vell — Specters of the Abyss",
+      "file": "packs/specters-vell.pack.json",
+      "bytes": 317930,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/vell.png",
+      "sourceBlobSha": "c2f88d58402d56d720352bbd09122fe499629ece"
+    },
+    {
+      "id": "specters-stitch",
+      "name": "Stitch — Specters of the Abyss",
+      "file": "packs/specters-stitch.pack.json",
+      "bytes": 350317,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/stitch.png",
+      "sourceBlobSha": "87c715d198be9bd61ddf8d28a30c3ac60872c370"
+    },
+    {
+      "id": "specters-reeve",
+      "name": "Reeve — Specters of the Abyss",
+      "file": "packs/specters-reeve.pack.json",
+      "bytes": 433055,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/reeve.png",
+      "sourceBlobSha": "f481f208383867a0a45f054d4e9ab8d4116e58c3"
+    },
+    {
+      "id": "specters-rattle",
+      "name": "Rattle — Specters of the Abyss",
+      "file": "packs/specters-rattle.pack.json",
+      "bytes": 377608,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/rattle.png",
+      "sourceBlobSha": "2c0fd225acff0e8a9473c593e07408f05d395642"
+    },
+    {
+      "id": "specters-ember",
+      "name": "Ember — Specters of the Abyss",
+      "file": "packs/specters-ember.pack.json",
+      "bytes": 281812,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/ember.png",
+      "sourceBlobSha": "12d3b4c1e684135b63bfe2160822c51c6b496f19"
+    },
+    {
+      "id": "specters-shard",
+      "name": "Shard — Specters of the Abyss",
+      "file": "packs/specters-shard.pack.json",
+      "bytes": 302661,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/shard.png",
+      "sourceBlobSha": "7c209072d48de805308bed2a5bf10de10d94d74c"
+    },
+    {
+      "id": "specters-poly",
+      "name": "Poly — Specters of the Abyss",
+      "file": "packs/specters-poly.pack.json",
+      "bytes": 376535,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/poly.png",
+      "sourceBlobSha": "df0e5c9785e9733ec9cb433de4829335a16be312"
+    },
+    {
+      "id": "specters-tide",
+      "name": "Tide — Specters of the Abyss",
+      "file": "packs/specters-tide.pack.json",
+      "bytes": 351420,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/tide.png",
+      "sourceBlobSha": "068a9125ebd1cfe76695594d39b1c068f3d95397"
+    },
+    {
+      "id": "specters-lume",
+      "name": "Lume — Specters of the Abyss",
+      "file": "packs/specters-lume.pack.json",
+      "bytes": 369997,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/lume.png",
+      "sourceBlobSha": "c68430e2eb2110cb39cae5353a9852a1171ff416"
+    },
+    {
+      "id": "specters-moss",
+      "name": "Moss — Specters of the Abyss",
+      "file": "packs/specters-moss.pack.json",
+      "bytes": 330412,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/moss.png",
+      "sourceBlobSha": "bde4f2148b1f4714e45e55a484a27f02933529db"
+    },
+    {
+      "id": "specters-bur",
+      "name": "bur — Specters of the Abyss",
+      "file": "packs/specters-bur.pack.json",
+      "bytes": 398671,
+      "states": [
+        "idle",
+        "working",
+        "done",
+        "error"
+      ],
+      "sourcePath": "backend/specter_arena/specters/art/bur.png",
+      "sourceBlobSha": "d5939720a7f745193045210b81743be1c7e6392c"
+    }
+  ]
+}

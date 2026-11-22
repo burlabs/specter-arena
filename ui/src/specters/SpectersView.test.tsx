@@ -231,6 +231,43 @@ describe('the assign button', () => {
   });
 });
 
+describe('the avatar pack link', () => {
+  const link = () => screen.getByRole('link', { name: /avatar pack$/ }) as HTMLAnchorElement;
+
+  it('says how to use the chosen hero as a Crew avatar and links to its pack file', async () => {
+    await open('specters');
+    expect(screen.getByText('Use this Specter as your Crew avatar: download its avatar pack, then in Crew open Avatar → Customize → Library → Import.')).toBeTruthy();
+    expect(link().textContent).toBe('Download Vell’s avatar pack');
+    expect(link().href).toBe('https://github.com/burlabs/specter-arena/blob/main/avatar-packs/packs/specters-vell.pack.json');
+    expect(link().target).toBe('_blank');
+    expect(link().rel).toBe('noopener noreferrer');
+  });
+
+  it('shows the address as selectable text in case the link cannot open', async () => {
+    await open('specters');
+    expect(screen.getByText('If the link does not open, copy this address:').querySelector('code')?.textContent).toBe(link().href);
+  });
+
+  it('follows the chosen hero and names bur in lowercase', async () => {
+    await open('specters');
+    fireEvent.click(screen.getByRole('radio', { name: /^bur/ }));
+    expect(link().textContent).toBe('Download bur’s avatar pack');
+    expect(link().href).toBe('https://github.com/burlabs/specter-arena/blob/main/avatar-packs/packs/specters-bur.pack.json');
+  });
+
+  it('makes no request and assigns nothing when it is shown or followed', async () => {
+    const post = vi.spyOn(useAppApi(), 'post');
+    const get = vi.spyOn(useAppApi(), 'get');
+    await open('specters');
+    const before = get.mock.calls.length;
+    fireEvent.click(screen.getByRole('radio', { name: /^Stitch/ }));
+    expect(link().href).toContain('specters-stitch.pack.json');
+    expect(post).not.toHaveBeenCalled();
+    expect(get.mock.calls.length).toBe(before);
+    expect(get.mock.calls.map(([path]) => String(path)).filter((path) => path.includes('appearances'))).toEqual([]);
+  });
+});
+
 describe('what the tab never does', () => {
   it('makes no write, offers no field, and avoids the words the page forbids', async () => {
     const post = vi.spyOn(useAppApi(), 'post');

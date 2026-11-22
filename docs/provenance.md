@@ -124,6 +124,29 @@ These files are not from the Figma Make export. Eric supplied them on 2026-11-21
 | `ui/icons/logo-inactive@3x.png` | `specters-arena-logo.png`, recoloured gray | 60 x 60 RGBA | 4467 | `f656c937b05decc1dabfbe1e368040a20a8e939bc7bea80010c8be3eff0f6f61` | spare 3x inactive icon for a host that asks for one |
 | `docs/images/banner.png` | `specters-of-the-abyss-banner.png` | 1568 x 784 RGBA | 2483077 | `bad00b84163c66bcd55feac653ccf5b516321639e25ab549c8a3e902290e77da` | README banner (repository only, not in the release artifact) |
 
+## Kiro Crew avatar packs
+
+The 11 files under `avatar-packs/packs/` are portable Kiro Crew appearance-pack bundles (JSON). They are repository-only companion assets: the app never installs, reads or assigns them, and `npm run package` leaves `avatar-packs/` out of the release artifact.
+
+- The art in every pack is Eric Jeffers's ChatGPT (OpenAI) image generation output, the same statement as "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" above. Each state's SVG embeds that hero's committed 256 px portrait from `backend/specter_arena/specters/art/` byte for byte, as a base64 PNG data URI. Nothing was redrawn, re-encoded or resized for the packs.
+- The SVG wrappers (the CSS keyframes, transforms, sparkles, spores and other effects around the image) are vector code written for these packs. They are not ChatGPT image output and not Figma Make output.
+- `avatar-packs/index.json` records each pack's source path and the git blob SHA of that source file. `scripts/__tests__/avatar-packs.test.mjs` fails when an embedded PNG differs from its committed portrait, when a recorded blob SHA no longer matches the file, or when a blob SHA below is missing from this table. A changed portrait therefore needs an explicit decision: a new pack id (Crew refuses to import an id that is already installed), a new row here, and a new `index.json` entry.
+- The packs add no new image file to the repository, so the table of tracked rasters above is unchanged.
+
+| Pack | Embedded source (committed art file) | Source git blob SHA | Pack bytes |
+|---|---|---|---|
+| `avatar-packs/packs/specters-vell.pack.json` | `backend/specter_arena/specters/art/vell.png` | `c2f88d58402d56d720352bbd09122fe499629ece` | 317930 |
+| `avatar-packs/packs/specters-stitch.pack.json` | `backend/specter_arena/specters/art/stitch.png` | `87c715d198be9bd61ddf8d28a30c3ac60872c370` | 350317 |
+| `avatar-packs/packs/specters-reeve.pack.json` | `backend/specter_arena/specters/art/reeve.png` | `f481f208383867a0a45f054d4e9ab8d4116e58c3` | 433055 |
+| `avatar-packs/packs/specters-rattle.pack.json` | `backend/specter_arena/specters/art/rattle.png` | `2c0fd225acff0e8a9473c593e07408f05d395642` | 377608 |
+| `avatar-packs/packs/specters-ember.pack.json` | `backend/specter_arena/specters/art/ember.png` | `12d3b4c1e684135b63bfe2160822c51c6b496f19` | 281812 |
+| `avatar-packs/packs/specters-shard.pack.json` | `backend/specter_arena/specters/art/shard.png` | `7c209072d48de805308bed2a5bf10de10d94d74c` | 302661 |
+| `avatar-packs/packs/specters-poly.pack.json` | `backend/specter_arena/specters/art/poly.png` | `df0e5c9785e9733ec9cb433de4829335a16be312` | 376535 |
+| `avatar-packs/packs/specters-tide.pack.json` | `backend/specter_arena/specters/art/tide.png` | `068a9125ebd1cfe76695594d39b1c068f3d95397` | 351420 |
+| `avatar-packs/packs/specters-lume.pack.json` | `backend/specter_arena/specters/art/lume.png` | `c68430e2eb2110cb39cae5353a9852a1171ff416` | 369997 |
+| `avatar-packs/packs/specters-moss.pack.json` | `backend/specter_arena/specters/art/moss.png` | `bde4f2148b1f4714e45e55a484a27f02933529db` | 330412 |
+| `avatar-packs/packs/specters-bur.pack.json` | `backend/specter_arena/specters/art/bur.png` | `d5939720a7f745193045210b81743be1c7e6392c` | 398671 |
+
 ## Figma Make-authored vector code, ported as TSX
 
 This is not ChatGPT image output, and the statement above does not cover it. The small SVG files in the export's `public/assets/scene/` (markers, five structures and two enemy drawings) were authored as vector markup inside the Figma Make project. The export's own catalog labels them "Original vector prototype authored for Specters of the Abyss" (`src/data/sceneAssets.ts`, field `source`). They fall under "Generated code: Figma Make export" above and are covered by the Figma AI Terms check recorded under "Terms checked" below. They ship only as TSX components in `ui/src/arena/SceneSvgs.tsx`, never as image files, so the image check does not list them. `marker-awaiting-approval.svg` was held back until FP-20 let the app read Crew's row flags; FP-21 ports it for `waiting` with `approval-pending` only. The three structures are ported in FP-16 as minimap landmarks; they are not drawn over the painted map.

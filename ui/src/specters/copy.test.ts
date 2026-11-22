@@ -52,6 +52,9 @@ describe('specter copy', () => {
     expect(SHOWCASE.stageLabel('Vell')).toBe('Vell, large preview');
     expect(SHOWCASE.noHolders('Vell')).toBe('No bot holds Vell yet.');
     expect(SHOWCASE.showInRoster).toBe('Show in the Roster');
+    expect(SHOWCASE.avatarPackLine).toBe('Use this Specter as your Crew avatar: download its avatar pack, then in Crew open Avatar → Customize → Library → Import.');
+    expect(SHOWCASE.avatarPackLink('bur')).toBe('Download bur’s avatar pack');
+    expect(SHOWCASE.avatarPackCopy).toBe('If the link does not open, copy this address:');
     expect([SHOWCASE.attack, SHOWCASE.cast]).toEqual(['Attack', 'Cast']);
   });
 

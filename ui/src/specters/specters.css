@@ -395,6 +395,23 @@
   font-weight: 650;
 }
 
+.specter-arena-root .sa-showcase__pack {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-showcase__pack a {
+  color: var(--violet);
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-showcase__pack code {
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
 .specter-arena-root .sa-showcase__holders {
   width: 100%;
 }
