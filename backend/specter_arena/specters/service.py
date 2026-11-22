@@ -21,6 +21,7 @@ T = TypeVar("T")
 _LOG = logging.getLogger("specter_arena.specters.service")
 ASSET_CONTRACT_VERSION: Final = 1  # portrait-asset.v1 (FROZEN)
 SPECTER_CONTRACT_VERSION: Final = 2  # specter.v2 and specters.v2
+SPECTER_V3_CONTRACT_VERSION: Final = 3  # specter.v3 and specters.v3 (assignment view)
 HEROES_CONTRACT_VERSION: Final = 1  # heroes.v1
 
 ASSET_ID: Final = re.compile(r"ast_[0-9a-f]{24}")
@@ -44,6 +45,7 @@ class SpecterError(Exception):
 _ERRORS: Final[tuple[tuple[type[Exception], str, int], ...]] = (
     (store_errors.VersionConflict, "version_conflict", 409),
     (store_errors.UnknownAsset, "unknown_asset", 404),
+    (store_errors.NoHero, "no_hero", 404),
     (store_errors.UnknownBinding, "unknown_binding", 404),
     (store_errors.UploadLimitReached, "upload_limit_reached", 409),
     (store_errors.StoreUsageError, "invalid_body", 400),
@@ -93,6 +95,14 @@ def specter_wire(record: db.HeroRecord, hero: Hero, portrait: db.AssetRecord) ->
         "createdAtMs": record.assigned_ms,
         "updatedAtMs": record.updated_ms,
     }
+
+
+def specter_v3_wire(record: db.HeroRecord, hero: Hero, portrait: db.AssetRecord) -> dict[str, Any]:
+    """`specter.v3`: the v2 body at contract version 3 plus how the hero was assigned."""
+    body = specter_wire(record, hero, portrait)
+    body["contractVersion"] = SPECTER_V3_CONTRACT_VERSION
+    body["assignedBy"] = record.assigned_by
+    return body
 
 
 def heroes_wire(heroes: Iterable[Hero], counts: Mapping[str, int]) -> dict[str, Any]:
@@ -223,6 +233,42 @@ class SpecterService:
         hero = self._heroes[record.hero_id]
         asset_id = record.asset_id or self._default_asset_id(record)
         return specter_wire(record, hero, portraits[asset_id])
+
+    # ---- assignment -----------------------------------------------------------------------
+
+    async def list_assignment(self) -> dict[str, Any]:
+        """`specters.v3`: assigned bindings and the bindings that hold no hero yet."""
+        records, unassigned = await self._call(db.list_assignment)
+        portraits = await self._call(self._portraits, records)
+        return {
+            "contractVersion": SPECTER_V3_CONTRACT_VERSION,
+            "items": [self._wire_v3(r, portraits) for r in records],
+            "unassignedBindingIds": list(unassigned),
+        }
+
+    async def get_assignment(self, binding_id: str) -> dict[str, Any]:
+        record = await self._call(db.get_assignment, self._binding(binding_id))
+        portraits = await self._call(self._portraits, [record])
+        return self._wire_v3(record, portraits)
+
+    async def assign_hero(
+        self, binding_id: str, expected_version: object, hero_id: object
+    ) -> dict[str, Any]:
+        """Give an unassigned binding a hero (`hero_id`, or None for a random one)."""
+        binding_id = self._binding(binding_id)
+        expected = self._expected(expected_version)
+        if hero_id is not None and (not isinstance(hero_id, str) or hero_id not in self._heroes):
+            raise SpecterError("invalid_body", 400)
+        saved = await self._call(db.choose_hero, binding_id, expected, hero_id, self._clock())
+        portraits = await self._call(self._portraits, [saved])
+        return self._wire_v3(saved, portraits)
+
+    def _wire_v3(
+        self, record: db.HeroRecord, portraits: Mapping[str, db.AssetRecord]
+    ) -> dict[str, Any]:
+        hero = self._heroes[record.hero_id]
+        asset_id = record.asset_id or self._default_asset_id(record)
+        return specter_v3_wire(record, hero, portraits[asset_id])
 
     # ---- avatar ---------------------------------------------------------------------------
 

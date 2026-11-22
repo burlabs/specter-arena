@@ -1,4 +1,4 @@
-"""The eight signed Specter routes over a real store, and the seven that no longer exist."""
+"""The nine signed Specter routes over a real store, and the seven that no longer exist."""
 
 import base64
 import hashlib
@@ -119,6 +119,9 @@ ROUTES: list[tuple[str, str, Any]] = [
     ("GET", "/api/heroes", None),
     ("GET", f"/api/specters/{BID}", None),
     ("POST", f"/api/specters/{BID}/portrait", {"expectedVersion": 1, "assetId": None}),
+    ("GET", "/api/specters?view=assignment", None),
+    ("GET", f"/api/specters/{BID}?view=assignment", None),
+    ("POST", f"/api/specters/{BID}/hero", {"expectedVersion": 0, "heroId": "vell"}),
     ("GET", "/api/portraits", None),
     ("POST", "/api/assets", {"mediaType": "image/png", "dataBase64": ""}),
     ("GET", f"/api/assets/{AID}", None),
@@ -129,6 +132,9 @@ EXPECTED_CALLS = [
     ("list_heroes", ()),
     ("get_specter", (BID,)),
     ("set_portrait", (BID, 1, None)),
+    ("list_assignment", ()),
+    ("get_assignment", (BID,)),
+    ("assign_hero", (BID, 0, "vell")),
     ("list_portraits", ()),
     ("upload_asset", ({"mediaType": "image/png", "dataBase64": ""},)),
     ("get_asset", (AID,)),
@@ -144,7 +150,7 @@ REMOVED: list[tuple[str, str, Any]] = [
 ]
 
 
-def test_the_route_table_has_exactly_eight_routes() -> None:
+def test_the_route_table_has_exactly_nine_routes() -> None:
     assert sorted(getattr(route, "path", "") for route in specter_routes()) == [
         "/api/assets",
         "/api/assets/{asset_id}",
@@ -153,6 +159,7 @@ def test_the_route_table_has_exactly_eight_routes() -> None:
         "/api/scene-assets/{key}",
         "/api/specters",
         "/api/specters/{binding_id}",
+        "/api/specters/{binding_id}/hero",
         "/api/specters/{binding_id}/portrait",
     ]
 
