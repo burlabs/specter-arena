@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ARENA_INTRINSIC } from './mapLayout';
-import { MINION_BASE_PX, MINION_FIT, MINION_SCALE, minionBasePx } from './minionSize';
-import { ENEMY_CELL, enemySlots } from './sceneLayout';
+import { HERO_SIZE_PX, MINION_BASE_PX, MINION_FIT, MINION_SCALE, heroSizePx, minionBasePx } from './minionSize';
+import { ENEMY_CELL, SPECTER_CELL, enemySlots } from './sceneLayout';
 
 const css = readFileSync(fileURLToPath(new URL('./arena.css', import.meta.url)), 'utf8');
 
@@ -25,6 +25,18 @@ describe('minion scale', () => {
   it('is the same 28 px in the stylesheet fallback', () => {
     expect(css).toContain(`var(--sa-minion-base, ${MINION_BASE_PX}px)`);
     expect(css).toContain('var(--sa-minion-scale, 1)');
+  });
+
+  it('draws heroes at 44 px on a desktop map and smaller when a cell would not hold them', () => {
+    expect(heroSizePx(884, 498)).toBe(HERO_SIZE_PX);
+    expect(heroSizePx(350, 197)).toBeLessThan(30);
+    for (const width of [320, 350, 600, 884, 1400]) {
+      const height = (width * ARENA_INTRINSIC.height) / ARENA_INTRINSIC.width;
+      const size = heroSizePx(width, height);
+      expect(size).toBeLessThanOrEqual(width * SPECTER_CELL.x);
+      expect(size).toBeLessThanOrEqual(height * SPECTER_CELL.y);
+    }
+    expect(css).toContain(`var(--sa-hero-size, ${HERO_SIZE_PX}px)`);
   });
 
   it('never overlaps a lattice neighbour at any map width, for every pair of size classes', () => {

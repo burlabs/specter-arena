@@ -19,7 +19,7 @@ import { effectAngle } from './heroCombat';
 import type { MarkerKind } from './effectMap';
 import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect } from './geometry';
 import { ARENA_INTRINSIC } from './mapLayout';
-import { MINION_SCALE, minionBasePx } from './minionSize';
+import { MINION_SCALE, heroSizePx, minionBasePx } from './minionSize';
 import { placeHeroes } from './heroPlacement';
 import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
 import type { Placement, Point } from './sceneLayout';
@@ -346,6 +346,7 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
     width: transform.displayed.width,
     height: transform.displayed.height,
     '--sa-minion-base': `${minionBasePx(transform.displayed.width).toFixed(2)}px`,
+    '--sa-hero-size': `${heroSizePx(transform.displayed.width, transform.displayed.height).toFixed(2)}px`,
   } as CSSProperties;
 
   return (

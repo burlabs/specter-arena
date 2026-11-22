@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { RosterCollectorV1, RosterItemV1, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { Button } from '../observatory/ui';
+import { CollapsedLabel } from './CollapsedLabel';
 import { SpecterInspector } from './SpecterInspector';
 import { TaskInspector } from './TaskInspector';
 import type { ArenaSpecter } from './specterShape';
@@ -99,7 +100,7 @@ export function ArenaInspector({ selection, list, bots, collector, rosterRevisio
   return (
     <aside className={`sa-arena-inspector${open ? '' : ' sa-is-collapsed'}`} aria-label={INSPECTOR.region} onKeyDown={onKeyDown}>
       <Button variant="ghost" aria-expanded={open} aria-controls="sa-arena-inspector-body" aria-label={open ? undefined : HUD.inspectorShow} onClick={onToggle}>
-        {open ? HUD.inspectorHide : <span aria-hidden="true">‹</span>}
+        {open ? HUD.inspectorHide : <CollapsedLabel glyph="‹" text={HUD.inspectorShow} />}
       </Button>
       <div id="sa-arena-inspector-body" className="sa-arena-inspector__panel" hidden={!open}>
         {body}

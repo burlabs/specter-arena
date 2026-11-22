@@ -11,6 +11,7 @@ import type { ArenaSelection } from './selection';
 import { asPortraitRecord } from './specterShape';
 import type { ArenaSpecter } from './specterShape';
 import { Button } from '../observatory/ui';
+import { CollapsedLabel } from './CollapsedLabel';
 
 /** Whether the Specters read has finished. While it has not, "no Specter yet" would be a guess. */
 export type SpecterReading = 'loading' | 'ready' | 'failed';
@@ -69,7 +70,7 @@ export function ArenaRail({ model, bots, specters, xp, selection, onSelect, open
   return (
     <aside className={`sa-arena-rail${open ? '' : ' sa-is-collapsed'}`} aria-label={ARENA.railLabel}>
       <Button variant="ghost" aria-expanded={open} aria-controls="sa-arena-rail-body" aria-label={open ? undefined : HUD.railShow} onClick={onToggle}>
-        {open ? HUD.railHide : <span aria-hidden="true">›</span>}
+        {open ? HUD.railHide : <CollapsedLabel glyph="›" text={HUD.railShow} />}
       </Button>
       <div id="sa-arena-rail-body" className="sa-arena-rail__body" hidden={!open}>
         <ul className="sa-arena-rail__list">
