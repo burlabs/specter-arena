@@ -105,6 +105,85 @@ describe('ready', () => {
   });
 });
 
+describe('collapsible panes', () => {
+  const rail = () => screen.getByRole('complementary', { name: 'Specters' });
+  const inspectorPane = () => screen.getByRole('complementary', { name: 'Encounter inspector' });
+  const layout = () => document.querySelector('.sa-arena-layout') as HTMLElement;
+  const mediaMatches = (matches: boolean) =>
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: matches && query === '(max-width: 600px)', media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('starts with both panes open when there is no matchMedia or the window is wide', async () => {
+    setArenaScenario('arena');
+    view();
+    await settle();
+    expect(layout().className).toBe('sa-arena-layout');
+    expect(within(rail()).getByRole('button', { name: 'Hide Specter rail' }).getAttribute('aria-expanded')).toBe('true');
+    expect(within(inspectorPane()).getByRole('button', { name: 'Hide inspector' }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('starts with both panes collapsed at phone width', async () => {
+    mediaMatches(true);
+    setArenaScenario('arena');
+    view();
+    await settle();
+    expect(layout().className).toContain('sa-is-rail-collapsed');
+    expect(layout().className).toContain('sa-is-inspector-collapsed');
+    expect(within(rail()).getByRole('button', { name: 'Show Specter rail' }).getAttribute('aria-expanded')).toBe('false');
+    expect(within(inspectorPane()).getByRole('button', { name: 'Show inspector' }).getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('toggles each pane on its own, points aria-controls at the body, and writes nothing to storage', async () => {
+    mediaMatches(false);
+    setArenaScenario('arena');
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    view();
+    await settle();
+    const hideRail = within(rail()).getByRole('button', { name: 'Hide Specter rail' });
+    expect(document.getElementById(hideRail.getAttribute('aria-controls') ?? '')).not.toBeNull();
+    fireEvent.click(hideRail);
+    expect(layout().className).toContain('sa-is-rail-collapsed');
+    expect(layout().className).not.toContain('sa-is-inspector-collapsed');
+    expect(document.getElementById('sa-arena-rail-body')?.hidden).toBe(true);
+    fireEvent.click(within(inspectorPane()).getByRole('button', { name: 'Hide inspector' }));
+    expect(layout().className).toContain('sa-is-inspector-collapsed');
+    expect(document.getElementById('sa-arena-inspector-body')?.hidden).toBe(true);
+    fireEvent.click(within(rail()).getByRole('button', { name: 'Show Specter rail' }));
+    expect(layout().className).not.toContain('sa-is-rail-collapsed');
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it('opens a collapsed inspector when something is selected', async () => {
+    mediaMatches(true);
+    setArenaScenario('arena');
+    view();
+    await settle();
+    expect(document.getElementById('sa-arena-inspector-body')?.hidden).toBe(true);
+    fireEvent.click(within(screen.getByRole('table', { name: 'Tasks' })).getAllByRole('button')[0]!);
+    expect(document.getElementById('sa-arena-inspector-body')?.hidden).toBe(false);
+    expect(layout().className).not.toContain('sa-is-inspector-collapsed');
+    await within(inspectorPane()).findByRole('heading', { level: 2 });
+  });
+
+  it('lists a bot with no Specter in the rail and forwards onAssign and unassigned', async () => {
+    setArenaScenario('arena');
+    const onAssign = vi.fn();
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onAssign={onAssign} unassigned={new Set([bots[0]!.bindingId])} />);
+    await settle();
+    expect(within(rail()).getByRole('region', { name: 'No Specter yet (1)' })).toBeTruthy();
+    fireEvent.click(within(rail()).getByRole('button', { name: /^Assign a Specter to / }));
+    expect(onAssign).toHaveBeenCalledWith(bots[0]!.bindingId);
+  });
+
+  it('shows the status line instead of the group while Specters are loading', async () => {
+    setArenaScenario('arena');
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} specterStatus="loading" xp={new Map()} />);
+    await settle();
+    expect(within(rail()).getByText('Specters are loading.')).toBeTruthy();
+    expect(within(rail()).queryByText(/No Specter yet/)).toBeNull();
+  });
+});
+
 describe('states', () => {
   it('is loading first', () => {
     setArenaScenario('arena');

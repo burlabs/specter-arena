@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, TaskItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { Button } from '../observatory/ui';
 import { SpecterInspector } from './SpecterInspector';
 import { TaskInspector } from './TaskInspector';
-import { ARENA, INSPECTOR } from './copy';
+import type { ArenaSpecter } from './specterShape';
+import { ARENA, HUD, INSPECTOR } from './copy';
 import type { SceneModel } from './sceneModel';
 import { selectionId } from './selection';
 import type { ArenaSelection } from './selection';
@@ -15,9 +16,11 @@ interface Props {
   bots: readonly RosterItemV1[];
   collector: RosterCollectorV1;
   rosterRevision: number;
-  specters: ReadonlyMap<string, SpecterV2>;
+  specters: ReadonlyMap<string, ArenaSpecter>;
   xp: ReadonlyMap<string, XpSummaryV1>;
   items: ReadonlyMap<string, TaskItemV1>;
+  open: boolean;
+  onToggle: () => void;
   onSelect: (selection: ArenaSelection) => void;
   onClose: () => void;
 }
@@ -27,7 +30,7 @@ const keyOf = (selection: ArenaSelection | null): string => (selection === null 
 /**
  * The one place the arena shows evidence. It only reads. Opening it moves focus to its heading; Escape or Close puts focus back where the user was.
  */
-export function ArenaInspector({ selection, list, bots, collector, rosterRevision, specters, xp, items, onSelect, onClose }: Props) {
+export function ArenaInspector({ selection, list, bots, collector, rosterRevision, specters, xp, items, open, onToggle, onSelect, onClose }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
@@ -94,8 +97,13 @@ export function ArenaInspector({ selection, list, bots, collector, rosterRevisio
   }
 
   return (
-    <aside className="sa-arena-inspector" aria-label={INSPECTOR.region} onKeyDown={onKeyDown}>
-      {body}
+    <aside className={`sa-arena-inspector${open ? '' : ' sa-is-collapsed'}`} aria-label={INSPECTOR.region} onKeyDown={onKeyDown}>
+      <Button variant="ghost" aria-expanded={open} aria-controls="sa-arena-inspector-body" aria-label={open ? undefined : HUD.inspectorShow} onClick={onToggle}>
+        {open ? HUD.inspectorHide : <span aria-hidden="true">‹</span>}
+      </Button>
+      <div id="sa-arena-inspector-body" className="sa-arena-inspector__panel" hidden={!open}>
+        {body}
+      </div>
     </aside>
   );
 }

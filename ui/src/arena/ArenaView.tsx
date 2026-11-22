@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, XpSummaryV1 } from '../contracts/types';
 import { useSourceMode } from '../host';
 import { Time } from '../observatory/Time';
 import { collectorWords } from '../observatory/copy';
@@ -9,6 +9,7 @@ import { taskTitle } from '../tasks/copy';
 import { ArenaInspector } from './ArenaInspector';
 import { ArenaListView } from './ArenaListView';
 import { ArenaRail } from './ArenaRail';
+import type { SpecterReading } from './ArenaRail';
 import { ArenaStats } from './ArenaStats';
 import { BattlefieldScene } from './BattlefieldScene';
 import { BotsOnField } from './BotsOnField';
@@ -19,6 +20,7 @@ import { MARKS, mark } from './marks';
 import { buildSceneModel } from './sceneModel';
 import type { XpReading } from './sceneModel';
 import type { ArenaSelection } from './selection';
+import type { ArenaSpecter } from './specterShape';
 import { useArenaExchanges } from './useArenaExchanges';
 import { useArenaMotion } from './useArenaMotion';
 import { useArenaScene } from './useArenaScene';
@@ -30,11 +32,23 @@ interface Props {
   complete: boolean;
   collector: RosterCollectorV1;
   rosterRevision: number;
-  specters: ReadonlyMap<string, SpecterV2>;
+  specters: ReadonlyMap<string, ArenaSpecter>;
+  /** Whether the Specters read has finished. While it has not, "no Specter yet" would be a guess. Default `ready`. */
+  specterStatus?: SpecterReading;
   xp: ReadonlyMap<string, XpSummaryV1>;
   /** Whether the XP ledger has been read. Without it a bot with no entry would read as Level 1 and 0 XP. Default `ready`. */
   xpStatus?: XpReading;
+  /** One number per page visit; heroes are placed from it. The page makes it once, so switching tabs keeps it. */
+  visitSeed?: number;
+  /** The bindings the backend says have no Specter. When given, the rail's "No Specter yet" group is exactly these roster bots. */
+  unassigned?: ReadonlySet<string>;
+  /** Opens the assignment flow for a bot. Without it the rail shows no Assign button. */
+  onAssign?: (bindingId: string) => void;
 }
+
+const NARROW = '(max-width: 600px)';
+/** Both panes start open, except on a phone-width window where they start collapsed. A missing `matchMedia` means open. */
+const startsOpen = (): boolean => typeof window.matchMedia !== 'function' || !window.matchMedia(NARROW).matches;
 
 const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: string }>> = {
   unsupported: { title: ARENA.unsupportedTitle, body: ARENA.unsupportedBody },
@@ -48,11 +62,18 @@ const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: str
  * The Arena tab: a read-only projection of the roster, the Specters, the XP ledger and the task list. It starts
  * its own work poll while mounted, so leaving the tab stops the poll and returning is a fresh baseline.
  */
-export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, xpStatus = 'ready' }: Props) {
+export function ArenaView({ bots, complete, collector, rosterRevision, specters, specterStatus = 'ready', xp, xpStatus = 'ready', visitSeed, unassigned, onAssign }: Props) {
   const mode = useSourceMode();
   const { state, refresh } = useArenaWork();
   const motion = useArenaMotion();
   const [selection, setSelection] = useState<ArenaSelection | null>(null);
+  const [railOpen, setRailOpen] = useState(startsOpen);
+  const [inspectorOpen, setInspectorOpen] = useState(startsOpen);
+  /** Selecting opens the inspector: a hidden one cannot take focus, so the selection would show nothing. */
+  const select = (next: ArenaSelection) => {
+    setSelection(next);
+    setInspectorOpen(true);
+  };
   const snapshot: ArenaWorkSnapshot | null = state.snapshot;
 
   const phase = useRef<'none' | 'first' | 'update'>('none');
@@ -149,9 +170,9 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
         )}
         <ArenaStats botsObserved={bots.length} coverageUnknown={models.scene.coverage.unknownBots} committedXp={[...xp.values()].reduce((sum, summary) => sum + summary.totalXp, 0)} xpReading={xpStatus} />
         <BotsOnField bots={bots} specters={specters} />
-        <div className="sa-arena-layout">
-          <ArenaRail model={models.scene} bots={bots} specters={specters} xp={xp} selection={selection} onSelect={setSelection} />
-          <BattlefieldScene model={models.scene} selection={selection} onSelect={setSelection} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} exchanges={exchanges} collectorPaused={collectorPaused} />
+        <div className={`sa-arena-layout${railOpen ? '' : ' sa-is-rail-collapsed'}${inspectorOpen ? '' : ' sa-is-inspector-collapsed'}`}>
+          <ArenaRail model={models.scene} bots={bots} specters={specters} xp={xp} selection={selection} onSelect={select} open={railOpen} onToggle={() => setRailOpen((value) => !value)} specterStatus={specterStatus} unassigned={unassigned} onAssign={onAssign} />
+          <BattlefieldScene model={models.scene} selection={selection} onSelect={select} motion={motion} cues={celebrations.cues} celebrating={celebrations.celebrating} onCueComplete={celebrations.complete} exchanges={exchanges} collectorPaused={collectorPaused} visitSeed={visitSeed} />
           <ArenaInspector
             selection={selection}
             list={models.list}
@@ -161,11 +182,13 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
             specters={specters}
             xp={xp}
             items={items}
-            onSelect={setSelection}
+            open={inspectorOpen}
+            onToggle={() => setInspectorOpen((value) => !value)}
+            onSelect={select}
             onClose={() => setSelection(null)}
           />
         </div>
-        <ArenaListView model={models.list} bots={bots} items={items} drawn={drawn} selection={selection} onSelect={setSelection} />
+        <ArenaListView model={models.list} bots={bots} items={items} drawn={drawn} selection={selection} onSelect={select} />
       </>
     );
   }

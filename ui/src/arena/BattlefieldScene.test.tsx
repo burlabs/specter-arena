@@ -21,7 +21,7 @@ const work = [
   creditedOf(4, atlas, { kind: 'worker', runMs: 600_000, xpCredited: 14 }),
 ];
 
-const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper')], xp: [xpOf(atlas, 250, 3)], tasks: work }));
+const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper'), specterOf(brindle, 'Wisp'), specterOf(dune, 'Murk')], xp: [xpOf(atlas, 250, 3)], tasks: work }));
 const motion = { animate: true, paused: false, togglePause: vi.fn() };
 
 function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSelection) => void; animate?: boolean; paused?: boolean; toggle?: () => void; cues?: PresentationCue[]; celebrating?: Set<string>; onCueComplete?: (id: string) => void } = {}) {
@@ -48,9 +48,9 @@ afterEach(() => {
 describe('a waiting Specter', () => {
   it('is announced as Waiting on you, never as No turn running, and is not engaging', () => {
     const fenn = botOf(4, { displayName: 'Fenn', state: 'waiting' });
-    const waitingModel = buildSceneModel(inputsOf({ roster: [fenn] }));
+    const waitingModel = buildSceneModel(inputsOf({ roster: [fenn], specters: [specterOf(fenn, 'Hollow')] }));
     render(<BattlefieldScene model={waitingModel} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
-    const token = screen.getByRole('button', { name: /^Fenn, no Specter yet, Placeholder token, not a portrait, Waiting on you, Level 1$/ });
+    const token = screen.getByRole('button', { name: /^Hollow for Fenn, Waiting on you, Level 1$/ });
     expect(token.className).not.toContain('sa-is-engaging');
     expect(token.getAttribute('aria-label')).not.toContain('No turn running');
   });
@@ -62,8 +62,20 @@ describe('tokens', () => {
     expect(container.querySelectorAll('[data-sprite]')).toHaveLength(3 + 4);
     expect(container.querySelectorAll('[data-scene-node]')).toHaveLength(7);
     expect(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas, Working, Level 3, 3 open attempts$/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Brindle, no Specter yet, Placeholder token, not a portrait, No turn running, Level 1$/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Dune, no Specter yet.*Coverage unknown/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Wisp for Brindle, No turn running, Level 1$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Murk for Dune.*Coverage unknown/ })).toBeTruthy();
+  });
+
+  it('draws no token for a bot that has no Specter yet, and keeps it out of the keyboard order', () => {
+    const noHero = buildSceneModel(inputsOf({ roster: [atlas, brindle], specters: [specterOf(atlas, 'Vesper')], tasks: [work[0]!] }));
+    const { container } = render(<BattlefieldScene model={noHero} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    expect(container.querySelectorAll('[data-sprite="specter"]')).toHaveLength(1);
+    expect(container.querySelector(`[data-token="${brindle.bindingId}"]`)).toBeNull();
+    expect(screen.queryByText(/no Specter yet/i)).toBeNull();
+    const first = container.querySelector<HTMLElement>('[data-scene-node]')!;
+    first.focus();
+    fireEvent.keyDown(first, { key: 'End' });
+    expect(document.activeElement).toBe(container.querySelectorAll('[data-scene-node]')[1]);
   });
 
   it('shows one specter node for three attempts with a count badge, never clones', () => {
@@ -223,20 +235,20 @@ describe('camera and controls', () => {
     fireEvent(window, new Event('resize'));
     expect(post).not.toHaveBeenCalled();
     expect(get.mock.calls.every(([path]) => /\/scene-assets\//.test(String(path)))).toBe(true);
-    expect(get.mock.calls.length).toBeLessThanOrEqual(4);
+    expect(get.mock.calls.length).toBeLessThanOrEqual(6);
   });
 });
 
 describe('art', () => {
-  it('draws a Specter with a hero as a sprite image, never a CSS variable, and the others as placeholders', async () => {
+  it('draws every Specter as a sprite image and never as a CSS variable', async () => {
     const { container } = show();
     await waitFor(() => expect(container.querySelector('.sa-hero__img')).not.toBeNull());
     const sprite = container.querySelector('.sa-hero__img');
     expect(sprite?.tagName).toBe('IMG');
     expect(sprite?.getAttribute('src')).toMatch(/^(?:blob:|data:image\/png;base64,)/);
     expect(sprite?.getAttribute('alt')).toBe('');
-    expect(container.querySelectorAll('.sa-hero')).toHaveLength(1);
-    expect(container.querySelectorAll('.sa-token__placeholder')).toHaveLength(2);
+    await waitFor(() => expect(container.querySelectorAll('.sa-hero')).toHaveLength(3));
+    expect(container.querySelectorAll('.sa-token__placeholder')).toHaveLength(0);
     expect(container.querySelector<HTMLElement>('.sa-arena-scene')?.getAttribute('style') ?? '').not.toContain('hero');
   });
 
@@ -368,7 +380,7 @@ describe('exchanges and the paused collector', () => {
 
 describe('the waiting marker and XP words', () => {
   const waiting = (reasonCode: string) => botOf(4, { displayName: 'Fenn', state: 'waiting', condition: { ...botOf(4).condition, state: 'waiting', reasonCode } });
-  const scene = (bot: ReturnType<typeof botOf>, xpStatus?: 'loading' | 'failed') => buildSceneModel(inputsOf({ roster: [bot], xpStatus }));
+  const scene = (bot: ReturnType<typeof botOf>, xpStatus?: 'loading' | 'failed') => buildSceneModel(inputsOf({ roster: [bot], specters: [specterOf(bot, 'Hollow')], xpStatus }));
   const draw = (m: ReturnType<typeof scene>) => render(<BattlefieldScene model={m} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
 
   it('draws the awaiting-approval marker for approval-pending only, as a hidden drawing', () => {
@@ -381,6 +393,6 @@ describe('the waiting marker and XP words', () => {
 
   it('leaves the level out of the name while the ledger has not been read', () => {
     draw(scene(botOf(1, { displayName: 'Atlas' }), 'loading'));
-    expect(screen.getByRole('button', { name: /^Atlas, no Specter yet, Placeholder token, not a portrait, No turn running$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Hollow for Atlas, No turn running$/ })).toBeTruthy();
   });
 });
