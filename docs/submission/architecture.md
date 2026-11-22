@@ -10,7 +10,7 @@ Specter Arena is one Kiro Crew app. Crew copies the app folder, serves the UI bu
 
 ## UI
 
-A React bundle, `ui/dist/index.mjs`, built by Vite as a library. Host-provided modules stay external (`ui/host-modules.ts`, `HOST_EXTERNALS`). Crew does not build apps, so a release ships the built file. Art does not live in the bundle: portraits and scene images come from the backend, and a build guard fails if a raster ends up in `ui/dist`. A second guard caps the bundle at 367,000 characters (`ui/src/build-output.test.ts`). The cap was 419,000 after the Arena attack effects (FP-21) and was lowered when FP-22 deleted the Work tab and its review flow (the build was 293,115 characters then, and 307.49 kB after FP-23).
+A React bundle, `ui/dist/index.mjs`, built by Vite as a library. Host-provided modules stay external (`ui/host-modules.ts`, `HOST_EXTERNALS`). Crew does not build apps, so a release ships the built file. Art does not live in the bundle: portraits and scene images come from the backend, and a build guard fails if a raster ends up in `ui/dist`. A second guard caps the bundle at 367,000 characters (`ui/src/build-output.test.ts`). The cap was 419,000 after the Arena attack effects (FP-21) and was lowered when FP-22 deleted the Work tab and its review flow (the build was 293,115 characters then, and 307.49 kB after FP-23, per the FP-23 report).
 
 ## Backend
 

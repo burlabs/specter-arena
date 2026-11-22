@@ -123,5 +123,5 @@ RC-4 is the candidate built from `main` after FP-22 (#186, #187), FP-23 (#192 to
 | Coverage (Node scripts, UI, backend) | pending |
 | Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
 | Store version and migrations | 11 and 11 (`npm run check:schema`: 37 schemas, 11 migrations, read at `232629b6`) |
-| UI bundle cap | 367,000 characters (`ui/src/build-output.test.ts`; the build was 307.49 kB at the FP-23 PR-C head) |
-| OA-5 and OA-6 result | `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` |
+| UI bundle cap | 367,000 characters (`ui/src/build-output.test.ts`; the build was 307.49 kB at the FP-23 PR-C head, per the FP-23 report) |
+| OA-5 and OA-6 result | `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (steps 1 to 18; the optional avatar-pack step 19 is recorded there if it was run) |
