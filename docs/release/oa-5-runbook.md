@@ -24,7 +24,7 @@ Crew version. The host is recorded as Kiro Crew 0.13.1 (2026-11-22). This reposi
 
 ## Time
 
-Part 1 (steps 1 to 13) 21 minutes, Part 2 (steps 14 to 18) 8 minutes, 1 minute of slack. These are estimates, not timings. If the sitting runs over, stop after step 13 and run Part 2 later on the same artifact; record that. The reduced-motion check in step 11 is the first thing to drop if time is short, and is recorded as skipped. The result file records the actual time.
+Part 1 (steps 1 to 13) 22 minutes and Part 2 (steps 14 to 18) 8 minutes, which is the whole 30 with no slack. These are estimates, not timings. If the sitting runs over, stop after step 13 and run Part 2 later on the same artifact; record that. The reduced-motion check in step 11 is the first thing to drop if time is short, and is recorded as skipped. The result file records the actual time.
 
 ## Rollback (read before step 2)
 
@@ -63,7 +63,7 @@ Disable the app. Replace `~/.kiro/crew/apps/specter-arena/data` with `~/specter-
 
 | # | Min | Step | Expect and record |
 |---|---|---|---|
-| 19 | 5 | **Avatar pack.** Download the pack for one hero from the link in the Specters showcase (or from `avatar-packs/packs/` on GitHub). In Crew open Avatar, Customize, Library, Import and select the file. Give that appearance to a test bot in Crew. Then in Specter Arena assign the same hero to the test bot, or leave its hero as it is (backlog `avatar-packs-integration.md` section 5) | Crew accepts the pack and shows the Specter as the bot's avatar. The app does not change: it never installs or assigns a pack, and the hero stays whatever you assigned (the two are separate). A second import of the same pack is refused by Crew until you delete the first. Record Crew's wording. The artifact folder has no `avatar-packs/`, so the link needs a network |
+| 19 | 5 | **Avatar pack.** Download the pack for one hero from the link in the Specters showcase (or from `avatar-packs/packs/` on GitHub). In Crew open Avatar, Customize, Library, Import and select the file. Give that appearance to a test bot in Crew. Then in Specter Arena assign the same hero to the test bot, or leave its hero as it is | Crew accepts the pack and shows the Specter as the bot's avatar. The app does not change: it never installs or assigns a pack, and the hero stays whatever you assigned (the two are separate). A second import of the same pack is refused by Crew until you delete the first. Record Crew's wording. The artifact folder has no `avatar-packs/`, so the link needs a network |
 
 ## What you hand back
 
