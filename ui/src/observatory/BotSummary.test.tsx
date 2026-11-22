@@ -1,21 +1,22 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { rosterBody } from '@kirocrew/app-sdk';
-import type { XpSummaryV1 } from '../contracts/types';
+import type { XpSummaryV2 } from '../contracts/types';
 import type { XpView } from '../work/useXp';
 import { BotSummary } from './BotSummary';
 
 const XP_NONE: XpView = { status: 'ready', summary: null };
-const SUMMARY: XpSummaryV1 = {
-  contractVersion: 1,
+const SUMMARY: XpSummaryV2 = {
+  contractVersion: 2,
   bindingId: 'bnd_aaaaaaaaaaaaaaaaaaaa0001',
   totalXp: 150,
   level: 2,
   levelTableVersion: 'levels-1',
   levelFloorXp: 100,
   nextLevelXp: 250,
-  acceptedWorkCount: 2,
-  policyVersion: 'xp-policy-1',
+  acceptedWorkCount: 1,
+  creditedTaskCount: 4,
+  policyVersion: 'xp-policy-2',
 };
 const card = (title: string) => screen.getByRole('heading', { name: title }).parentElement;
 
@@ -34,16 +35,16 @@ describe('BotSummary', () => {
 
   it('keeps the three cards and shows 0, 0 XP and Level 1 for a bot with no ledger entry (BS-1)', () => {
     render(<BotSummary item={atlas} xp={XP_NONE} />);
-    expect(card('Accepted work')?.textContent).toBe('Accepted work0');
-    expect(card('XP')?.textContent).toBe('XP0 XP from accepted work');
+    expect(card('Tasks credited')?.textContent).toBe('Tasks credited0');
+    expect(card('XP')?.textContent).toBe('XP0 XP');
     expect(card('Level')?.textContent).toContain('Level 1');
-    expect(card('Level')?.textContent).toContain('Level reflects accepted work, not ability or current condition.');
+    expect(card('Level')?.textContent).toContain('Level follows XP credited automatically for tasks, plus earlier accepted work. It reflects observed activity, not ability, outcome quality or current condition.');
   });
 
   it('shows the figures, the level meter and the level note from a summary (BS-2, BS-4)', () => {
     render(<BotSummary item={atlas} xp={{ status: 'ready', summary: SUMMARY }} />);
-    expect(card('Accepted work')?.textContent).toBe('Accepted work2');
-    expect(card('XP')?.textContent).toBe('XP150 XP from accepted work');
+    expect(card('Tasks credited')?.textContent).toBe('Tasks credited4');
+    expect(card('XP')?.textContent).toBe('XP150 XP');
     expect(card('Level')?.textContent).toContain('Level 2');
     expect(card('Level')?.textContent).toContain('50 of 150 XP toward level 3');
     expect(screen.getByRole('progressbar', { name: '50 of 150 XP toward level 3' }).getAttribute('aria-valuenow')).toBe('50');
@@ -51,11 +52,11 @@ describe('BotSummary', () => {
 
   it('says so in words, never 0, while XP loads or when it fails (BS-3)', () => {
     const { rerender } = render(<BotSummary item={atlas} xp={{ status: 'loading' }} />);
-    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not loaded yet`);
+    for (const title of ['Tasks credited', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not loaded yet`);
     rerender(<BotSummary item={atlas} xp={{ status: 'failed', failure: 'unsupported' }} />);
-    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not supported by this backend`);
+    for (const title of ['Tasks credited', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Not supported by this backend`);
     rerender(<BotSummary item={atlas} xp={{ status: 'failed', failure: 'offline' }} />);
-    for (const title of ['Accepted work', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Could not load. It retries automatically.`);
+    for (const title of ['Tasks credited', 'XP', 'Level']) expect(card(title)?.textContent).toBe(`${title}Could not load. It retries automatically.`);
   });
 
   it('puts no condition badge or health word in the level card (BS-5)', () => {

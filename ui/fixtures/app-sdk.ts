@@ -8,7 +8,7 @@ import { dataResponse, setDataScenario } from './data-bodies.ts';
 import { attemptsBody, monitoringResponse, rosterBody, rosterV2Body, setFixtureScenario } from './monitoring-bodies.ts';
 import { sceneAssetResponse, setSceneAssetsFailing } from './scene-bodies.ts';
 import { setSpecterScenario, specterResponse } from './specter-bodies.ts';
-import { setWorkScenario, workResponse } from './work-bodies.ts';
+import { setTaskScenario, taskResponse } from './task-bodies.ts';
 
 export const FIXTURE_SDK_LABEL = 'SPECTER-FIXTURE-ONLY: fixture app-sdk, not the Crew host';
 
@@ -51,7 +51,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
       dataResponse(pathname, method, body) ??
       monitoringResponse(pathname, search) ??
       specterResponse(pathname, method, body) ??
-      workResponse(pathname, method, body, search) ??
+      taskResponse(pathname, method, body, search) ??
       sceneAssetResponse(pathname, method) ??
       Promise.resolve(CANNED_RESPONSE)
     );
@@ -59,19 +59,19 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
   return { sourceMode: 'FIXTURE', get: (path) => guard(path, 'GET'), post: (path, body) => guard(path, 'POST', body) };
 }
 
-/** Unit-test seam for the arena scenarios: points the roster, work and Specter fixtures at one named scenario (null clears all three). */
+/** Unit-test seam for the arena scenarios: points the roster, task and Specter fixtures at one named scenario (null clears all three). */
 export function setArenaScenario(name: ArenaScenarioName | null): void {
   if (name !== null && !isArenaScenario(name)) throw new Error(`Unknown arena scenario ${name}`);
   const routing = {
-    arena: ['default', 'work', 'specters'],
-    'arena-no-art': ['default', 'work', 'specters'],
-    'arena-perf-1': ['arena-perf-roster', 'arena-perf-work', 'arena-perf-specters'],
-    'arena-stale': ['arena-stale-roster', 'arena-stale-work', 'specters'],
-    'arena-empty': ['empty', 'work-none', 'specters-none'],
+    arena: ['default', 'tasks', 'specters'],
+    'arena-no-art': ['default', 'tasks', 'specters'],
+    'arena-perf-1': ['arena-perf-roster', 'arena-perf-tasks', 'arena-perf-specters'],
+    'arena-stale': ['arena-stale-roster', 'arena-stale-tasks', 'specters'],
+    'arena-empty': ['empty', 'tasks-none', 'specters-none'],
   } as const;
-  const [roster, work, specters] = name === null ? [null, null, null] : routing[name];
+  const [roster, tasks, specters] = name === null ? [null, null, null] : routing[name];
   setFixtureScenario(roster);
-  setWorkScenario(work);
+  setTaskScenario(tasks);
   setSpecterScenario(specters);
   setSceneAssetsFailing(name === 'arena-no-art');
 }
@@ -81,8 +81,8 @@ export { attemptsBody, rosterBody, rosterV2Body, setFixtureScenario };
 export type { ScenarioName } from './monitoring-bodies.ts';
 export { setSceneAssetsFailing, setSpecterScenario };
 export type { SpecterScenarioName } from './specter-bodies.ts';
-export { setDataScenario, setWorkScenario };
-export type { WorkScenarioName } from './work-bodies.ts';
+export { setDataScenario, setTaskScenario };
+export type { TaskScenarioName } from './task-bodies.ts';
 export type { DataScenarioName } from './data-bodies.ts';
 
 const client = createFixtureClient(DECLARED_API);

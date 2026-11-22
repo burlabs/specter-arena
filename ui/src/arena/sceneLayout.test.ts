@@ -1,12 +1,12 @@
 import { setArenaScenario, useAppApi } from '@kirocrew/app-sdk';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RosterItemV1, WorkListItemV1 } from '../contracts/types';
-import { rosterPath, workListPath } from '../host/paths';
+import type { RosterItemV1, TaskItemV1 } from '../contracts/types';
+import { rosterPath, tasksPath } from '../host/paths';
 import { ARENA_INTRINSIC } from './mapLayout';
 import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
 import type { Point } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
-import { attemptOf, botOf, inputsOf, workOf } from './testData';
+import { botOf, inputsOf, taskOf } from './testData';
 
 afterEach(() => setArenaScenario(null));
 
@@ -25,16 +25,16 @@ const read = async <T>(path: string): Promise<T> => (await ((await client.get(pa
 async function modelOf(scenario: 'arena' | 'arena-perf-1') {
   setArenaScenario(scenario);
   const roster = (await read<{ items: RosterItemV1[] }>(rosterPath(100, null))).items;
-  const work: WorkListItemV1[] = [];
-  for (const state of ['open', 'awaiting-review', 'blocked', 'reopened', 'accepted']) {
+  const tasks: TaskItemV1[] = [];
+  for (const state of ['open', 'credited', 'not-credited'] as const) {
     let cursor: string | null = null;
     do {
-      const page: { items: WorkListItemV1[]; nextCursor: string | null } = await read(workListPath(state, 25, cursor, 'updated'));
-      work.push(...page.items);
+      const page: { items: TaskItemV1[]; nextCursor: string | null } = await read(tasksPath({ state, limit: 25, cursor }));
+      tasks.push(...page.items);
       cursor = page.nextCursor;
     } while (cursor !== null);
   }
-  return buildSceneModel(inputsOf({ nowMs: FIXTURE_NOW_MS, roster, work }));
+  return buildSceneModel(inputsOf({ nowMs: FIXTURE_NOW_MS, roster, tasks }));
 }
 
 describe('slots', () => {
@@ -117,22 +117,22 @@ describe('placeScene on the demo scenarios', () => {
 
 describe('placeScene', () => {
   const bots = [botOf(1, { state: 'working' }), botOf(2, { state: 'working' }), botOf(3)];
-  const work = [workOf(1, { childCount: 1, attempts: [attemptOf(bots[0]!, 1), attemptOf(bots[1]!, 2)] }), workOf(2, { parentId: workOf(1).workId }), workOf(3)];
-  const model = buildSceneModel(inputsOf({ roster: bots, work }));
+  const work = [taskOf(1, bots[0]!), taskOf(2, bots[1]!), taskOf(3, bots[2]!, { attemptState: 'unknown' })];
+  const model = buildSceneModel(inputsOf({ roster: bots, tasks: work }));
   const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model)));
 
   it('keeps a Specter on its own staging cell whether or not it is engaged', () => {
     expect([...placement.specters.values()]).toEqual([specterSlot(0), specterSlot(1), specterSlot(2)]);
   });
 
-  it('gives every enemy a slot, children included', () => {
+  it('gives every enemy a slot', () => {
     expect(slotIdsOf(model)).toEqual(model.enemies.map((enemy) => enemy.workId));
     expect(placement.enemies.size).toBe(3);
   });
 
   it('falls back to the centre for an enemy that has no slot or a slot out of range', () => {
-    expect(placeScene(model, new Map()).enemies.get(work[2]!.workId)).toEqual({ x: 0.5, y: 0.5 });
-    expect(placeScene(model, new Map([[work[2]!.workId, 9999]])).enemies.get(work[2]!.workId)).toEqual({ x: 0.5, y: 0.5 });
+    expect(placeScene(model, new Map()).enemies.get(work[2]!.taskId)).toEqual({ x: 0.5, y: 0.5 });
+    expect(placeScene(model, new Map([[work[2]!.taskId, 9999]])).enemies.get(work[2]!.taskId)).toEqual({ x: 0.5, y: 0.5 });
   });
 
   it('is deterministic', () => {

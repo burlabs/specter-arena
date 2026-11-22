@@ -20,7 +20,6 @@ import { DataView } from '../lifecycle/DataView';
 import { useDataStyle } from '../lifecycle/useDataStyle';
 import { ArenaView } from '../arena/ArenaView';
 import { useArenaStyle } from '../arena/useArenaStyle';
-import { WorkView } from '../work/WorkView';
 import { useWorkStyle } from '../work/useWorkStyle';
 import { useXp, xpViewOf } from '../work/useXp';
 import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
@@ -32,12 +31,11 @@ const VIEWS: ReadonlyArray<{ name: ViewName; label: string }> = [
   { name: 'all', label: 'All bots' },
 ];
 
-type SectionName = 'roster' | 'specters' | 'work' | 'arena' | 'data';
+type SectionName = 'roster' | 'specters' | 'arena' | 'data';
 
 const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
   { name: 'roster', label: 'Roster' },
   { name: 'specters', label: 'Specters' },
-  { name: 'work', label: 'Work' },
   { name: 'arena', label: 'Arena' },
   { name: 'data', label: 'Data' },
 ];
@@ -263,7 +261,6 @@ export function ObservatoryPage() {
             </div>
           </div>
           {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} xp={xp} />}
-          {section === 'work' && <WorkView bots={items} complete={roster.complete} onLedgerChanged={xp.refresh} />}
           {section === 'data' && <DataView />}
           {section === 'arena' && (
             <ArenaView
@@ -274,7 +271,6 @@ export function ObservatoryPage() {
               specters={specters.byBinding}
               xp={xp.byBinding}
               xpStatus={xp.status}
-              onLedgerChanged={xp.refresh}
             />
           )}
         </div>

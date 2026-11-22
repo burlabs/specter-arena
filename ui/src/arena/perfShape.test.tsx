@@ -21,8 +21,8 @@ describe('arena-perf-1 shape (SC10-8)', () => {
 
     const rows = (caption: string) => within(screen.getByRole('table', { name: caption })).getAllByRole('row').length - 1;
     expect(rows('Specters')).toBe(20);
-    expect(rows('Work')).toBe(112);
-    expect(screen.getByText('32 more on-field items are listed below and not drawn in the scene.')).toBeTruthy();
+    expect(rows('Tasks')).toBe(112);
+    expect(screen.getByText('32 more open tasks are listed below and not drawn in the scene.')).toBeTruthy();
     expect(screen.getAllByText('Not drawn in the scene')).toHaveLength(32);
   });
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { DECLARED_API, isPathPermitted } from '../test-support/api-allowlist.ts';
 import { createFixtureClient, fixtureCalls, resetFixtureCalls, setArenaScenario, useAppApi } from './app-sdk.ts';
-import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, WORK_PATH, XP_PATH, appApiPath, attemptsPath, sceneAssetPath, workListPath } from '../src/host/paths.ts';
+import { APP_API_PREFIX, PING_PATH, ROSTER_PATH, TASKS_PATH, appApiPath, attemptsPath, sceneAssetPath, tasksPath, xpPagedPath } from '../src/host/paths.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
+import { WATCHED_TASK_ID } from './task-bodies.ts';
 
 describe('fixture SDK allowlist (mirrors the host matcher)', () => {
   it('lets /x/* cover /x and /x/...', () => {
@@ -76,19 +77,38 @@ describe('monitoring routes', () => {
   });
 });
 
-describe('work routes', () => {
-  it('serves the work list with its query string and the xp list as real Responses', async () => {
+describe('task routes', () => {
+  it('serves the task list with its query string and the paged xp list as real Responses', async () => {
     const client = useAppApi();
-    const work = (await client.get(workListPath('open', 25, null, 'created'))) as Response;
-    expect(work.status).toBe(200);
-    expect(((await work.json()) as { items: unknown[] }).items).toEqual([]);
-    const xp = (await client.get(XP_PATH)) as Response;
+    const tasks = (await client.get(tasksPath({ state: 'open', limit: 25, cursor: null }))) as Response;
+    expect(tasks.status).toBe(200);
+    expect(((await tasks.json()) as { items: unknown[] }).items).toEqual([]);
+    const xp = (await client.get(xpPagedPath(200, null))) as Response;
     expect(xp.status).toBe(200);
   });
 
-  it('still answers a foreign path with the canned body and rejects an undeclared work path', async () => {
+  it('refuses a write to a task route and answers a work route with the canned body, since nothing calls it', async () => {
+    const client = useAppApi();
+    expect(((await client.post(TASKS_PATH, {})) as Response).status).toBe(405);
+    await expect(client.get(appApiPath('/work'))).resolves.toMatchObject({ ok: true });
+  });
+
+  it('still answers a foreign path with the canned body and rejects an undeclared task path', async () => {
     await expect(useAppApi().get(appApiPath('/elsewhere'))).resolves.toMatchObject({ ok: true });
-    await expect(createFixtureClient([]).get(WORK_PATH)).rejects.toThrow('not permitted');
+    await expect(createFixtureClient([]).get(TASKS_PATH)).rejects.toThrow('not permitted');
+  });
+});
+
+describe('task seam on the window', () => {
+  it('offers the watched task id and a close function so a page test can end it', async () => {
+    const seam = (window as unknown as { __specterFixtureTasks?: { watchedTaskId: string; close: () => void } }).__specterFixtureTasks;
+    expect(seam?.watchedTaskId).toBe(WATCHED_TASK_ID);
+    setArenaScenario('arena');
+    const read = async () => (await ((await useAppApi().get(`${appApiPath('/tasks')}/${WATCHED_TASK_ID}`)) as Response).json()) as { state: string };
+    expect((await read()).state).toBe('open');
+    seam?.close();
+    expect((await read()).state).toBe('credited');
+    setArenaScenario(null);
   });
 });
 
@@ -128,7 +148,7 @@ describe('fixture client mode seam and call log', () => {
 });
 
 describe('setArenaScenario', () => {
-  it('points the roster, work and Specter fixtures at one scenario and clears them on null', async () => {
+  it('points the roster, task and Specter fixtures at one scenario and clears them on null', async () => {
     const client = createFixtureClient(DECLARED_API);
     setArenaScenario('arena-perf-1');
     const roster = (await client.get(ROSTER_PATH)) as Response;

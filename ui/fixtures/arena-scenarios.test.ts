@@ -3,18 +3,19 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RosterItemV1, SpecterV2, WorkItemV1, WorkItemsV2, XpSummariesV2, XpSummaryV1 } from '../src/contracts/types.ts';
-import { PING_PATH, ROSTER_PATH, SPECTERS_PATH, WORK_PATH, XP_PATH, workListPath, workPath, xpPagedPath } from '../src/host/paths.ts';
+import type { RosterItemV1, SpecterV2, TaskItemV1, TasksV1, XpHistoryV1, XpSummariesV3 } from '../src/contracts/types.ts';
+import { PING_PATH, ROSTER_PATH, SPECTERS_PATH, TASKS_PATH, XP_PATH, taskPath, tasksPath, xpHistoryPath, xpPagedPath } from '../src/host/paths.ts';
 import {
   ARENA_PERF_1,
   ARENA_SCENARIO_NAMES,
   canonicalArenaScenario,
   isArenaScenario,
-  perfItems,
+  perfTasks,
   workingAttemptCount,
 } from './arena-scenarios.ts';
 import { DECLARED_API, createFixtureClient, setArenaScenario } from './app-sdk.ts';
 import { FIXTURE_NOW_MS } from './monitoring-bodies.ts';
+import { WATCHED_TASK_ID, closeWatchedTask } from './task-bodies.ts';
 
 const schemasDir = fileURLToPath(new URL('../../contracts/schemas/', import.meta.url));
 const ajv = new Ajv({ strict: true });
@@ -33,21 +34,14 @@ const read = async <T>(path: string): Promise<{ status: number; body: T }> => {
   return { status: response.status, body: (await response.json()) as T };
 };
 
-interface WorkPage {
-  items: WorkItemV1[];
-  nextCursor: string | null;
-}
-
-/** The unchanged v1 read: full items, validated against the FROZEN work-item.v1 schema. */
-const v1ListPath = (state: string, cursor: string | null): string => `${WORK_PATH}?state=${state}&limit=25${cursor === null ? '' : `&cursor=${cursor}`}`;
-
-async function allOf(state: string): Promise<WorkItemV1[]> {
-  const out: WorkItemV1[] = [];
+async function allOf(state: 'open' | 'credited' | 'not-credited'): Promise<TaskItemV1[]> {
+  const out: TaskItemV1[] = [];
   let cursor: string | null = null;
   do {
-    const page: { status: number; body: WorkPage } = await read<WorkPage>(v1ListPath(state, cursor));
+    const page: { status: number; body: TasksV1 } = await read<TasksV1>(tasksPath({ state, limit: 25, cursor }));
     expect(page.status).toBe(200);
     expect(page.body.items.length).toBeLessThanOrEqual(25);
+    expect(valid('tasks', page.body), JSON.stringify(ajv.errors)).toBe(true);
     out.push(...page.body.items);
     cursor = page.body.nextCursor;
   } while (cursor !== null);
@@ -95,30 +89,38 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
     expect(states.filter((state) => state === 'unknown')).toHaveLength(2);
   });
 
-  it('has 100 on-field items, 10 of them containers, paged 25 at a time with cursors', async () => {
+  it('has 100 open tasks paged 25 at a time with cursors, every one a valid task-item', async () => {
     setArenaScenario('arena-perf-1');
-    const first = await read<WorkPage>(v1ListPath('open', null));
+    const first = await read<TasksV1>(tasksPath({ state: 'open', limit: 25, cursor: null }));
     expect(first.body.items).toHaveLength(25);
     expect(first.body.nextCursor).not.toBeNull();
-    const onField = (await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened'].map(allOf))).flat();
-    expect(onField).toHaveLength(100);
-    expect(new Set(onField.map((item) => item.workId)).size).toBe(100);
-    expect(onField.filter((item) => item.childCount > 0)).toHaveLength(10);
-    expect(onField.filter((item) => item.state === 'open' && item.parentId === null && item.childCount === 0)).not.toHaveLength(0);
-    for (const item of onField) expect(valid('work-item', item), JSON.stringify(ajv.errors)).toBe(true);
+    const open = await allOf('open');
+    expect(open).toHaveLength(ARENA_PERF_1.openTasks);
+    expect(new Set(open.map((task) => task.taskId)).size).toBe(ARENA_PERF_1.openTasks);
+    for (const task of open) expect(valid('task-item', task), JSON.stringify(ajv.errors)).toBe(true);
+    expect(open.map((task) => task.updatedAtMs)).toEqual([...open.map((task) => task.updatedAtMs)].sort((a, b) => b - a));
   });
 
-  it('links 30 open attempts and accepts 12 items inside the last 24 hours with real contributors', async () => {
+  it('puts 30 working attempts on real roster attempts and credits 12 tasks inside the last 24 hours', async () => {
     setArenaScenario('arena-perf-1');
-    const onField = (await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened'].map(allOf))).flat();
-    const open = onField.flatMap((item) => item.attempts).filter((attempt) => attempt.present && !attempt.ended);
-    expect(open).toHaveLength(ARENA_PERF_1.workingAttempts);
-    const accepted = await allOf('accepted');
-    expect(accepted).toHaveLength(12);
-    for (const item of accepted) {
-      expect(item.updatedAtMs).toBeGreaterThanOrEqual(FIXTURE_NOW_MS - 24 * 3_600_000);
-      expect(item.contributors.reduce((sum, contributor) => sum + contributor.xpNet, 0)).toBeGreaterThan(0);
+    const open = await allOf('open');
+    expect(open.filter((task) => task.attemptState === 'working')).toHaveLength(ARENA_PERF_1.workingAttempts);
+    expect(open.filter((task) => task.attemptState === 'unknown')).toHaveLength(ARENA_PERF_1.openTasks - ARENA_PERF_1.workingAttempts);
+    const credited = await allOf('credited');
+    expect(credited).toHaveLength(ARENA_PERF_1.recentlyCredited);
+    for (const task of credited) {
+      expect(task.closedAtMs ?? 0).toBeGreaterThanOrEqual(FIXTURE_NOW_MS - 24 * 3_600_000);
+      expect(task).toMatchObject({ closeReason: 'clean-end', policyVersion: 'xp-policy-2' });
+      expect(task.xpCredited).toBeGreaterThanOrEqual(10);
     }
+  });
+
+  it('spreads run time over all three size classes, by the thresholds', async () => {
+    setArenaScenario('arena-perf-1');
+    const open = await allOf('open');
+    const classes = new Set(open.map((task) => task.sizeClass));
+    expect(classes).toEqual(new Set(['small', 'medium', 'large']));
+    for (const task of open) expect(task.sizeClass).toBe(task.runMs < 120_000 ? 'small' : task.runMs < 900_000 ? 'medium' : 'large');
   });
 
   it('gives every one of the 20 bots a hero, wrapping at 11', async () => {
@@ -133,53 +135,72 @@ describe('arena-perf-1 as the real fixture routes serve it', () => {
     expect(roster.body.items.filter((bot) => !withSpecter.has(bot.bindingId))).toHaveLength(0);
   });
 
-  it('serves xp summaries that match the accepted items', async () => {
+  it('serves xp summaries v3 that match the credited tasks and both ledgers', async () => {
     setArenaScenario('arena-perf-1');
-    const xp = await read<{ items: XpSummaryV1[] }>(XP_PATH);
-    expect(valid('xp-summaries', xp.body)).toBe(true);
-    expect(xp.body.items.reduce((sum, item) => sum + item.totalXp, 0)).toBeGreaterThan(0);
+    const xp = await read<XpSummariesV3>(xpPagedPath(200, null));
+    expect(valid('xp-summaries', xp.body, 3), JSON.stringify(ajv.errors)).toBe(true);
+    const credited = await allOf('credited');
+    const task = credited.reduce((sum, item) => sum + (item.xpCredited ?? 0), 0);
+    expect(xp.body.items.reduce((sum, item) => sum + item.totalXp, 0)).toBe(task + 100);
+    expect(xp.body.items.reduce((sum, item) => sum + item.creditedTaskCount, 0)).toBe(ARENA_PERF_1.recentlyCredited);
   });
 
-  it('builds one work page quickly enough for the preview', async () => {
+  it('builds one task page quickly enough for the preview', async () => {
     setArenaScenario('arena-perf-1');
     const started = performance.now();
-    await read(workListPath('open', 25, null, 'updated'));
+    await read(tasksPath({ state: 'open', limit: 25, cursor: null }));
     expect(performance.now() - started).toBeLessThan(500);
   });
 
-  it('plans leaf states 54 open, 18 awaiting review, 12 blocked, 6 reopened', () => {
-    const leaves = perfItems().filter((item) => item.n > 10 && item.n <= 100);
-    const count = (state: string) => leaves.filter((item) => item.state === state).length;
-    expect([count('open'), count('awaiting-review'), count('blocked'), count('reopened')]).toEqual([54, 18, 12, 6]);
+  it('plans 100 open and 12 credited tasks over all three run times', () => {
+    const plan = perfTasks();
+    expect(plan.filter((task) => !task.credited)).toHaveLength(100);
+    expect(plan.filter((task) => task.credited)).toHaveLength(12);
+    expect(plan.filter((task) => !task.credited && task.workingAttempt !== null)).toHaveLength(30);
+    expect(new Set(plan.map((task) => task.runMinutes))).toEqual(new Set([1, 4, 20]));
   });
 });
 
 describe('the other arena scenarios', () => {
-  it('arena serves the existing demo data: seven bots, thirteen items, seven heroes', async () => {
+  it('arena serves the demo data: seven bots, tasks of every size and close-out, seven heroes', async () => {
     setArenaScenario('arena');
     expect((await read<{ items: unknown[] }>(ROSTER_PATH)).body.items).toHaveLength(7);
-    expect((await read<WorkPage>(WORK_PATH)).body.items).toHaveLength(13);
+    const open = await allOf('open');
+    expect(new Set(open.map((task) => task.sizeClass))).toEqual(new Set(['small', 'medium', 'large']));
+    expect(open.some((task) => task.attemptState === 'unknown')).toBe(true);
+    const credited = await allOf('credited');
+    expect(credited.length).toBeGreaterThanOrEqual(2);
+    const notCredited = await allOf('not-credited');
+    expect(new Set(notCredited.map((task) => task.closeReason))).toEqual(new Set(['unknown-terminal', 'coverage-gap', 'waiting-at-end']));
+    for (const task of [...open, ...credited, ...notCredited]) expect(valid('task-item', task), JSON.stringify(ajv.errors)).toBe(true);
     expect((await read<{ items: unknown[] }>(SPECTERS_PATH)).body.items).toHaveLength(7);
   });
 
-  it('arena-empty has no bindings, no work and no Specters', async () => {
+  it('builds tasks the way the backend does: a worker at once, a bot turn from 60 seconds', async () => {
+    setArenaScenario('arena');
+    const all = [...(await allOf('open')), ...(await allOf('credited')), ...(await allOf('not-credited'))];
+    for (const task of all.filter((item) => item.kind === 'bot-turn')) expect(task.runMs).toBeGreaterThanOrEqual(60_000);
+    expect(all.some((task) => task.kind === 'worker')).toBe(true);
+  });
+
+  it('arena-empty has no bindings, no tasks and no Specters', async () => {
     setArenaScenario('arena-empty');
     expect((await read<{ items: unknown[] }>(ROSTER_PATH)).body.items).toHaveLength(0);
-    expect((await read<WorkPage>(WORK_PATH)).body.items).toHaveLength(0);
+    expect((await read<TasksV1>(TASKS_PATH)).body.items).toHaveLength(0);
     expect((await read<{ items: unknown[] }>(SPECTERS_PATH)).body.items).toHaveLength(0);
   });
 
-  it('arena-stale answers 404 unknown_work for a detail read and drops one roster binding after the first read', async () => {
+  it('arena-stale answers 404 unknown_task for a task detail read and drops one roster binding after the first read', async () => {
     setArenaScenario('arena-stale');
     const first = await read<{ items: unknown[] }>(ROSTER_PATH);
     expect(first.body.items).toHaveLength(7);
     const second = await read<{ items: unknown[] }>(ROSTER_PATH);
     expect(second.body.items).toHaveLength(6);
-    const list = await read<WorkPage>(WORK_PATH);
-    expect(list.body.items).toHaveLength(13);
-    const detail = await read<{ error: string }>(workPath(list.body.items[0]?.workId ?? ''));
+    const list = await read<TasksV1>(TASKS_PATH);
+    expect(list.body.items.length).toBeGreaterThan(5);
+    const detail = await read<{ error: string }>(taskPath(list.body.items[0]?.taskId ?? ''));
     expect(detail.status).toBe(404);
-    expect(detail.body.error).toBe('unknown_work');
+    expect(detail.body.error).toBe('unknown_task');
   });
 
   it('arena-no-art keeps the data and refuses the scene assets', async () => {
@@ -190,87 +211,113 @@ describe('the other arena scenarios', () => {
 
   it('an unknown scenario name still falls back to the module defaults', async () => {
     expect((await read<{ items: unknown[] }>(ROSTER_PATH)).body.items).toHaveLength(7);
-    expect((await read<WorkPage>(WORK_PATH)).body.items).toHaveLength(0);
+    expect((await read<TasksV1>(TASKS_PATH)).body.items).toHaveLength(0);
     expect((await client.get(PING_PATH)) as unknown).toBeDefined();
   });
 });
 
-describe('view=list and view=paged on the fixture routes (FP-18)', () => {
-  const FULL_ONLY = ['acceptanceCondition', 'policyVersion', 'milestones', 'evidenceRevision', 'review', 'decisions'];
-
-  async function listAll(state: string, order: 'created' | 'updated'): Promise<WorkItemsV2['items']> {
-    const out: WorkItemsV2['items'] = [];
-    let cursor: string | null = null;
-    do {
-      const page: { status: number; body: WorkItemsV2 } = await read<WorkItemsV2>(workListPath(state, 25, cursor, order));
-      expect(page.status).toBe(200);
-      expect(page.body).toMatchObject({ contractVersion: 2, order });
-      expect(valid('work-items', page.body, 2), JSON.stringify(ajv.errors)).toBe(true);
-      out.push(...page.body.items);
-      cursor = page.body.nextCursor;
-    } while (cursor !== null);
-    return out;
-  }
-
-  it('serves the list projection: the v1 list fields of every item, nothing else, plus everAccepted', async () => {
-    setArenaScenario('arena-perf-1');
-    const full = new Map((await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened', 'accepted'].map(allOf))).flat().map((item) => [item.workId, item]));
-    const rows = (await Promise.all(['open', 'awaiting-review', 'blocked', 'reopened', 'accepted'].map((state) => listAll(state, 'updated')))).flat();
-    expect(rows).toHaveLength(112);
-    for (const row of rows) {
-      const item = full.get(row.workId) as WorkItemV1;
-      for (const key of FULL_ONLY) expect(key in row, key).toBe(false);
-      expect(Object.keys(row).sort()).toEqual(
-        ['attempts', 'bountyXp', 'childCount', 'childrenAccepted', 'contractVersion', 'contributors', 'createdAtMs', 'everAccepted', 'parentId', 'progress', 'rewardable', 'state', 'title', 'updatedAtMs', 'version', 'workId'],
-      );
-      const { everAccepted, ...rest } = row;
-      expect(everAccepted).toBe(item.decisions.some((decision) => decision.action === 'accept'));
-      for (const [key, value] of Object.entries(rest)) expect(value, key).toEqual(item[key as keyof WorkItemV1]);
-    }
+describe('tasks and xp on the fixture routes', () => {
+  it('serves one task by id and answers an unknown id 404 unknown_task', async () => {
+    setArenaScenario('arena');
+    const [task] = await allOf('credited');
+    const one = await read<TaskItemV1>(taskPath(task?.taskId ?? ''));
+    expect(one).toMatchObject({ status: 200, body: task });
+    expect(valid('task-item', one.body)).toBe(true);
+    expect(await read(taskPath('tsk_ffffffffffffffffffffffff'))).toMatchObject({ status: 404, body: { error: 'unknown_task' } });
   });
 
-  it('orders by update time or creation time and refuses a cursor from the other order', async () => {
-    setArenaScenario('arena-perf-1');
-    const updated = await listAll('accepted', 'updated');
-    expect(updated.map((row) => row.updatedAtMs)).toEqual([...updated.map((row) => row.updatedAtMs)].sort((a, b) => b - a));
-    const created = await listAll('open', 'created');
-    expect(created.map((row) => row.createdAtMs)).toEqual([...created.map((row) => row.createdAtMs)].sort((a, b) => b - a));
-    const first = await read<WorkItemsV2>(workListPath('open', 25, null, 'updated'));
-    const cursor = first.body.nextCursor;
-    expect(cursor).not.toBeNull();
-    const crossed = await read<{ error: string }>(workListPath('open', 25, cursor, 'created'));
-    expect(crossed).toMatchObject({ status: 400, body: { error: 'invalid_cursor' } });
+  it('filters by state and bot, refuses a bad state or cursor, and orders newest update first', async () => {
+    setArenaScenario('arena');
+    const atlas = (await read<{ items: RosterItemV1[] }>(ROSTER_PATH)).body.items[0]?.bindingId ?? '';
+    const mine = await read<TasksV1>(tasksPath({ bindingId: atlas, limit: 25, cursor: null }));
+    expect(mine.body.items.length).toBeGreaterThan(0);
+    expect(mine.body.items.every((task) => task.bindingId === atlas)).toBe(true);
+    expect(mine.body.items.map((task) => task.updatedAtMs)).toEqual([...mine.body.items.map((task) => task.updatedAtMs)].sort((a, b) => b - a));
+    expect((await read(`${TASKS_PATH}?state=accepted`)).status).toBe(400);
+    expect((await read(`${TASKS_PATH}?cursor=zzz`)).status).toBe(400);
   });
 
-  it('answers a bad view or an order without view=list with 400 and leaves the v1 read unchanged', async () => {
-    setArenaScenario('arena-perf-1');
-    expect((await read(`${WORK_PATH}?view=full`)).status).toBe(400);
-    expect((await read(`${WORK_PATH}?order=updated`)).status).toBe(400);
-    expect((await read(`${WORK_PATH}?view=list&order=newest`)).status).toBe(400);
-    const v1 = await read<{ contractVersion: number; items: WorkItemV1[] }>(v1ListPath('open', null));
-    expect(v1.body.contractVersion).toBe(1);
-    expect(v1.body.items[0]).toHaveProperty('decisions');
+  it('refuses every write to a task route', async () => {
+    const response = (await client.post(TASKS_PATH, {})) as Response;
+    expect(response.status).toBe(405);
   });
 
-  it('pages xp summaries by binding id and keeps the unpaged read as it was', async () => {
-    setArenaScenario('arena-perf-1');
-    const unpaged = await read<{ contractVersion: number; items: XpSummaryV1[] }>(XP_PATH);
-    expect(unpaged.body.contractVersion).toBe(1);
-    const small = await read<XpSummariesV2>(xpPagedPath(1, null));
-    expect(small.body).toMatchObject({ contractVersion: 2 });
+  it('pages xp summaries v3 by binding id and counts legacy XP with the task awards', async () => {
+    setArenaScenario('arena');
+    const small = await read<XpSummariesV3>(xpPagedPath(1, null));
+    expect(small.body).toMatchObject({ contractVersion: 3 });
     expect(small.body.items).toHaveLength(1);
     expect(small.body.nextCursor).not.toBeNull();
-    const walked: XpSummaryV1[] = [];
+    const walked: XpSummariesV3['items'] = [];
     let cursor: string | null = null;
     do {
-      const page: { body: XpSummariesV2 } = await read<XpSummariesV2>(xpPagedPath(2, cursor));
-      expect(valid('xp-summaries', page.body, 2), JSON.stringify(ajv.errors)).toBe(true);
+      const page: { body: XpSummariesV3 } = await read<XpSummariesV3>(xpPagedPath(1, cursor));
+      expect(valid('xp-summaries', page.body, 3), JSON.stringify(ajv.errors)).toBe(true);
       walked.push(...page.body.items);
       cursor = page.body.nextCursor;
     } while (cursor !== null);
-    expect(walked).toEqual(unpaged.body.items);
+    const atlas = walked.find((item) => item.bindingId.endsWith('0001'));
+    expect(atlas).toMatchObject({ acceptedWorkCount: 1, policyVersion: 'xp-policy-2' });
+    expect(atlas?.totalXp).toBeGreaterThan(100);
+    expect(atlas?.creditedTaskCount).toBeGreaterThan(0);
     expect((await read(`${XP_PATH}?view=all`)).status).toBe(400);
-    expect((await read(`${XP_PATH}?view=paged&cursor=zzz`)).status).toBe(400);
+    expect((await read(`${XP_PATH}?view=tasks&cursor=zzz`)).status).toBe(400);
+    expect((await read(`${XP_PATH}?view=tasks&limit=x`)).status).toBe(400);
+  });
+
+  it('keeps the frozen history route to the manual ledger, with a v1 summary that does not carry task awards', async () => {
+    setArenaScenario('arena');
+    const atlas = (await read<{ items: RosterItemV1[] }>(ROSTER_PATH)).body.items[0]?.bindingId ?? '';
+    const history = await read<XpHistoryV1>(xpHistoryPath(atlas));
+    expect(valid('xp-history', history.body), JSON.stringify(ajv.errors)).toBe(true);
+    expect(history.body.items).toHaveLength(1);
+    expect(history.body.summary.totalXp).toBe(100);
+    expect((await read(xpHistoryPath('bnd_unknownunknownunknown00'))).status).toBe(404);
+    expect((await read(xpHistoryPath(atlas, 50, 'bad'))).status).toBe(400);
   });
 });
 
+describe('the watched task', () => {
+  it('runs until it is closed, then is credited once with the bounty for its run time, and the bot XP follows', async () => {
+    setArenaScenario('arena');
+    const before = await read<TaskItemV1>(taskPath(WATCHED_TASK_ID));
+    expect(before.body).toMatchObject({ state: 'open', attemptState: 'working', xpCredited: null, closeReason: null });
+    const atlas = before.body.bindingId;
+    const xpOf = async () => (await read<XpSummariesV3>(xpPagedPath(200, null))).body.items.find((item) => item.bindingId === atlas);
+    const totalBefore = (await xpOf())?.totalXp ?? 0;
+    closeWatchedTask();
+    const after = await read<TaskItemV1>(taskPath(WATCHED_TASK_ID));
+    expect(valid('task-item', after.body), JSON.stringify(ajv.errors)).toBe(true);
+    expect(after.body).toMatchObject({ state: 'credited', attemptState: 'ended', closeReason: 'clean-end', xpCredited: 13, runMs: 360_000, sizeClass: 'medium' });
+    expect(after.body.taskId).toBe(before.body.taskId);
+    expect((await xpOf())?.totalXp).toBe(totalBefore + 13);
+  });
+});
+
+describe('failure scenarios', () => {
+  it.each([
+    ['tasks-failure', 503],
+    ['tasks-expired', 403],
+    ['tasks-unsupported', 404],
+  ] as const)('%s answers %s on a task read', async (scenario, status) => {
+    const { setTaskScenario } = await import('./task-bodies.ts');
+    setTaskScenario(scenario);
+    expect(((await client.get(TASKS_PATH)) as Response).status).toBe(status);
+    setTaskScenario(null);
+  });
+
+  it('tasks-offline rejects the request', async () => {
+    const { setTaskScenario } = await import('./task-bodies.ts');
+    setTaskScenario('tasks-offline');
+    await expect(client.get(TASKS_PATH)).rejects.toThrow('Failed to fetch');
+    setTaskScenario(null);
+  });
+
+  it('tasks-many has more than one page of closed tasks', async () => {
+    const { setTaskScenario } = await import('./task-bodies.ts');
+    setTaskScenario('tasks-many');
+    const closed = [...(await allOf('credited')), ...(await allOf('not-credited'))];
+    expect(closed.length).toBeGreaterThan(25);
+    setTaskScenario(null);
+  });
+});

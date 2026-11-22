@@ -10,7 +10,9 @@ const enemy = (n: number, defeated: boolean): SceneEnemy => ({
   parentId: null,
   title: `Task ${n}`,
   size: 'minion',
-  state: defeated ? 'accepted' : 'open',
+  state: defeated ? 'credited' : 'open',
+  sizeClass: 'medium',
+  runMs: 300_000,
   progress: { kind: 'unknown' },
   parts: null,
   blocked: false,
@@ -74,7 +76,9 @@ describe('nextCelebrations', () => {
 
 describe('nextMilestoneRises', () => {
   const progressed = (n: number, done: number, total = 4, defeated = false): SceneModel['enemies'][number] => ({
-    workId: `wrk_${n}`, parentId: null, title: `T${n}`, size: 'minion', state: defeated ? 'accepted' : 'open', progress: { kind: 'milestones', done, total }, parts: null, blocked: false, engagedBy: [], defeated, committedXp: null,
+    workId: `wrk_${n}`, parentId: null, title: `T${n}`, size: 'minion', state: defeated ? 'credited' : 'open',
+  sizeClass: 'medium',
+  runMs: 300_000, progress: { kind: 'milestones', done, total }, parts: null, blocked: false, engagedBy: [], defeated, committedXp: null,
   });
   const withEnemies = (enemies: SceneModel['enemies'], asOfMs = 1_000): SceneModel => ({ mode: 'FIXTURE', asOfMs, specters: [], enemies, overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } });
   const ctx = { visibleSincePrev: true, gapMs: 10_000, pollMs: 10_000 };

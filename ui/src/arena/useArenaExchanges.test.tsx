@@ -7,7 +7,7 @@ import { useArenaExchanges } from './useArenaExchanges';
 const hero = (id: string, work: string[]): SceneSpecter => ({
   bindingId: id, displayName: id, specterName: id, heroId: 'vell', portraitAssetId: null, condition: 'working', openAttemptIds: [], engagedWorkIds: work, xpTotal: 0, level: 1, xpReading: 'ready', waitingReason: null,
 });
-const minion = (id: string): SceneEnemy => ({ workId: id, parentId: null, title: id, size: 'minion', state: 'open', progress: { kind: 'unknown' }, parts: null, blocked: false, engagedBy: [], defeated: false, committedXp: null });
+const minion = (id: string): SceneEnemy => ({ workId: id, parentId: null, title: id, size: 'minion', state: 'open', sizeClass: 'medium', runMs: 300_000, progress: { kind: 'unknown' }, parts: null, blocked: false, engagedBy: [], defeated: false, committedXp: null });
 const model = (specters: SceneSpecter[], enemies: SceneEnemy[]): SceneModel => ({ mode: 'FIXTURE', asOfMs: 1, specters, enemies, overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } });
 
 beforeEach(() => vi.useFakeTimers());
@@ -74,7 +74,7 @@ describe('useArenaExchanges', () => {
     const { result, rerender } = renderHook((props: { m: SceneModel }) => useArenaExchanges(props.m, true, []), { initialProps: { m: scene } });
     act(() => void vi.advanceTimersByTime(CADENCE_MAX_MS));
     expect(result.current.heroes.size).toBe(1);
-    rerender({ m: model([hero('a', ['w1'])], [{ ...minion('w1'), defeated: true, state: 'accepted' }]) });
+    rerender({ m: model([hero('a', ['w1'])], [{ ...minion('w1'), defeated: true, state: 'credited' }]) });
     expect(result.current.heroes.size).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
   });

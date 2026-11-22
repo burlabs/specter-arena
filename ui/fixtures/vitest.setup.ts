@@ -7,7 +7,7 @@ import { installHostModules } from './host-modules.ts';
 import { setFixtureScenario } from './monitoring-bodies.ts';
 import { resetSceneAssetFixtures } from './scene-bodies.ts';
 import { resetSpecterFixtures } from './specter-bodies.ts';
-import { resetWorkFixtures } from './work-bodies.ts';
+import { resetTaskFixtures } from './task-bodies.ts';
 
 let teardown: (() => void) | undefined;
 
@@ -23,7 +23,7 @@ afterEach(() => {
   }
   setFixtureScenario(null);
   resetSpecterFixtures();
-  resetWorkFixtures();
+  resetTaskFixtures();
   resetDataFixtures();
   resetSceneAssetFixtures();
   resetFixtureCalls();

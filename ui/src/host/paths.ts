@@ -1,4 +1,3 @@
-import type { WorkListOrderV2 } from '../contracts/types';
 export const APP_API_PREFIX = '/apps/specter-arena/api';
 
 export function appApiPath(suffix: `/${string}`): string {
@@ -38,18 +37,24 @@ export const specterPortraitPath = (bindingId: string): string => appApiPath(`/s
 export const assetPath = (assetId: string): string => appApiPath(`/assets/${enc(assetId)}`);
 export const sceneAssetPath = (key: string): string => appApiPath(`/scene-assets/${enc(key)}`);
 
-export const WORK_PATH = appApiPath('/work');
 export const XP_PATH = appApiPath('/xp');
-/** One page of the paged `xp-summaries.v2` read; `useXp` walks every page. */
-export const xpPagedPath = (limit: number, cursor: string | null): string => withQuery(XP_PATH, { view: 'paged', limit, cursor });
+/**
+ * The paged read of `xp-summaries.v3` (one `xp-summary.v2` per bot, both ledgers). The view name is the backend's
+ * (FP-22 PR-A); `useXp` walks every page. The unpaged `GET /api/xp` and `view=paged` keep their old bodies.
+ */
+export const XP_SUMMARIES_VIEW = 'tasks';
+export const xpPagedPath = (limit: number, cursor: string | null): string => withQuery(XP_PATH, { view: XP_SUMMARIES_VIEW, limit, cursor });
 
-/** The lighter `work-items.v2` read. `order` is explicit so a server default can never change what a caller sees. */
-export const workListPath = (state: string | null, limit: number, cursor: string | null, order: WorkListOrderV2): string =>
-  withQuery(WORK_PATH, { state, view: 'list', order, limit, cursor });
-export const workPath = (workId: string): string => appApiPath(`/work/${enc(workId)}`);
-export const workAttemptsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/attempts`);
-export const workMilestonesPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/milestones`);
-export const workDecisionsPath = (workId: string): string => appApiPath(`/work/${enc(workId)}/decisions`);
+export const TASKS_PATH = appApiPath('/tasks');
+export interface TasksQuery {
+  state?: 'open' | 'credited' | 'not-credited' | null;
+  bindingId?: string | null;
+  limit: number;
+  cursor: string | null;
+}
+/** `tasks.v1`, newest update first. A cursor only fits the query it came from. GET only. */
+export const tasksPath = ({ state = null, bindingId = null, limit, cursor }: TasksQuery): string => withQuery(TASKS_PATH, { state, bindingId, limit, cursor });
+export const taskPath = (taskId: string): string => appApiPath(`/tasks/${enc(taskId)}`);
 export const xpHistoryPath = (bindingId: string, limit = 50, cursor: string | null = null): string =>
   withQuery(appApiPath(`/roster/${enc(bindingId)}/xp`), { limit, cursor });
 

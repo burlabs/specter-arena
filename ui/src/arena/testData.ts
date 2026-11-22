@@ -1,6 +1,6 @@
 import { HERO_IDS } from '../contracts/types';
-import type { RosterItemV1, SpecterV2, WorkAttemptV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
-import { itemOf } from '../work/testData';
+import type { RosterItemV1, SpecterV2, TaskItemV1, XpSummaryV2 } from '../contracts/types';
+import { sizeClassOf } from '../tasks/model';
 import type { SceneInputs } from './sceneModel';
 
 export const NOW = 1_794_916_800_000;
@@ -29,20 +29,45 @@ export const botOf = (n: number, extra: Partial<RosterItemV1> & { state?: string
   };
 };
 
-export const attemptOf = (bot: RosterItemV1, n: number, extra: Partial<WorkAttemptV1> = {}): WorkAttemptV1 => ({
-  attemptId: `att_${String(n).padStart(24, '0')}`,
-  bindingId: bot.bindingId,
-  kind: 'bot-turn',
-  startedMs: NOW - HOUR,
-  endedMs: null,
-  endSignal: null,
-  ended: false,
-  present: true,
-  ...extra,
-});
+/** The id of the nth task, attempt or binding in a test: 24 hex digits, the way the backend writes them. */
+export const taskIdOf = (n: number): string => `tsk_${n.toString(16).padStart(24, '0')}`;
+export const attemptIdOf = (n: number): string => `att_${n.toString(16).padStart(24, '0')}`;
 
-export const workOf = (n: number, extra: Partial<WorkItemV1> = {}): WorkItemV1 =>
-  itemOf({ workId: `wrk_${String(n).padStart(24, '0')}`, title: `Task ${n}`, createdAtMs: NOW - n * 1_000, updatedAtMs: NOW - n * 1_000, ...extra });
+/** A task that is open and running for ten minutes unless `extra` says otherwise. `sizeClass` follows `runMs` unless given. */
+export const taskOf = (n: number, bot: RosterItemV1, extra: Partial<TaskItemV1> = {}): TaskItemV1 => {
+  const runMs = extra.runMs ?? 600_000;
+  return {
+    contractVersion: 1,
+    taskId: taskIdOf(n),
+    bindingId: bot.bindingId,
+    attemptId: attemptIdOf(n),
+    kind: 'worker',
+    state: 'open',
+    attemptState: 'working',
+    closeReason: null,
+    startedAtMs: NOW - runMs,
+    endedAtMs: null,
+    closedAtMs: null,
+    updatedAtMs: NOW - n * 1_000,
+    runMs,
+    sizeClass: sizeClassOf(runMs),
+    xpCredited: null,
+    policyVersion: 'xp-policy-2',
+    ...extra,
+  };
+};
+
+/** A credited task: ended cleanly 30 minutes before NOW, XP 12. */
+export const creditedOf = (n: number, bot: RosterItemV1, extra: Partial<TaskItemV1> = {}): TaskItemV1 => {
+  const runMs = extra.runMs ?? 600_000;
+  return taskOf(n, bot, { state: 'credited', attemptState: 'ended', closeReason: 'clean-end', runMs, endedAtMs: NOW - 30 * 60_000, startedAtMs: NOW - 30 * 60_000 - runMs, closedAtMs: NOW - 29 * 60_000, updatedAtMs: NOW - 29 * 60_000, xpCredited: 12, ...extra });
+};
+
+/** A task that closed without credit for `reason`. */
+export const notCreditedOf = (n: number, bot: RosterItemV1, reason: 'unknown-terminal' | 'coverage-gap' | 'waiting-at-end' = 'coverage-gap', extra: Partial<TaskItemV1> = {}): TaskItemV1 => {
+  const runMs = extra.runMs ?? 600_000;
+  return taskOf(n, bot, { state: 'not-credited', attemptState: 'ended', closeReason: reason, runMs, endedAtMs: NOW - 30 * 60_000, startedAtMs: NOW - 30 * 60_000 - runMs, closedAtMs: NOW - 29 * 60_000, updatedAtMs: NOW - 29 * 60_000, ...extra });
+};
 
 const DEFAULT_PORTRAIT_ASSET = `ast_${'0'.repeat(24)}`;
 
@@ -69,8 +94,8 @@ export const specterOf = (bot: RosterItemV1, name: string, assetId: string | nul
   };
 };
 
-export const xpOf = (bot: RosterItemV1, totalXp: number, level: number): XpSummaryV1 => ({
-  contractVersion: 1,
+export const xpOf = (bot: RosterItemV1, totalXp: number, level: number): XpSummaryV2 => ({
+  contractVersion: 2,
   bindingId: bot.bindingId,
   totalXp,
   level,
@@ -78,7 +103,8 @@ export const xpOf = (bot: RosterItemV1, totalXp: number, level: number): XpSumma
   levelFloorXp: 0,
   nextLevelXp: null,
   acceptedWorkCount: 1,
-  policyVersion: 'xp-policy-1',
+  creditedTaskCount: 1,
+  policyVersion: 'xp-policy-2',
 });
 
-export const inputsOf = (extra: Partial<SceneInputs> = {}): SceneInputs => ({ mode: 'FIXTURE', nowMs: NOW, roster: [], specters: [], xp: [], work: [], ...extra });
+export const inputsOf = (extra: Partial<SceneInputs> = {}): SceneInputs => ({ mode: 'FIXTURE', nowMs: NOW, roster: [], specters: [], xp: [], tasks: [], ...extra });

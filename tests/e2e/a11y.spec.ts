@@ -5,7 +5,7 @@ import type { Locator, Page } from '@playwright/test';
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-const SECTIONS = ['Roster', 'Specters', 'Work', 'Arena', 'Data'] as const;
+const SECTIONS = ['Roster', 'Specters', 'Arena', 'Data'] as const;
 
 const sectionTab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Sections' }).getByRole('tab', { name });
 const rosterList = (page: Page) => page.getByRole('list', { name: 'Bots' });
@@ -22,7 +22,7 @@ async function violations(page: Page, rules?: string[]) {
   return result.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target.join(' ')) }));
 }
 
-test('AX-1 each of the five tabs has no WCAG 2.1 A or AA axe violation', async ({ page }) => {
+test('AX-1 each of the four tabs has no WCAG 2.1 A or AA axe violation', async ({ page }) => {
   await open(page, 'arena');
   for (const section of SECTIONS) {
     await sectionTab(page, section).click();
@@ -31,7 +31,7 @@ test('AX-1 each of the five tabs has no WCAG 2.1 A or AA axe violation', async (
   }
 });
 
-test('AX-2 selected states have no violation: bot, Specter, Work item, and every Arena token', async ({ page }) => {
+test('AX-2 selected states have no violation: bot, Specter, and every Arena token', async ({ page }) => {
   test.setTimeout(45_000);
   await open(page, 'arena');
   await rosterList(page).getByRole('button', { name: /^Atlas/ }).click();
@@ -42,10 +42,6 @@ test('AX-2 selected states have no violation: bot, Specter, Work item, and every
   await sectionTab(page, 'Specters').click();
   await page.getByRole('list', { name: 'Specter collection' }).getByRole('button').first().click();
   expect(await violations(page), 'Specter detail').toEqual([]);
-
-  await sectionTab(page, 'Work').click();
-  await page.getByRole('list', { name: 'Work items' }).getByRole('button').first().click();
-  expect(await violations(page), 'Work detail').toEqual([]);
 
   await sectionTab(page, 'Arena').click();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
@@ -113,12 +109,11 @@ test('AX-5 with reduced motion requested, Roster, Specters and Arena run no anim
   }
 });
 
-test('AX-6 one keyboard-only pass reaches all five tabs and moves focus into each panel', async ({ page }) => {
+test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into each panel', async ({ page }) => {
   await open(page, 'arena');
   const ready: Record<(typeof SECTIONS)[number], Locator> = {
     Roster: rosterList(page),
     Specters: page.getByRole('list', { name: 'Specter collection' }),
-    Work: page.getByRole('button', { name: 'New work item' }),
     Arena: page.getByRole('group', { name: 'Arena map' }),
     Data: page.getByRole('button', { name: 'Pause collection' }),
   };

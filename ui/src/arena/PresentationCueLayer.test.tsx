@@ -21,7 +21,7 @@ describe('PresentationCueLayer', () => {
     expect(cards.map((c) => c.getAttribute('data-cue'))).toEqual(['w1', 'w2']);
     expect(cards[0]?.textContent).toContain('+100 XP');
     expect(cards[1]?.textContent).not.toContain('XP');
-    expect(cards[0]?.textContent).toContain('Outcome accepted');
+    expect(cards[0]?.textContent).toContain('Task credited');
   });
 
   it('caps concurrent cards at four and particles at 24 in total', () => {

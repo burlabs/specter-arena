@@ -1,28 +1,28 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArenaListView } from './ArenaListView';
 import { ArenaMinimap } from './ArenaMinimap';
 import { ArenaRail } from './ArenaRail';
 import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
-import { NOW, attemptOf, botOf, inputsOf, specterOf, workOf, xpOf } from './testData';
+import { botOf, creditedOf, inputsOf, notCreditedOf, specterOf, taskOf, xpOf } from './testData';
 
 const atlas = botOf(1, { displayName: 'Atlas', state: 'working' });
 const brindle = botOf(2, { displayName: 'Brindle' });
 const dune = botOf(3, { displayName: 'Dune', state: 'unknown' });
 const bots = [atlas, brindle, dune];
-const parent = workOf(1, { title: 'Quarter close', childCount: 1, childrenAccepted: 0 });
-const work = [
-  parent,
-  workOf(2, { title: 'Books', parentId: parent.workId, state: 'blocked', attempts: [attemptOf(atlas, 1)] }),
-  workOf(3, { title: 'Review me', state: 'awaiting-review', progress: { done: 1, total: 2 } }),
-  workOf(4, { title: 'Shipped', state: 'accepted', updatedAtMs: NOW, contributors: [{ bindingId: atlas.bindingId, attemptCount: 1, xpNet: 100 }] }),
-  workOf(5, { title: 'Plain', contributors: [{ bindingId: brindle.bindingId, attemptCount: 1, xpNet: 0 }] }),
+const tasks = [
+  taskOf(1, atlas, { runMs: 90_000, kind: 'bot-turn' }),
+  taskOf(2, atlas, { runMs: 1_000_000 }),
+  taskOf(3, dune, { attemptState: 'unknown', runMs: 300_000 }),
+  creditedOf(4, atlas, { xpCredited: 14, runMs: 600_000 }),
+  taskOf(5, brindle, { attemptState: 'ended', endedAtMs: 1, runMs: 300_000 }),
+  notCreditedOf(6, brindle, 'coverage-gap', { runMs: 240_000 }),
 ];
 const specters = new Map([[atlas.bindingId, specterOf(atlas, 'Vesper')]]);
-const inputs = inputsOf({ roster: bots, specters: [...specters.values()], xp: [xpOf(atlas, 100, 2)], work });
+const inputs = inputsOf({ roster: bots, specters: [...specters.values()], xp: [xpOf(atlas, 100, 2)], tasks });
 const model = buildSceneModel(inputs);
-const items = new Map(work.map((item) => [item.workId, item]));
+const items = new Map(tasks.map((task) => [task.taskId, task]));
 
 describe('ArenaRail', () => {
   it('lists every Specter once with the roster words, selects and collapses', () => {
@@ -37,7 +37,7 @@ describe('ArenaRail', () => {
     expect(within(rail).getByText('Unknown')).toBeTruthy();
     expect(within(rail).getByText('Level 2')).toBeTruthy();
     expect(within(rail).getByText('100 XP')).toBeTruthy();
-    expect(within(rail).getByText('1 open attempt')).toBeTruthy();
+    expect(within(rail).getByText('2 open attempts')).toBeTruthy();
     expect(within(rail).getAllByText('Level 1')).toHaveLength(2);
     expect(within(rail).queryAllByRole('progressbar')).toHaveLength(0);
     expect(rail.querySelectorAll('.sa-xp-bar[aria-hidden="true"]')).toHaveLength(1);
@@ -95,77 +95,88 @@ describe('ArenaMinimap', () => {
 });
 
 describe('ArenaListView', () => {
-  const drawn = new Set(model.enemies.filter((enemy) => enemy.workId !== work[4]!.workId).map((enemy) => enemy.workId));
+  const drawn = new Set(model.enemies.filter((enemy) => enemy.workId !== tasks[4]!.taskId).map((enemy) => enemy.workId));
   const view = (selection = null as null | { kind: 'work'; workId: string }, onSelect = vi.fn(), listModel = model) =>
     render(<ArenaListView model={listModel} bots={bots} items={items} drawn={drawn} selection={selection} onSelect={onSelect} />);
   const rowsOf = (caption: string) => within(screen.getByRole('table', { name: caption })).getAllByRole('row').slice(1);
+  const rowWith = (text: string) => rowsOf('Tasks').find((row) => within(row).queryByText(text) !== null)!;
 
-  it('lists every Specter and every enemy, with the mode label in its heading', () => {
+  it('lists every Specter, every enemy and every not-credited task, with the mode label in its heading', () => {
     view();
     expect(rowsOf('Specters')).toHaveLength(3);
-    expect(rowsOf('Work')).toHaveLength(5);
+    expect(rowsOf('Tasks')).toHaveLength(6);
     expect(within(screen.getByRole('region', { name: 'Arena list' })).getByText('FIXTURE — demo data, not Crew activity')).toBeTruthy();
   });
 
-  it('prints state, progress, contributors and XP in the words of the Work tab', () => {
+  it('prints close-out, size and run time, bot and XP, and the reason a task earned nothing', () => {
     view();
-    const shipped = rowsOf('Work').find((row) => within(row).queryByText('Shipped') !== null)!;
-    expect(within(shipped).getByText('Accepted')).toBeTruthy();
-    expect(within(shipped).getByText('Atlas')).toBeTruthy();
-    expect(within(shipped).getByText('100 XP awarded')).toBeTruthy();
-    const review = rowsOf('Work').find((row) => within(row).queryByText('Review me') !== null)!;
-    expect(within(review).getByText('Awaiting your review')).toBeTruthy();
-    expect(within(review).getByText('1 of 2 milestones done')).toBeTruthy();
-    expect(within(review).getByText('No bots linked')).toBeTruthy();
-    const books = rowsOf('Work').find((row) => within(row).queryByText('Books') !== null)!;
-    expect(within(books).getByText('Part of Quarter close')).toBeTruthy();
-    expect(within(books).getByText('Blocked')).toBeTruthy();
-    const close = rowsOf('Work').find((row) => within(row).queryByText('Quarter close') !== null)!;
-    expect(within(close).getByText('0 of 1 part accepted')).toBeTruthy();
-    expect(within(close).getByText('Groups parts')).toBeTruthy();
+    const credited = rowWith('Worker task · 10 min');
+    expect(within(credited).getByText('Credited')).toBeTruthy();
+    expect(within(credited).getByText('Auto-credited when the task ended cleanly.')).toBeTruthy();
+    expect(within(credited).getByText('Medium · 10 min')).toBeTruthy();
+    expect(within(credited).getByText('Atlas')).toBeTruthy();
+    expect(within(credited).getByText('14 XP')).toBeTruthy();
+    const gap = rowWith('Worker task · 4 min');
+    expect(within(gap).getByText('Not credited')).toBeTruthy();
+    expect(within(gap).getByText('Not credited: a collection gap overlapped this task.')).toBeTruthy();
+    expect(within(gap).getByText('No XP')).toBeTruthy();
+    const running = rowWith('Bot turn · 1 min');
+    expect(within(running).getByText('Open')).toBeTruthy();
+    expect(within(running).getByText('Small · 1 min')).toBeTruthy();
+    expect(within(running).getByText('No XP yet')).toBeTruthy();
+    expect(within(rowWith('Worker task · 16 min')).getByText('Large · 16 min')).toBeTruthy();
+  });
+
+  it('never prints a percentage, a health word or a progress word for size', () => {
+    const { container } = view();
+    expect(container.textContent).not.toMatch(/%|health|hp\b|progress|remaining/i);
   });
 
   it('says which rows the scene does not draw', () => {
     view();
     expect(screen.getAllByText('Not drawn in the scene')).toHaveLength(1);
-    expect(screen.getByText('1 more on-field item is listed below and not drawn in the scene.')).toBeTruthy();
+    expect(screen.getByText('1 more open task is listed below and not drawn in the scene.')).toBeTruthy();
   });
 
   it('says the counts are a minimum when the read was cut short', () => {
     view(null, vi.fn(), { ...model, overflow: { enemies: 0, truncated: true } });
-    expect(screen.getByText(/first 8 pages of each state/)).toBeTruthy();
-    expect(screen.getByText(/newest-created page only/)).toBeTruthy();
+    expect(screen.getByText(/first 8 pages of open tasks/)).toBeTruthy();
+    expect(screen.getByText(/25 most recently updated/)).toBeTruthy();
   });
 
   it.each([
-    ['Working', 1, 1],
-    ['Blocked', 0, 1],
-    ['Awaiting your review', 0, 1],
-    ['Defeated', 0, 1],
-    ['Unknown', 1, 0],
-    ['All', 3, 5],
-  ])('filters %s to %i Specters and %i work rows', (label, specterRows, workRows) => {
+    ['Running', 1, 2],
+    ['Credited', 0, 1],
+    ['Not credited', 0, 1],
+    ['Unknown', 1, 1],
+    ['All', 3, 6],
+  ])('filters %s to %i Specters and %i task rows', (label, specterRows, taskRows) => {
     view();
     fireEvent.click(screen.getByRole('button', { name: label }));
     expect(screen.getByRole('button', { name: label }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.queryAllByRole('table', { name: 'Specters' })[0] === undefined ? 0 : within(screen.getByRole('table', { name: 'Specters' })).queryAllByRole('row').length - 1).toBe(specterRows);
-    expect(within(screen.getByRole('table', { name: 'Work' })).queryAllByRole('row').length - 1).toBe(workRows);
+    const specterTable = screen.getByRole('table', { name: 'Specters' });
+    expect(within(specterTable).queryAllByRole('row').length - 1).toBe(specterRows);
+    expect(within(screen.getByRole('table', { name: 'Tasks' })).queryAllByRole('row').length - 1).toBe(taskRows);
   });
 
-  it('selects from a Specter row and a work row and marks the current one', () => {
+  it('selects from a Specter row and a task row and marks the current one', () => {
     const onSelect = vi.fn();
-    view({ kind: 'work', workId: work[2]!.workId }, onSelect);
+    view({ kind: 'work', workId: tasks[2]!.taskId }, onSelect);
     fireEvent.click(screen.getByRole('button', { name: 'Atlas' }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
-    fireEvent.click(screen.getByRole('button', { name: 'Shipped' }));
-    expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: work[3]!.workId });
-    expect(screen.getByRole('button', { name: 'Review me' }).getAttribute('aria-current')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Shipped' }).getAttribute('aria-current')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Worker task · 10 min' }));
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: tasks[3]!.taskId });
+    const current = [...document.querySelectorAll('[aria-current="true"]')];
+    expect(current).toHaveLength(1);
+    expect(current[0]?.textContent).toBe('Worker task · 5 min');
+    expect(current[0]?.closest('th')?.textContent).toContain('Started');
   });
 
-  it('copes with a row whose work item is not in the item map', () => {
+  it('lists nothing for an enemy whose task is missing from the item map, and names an unknown bot', () => {
     render(<ArenaListView model={model} bots={[]} items={new Map()} drawn={drawn} selection={null} onSelect={vi.fn()} />);
-    expect(rowsOf('Work')).toHaveLength(5);
-    expect(screen.getAllByText('No XP').length).toBeGreaterThan(0);
+    expect(within(screen.getByRole('table', { name: 'Tasks' })).queryAllByRole('row')).toHaveLength(1);
+    cleanup();
+    render(<ArenaListView model={model} bots={[]} items={items} drawn={drawn} selection={null} onSelect={vi.fn()} />);
+    expect(screen.getAllByText(/^Unknown bot \(/).length).toBeGreaterThan(0);
   });
 });

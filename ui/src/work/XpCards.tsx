@@ -3,7 +3,7 @@ import { LEVEL_NOTE, XP } from './copy';
 import { XpMeter } from './XpMeter';
 import type { XpView } from './useXp';
 
-const TITLES = [XP.acceptedWork, XP.xp, XP.level] as const;
+const TITLES = [XP.tasksCredited, XP.xp, XP.level] as const;
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -31,8 +31,8 @@ export function XpCards({ xp }: { xp: XpView }) {
   const summary = xp.summary;
   return (
     <div className="sa-cards">
-      <Card title={XP.acceptedWork}>
-        <p className="sa-work-xp-amount">{summary === null ? 0 : summary.acceptedWorkCount}</p>
+      <Card title={XP.tasksCredited}>
+        <p className="sa-work-xp-amount">{summary === null ? 0 : summary.creditedTaskCount}</p>
       </Card>
       <Card title={XP.xp}>
         <p>

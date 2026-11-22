@@ -23,16 +23,14 @@ export function canonicalArenaScenario<T extends string>(requested: string | nul
   return requested;
 }
 
-/** SC10-8 profile. 10 + 10 x 4 + 50 = 100 on-field items; 12 more are accepted inside the last 24 h. */
+/** FP-22 profile: 100 open tasks (30 on real working attempts, 70 no longer observed) and 12 credited inside the last 24 h. */
 export const ARENA_PERF_1 = {
   bots: 20,
   workingBots: 12,
   settledBots: 6,
   unknownBots: 2,
-  containers: 10,
-  childrenPerContainer: 4,
-  standaloneLeaves: 50,
-  recentlyAccepted: 12,
+  openTasks: 100,
+  recentlyCredited: 12,
   workingAttempts: 30,
   specters: 20,
 } as const;
@@ -71,63 +69,37 @@ export function perfBots(): BotSpec[] {
   });
 }
 
-export type PerfState = 'open' | 'awaiting-review' | 'blocked' | 'reopened' | 'accepted';
-
-export interface PerfItem {
+export interface PerfTask {
   n: number;
-  parent: number | null;
-  title: string;
-  state: PerfState;
-  ageMinutes: number;
-  /** The real working attempt this item links as `[bot, index]`; null when it links an ended synthetic attempt. */
-  workingAttempt: readonly [number, number] | null;
   bot: number;
-  milestones: boolean;
+  /** Credited tasks only: minutes since the task ended. */
+  ageMinutes: number;
+  /** Minutes the task has run (open) or ran (credited). Spread over all three size classes. */
+  runMinutes: number;
+  credited: boolean;
+  /** The real working attempt this task is built from as `[bot, index]`; null for a synthetic one. */
+  workingAttempt: readonly [number, number] | null;
 }
 
-const LEAF_PATTERN: readonly PerfState[] = [
-  'open', 'open', 'open', 'open', 'open', 'open', 'open', 'open', 'open',
-  'awaiting-review', 'awaiting-review', 'awaiting-review',
-  'blocked', 'blocked',
-  'reopened',
-];
-
-const pad = (n: number, width = 3): string => String(n).padStart(width, '0');
+const RUN_MINUTES: readonly number[] = [1, 4, 20];
 
 /**
- * n 1..10 containers (open), 11..50 children (container = 1 + floor((n - 11) / 4)), 51..100 standalone leaves,
- * 101..112 accepted. Leaf state by index i over children then standalone: i % 15 picks open (54), awaiting-review
- * (18), blocked (12) or reopened (6). The first 30 open leaves link one real working attempt each.
+ * n 1..100 open tasks, 101..112 credited. The first 30 open tasks sit on the 30 real working attempts of the perf roster;
+ * the other 70 are synthetic attempts that are no longer observed, held by the eight bots that are not working (13 to 20). Run time cycles small, medium, large by n.
  */
-export function perfItems(): PerfItem[] {
+export function perfTasks(): PerfTask[] {
   const workingAttempts: Array<readonly [number, number]> = [];
   for (let bot = 1; bot <= ARENA_PERF_1.workingBots; bot += 1) {
     for (let index = 0; index < workingAttemptCount(bot); index += 1) workingAttempts.push([bot, index]);
   }
-  const items: PerfItem[] = [];
-  for (let n = 1; n <= ARENA_PERF_1.containers; n += 1) {
-    items.push({ n, parent: null, title: `Perf encounter ${pad(n, 2)}`, state: 'open', ageMinutes: 200 + n, workingAttempt: null, bot: n, milestones: false });
+  const tasks: PerfTask[] = [];
+  for (let n = 1; n <= ARENA_PERF_1.openTasks; n += 1) {
+    const real = workingAttempts[n - 1] ?? null;
+    tasks.push({ n, bot: real === null ? 13 + (n % 8) : real[0], ageMinutes: 0, runMinutes: RUN_MINUTES[n % 3] ?? 4, credited: false, workingAttempt: real });
   }
-  let assigned = 0;
-  for (let i = 0; i < 90; i += 1) {
-    const n = 11 + i;
-    const state = LEAF_PATTERN[i % 15] ?? 'open';
-    const real = state === 'open' ? (workingAttempts[assigned] ?? null) : null;
-    if (real !== null) assigned += 1;
-    items.push({
-      n,
-      parent: n <= 50 ? 1 + Math.floor((n - 11) / 4) : null,
-      title: `Perf task ${pad(n)}`,
-      state,
-      ageMinutes: 100 + (90 - i),
-      workingAttempt: real,
-      bot: 1 + (n % ARENA_PERF_1.bots),
-      milestones: i % 9 === 0,
-    });
+  for (let k = 0; k < ARENA_PERF_1.recentlyCredited; k += 1) {
+    const n = ARENA_PERF_1.openTasks + 1 + k;
+    tasks.push({ n, bot: 1 + (k % ARENA_PERF_1.bots), ageMinutes: 20 + k * 3, runMinutes: RUN_MINUTES[n % 3] ?? 4, credited: true, workingAttempt: null });
   }
-  for (let k = 0; k < ARENA_PERF_1.recentlyAccepted; k += 1) {
-    const n = 101 + k;
-    items.push({ n, parent: null, title: `Perf done ${pad(n)}`, state: 'accepted', ageMinutes: 20 + k * 3, workingAttempt: null, bot: 1 + (k % ARENA_PERF_1.bots), milestones: false });
-  }
-  return items;
+  return tasks;
 }

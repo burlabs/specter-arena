@@ -34,16 +34,18 @@ describe('arena source guards', () => {
   });
 
   it('imports nothing from the fixtures and nothing that writes', () => {
-    const hits = sources.filter(({ text }) => /from '\.\.\/\.\.\/fixtures|useSummoning|workDecisionsPath|workAttemptsPath|workMilestonesPath|specterPortraitPath/.test(text)).map(({ file }) => file);
+    const hits = sources.filter(({ text }) => /from '\.\.\/\.\.\/fixtures|useSummoning|specterPortraitPath/.test(text)).map(({ file }) => file);
     expect(hits).toEqual([]);
   });
 
-  it('reaches the work write hook from one file, the inspector, and only hands it to the reused review panel', () => {
-    expect(sources.filter(({ text }) => /useWorkActions/.test(text)).map(({ file }) => file)).toEqual(['WorkInspector.tsx']);
-    const inspector = sources.find(({ file }) => file === 'WorkInspector.tsx')?.text ?? '';
-    expect(inspector.match(/useWorkActions\(\)/g)).toHaveLength(1);
-    expect(inspector).toMatch(/<ReviewPanel[\s\S]*actions=\{actions\}/);
-    expect(sources.filter(({ text }) => /\.(?:decide|create|linkAttempt|setMilestone)\(/.test(text)).map(({ file }) => file)).toEqual([]);
+  it('has no write hook, no work route and no manual review control anywhere in the arena (FP-22)', () => {
+    expect(sources.filter(({ text }) => /useWorkActions|ReviewPanel|workPath|workListPath|WORK_PATH|api\/work|\.(?:decide|create|linkAttempt|setMilestone)\(/.test(text)).map(({ file }) => file)).toEqual([]);
+    expect(sources.filter(({ text }) => /Accept work|Reject work|Reopen work|In-app acceptance/.test(text)).map(({ file }) => file)).toEqual([]);
+  });
+
+  it('reads tasks only through the two GET paths', () => {
+    expect(sources.filter(({ text }) => /tasksPath\(/.test(text)).map(({ file }) => file)).toEqual(['useArenaWork.ts']);
+    expect(sources.filter(({ text }) => /taskPath\(/.test(text)).map(({ file }) => file)).toEqual(['useTaskEvidence.ts']);
   });
 
   it('navigates only through the host hook and never with a raw location write', () => {

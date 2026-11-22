@@ -41,7 +41,7 @@ export function BotDetail({ item, collector, rosterRevision, attempts, xp, onLoa
   if (tab === 'source') {
     panel = <SourcePanel item={item} collector={collector} rosterRevision={rosterRevision} attempts={attemptsData} />;
   } else if (tab === 'progression') {
-    panel = <ProgressionPanel bindingId={item.bindingId} botName={nameOf(item)} />;
+    panel = <ProgressionPanel bindingId={item.bindingId} botName={nameOf(item)} total={xp.status === 'ready' ? xp.summary : null} />;
   } else if (attempts.status !== 'ready') {
     panel = attempts.status === 'idle' ? null : <AttemptsStatus state={attempts} onRetry={onRetry} />;
   } else if (tab === 'activity') {

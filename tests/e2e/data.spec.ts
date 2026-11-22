@@ -30,9 +30,9 @@ async function violations(page: Page) {
   return result.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target.join(' ')) }));
 }
 
-test('DT-1 the Data tab is the fifth section, labelled FIXTURE, with all four areas', async ({ page }) => {
+test('DT-1 the Data tab is the last section, labelled FIXTURE, with all four areas', async ({ page }) => {
   await openData(page, 'data');
-  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Work', 'Arena', 'Data']);
+  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Arena', 'Data']);
   await expect(dataPanel(page).locator('[data-mode="FIXTURE"]')).toHaveText('FIXTURE — demo data. Nothing here changes your real data.');
   for (const name of ['Collection', 'History', 'Export', 'Uploaded images']) await expect(section(page, name)).toBeVisible();
   await expect(page.getByText(/^History before .* was purged\. Coverage for that time is unknown\.$/)).toBeVisible();

@@ -1,19 +1,19 @@
 import { useCallback } from 'react';
-import type { WorkListItemV1 } from '../contracts/types';
-import { HostApiError, useHostApi, workListPath } from '../host';
+import type { TaskItemV1 } from '../contracts/types';
+import { HostApiError, tasksPath, useHostApi } from '../host';
 import { usePolled } from '../observatory/usePolled';
-import { ShapeError, parseWorkListPage } from '../work/model';
+import { parseTasksPage } from '../tasks/model';
+import { ShapeError } from '../work/model';
 
 export const STREAM_PAGES = 8;
 export const PAGE_SIZE = 25;
-const FIELD_STATES = ['open', 'awaiting-review', 'blocked', 'reopened'] as const;
 
 export interface ArenaWorkSnapshot {
-  /** The list projection: no decisions, review or evidence. The inspector reads the full item through `useWorkEvidence`. */
-  items: WorkListItemV1[];
+  /** Open tasks, then the latest credited and not-credited pages, each task once. The inspector reads one task through `useTaskEvidence`. */
+  items: TaskItemV1[];
   /** The largest `asOfMs` any page reported. The scene clock; never the browser clock. */
   asOfMs: number;
-  /** A stream still had a cursor after the page cap, so counts are a minimum. */
+  /** The open-task stream still had a cursor after the page cap, so counts are a minimum. */
   truncated: boolean;
   receivedAtMs: number;
 }
@@ -32,35 +32,34 @@ export function arenaFailureOf(error: unknown): ArenaWorkFailure {
 }
 
 /**
- * The arena's only poll of its own: four on-field streams read up to STREAM_PAGES pages each, plus one page of
- * accepted items. Every stream reads `view=list&order=updated`, so the pages hold the most recently changed items
- * first: when the page cap drops anything, it drops the stalest, and an item accepted today leads the accepted page
- * whatever its creation time. Any failing read fails the whole poll, so a snapshot never mixes ages; `usePolled` keeps the
- * last good snapshot and `failure` says it is stale. Every request is a GET.
+ * The arena's only poll of its own: the open-task stream read up to STREAM_PAGES pages, plus one page each of the
+ * latest credited and not-credited tasks. Every stream reads `GET /api/tasks` newest update first, so when the page cap
+ * drops anything, it drops the stalest. Any failing read fails the whole poll, so a snapshot never mixes ages;
+ * `usePolled` keeps the last good snapshot and `failure` says it is stale. Every request is a GET.
  */
 export function useArenaWork(): { state: ArenaWorkState; refresh: () => void } {
   const api = useHostApi();
   const load = useCallback(async (): Promise<ArenaWorkSnapshot> => {
     let asOfMs = 0;
     let truncated = false;
-    const readStream = async (state: string, pages: number): Promise<WorkListItemV1[]> => {
-      const out: WorkListItemV1[] = [];
+    const readStream = async (state: 'open' | 'credited' | 'not-credited', pages: number): Promise<TaskItemV1[]> => {
+      const out: TaskItemV1[] = [];
       let cursor: string | null = null;
       for (let page = 0; page < pages; page += 1) {
-        const body = parseWorkListPage(await api.getJson<unknown>(workListPath(state, PAGE_SIZE, cursor, 'updated')), 'updated');
+        const body = parseTasksPage(await api.getJson<unknown>(tasksPath({ state, limit: PAGE_SIZE, cursor })));
         out.push(...body.items);
         asOfMs = Math.max(asOfMs, body.asOfMs);
         cursor = body.nextCursor;
         if (cursor === null) return out;
       }
-      if (state !== 'accepted') truncated = true;
+      if (state === 'open') truncated = true;
       return out;
     };
-    const streams = await Promise.all([...FIELD_STATES.map((state) => readStream(state, STREAM_PAGES)), readStream('accepted', 1)]);
-    const newest = new Map<string, WorkListItemV1>();
+    const streams = await Promise.all([readStream('open', STREAM_PAGES), readStream('credited', 1), readStream('not-credited', 1)]);
+    const newest = new Map<string, TaskItemV1>();
     for (const item of streams.flat()) {
-      const known = newest.get(item.workId);
-      if (known === undefined || known.version < item.version) newest.set(item.workId, item);
+      const known = newest.get(item.taskId);
+      if (known === undefined || known.updatedAtMs < item.updatedAtMs) newest.set(item.taskId, item);
     }
     return { items: [...newest.values()], asOfMs, truncated, receivedAtMs: Date.now() };
   }, [api]);

@@ -1,6 +1,5 @@
 import type { SceneEnemy, SceneSpecter } from './sceneModel';
 import { PROGRESS_TEXT, STATE_TEXT } from './copy';
-import { stateView } from '../work/model';
 
 export type Stance = 'engaging' | 'at-rest' | 'coverage-unknown';
 export type MarkerKind = 'blocked' | 'evidence' | 'coverage-unknown' | 'outcome-accepted' | 'assistance' | 'awaiting-approval';
@@ -17,19 +16,13 @@ export const EFFECT_MAP: ReadonlyArray<{ fact: string; effect: string; changes: 
   { fact: 'Bot binding with an active Specter (specters)', effect: 'Specter portrait at a staging position', changes: 'none' },
   { fact: 'Bot binding without a Specter', effect: 'Placeholder token "Placeholder token, not a portrait"', changes: 'none' },
   { fact: 'Roster condition working, settled or unknown', effect: 'Specter stance: engaging, at rest or a coverage-unknown marker', changes: 'none' },
-  { fact: 'WorkItem on-field state, leaf', effect: 'Patchling enemy', changes: 'none' },
-  { fact: 'WorkItem with children', effect: 'Patchbrute encounter, children grouped around it', changes: 'none' },
-  { fact: 'Linked attempt working, bot working', effect: 'Engagement line from Specter to enemy; the hero attacks its enemy every 2.5 to 4 s and the enemy recoils (live activity, not progress)', changes: 'none' },
-  { fact: 'Milestone count rose between two visible polls', effect: 'The first working hero engaged on it casts once and the enemy recoils harder (a milestone the ledger recorded)', changes: 'none' },
+  { fact: 'Open task (a bot turn or a worker the bot started)', effect: 'Patchling minion; its size class follows the task\'s observed run time and never means progress, health or effort', changes: 'none' },
+  { fact: 'Task attempt working, bot working', effect: 'Engagement line from Specter to minion; the hero attacks its minion every 2.5 to 4 s and the minion recoils (live activity, not progress)', changes: 'none' },
   { fact: 'Bot waiting, Crew flag approval-pending', effect: 'Waiting marker on the Specter; it does not attack, and the inspector gives the reason', changes: 'none' },
   { fact: 'Collection paused', effect: 'No attacks or casts; a "Collection paused" plate over the field', changes: 'none' },
-  { fact: 'Milestones done and total', effect: 'Discrete count "N of M milestones"', changes: 'none' },
-  { fact: 'No milestones', effect: 'Indeterminate text "Progress unknown"', changes: 'none' },
-  { fact: 'blocked', effect: 'Blocked marker and the decision reason in the inspector', changes: 'none' },
-  { fact: 'awaiting-review', effect: 'Evidence marker "Awaiting your review" (in-app review, not a Crew approval)', changes: 'none' },
-  { fact: 'accepted, seen live between two visible polls', effect: 'Defeat animation once and the committed XP', changes: 'none' },
-  { fact: 'accepted, on load or after a gap', effect: 'Defeated pose without animation and the committed XP', changes: 'none' },
-  { fact: 'reopened', effect: 'Enemy returns; the correction shows in the inspector XP history', changes: 'none' },
+  { fact: 'Task credited, seen live between two visible polls', effect: 'Defeat animation once and the XP the task wrote', changes: 'none' },
+  { fact: 'Task credited, on load or after a gap', effect: 'Defeated pose without animation and the XP the task wrote', changes: 'none' },
+  { fact: 'Task not credited', effect: 'Leaves the field; the list view and the inspector show it with the reason', changes: 'none' },
 ];
 
 /** The stance follows the bot's roster condition. A bot with no running turn is "at rest", never idle or healthy. */
@@ -43,10 +36,7 @@ export function progressTextOf(progress: SceneEnemy['progress']): string {
 }
 
 function markerOf(enemy: SceneEnemy): MarkerKind | null {
-  if (enemy.defeated) return 'outcome-accepted';
-  if (enemy.blocked) return 'blocked';
-  if (enemy.state === 'awaiting-review') return 'evidence';
-  return enemy.engagedBy.length > 1 ? 'assistance' : null;
+  return enemy.defeated ? 'outcome-accepted' : null;
 }
 
 export function enemyEffect(enemy: SceneEnemy): EnemyEffect {
@@ -54,6 +44,6 @@ export function enemyEffect(enemy: SceneEnemy): EnemyEffect {
     pose: enemy.defeated ? 'defeated' : enemy.engagedBy.length > 0 ? 'engaged' : 'idle',
     marker: markerOf(enemy),
     progressText: progressTextOf(enemy.progress),
-    stateText: enemy.defeated ? STATE_TEXT.defeated : stateView(enemy.state).label,
+    stateText: enemy.defeated ? STATE_TEXT.defeated : enemy.state === 'not-credited' ? STATE_TEXT.notCredited : enemy.engagedBy.length > 0 ? STATE_TEXT.running : STATE_TEXT.open,
   };
 }
