@@ -25,7 +25,7 @@ const EDGE_MAX = 0.97;
 
 export const SLOT_COUNT = ENEMY_COLUMNS * ENEMY_ROWS;
 
-/** Two points are far enough apart for one cell when they differ by a whole cell in x or in y. The one rule the layout tests use. */
+/** Two points are far enough apart for one cell when they differ by a whole cell in x or in y. The one spacing rule: hero placement and the layout tests both use it. */
 export const apart = (a: Point, b: Point, cell: { x: number; y: number }): boolean => Math.abs(a.x - b.x) >= cell.x - 1e-9 || Math.abs(a.y - b.y) >= cell.y - 1e-9;
 
 const clampPoint = (point: Point): Point => ({ x: clamp(point.x, EDGE_MIN, EDGE_MAX), y: clamp(point.y, EDGE_MIN, EDGE_MAX) });

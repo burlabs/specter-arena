@@ -1,7 +1,3 @@
-import { TOKEN_CAPTION } from '../specters/copy';
-
-export const PLACEHOLDER_TOKEN = TOKEN_CAPTION;
-
 export const STATE_TEXT = {
   defeated: 'Defeated',
   notCredited: 'Not credited',

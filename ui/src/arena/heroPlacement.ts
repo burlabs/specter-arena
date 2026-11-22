@@ -1,3 +1,4 @@
+import { seedOf } from './exchangePlanner';
 import type { Point } from './sceneLayout';
 import { SPECTER_CELL, apart, specterSlot } from './sceneLayout';
 
@@ -6,16 +7,6 @@ export const HERO_REGION = { xMin: 0.06, xMax: 0.94, yMin: 0.6, yMax: 0.95 } as 
 export const PLACEMENT_TRIES = 12;
 /** Three staging rows of seven: y 0.95, 0.79 and 0.63, all inside `HERO_REGION`. */
 export const STAGING_CELLS = 21;
-
-/** FNV-1a over UTF-16 code units: a small, stable 32-bit hash. */
-export function hash32(text: string): number {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
 
 /** mulberry32: a 32-bit seeded generator that returns numbers in [0, 1). */
 export function mulberry32(seed: number): () => number {
@@ -43,7 +34,7 @@ const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 
 
 /**
  * Where each hero stands. Pure in `(previous, bindingIds, visitSeed)`: a hero that already has a valid point keeps it,
- * and each new one is drawn from its own stream `mulberry32(hash32(seed:id))`, so the result does not depend on the order
+ * and each new one is drawn from its own stream `mulberry32(seedOf(seed:id))` (the arena's shared FNV-1a hash), so the result does not depend on the order
  * heroes arrive in. Nothing here reads a role, a lane, a condition or progress.
  */
 export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: readonly string[], visitSeed: number): Map<string, Point> {
@@ -60,7 +51,7 @@ export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: re
   const fresh = ids.filter((id) => !next.has(id));
   fresh.forEach((id, index) => {
     const remaining = fresh.length - 1 - index;
-    const random = mulberry32(hash32(`${visitSeed >>> 0}:${id}`));
+    const random = mulberry32(seedOf(`${visitSeed >>> 0}:${id}`));
     const freeBefore = freeStagingCells(placed);
     let chosen: Point | null = null;
     for (let attempt = 0; attempt < PLACEMENT_TRIES && chosen === null; attempt += 1) {

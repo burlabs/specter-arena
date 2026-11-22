@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_REGION, PLACEMENT_TRIES, STAGING_CELLS, hash32, mulberry32, placeHeroes } from './heroPlacement';
+import { HERO_REGION, PLACEMENT_TRIES, STAGING_CELLS, mulberry32, placeHeroes } from './heroPlacement';
 import { SPECTER_CELL, apart, specterSlot } from './sceneLayout';
 import type { Point } from './sceneLayout';
 
@@ -12,14 +12,7 @@ const pairsTooClose = (points: readonly Point[]): number => {
 const inRegion = (p: Point): boolean => p.x >= HERO_REGION.xMin - 1e-9 && p.x <= HERO_REGION.xMax + 1e-9 && p.y >= HERO_REGION.yMin - 1e-9 && p.y <= HERO_REGION.yMax + 1e-9;
 const onStaging = (p: Point): boolean => Array.from({ length: STAGING_CELLS }, (_, i) => specterSlot(i)).some((cell) => Math.abs(cell.x - p.x) < 1e-9 && Math.abs(cell.y - p.y) < 1e-9);
 
-describe('hash32 and mulberry32', () => {
-  it('hash32 is stable and spreads nearby inputs', () => {
-    expect(hash32('')).toBe(0x811c9dc5);
-    expect(hash32('a')).toBe(0xe40c292c);
-    expect(hash32('1:bnd_a')).not.toBe(hash32('2:bnd_a'));
-    expect(hash32('x')).toBeGreaterThanOrEqual(0);
-  });
-
+describe('mulberry32', () => {
   it('mulberry32 repeats for one seed, differs across seeds and stays in [0, 1)', () => {
     const a = mulberry32(42);
     const b = mulberry32(42);
