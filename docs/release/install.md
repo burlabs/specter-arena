@@ -2,17 +2,17 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
+Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
 
 Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "to be confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
 
 ## 1. Who this is for and what you get
 
-This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with five tabs: Roster, Specters, Work, Arena and Data. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-3 sitting.
+This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
 
 ## 2. Requirements
 
-- Kiro Crew 0.13.0 is the host of the RC-3 sitting: `kirocrew --version` on the owner's machine read `kirocrew 0.13.0` on 2026-11-20. Kiro Crew 0.12.2 was the version the install facts below were first read from (`kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18). Nothing is confirmed on an installed RC-3 until `docs/release/oa-5-result.md` exists. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
+- Kiro Crew 0.13.1 is the host of the RC-4 sitting. Kiro Crew 0.13.0 hosted the RC-3 test, and Kiro Crew 0.12.2 was the version the install facts below were first read from (`kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18). Nothing is confirmed on an installed RC-4 until `docs/release/oa-5-result.md` exists. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
 - macOS or Linux.
 - Network access to PyPI on the first enable. Crew installs the packages in `requirements.txt` with `pip --target` (`kiro_crew/apps/backend_runtime/provisioning.py`).
 - At least one Crew bot, to see a populated roster (`docs/compatibility/monitoring-scope.md`).
@@ -74,13 +74,18 @@ To revoke trust later, use Settings, Security, Third-party apps. The dashboard s
 - The page opens at `/apps/specter-arena` in the Crew dashboard.
 - The first enable can take longer while Python packages download (`provisioning.py`).
 - The backend answers `/health` (`app.json` `backend.healthCheck`).
-- With no bots, the roster is empty. With bots, each appears with a plain condition: "Working", "No turn running" or "Unknown".
-- "Waiting on you" and "Blocked" are not observable bot states, so the app never shows them for a bot. Work you mark blocked is a separate, user-set state.
-- The arena is a read-only view of what the other tabs record.
+- With no bots, the roster is empty. With bots, each appears with a plain condition: "Working", "Waiting on you", "No turn running" or "Unknown". "Waiting on you" is read from Crew 0.13.0 source and not live-tested (KL-21).
+- "Blocked" is not an observable bot state, so the app never shows it for a bot.
+- A new bot shows "No Specter yet" until you assign one (section 7).
+- The arena is a read-only view of what the app observed. XP appears there when a task ends cleanly (section 7).
 
-## 7. Heroes and avatars
+## 7. Specters, tasks and XP
 
-Each bot gets one of 11 fixed heroes when it is first seen, in first-seen order. A hero's name, epithet and personality are fixed and ship with the app. You change only the avatar: pick a bundled portrait, upload a PNG, or reset to the hero portrait. No model is called and nothing is billed.
+**Assigning a Specter is your step.** A new bot starts with no Specter. The first time you open the app after a bot appears, a dialog walks you through the unassigned bots: for each you pick one of the 11 fixed heroes (the ones held least often are listed first), or press "Randomize all unassigned". You can skip a bot and assign it later from the Specters tab ("Assign Specters (N)"), the Roster or the bot's own Specter tab. An assignment is final: there is no reassign and no un-assign. A hero's name, epithet and personality are fixed and ship with the app. You change only the avatar, under Roster, the bot, then Specter: pick a bundled portrait, upload a PNG, or reset to the hero portrait. No model is called and nothing is billed. Bots that already had a hero in an earlier build keep it. A bot with no Specter is not drawn on the Arena, and the Arena rail lists it under "No Specter yet".
+
+**The Specters tab** is a showcase of the 11 heroes: a large idle sprite, the epithet and personality, Attack and Cast preview buttons (off when the OS asks for reduced motion), and a list of the bots that hold the hero. It also links to the hero's optional avatar pack on GitHub. The packs are not in the release artifact. Importing one into Crew is done in your own Crew dashboard (Avatar, Customize, Library, Import), and the app never does it.
+
+**Tasks and XP are automatic.** The app builds a task from each worker session a bot starts, and from a bot's own turn once it has run 60 seconds. The Arena draws each task as a minion, small, medium or large by run time (under 2 minutes, under 15 minutes, 15 minutes or more). Size is for looks only. When a task ends cleanly, and the app was watching the whole time, with no approval or question pending at the end, it is "Credited" and its bot earns 10 XP plus 1 XP for each full 2 minutes of run time, at most 30 (`xp-policy-2`). Otherwise it is "Not credited", with one of three reasons: the end could not be read, a collection gap overlapped it, or something was waiting on you at the end. Nobody accepts anything, and there is no Work tab. XP follows what the app observed. It is not a check that the outcome was right. Tokens are never XP. XP from manual acceptance in earlier builds stays as history.
 
 ## 8. Update
 
@@ -107,7 +112,7 @@ What stays:
 
 | Item | Location | After a default uninstall |
 |---|---|---|
-| Database (Specters, work items, XP) | `~/.kiro/crew/apps/specter-arena/data/store/specter-arena.db`, with `-wal` and `-shm` files while in use | Kept |
+| Database (Specters, tasks, XP, earlier work items) | `~/.kiro/crew/apps/specter-arena/data/store/specter-arena.db`, with `-wal` and `-shm` files while in use | Kept |
 | Backups (pre-migration, pre-purge, pre-cleanup) | `~/.kiro/crew/apps/specter-arena/data/store/backups/` | Kept |
 | Exports from the Data tab | `~/.kiro/crew/apps/specter-arena/data/exports/` | Kept |
 | Provisioned Python packages | `data/.kirocrew-deps*` | Removed |
@@ -115,7 +120,7 @@ What stays:
 
 (`backend/specter_arena/store/location.py`: `DB_FILENAME`, `STORE_DIRNAME`, `BACKUPS_DIRNAME`.)
 
-Reinstalling restores your Specters, work items and XP, asks for trust again and starts disabled (`install_app` preserves `data/`).
+Reinstalling restores your Specters, tasks and XP, asks for trust again and starts disabled (`install_app` preserves `data/`).
 
 To remove everything, run `kirocrew app uninstall specter-arena --purge-data`. This deletes the whole folder including the database, the backups and `data/exports/`, and cannot be undone. To keep a copy first, stop the app (disable it), then copy the whole `data` folder, not only the `.db` file. Recent writes can sit in the `-wal` file beside it:
 
@@ -176,6 +181,6 @@ A plain clone is not the supported route for judges. Crew's registry path runs `
 
 The app stores only what `docs/compatibility/monitoring-scope.md` allows. It reads bot names and the scope described there, and never a bot's memory or notes. See that file for the exact rules; this page does not restate them.
 
-The Specters tab sends nothing to any model. A hero's text is fixed and shipped with the app.
+The Specters tab sends nothing to any model. A hero's text is fixed and shipped with the app. The only outside address the app offers is the link to a hero's avatar pack on GitHub, which opens when you click it.
 
 Threats considered and what is disclosed: `docs/release/threat-model.md`.
