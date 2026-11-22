@@ -1,4 +1,4 @@
-import type { HeroId } from '../contracts/types';
+import type { HeroId, HeroesItemV1 } from '../contracts/types';
 
 export const heroSpriteKey = (heroId: string): string => `hero-${heroId}-sprite`;
 export const heroThumbnailKey = (heroId: string): string => `hero-${heroId}-thumbnail`;
@@ -44,3 +44,10 @@ const idleLengths: Readonly<Record<string, number>> = HERO_IDLE_MS;
 export const anchorOf = (heroId: string): readonly [number, number] => anchors[heroId] ?? CENTER_ANCHOR;
 
 export const idleMsOf = (heroId: string): number => idleLengths[heroId] ?? DEFAULT_IDLE_MS;
+
+/** Fewest holders first, ties in roster order (the order `heroes.v1` lists them). Stable. */
+export const heroesByHeld = (heroes: readonly HeroesItemV1[]): HeroesItemV1[] =>
+  heroes
+    .map((hero, index) => ({ hero, index }))
+    .sort((a, b) => a.hero.assignedCount - b.hero.assignedCount || a.index - b.index)
+    .map(({ hero }) => hero);

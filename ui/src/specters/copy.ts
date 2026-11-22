@@ -3,12 +3,13 @@ export const SPECTER_ROW_PREFIX = 'Specter: ';
 export const TOKEN_CAPTION = 'Placeholder token, not a portrait';
 export const TOKEN_FAILED_CAPTION = 'Portrait could not be loaded. Showing a placeholder token.';
 export const COSMETIC_NOTE = "A Specter is a name and a picture. It never changes this bot's setup, permissions, or work.";
-export const HERO_NOTE = 'This hero came with the bot when it first appeared. Its name and personality are fixed. You can change the avatar.';
+export const HERO_NOTE = 'This hero was assigned to the bot. Its name and personality are fixed. You can change the avatar.';
 export const HERO_PENDING = 'This bot has not been given a hero yet. It appears at the next refresh.';
 
 export const ACTIONS = {
   avatar: 'Change avatar',
   checkAgain: 'Check again',
+  assign: 'Assign a Specter',
 } as const;
 
 export const ERROR_WORDS: Readonly<Record<string, string>> = {
@@ -24,19 +25,18 @@ export const ERROR_WORDS: Readonly<Record<string, string>> = {
   store_not_ready: 'The app database is still starting. Try again in a moment.',
   store_unavailable: "The app's database is unavailable. Nothing was changed.",
   offline: 'Could not reach the app backend. Nothing was changed.',
+  no_hero: 'This bot has no Specter yet.',
+  invalid_response: 'The app backend sent an answer this version cannot read. Nothing was changed.',
 };
 
 export const errorWords = (code: string): string => ERROR_WORDS[code] ?? `Something went wrong (${code}).`;
 
 export const UNSUPPORTED_BACKEND = 'This version of the app backend does not support Specters yet.';
 export const LOADING_SPECTERS = 'Loading Specters…';
-export const SELECT_A_BOT = 'Select a bot to see its Specter.';
-export const BOT_GONE = 'This bot is no longer on the roster.';
 export const CLIENT_NOT_PNG = 'Only PNG images can be used.';
 export const CLIENT_TOO_LARGE = 'That image is larger than 1 MB.';
 
 export const FIELD_LABELS = {
-  bot: 'Bot',
   progression: 'Progression',
   personality: 'Personality',
   appearance: 'Appearance',
@@ -53,25 +53,46 @@ export const PICKER = {
   failed: 'Portraits could not be loaded.',
 } as const;
 
-export const LIST = { collectionLabel: 'Specter collection', detailLabel: 'Specter detail', noBots: 'No bots are on the roster yet', noBotsBody: 'Specters belong to bots. Create or open a bot in Crew, then refresh.' } as const;
+export const ASSIGN = {
+  dialogLabel: 'Assign Specters',
+  title: (bot: string): string => `Choose a Specter for ${bot}`,
+  note: 'A bot keeps its Specter once assigned.',
+  step: (index: number, total: number): string => `Step ${index} of ${total}`,
+  heroesLabel: 'Heroes',
+  held: (count: number): string => (count === 0 ? 'not held yet' : `held by ${count}`),
+  assign: (hero: string): string => `Assign ${hero}`,
+  assigning: 'Assigning…',
+  skip: 'Skip for now',
+  randomize: 'Randomize all unassigned',
+  progress: (done: number, total: number): string => `Assigning ${done} of ${total}…`,
+  close: 'Close',
+  done: 'Done',
+  summaryTitle: 'Specters assigned',
+  summary: (assigned: number, skipped: number, failed: number): string => `${assigned} assigned, ${skipped} skipped${failed > 0 ? `, ${failed} could not be assigned` : ''}`,
+  skippedHint: 'Skipped bots can be assigned later from the Specters tab or the Roster.',
+  heroesLoading: 'Loading heroes…',
+  heroesFailed: 'The heroes could not be loaded. You can still randomize.',
+  botGone: 'This bot is no longer on the roster.',
+  detailHelp: 'Pick one of the 11 heroes, or let the app pick. A bot keeps its Specter once assigned.',
+} as const;
 
-export const COLLECTION = {
-  searchLabel: 'Search Specters',
-  searchPlaceholder: 'Search hero, epithet or bot',
-  filterLabel: 'Filter',
-  sortLabel: 'Sort',
-  filters: { all: 'All', assigned: 'Assigned', unassigned: 'Unassigned', avatar: 'Avatar changed' },
-  sorts: { roster: 'Roster order', name: 'Name', level: 'Level', xp: 'XP' },
-  count: (shown: number, total: number): string => `Showing ${shown} of ${total}`,
-  sortHeld: 'Level and XP order wait for XP to load. Showing roster order.',
-  noBotYet: 'No bot yet',
-  emptyTitle: 'No Specters match',
-  emptyBody: 'Try another name or epithet, or clear the search and filters.',
-  clear: 'Clear search and filters',
-  everyHeroTitle: 'Every hero has a bot',
-  everyHeroBody: 'Each of the 11 heroes is already held by a bot.',
-  heroesLoading: 'Loading heroes without a bot…',
-  heroesFailed: 'Heroes without a bot could not be loaded. Bot cards are not affected.',
-  heroesUnsupported: 'This version of the app backend cannot list heroes without a bot yet. Bot cards are not affected.',
+export const SHOWCASE = {
+  label: 'Specter showcase',
+  heading: 'Specters',
+  intro: 'The 11 heroes. Their names and personalities are fixed.',
+  assignButton: (count: number): string => `Assign Specters (${count})`,
+  stageLabel: (name: string): string => `${name}, large preview`,
+  attack: 'Attack',
+  cast: 'Cast',
+  motionOff: 'Attack and Cast are off because reduced motion is requested.',
+  previewNote: 'These are previews. They do not show any bot’s work.',
+  holders: (count: number): string => `Bots with this Specter (${count})`,
+  noHolders: (name: string): string => `No bot holds ${name} yet.`,
+  showInRoster: (bot: string): string => `Show ${bot} in the Roster`,
+  heroesLoading: 'Loading heroes…',
+  heroesFailed: 'The heroes could not be loaded.',
+  heroesUnsupported: 'This version of the app backend cannot list the heroes yet.',
   retry: 'Retry',
 } as const;
+
+export const ROSTER = { assign: 'Assign' } as const;
