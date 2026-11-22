@@ -22,6 +22,7 @@ from .work_fakes import token
 REGISTRY = load_registry()
 WID = "wrk_" + "a" * 24
 BID = "bnd_" + "b" * 24
+TID = "tsk_" + "c" * 24
 ROUTES_FILE = Path(__file__).resolve().parents[1] / "specter_arena" / "work_routes.py"
 
 
@@ -74,6 +75,8 @@ ROUTES: list[tuple[str, str, Any]] = [
     ("POST", f"/api/work/{WID}/attempts", {"expectedVersion": 1}),
     ("POST", f"/api/work/{WID}/milestones", {"expectedVersion": 1}),
     ("POST", f"/api/work/{WID}/decisions", {"requestId": "submit-00000001"}),
+    ("GET", "/api/tasks" + QUERY, None),
+    ("GET", f"/api/tasks/{TID}", None),
     ("GET", "/api/xp", None),
     ("GET", f"/api/roster/{BID}/xp?cursor=c&limit=7", None),
 ]
@@ -88,6 +91,12 @@ EXPECTED_CALLS: list[tuple[str, tuple[Any, ...], dict[str, Any]]] = [
     ("link_attempt", (WID, {"expectedVersion": 1}), {}),
     ("set_milestone", (WID, {"expectedVersion": 1}), {}),
     ("decide", (WID, {"requestId": "submit-00000001"}), {}),
+    (
+        "list_tasks",
+        (),
+        {"state": "open", "binding_id": BID, "cursor": "abc", "limit": "5"},
+    ),
+    ("get_task", (TID,), {}),
     ("xp_summaries", (), {}),
     ("xp_history", (BID,), {"cursor": "c", "limit": "7"}),
 ]
@@ -105,6 +114,8 @@ def test_the_route_table_is_exactly_the_contract() -> None:
     )
     assert pairs == sorted(
         [
+            ("GET", "/api/tasks"),
+            ("GET", "/api/tasks/{task_id}"),
             ("GET", "/api/work"),
             ("POST", "/api/work"),
             ("GET", "/api/work/{work_id}"),
@@ -417,7 +428,7 @@ def uncapped_posts(source: str, post_handlers: set[str]) -> list[str]:
 def test_every_public_handler_is_signed_and_every_post_handler_is_capped() -> None:
     source = ROUTES_FILE.read_text(encoding="utf-8")
     found = handler_decorators(source)
-    assert len(found) == 8
+    assert len(found) == 10
     assert unsigned_handlers(source) == []
     posts = {route.endpoint.__name__ for route in mounted() if "POST" in (route.methods or set())}
     assert posts == {"create_work", "link_attempt", "set_milestone", "decide"}

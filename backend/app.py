@@ -33,11 +33,12 @@ async def lifespan(started: Starlette) -> AsyncIterator[None]:
         from .specter_arena.specters.boot import boot_specters
 
         # Lazy: `import backend.app` loads no work module and no store module.
-        from .specter_arena.work.boot import boot_work
+        from .specter_arena.work.boot import boot_tasks, boot_work
 
         started.state.collector = await boot_collector(store_runtime.store)
         started.state.specters = await boot_specters(store_runtime.store)
         started.state.work = boot_work(store_runtime.store)
+        await boot_tasks(store_runtime.store)
 
         # Lazy: `import backend.app` loads no lifecycle or store module.
         from .specter_arena.lifecycle.boot import boot_lifecycle

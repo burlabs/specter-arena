@@ -8,9 +8,11 @@ from typing import Any, Final, TypeVar
 from ..specters.text import clean_text
 from ..store import Store
 from ..store import errors as store_errors
+from ..store import tasks as db_tasks
 from ..store import work as db_work
 from ..store import xp as db_xp
 from ..store import xp_policy as policy
+from .task_wire import task_item_wire, tasks_wire, xp_summaries_v3_wire
 from .wire import (
     work_item_wire,
     work_items_v2_wire,
@@ -32,7 +34,9 @@ WORK_PAGE: Final = db_work.MAX_LIST_PAGE
 HISTORY_PAGE: Final = db_xp.MAX_HISTORY_PAGE
 XP_PAGE: Final = db_xp.MAX_SUMMARY_PAGE
 VIEWS: Final = frozenset({"list"})
-XP_VIEWS: Final = frozenset({"paged"})
+XP_VIEWS: Final = frozenset({"paged", "tasks"})
+TASK_PAGE: Final = db_tasks.MAX_TASKS_PAGE
+TASK_STATES: Final = frozenset(db_tasks.STATES)
 ORDERS: Final = frozenset(db_work.LIST_ORDERS)
 MAX_LIMIT_DIGITS: Final = 6
 RAW_TEXT_FACTOR: Final = 4
@@ -77,6 +81,7 @@ def _invalid() -> WorkError:
 _ERRORS: Final[tuple[tuple[type[Exception], str, int], ...]] = (
     (store_errors.VersionConflict, "version_conflict", 409),
     (store_errors.UnknownWork, "unknown_work", 404),
+    (store_errors.UnknownTask, "unknown_task", 404),
     (store_errors.UnknownAttempt, "unknown_attempt", 404),
     (store_errors.UnknownBinding, "unknown_binding", 404),
     (store_errors.AttemptAlreadyLinked, "attempt_already_linked", 409),
@@ -251,8 +256,9 @@ class WorkService:
         self, *, view: str | None = None, cursor: str | None = None, limit: str | None = None
     ) -> dict[str, Any]:
         """`xp-summaries.v1` (capped at 500, no cursor) without `view`; `xp-summaries.v2` pages
-        of `XP_PAGE` for `view=paged`. `cursor` and `limit` only apply to the paged view and are
-        ignored without it, as before."""
+        of `XP_PAGE` for `view=paged`; `xp-summaries.v3` (both ledgers) for `view=tasks`.
+        `cursor` and `limit` only apply to the paged views and are ignored without a view, as
+        before."""
         if view is not None and view not in XP_VIEWS:
             raise WorkError("invalid_view", 400)
         if view is None:
@@ -260,8 +266,40 @@ class WorkService:
             return xp_summaries_wire(await self._call(db_xp.xp_summaries), as_of_ms)
         size = self._limit(limit, XP_PAGE)
         as_of_ms = self._clock()
+        if view == "tasks":
+            summaries = await self._call(db_xp.xp_summaries_v2_page, cursor=cursor, limit=size)
+            return xp_summaries_v3_wire(summaries, as_of_ms)
         page = await self._call(db_xp.xp_summaries_page, cursor=cursor, limit=size)
         return xp_summaries_v2_wire(page, as_of_ms)
+
+    async def list_tasks(
+        self,
+        *,
+        state: str | None,
+        binding_id: str | None,
+        cursor: str | None,
+        limit: str | None,
+    ) -> dict[str, Any]:
+        """`tasks.v1`: automatic tasks, newest change first, 25 a page at most."""
+        if state is not None and state not in TASK_STATES:
+            raise WorkError("invalid_state", 400)
+        binding = None if binding_id is None else self._binding(binding_id)
+        size = self._limit(limit, TASK_PAGE)
+        as_of_ms = self._clock()
+        page = await self._call(
+            db_tasks.task_page,
+            state=state,
+            binding_id=binding,
+            cursor=cursor,
+            limit=size,
+            as_of_ms=as_of_ms,
+        )
+        return tasks_wire(page, as_of_ms)
+
+    async def get_task(self, task_id: str) -> dict[str, Any]:
+        """One `task-item.v1`; an id the store does not hold is `unknown_task` (404)."""
+        view = await self._call(db_tasks.get_task, task_id, as_of_ms=self._clock())
+        return task_item_wire(view)
 
     async def xp_history(
         self, binding_id: str, *, cursor: str | None, limit: str | None

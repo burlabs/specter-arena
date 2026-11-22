@@ -261,7 +261,7 @@ def test_a_cursor_from_the_other_order_or_from_v1_is_a_400_invalid_cursor(
 
 
 def test_the_view_and_order_values_are_the_ones_the_service_names() -> None:
-    assert {"list"} == VIEWS and {"created", "updated"} == ORDERS and {"paged"} == XP_VIEWS
+    assert {"list"} == VIEWS and {"created", "updated"} == ORDERS and {"paged", "tasks"} == XP_VIEWS
 
 
 # --- signing covers the query ---------------------------------------------------------------------

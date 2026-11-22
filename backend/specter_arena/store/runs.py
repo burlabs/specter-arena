@@ -9,6 +9,7 @@ from .errors import StoreUsageError, UnknownRun
 from .guard import translate_errors
 from .records import COVERAGE_REASONS, CoverageMark, KnownBinding, Outcome, RunStart
 from .store import Store
+from .tasks import sweep_guarded
 from .validate import is_run_id, is_time_ms
 
 
@@ -152,6 +153,8 @@ def heartbeat(store: Store, *, run_id: str, now_ms: int) -> None:
             " WHERE run_id = ?",
             (now_ms, run_id),
         )
+        # A bot turn that has now run 60 s becomes a task without waiting for another row.
+        sweep_guarded(conn, now_ms)
 
 
 def end_run(store: Store, *, run_id: str, now_ms: int, reason: str) -> None:

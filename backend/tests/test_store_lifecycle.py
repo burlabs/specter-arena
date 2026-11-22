@@ -91,7 +91,7 @@ def test_a_v8_store_migrates_to_v9_with_one_pre_migrate_backup(tmp_path: Path) -
         ).fetchall()
     }
     conn.close()
-    opened = open_store(data_dir)
+    opened = open_store(data_dir, migrations=PACKAGED[:9])
     try:
         assert opened.status() == StoreStatus("ready", 9, 9)
         with opened.read() as live:
@@ -188,7 +188,7 @@ def test_a_running_purge_still_cannot_delete_identity_heroes_work_or_xp(
 def test_every_other_delete_guard_is_byte_for_byte_what_it_was_at_v8(tmp_path: Path) -> None:
     """Migration 0009 replaces three guards; no other trigger and no table definition changes."""
     old = open_store(tmp_path / "old", migrations=PACKAGED[:8])
-    new = open_store(tmp_path / "new")
+    new = open_store(tmp_path / "new", migrations=PACKAGED[:9])
     try:
         sql = "SELECT name, sql FROM sqlite_master WHERE type IN ('trigger', 'table') ORDER BY name"
         before = {name: text for name, text in query(old, sql)}
@@ -661,7 +661,7 @@ def test_an_export_is_a_verified_closed_owner_only_copy_in_the_exports_directory
     store = build(tmp_path).store
     made = export_database(store)
     path = tmp_path / "data" / "exports" / made.file_name
-    assert re.fullmatch(r"export-v9-\d{8}T\d{12}Z\.db", made.file_name)
+    assert re.fullmatch(r"export-v10-\d{8}T\d{12}Z\.db", made.file_name)
     assert path.is_file() and made.byte_length == path.stat().st_size > 0
     import hashlib
 

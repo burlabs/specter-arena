@@ -10,7 +10,7 @@ from .errors import InvalidCursor, StoreUsageError, UnknownBinding
 from .guard import translate_errors
 from .paging import MAX_LIMIT, Page, build_page, clamp_limit, decode_cursor
 from .store import Store
-from .xp_policy import LEVEL_TABLE_VERSION, POLICY_VERSION, level_for
+from .xp_policy import LEVEL_TABLE_VERSION, POLICY_VERSION, TASK_POLICY_VERSION, level_for
 
 MAX_SUMMARIES = 500
 MAX_HISTORY_PAGE = 50
@@ -33,6 +33,22 @@ class XpSummary:
     level_floor_xp: int
     next_level_xp: int | None
     accepted_work_count: int
+    policy_version: str
+    level_table_version: str
+
+
+@dataclass(frozen=True, slots=True)
+class XpSummaryV2:
+    """One binding's progression over both ledgers (`xp-policy-1` entries and `xp-policy-2` task
+    awards), derived at read time. `accepted_work_count` counts legacy work only."""
+
+    binding_id: str
+    total_xp: int
+    level: int
+    level_floor_xp: int
+    next_level_xp: int | None
+    accepted_work_count: int
+    credited_task_count: int
     policy_version: str
     level_table_version: str
 
@@ -146,6 +162,53 @@ def xp_summaries_page(store: Store, *, cursor: str | None, limit: int | None) ->
     with translate_errors(), store.read() as conn:
         rows = conn.execute(_SUMMARIES_PAGE_SQL, {"after": after, "n": size + 1}).fetchall()
     views = [_summary(str(b), int(total), int(count)) for b, total, count in rows]
+    return build_page(views, size, lambda v: (v.binding_id,))
+
+
+def _summary_v2(binding_id: str, total: int, accepted: int, credited_tasks: int) -> XpSummaryV2:
+    level, floor, following = level_for(total)
+    return XpSummaryV2(
+        binding_id=binding_id,
+        total_xp=total,
+        level=level,
+        level_floor_xp=floor,
+        next_level_xp=following,
+        accepted_work_count=accepted,
+        credited_task_count=credited_tasks,
+        policy_version=TASK_POLICY_VERSION,
+        level_table_version=LEVEL_TABLE_VERSION,
+    )
+
+
+# Bindings with an entry in either ledger. `acc` counts legacy work with net XP above zero;
+# the two totals add because a task award is never negative and never corrected.
+_SUMMARIES_V2_SQL = """
+WITH members AS (
+  SELECT binding_id FROM xp_entry UNION SELECT binding_id FROM task_xp_entry
+)
+SELECT m.binding_id,
+  COALESCE((SELECT sum(amount) FROM xp_entry WHERE binding_id = m.binding_id), 0)
+    + COALESCE((SELECT sum(amount) FROM task_xp_entry WHERE binding_id = m.binding_id), 0),
+  (SELECT count(*) FROM (SELECT work_id FROM xp_entry WHERE binding_id = m.binding_id
+   GROUP BY work_id HAVING sum(amount) > 0)),
+  (SELECT count(*) FROM task_xp_entry WHERE binding_id = m.binding_id)
+FROM members m
+WHERE (:after IS NULL OR m.binding_id > :after)
+ORDER BY m.binding_id
+LIMIT :n
+"""
+
+
+def xp_summaries_v2_page(
+    store: Store, *, cursor: str | None, limit: int | None
+) -> Page[XpSummaryV2]:
+    """Bindings with at least one entry in either ledger, ascending by binding id,
+    `MAX_SUMMARY_PAGE` a page at most, totals over both ledgers (`xp-summaries.v3`)."""
+    size = clamp_limit(limit, default=MAX_SUMMARY_PAGE, maximum=MAX_SUMMARY_PAGE)
+    after = _summary_after(cursor)
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(_SUMMARIES_V2_SQL, {"after": after, "n": size + 1}).fetchall()
+    views = [_summary_v2(str(b), int(total), int(acc), int(tasks)) for b, total, acc, tasks in rows]
     return build_page(views, size, lambda v: (v.binding_id,))
 
 
