@@ -213,9 +213,22 @@ describe('packageRelease content', () => {
     assert.doesNotMatch(readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8'), /docs\/images\//);
   });
 
-  it('excludes only docs/images/ from the artifact', () => {
-    assert.ok(RELEASE_EXCLUDED.test('docs/images/banner.png'));
-    for (const path of ['docs/release/install.md', 'ui/icons/logo-active@2x.png', 'x/docs/images/a.png']) assert.equal(RELEASE_EXCLUDED.test(path), false, path);
+  it('leaves the avatar packs out of the artifact', () => {
+    const repo = gitRepo(baseFiles({ 'avatar-packs/README.md': 'packs\n', 'avatar-packs/index.json': '{}\n', 'avatar-packs/packs/specters-vell.pack.json': '{}\n' }));
+    const result = pack(repo);
+    assert.equal(result.code, 0, result.text);
+    const root = extract(tarballIn(result.out));
+    const dir = join(root, /** @type {string} */ (readdirSync(root)[0]));
+    assert.equal(existsSync(join(dir, 'avatar-packs')), false);
+    assert.ok(existsSync(join(dir, 'LICENSE')));
+    assert.doesNotMatch(readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8'), /avatar-packs\//);
+    const listing = execFileSync('tar', ['-tzf', tarballIn(result.out)], { encoding: 'utf8' });
+    assert.doesNotMatch(listing, /avatar-packs/);
+  });
+
+  it('excludes only docs/images/ and avatar-packs/ from the artifact', () => {
+    for (const path of ['docs/images/banner.png', 'avatar-packs/index.json', 'avatar-packs/packs/specters-bur.pack.json']) assert.ok(RELEASE_EXCLUDED.test(path), path);
+    for (const path of ['docs/release/install.md', 'ui/icons/logo-active@2x.png', 'x/docs/images/a.png', 'x/avatar-packs/a.json', 'avatar-packs-notes.md']) assert.equal(RELEASE_EXCLUDED.test(path), false, path);
   });
 
   it('refuses a commit that lacks a sidebar icon', () => {

@@ -293,6 +293,20 @@ test.describe('the showcase', () => {
     await expect(page.getByRole('region', { name: 'Bot detail' }).getByRole('heading', { level: 2, name: 'Atlas' })).toBeVisible();
   });
 
+  test('offers the chosen hero\u2019s avatar pack as a link and calls nothing', async ({ page }) => {
+    await open(page, 'specters', 'Specters');
+    const link = showcase(page).getByRole('link', { name: 'Download Vell\u2019s avatar pack' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', 'https://github.com/burlabs/specter-arena/blob/main/avatar-packs/packs/specters-vell.pack.json');
+    await expect(showcase(page).getByText('Use this Specter as your Crew avatar: download its avatar pack, then in Crew open Avatar → Customize → Library → Import.')).toBeVisible();
+    await showcase(page).getByRole('radio', { name: /^bur/ }).check();
+    await expect(showcase(page).getByRole('link', { name: 'Download bur\u2019s avatar pack' })).toHaveAttribute('href', /specters-bur\.pack\.json$/);
+    await expect(showcase(page).locator('.sa-showcase__pack code')).toHaveText(/specters-bur\.pack\.json$/);
+    expect(await writes(page)).toEqual([]);
+    const requested = await page.evaluate(() => ((window as unknown as { __specterFixtureCalls?: { path: string }[] }).__specterFixtureCalls ?? []).map((call) => call.path));
+    expect(requested.filter((path) => path.includes('appearances'))).toEqual([]);
+  });
+
   test('Attack and Cast play once and return to idle, and nothing is written', async ({ page }) => {
     await open(page, 'specters', 'Specters');
     const stage = showcase(page).locator('.sa-showcase__stage');

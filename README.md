@@ -49,6 +49,24 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 
 Judges and users install a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
 
+## Kiro Crew avatar packs (optional)
+
+The repository also holds an optional set of Kiro Crew avatar packs, one for each of the 11 Specters. A pack is a Crew avatar appearance you can give to any of your bots. It is separate from Specter Arena's hero assignment: the app never installs or assigns these packs, and they are not part of the release artifact.
+
+- [Vell](avatar-packs/packs/specters-vell.pack.json)
+- [Stitch](avatar-packs/packs/specters-stitch.pack.json)
+- [Reeve](avatar-packs/packs/specters-reeve.pack.json)
+- [Rattle](avatar-packs/packs/specters-rattle.pack.json)
+- [Ember](avatar-packs/packs/specters-ember.pack.json)
+- [Shard](avatar-packs/packs/specters-shard.pack.json)
+- [Poly](avatar-packs/packs/specters-poly.pack.json)
+- [Tide](avatar-packs/packs/specters-tide.pack.json)
+- [Lume](avatar-packs/packs/specters-lume.pack.json)
+- [Moss](avatar-packs/packs/specters-moss.pack.json)
+- [bur](avatar-packs/packs/specters-bur.pack.json)
+
+To use one, download its `.pack.json` file, then in Crew open Avatar → Customize → Library → Import and select the file. Crew refuses to import a pack whose id is already installed, so to update a pack, delete the old one from the Library first. See `avatar-packs/README.md` for details.
+
 ## Documentation
 
 - `AGENTS.md`: guidance for coding agents

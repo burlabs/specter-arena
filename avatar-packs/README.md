@@ -12,7 +12,7 @@ This folder contains **11 portable Kiro Crew appearance-pack bundles**, one for 
 - **Tide** — [`packs/specters-tide.pack.json`](packs/specters-tide.pack.json)
 - **Lume** — [`packs/specters-lume.pack.json`](packs/specters-lume.pack.json)
 - **Moss** — [`packs/specters-moss.pack.json`](packs/specters-moss.pack.json)
-- **Bur** — [`packs/specters-bur.pack.json`](packs/specters-bur.pack.json)
+- **bur** — [`packs/specters-bur.pack.json`](packs/specters-bur.pack.json)
 
 ## Pack behavior
 
@@ -48,7 +48,7 @@ Working-motion themes:
 - **Tide:** flowing sway, waves, bubbles
 - **Lume:** lantern sway + beacon halo
 - **Moss:** cap bounce + spores
-- **Bur:** heavy snowy bob + frost motes
+- **bur:** heavy snowy bob + frost motes
 
 ## Import into Kiro Crew
 

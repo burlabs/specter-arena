@@ -147,7 +147,7 @@
     },
     {
       "id": "specters-bur",
-      "name": "Bur — Specters of the Abyss",
+      "name": "bur — Specters of the Abyss",
       "file": "packs/specters-bur.pack.json",
       "bytes": 398671,
       "states": [

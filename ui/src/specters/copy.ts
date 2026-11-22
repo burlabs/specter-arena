@@ -93,6 +93,9 @@ export const SHOWCASE = {
   heroesFailed: 'The heroes could not be loaded.',
   heroesUnsupported: 'This version of the app backend cannot list the heroes yet.',
   retry: 'Retry',
+  avatarPackLine: 'Use this Specter as your Crew avatar: download its avatar pack, then in Crew open Avatar → Customize → Library → Import.',
+  avatarPackLink: (name: string): string => `Download ${name}’s avatar pack`,
+  avatarPackCopy: 'If the link does not open, copy this address:',
 } as const;
 
 export const ROSTER = { assign: 'Assign' } as const;
