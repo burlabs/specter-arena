@@ -470,18 +470,20 @@ test('A-23 FP-21 the user pause button stops attacks and resuming starts a fresh
   await expect(page.locator('.sa-hero__fx')).toHaveCount(1, { timeout: 8000 });
 });
 
-test('A-24 FP-21 a bot waiting on a Crew approval flag shows the marker and the reason, never "Blocked", and does not attack', async ({ page }) => {
+test('A-24 FP-21 a bot waiting on a Crew approval flag says so in the rail and the inspector, never "Blocked", and nothing attacks', async ({ page }) => {
+  // This scenario has no Specters, so the bots are listed under "No Specter yet" and no token is drawn for them (FP-23).
   await page.goto('./?scenario=crew-signals');
-  await sectionTab(page, 'Arena').click();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
-  const approval = page.locator('[data-sprite="specter"]', { hasText: 'Approval' });
-  await expect(approval.locator('svg.sa-token__marker')).toHaveCount(1);
-  await expect(page.locator('[data-sprite="specter"]', { hasText: 'Question' }).locator('svg.sa-token__marker')).toHaveCount(0);
+  await expect(page.locator('[data-sprite="specter"]')).toHaveCount(0);
+  const rail = page.getByRole('complementary', { name: 'Specters' });
+  await expect(rail.getByRole('heading', { name: 'No Specter yet (6)' })).toBeVisible();
+  const approval = rail.getByRole('button', { name: /^Approval/ });
+  await expect(approval).toContainText('Waiting on you');
   await approval.click();
   await expect(page.getByRole('complementary', { name: 'Encounter inspector' })).toContainText("Crew's row flag says a tool approval is waiting for you");
   await page.waitForTimeout(5000);
   await expect(page.locator('.sa-hero.sa-is-attack')).toHaveCount(0);
-  await expect(approval).not.toContainText('Blocked');
+  await expect(rail).not.toContainText('Blocked');
   await expect(page.getByRole('complementary', { name: 'Encounter inspector' })).not.toContainText('Blocked');
 });
 
@@ -540,7 +542,7 @@ test('A-16 hero sprites idle-animate, and stop under reduced motion', async ({ b
   await still.close();
 });
 
-test('A-17 the minimap is open on first render and overlays the map frame at 1440', async ({ page }) => {
+test('A-17 the minimap is open on first render and sits below the map frame at 1440, and the map is bigger', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openArena(page, 'arena');
   const minimap = page.locator('.sa-arena-minimap');
@@ -550,12 +552,116 @@ test('A-17 the minimap is open on first render and overlays the map frame at 144
   const box = await minimap.boundingBox();
   const viewport = await page.locator('.sa-arena-viewport').boundingBox();
   if (frame === null || box === null || viewport === null) throw new Error('the frame or the minimap has no box');
-  expect(box.x).toBeGreaterThanOrEqual(frame.x);
-  expect(box.y).toBeGreaterThanOrEqual(frame.y);
-  expect(box.x + box.width).toBeLessThanOrEqual(frame.x + frame.width);
-  expect(box.y + box.height).toBeLessThanOrEqual(frame.y + frame.height);
-  expect(viewport.height).toBeLessThanOrEqual(0.7 * 900 + 1);
+  expect(box.y).toBeGreaterThanOrEqual(frame.y + frame.height - 1);
+  expect(box.x).toBeGreaterThanOrEqual(frame.x - 1);
+  expect(box.x + box.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
+  expect(viewport.width).toBeGreaterThanOrEqual(728);
+  expect(viewport.height).toBeLessThanOrEqual(0.78 * 900 + 1);
   expect(Math.abs(viewport.width / viewport.height - 1672 / 941)).toBeLessThan(0.05);
+});
+
+test('A-20 at 1440 the rail and the inspector each collapse and reopen, and the map grows when they do', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openArena(page, 'arena');
+  const viewport = () => page.locator('.sa-arena-viewport').boundingBox();
+  const open = await viewport();
+  const hideRail = page.getByRole('button', { name: 'Hide Specter rail' });
+  const hideInspector = page.getByRole('button', { name: 'Hide inspector' });
+  await expect(hideRail).toHaveAttribute('aria-expanded', 'true');
+  await expect(hideInspector).toHaveAttribute('aria-expanded', 'true');
+  expect(await hideRail.getAttribute('aria-controls')).toBe('sa-arena-rail-body');
+  expect(await hideInspector.getAttribute('aria-controls')).toBe('sa-arena-inspector-body');
+  await hideRail.click();
+  await hideInspector.click();
+  await expect(page.locator('#sa-arena-rail-body')).toBeHidden();
+  await expect(page.locator('#sa-arena-inspector-body')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Show Specter rail' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('button', { name: 'Show inspector' })).toHaveAttribute('aria-expanded', 'false');
+  const collapsed = await viewport();
+  expect((collapsed?.width ?? 0)).toBeGreaterThan((open?.width ?? 0) + 200);
+  await page.getByRole('button', { name: 'Show inspector' }).click();
+  await expect(page.locator('#sa-arena-inspector-body')).toBeVisible();
+  await expect(page.locator('#sa-arena-rail-body')).toBeHidden();
+  expect(await writes(page)).toEqual([]);
+});
+
+test('A-21 at 390 px the panes start collapsed and stack below the map, and selecting a token opens the inspector', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openArena(page, 'arena');
+  await expect(page.getByRole('button', { name: 'Show Specter rail' })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('button', { name: 'Show inspector' })).toHaveAttribute('aria-expanded', 'false');
+  const map = await page.locator('.sa-arena-viewport').boundingBox();
+  const rail = await page.locator('.sa-arena-rail').boundingBox();
+  const panel = await page.locator('.sa-arena-inspector').boundingBox();
+  if (map === null || rail === null || panel === null) throw new Error('a pane has no box');
+  expect(rail.y).toBeGreaterThanOrEqual(map.y + map.height - 1);
+  expect(panel.y).toBeGreaterThanOrEqual(rail.y + rail.height - 1);
+  expect(map.width).toBeLessThanOrEqual(390);
+  await page.locator('[data-sprite="specter"]').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Hide inspector' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(inspectorHeading(page)).toBeVisible();
+});
+
+test('A-22 heroes stand in the lower map a cell apart, keep their places across a tab switch, and move on a reload', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openArena(page, 'arena');
+  const spots = () =>
+    page.locator('[data-sprite="specter"]').evaluateAll((nodes) =>
+      nodes.map((node) => ({ id: node.getAttribute('data-token') ?? '', x: Number.parseFloat((node as HTMLElement).style.left), y: Number.parseFloat((node as HTMLElement).style.top) })).sort((a, b) => (a.id < b.id ? -1 : 1)),
+    );
+  const first = await spots();
+  expect(first).toHaveLength(7);
+  for (const spot of first) {
+    expect(spot.y).toBeGreaterThanOrEqual(60);
+    expect(spot.y).toBeLessThanOrEqual(95);
+  }
+  for (let i = 0; i < first.length; i += 1) {
+    for (let j = i + 1; j < first.length; j += 1) {
+      const a = first[i]!;
+      const b = first[j]!;
+      expect(Math.abs(a.x - b.x) >= 13.5 - 0.01 || Math.abs(a.y - b.y) >= 16 - 0.01, `${a.id} ${b.id}`).toBe(true);
+    }
+  }
+  await sectionTab(page, 'Roster').click();
+  await sectionTab(page, 'Arena').click();
+  await expect(page.locator('[data-sprite="specter"]')).toHaveCount(7);
+  expect(await spots()).toEqual(first);
+  await page.reload();
+  await expect(page.locator('[data-sprite="specter"]')).toHaveCount(7);
+  expect(await spots()).not.toEqual(first);
+  expect(await writes(page)).toEqual([]);
+});
+
+test('A-23 minions are drawn small, medium and large, in that order of width, and no two overlap at 1440 or at 390', async ({ page }) => {
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await openArena(page, 'arena');
+    const boxes = await page.locator('[data-sprite="enemy"]').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        // Layout size and position, so a looping idle animation (a transform) cannot change them.
+        const art = node.querySelector('.sa-minion') as HTMLElement;
+        const at = node.getBoundingClientRect();
+        const style = getComputedStyle(art);
+        const w = Number.parseFloat(style.width);
+        return { size: node.getAttribute('data-size-class') ?? '', x: at.x + (at.width - w) / 2, y: at.y, w, h: Number.parseFloat(style.height) };
+      }),
+    );
+    const widthOf = (size: string) => boxes.find((box) => box.size === size)?.w ?? 0;
+    expect(new Set(boxes.map((box) => box.size))).toEqual(new Set(['small', 'medium', 'large']));
+    expect(widthOf('small')).toBeLessThan(widthOf('medium'));
+    expect(widthOf('medium')).toBeLessThan(widthOf('large'));
+    expect(widthOf('large') / widthOf('medium')).toBeCloseTo(1.3, 1);
+    for (let i = 0; i < boxes.length; i += 1) {
+      for (let j = i + 1; j < boxes.length; j += 1) {
+        const a = boxes[i]!;
+        const b = boxes[j]!;
+        const across = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const down = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        expect(across > 0.5 && down > 0.5, `${width}px minions ${i} and ${j} overlap`).toBe(false);
+      }
+    }
+  }
 });
 
 test('A-18 at 390 px no tab scrolls sideways', async ({ page }) => {
