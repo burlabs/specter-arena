@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
-import type { WorkRowV1 } from '../work/model';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { Button } from '../observatory/ui';
 import { SpecterInspector } from './SpecterInspector';
-import { WorkInspector } from './WorkInspector';
+import { TaskInspector } from './TaskInspector';
 import { ARENA, INSPECTOR } from './copy';
 import type { SceneModel } from './sceneModel';
 import { selectionId } from './selection';
@@ -18,21 +17,17 @@ interface Props {
   rosterRevision: number;
   specters: ReadonlyMap<string, SpecterV2>;
   xp: ReadonlyMap<string, XpSummaryV1>;
-  items: ReadonlyMap<string, WorkRowV1>;
+  items: ReadonlyMap<string, TaskItemV1>;
   onSelect: (selection: ArenaSelection) => void;
   onClose: () => void;
-  onLedgerChanged: () => void;
-  onWorkChanged: () => void;
 }
 
-const keyOf = (selection: ArenaSelection | null): string =>
-  selection === null ? '' : `${selection.kind}:${selectionId(selection)}:${selection.kind === 'work' ? (selection.decisionId ?? '') : ''}`;
+const keyOf = (selection: ArenaSelection | null): string => (selection === null ? '' : `${selection.kind}:${selectionId(selection)}`);
 
 /**
- * The one place the arena shows evidence. It reads, and its only write is the reused in-app decision flow of the Work
- * tab, labelled as such. Opening it moves focus to its heading; Escape or Close puts focus back where the user was.
+ * The one place the arena shows evidence. It only reads. Opening it moves focus to its heading; Escape or Close puts focus back where the user was.
  */
-export function ArenaInspector({ selection, list, bots, collector, rosterRevision, specters, xp, items, onSelect, onClose, onLedgerChanged, onWorkChanged }: Props) {
+export function ArenaInspector({ selection, list, bots, collector, rosterRevision, specters, xp, items, onSelect, onClose }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
@@ -64,18 +59,7 @@ export function ArenaInspector({ selection, list, bots, collector, rosterRevisio
     body = <p>{ARENA.selectionEmpty}</p>;
   } else if (selection.kind === 'work') {
     body = (
-      <WorkInspector
-        key={selection.workId}
-        workId={selection.workId}
-        decisionId={selection.decisionId ?? null}
-        headingRef={headingRef}
-        list={list}
-        bots={bots}
-        known={items.get(selection.workId)}
-        onClose={onClose}
-        onLedgerChanged={onLedgerChanged}
-        onWorkChanged={onWorkChanged}
-      />
+      <TaskInspector key={selection.workId} taskId={selection.workId} headingRef={headingRef} list={list} bots={bots} known={items.get(selection.workId)} onClose={onClose} />
     );
   } else {
     const specter = list.specters.find((candidate) => candidate.bindingId === selection.bindingId);

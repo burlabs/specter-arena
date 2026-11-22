@@ -5,8 +5,8 @@ import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { HOST_EXTERNALS } from '../host-modules.ts';
 
-// FP-21 PR-A: the cap is 419,000, set from 334,897 characters x 1.25 rounded up to the next 1,000 and kept after the travelling strike made the bundle 339,572 (the ported hero attack and cast effect CSS alone is about 36,000 of the 57,000 added). Before it: 243,430 characters; 235,558 after FP-16 PR-B; 223,534 after FP-16 PR-A; 243,224 at the FP-16 base cdd46a89).
-const BUNDLE_BUDGET_CHARS = 419_000;
+// FP-22 PR-B: the cap is 367,000, set from 293,115 characters x 1.25 rounded up to the next 1,000, after the Work tab, its review flow and the manual-acceptance UI were deleted (it was 419,000 from FP-21 PR-A, set from 334,897 characters x 1.25 and kept after the travelling strike made the bundle 339,572; 243,430 characters before that; 235,558 after FP-16 PR-B; 223,534 after FP-16 PR-A; 243,224 at the FP-16 base cdd46a89).
+const BUNDLE_BUDGET_CHARS = 367_000;
 
 const CONFIG = fileURLToPath(new URL('../vite.config.ts', import.meta.url));
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));

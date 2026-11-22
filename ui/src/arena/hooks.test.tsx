@@ -95,6 +95,6 @@ describe('copy helpers', () => {
     expect(ARENA.coverage(1, 1)).toBe('Coverage: 1 bot has a collection gap, 1 bot is unknown');
     expect(ARENA.coverage(0, 2)).toBe('Coverage: 0 bots have a collection gap, 2 bots are unknown');
     expect(ARENA.linked(1)).toBe('1 open attempt');
-    expect(ARENA.overflow(2)).toBe('2 more on-field items are listed below and not drawn in the scene.');
+    expect(ARENA.overflow(2)).toBe('2 more open tasks are listed below and not drawn in the scene.');
   });
 });

@@ -8,20 +8,20 @@ import type { PresentationCue } from './PresentationCueLayer';
 import { clearSceneArtCache } from './sceneAssetCache';
 import { buildSceneModel } from './sceneModel';
 import type { ArenaSelection } from './selection';
-import { NOW, attemptOf, botOf, inputsOf, specterOf, workOf, xpOf } from './testData';
+import { botOf, creditedOf, inputsOf, specterOf, taskOf, xpOf } from './testData';
 
 const atlas = botOf(1, { displayName: 'Atlas', state: 'working' });
 const brindle = botOf(2, { displayName: 'Brindle' });
 const dune = botOf(3, { displayName: 'Dune', state: 'unknown' });
 
 const work = [
-  workOf(1, { title: 'Reconcile invoices', state: 'blocked', attempts: [attemptOf(atlas, 1), attemptOf(atlas, 2), attemptOf(atlas, 3)] }),
-  workOf(2, { title: 'Close the books', childCount: 2, progress: { done: 1, total: 3 } }),
-  workOf(3, { title: 'Review me', state: 'awaiting-review' }),
-  workOf(4, { title: 'Shipped', state: 'accepted', updatedAtMs: NOW, contributors: [{ bindingId: atlas.bindingId, attemptCount: 1, xpNet: 100 }] }),
+  taskOf(1, atlas, { kind: 'worker', runMs: 90_000 }),
+  taskOf(2, atlas, { kind: 'bot-turn', runMs: 300_000 }),
+  taskOf(3, atlas, { kind: 'worker', runMs: 1_000_000 }),
+  creditedOf(4, atlas, { kind: 'worker', runMs: 600_000, xpCredited: 14 }),
 ];
 
-const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper')], xp: [xpOf(atlas, 250, 3)], work }));
+const model = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper')], xp: [xpOf(atlas, 250, 3)], tasks: work }));
 const motion = { animate: true, paused: false, togglePause: vi.fn() };
 
 function show(props: { selection?: ArenaSelection | null; onSelect?: (s: ArenaSelection) => void; animate?: boolean; paused?: boolean; toggle?: () => void; cues?: PresentationCue[]; celebrating?: Set<string>; onCueComplete?: (id: string) => void } = {}) {
@@ -72,11 +72,11 @@ describe('tokens', () => {
     expect(screen.getByText('×3 attempts')).toBeTruthy();
   });
 
-  it('names enemies by title, state, progress and kind', () => {
+  it('names enemies by their kind and run time, state, progress and the word task, and never by size', () => {
     show();
-    expect(screen.getByRole('button', { name: 'Reconcile invoices, Blocked, Progress unknown, work item' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Close the books, Open, 1 of 3 milestones, encounter' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Review me, Awaiting your review, Progress unknown, work item' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Worker task · 1 min, Running, Progress unknown, task' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Bot turn · 5 min, Running, Progress unknown, task' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Worker task · 16 min, Running, Progress unknown, task' })).toBeTruthy();
   });
 
   it('gives every token an accessible name that contains the words printed on it (WCAG 2.5.3)', () => {
@@ -91,26 +91,26 @@ describe('tokens', () => {
 
   it('shows the defeated pose with its committed XP and no animation class', () => {
     show();
-    const shipped = screen.getByRole('button', { name: /^Shipped, Defeated.*\+100 XP, work item$/ });
-    expect(within(shipped).getByText('+100 XP')).toBeTruthy();
+    const shipped = screen.getByRole('button', { name: /^Worker task · 10 min, Defeated.*\+14 XP, task$/ });
+    expect(within(shipped).getByText('+14 XP')).toBeTruthy();
     expect(shipped.className).toContain('sa-is-defeated');
     expect(shipped.querySelector('.sa-is-animated')).toBeNull();
     expect(shipped.querySelector('.sa-is-static')).not.toBeNull();
   });
 
-  it('draws one engagement line per engaged pair', () => {
+  it('draws one engagement line per engaged pair, one for each running task of the bot', () => {
     const { container } = show();
-    expect(container.querySelectorAll('.sa-arena-engage')).toHaveLength(1);
-    expect(container.querySelector('[data-engage]')?.getAttribute('data-engage')).toBe(`${atlas.bindingId}:${work[0]?.workId}`);
+    expect(container.querySelectorAll('.sa-arena-engage')).toHaveLength(3);
+    expect(container.querySelector('[data-engage]')?.getAttribute('data-engage')).toBe(`${atlas.bindingId}:${work[0]?.taskId}`);
   });
 
   it('marks the selected token with aria-pressed and reports selections', () => {
     const onSelect = vi.fn();
-    show({ onSelect, selection: { kind: 'work', workId: work[2]!.workId } });
-    expect(screen.getByRole('button', { name: /^Review me/ }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: /^Shipped/ }).getAttribute('aria-pressed')).toBe('false');
-    fireEvent.click(screen.getByRole('button', { name: /^Shipped/ }));
-    expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: work[3]!.workId });
+    show({ onSelect, selection: { kind: 'work', workId: work[2]!.taskId } });
+    expect(screen.getByRole('button', { name: /^Worker task · 16 min/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /^Worker task · 10 min/ }).getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(screen.getByRole('button', { name: /^Worker task · 10 min/ }));
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: work[3]!.taskId });
     fireEvent.click(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
   });
@@ -176,7 +176,7 @@ describe('camera and controls', () => {
     const stage = container.querySelector<HTMLElement>('.sa-arena-stage')!;
     const left = () => stage.style.left;
     const before = left();
-    fireEvent.pointerDown(screen.getByRole('button', { name: /^Shipped/ }), { clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(screen.getByRole('button', { name: /^Worker task · 10 min/ }), { clientX: 10, clientY: 10 });
     fireEvent.pointerMove(viewport, { clientX: 60, clientY: 10 });
     expect(left()).toBe(before);
     fireEvent.pointerDown(viewport, { clientX: 100, clientY: 100 });
@@ -219,7 +219,7 @@ describe('camera and controls', () => {
     await waitFor(() => expect(container.querySelector('[data-map="ready"]')).not.toBeNull());
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     fireEvent.click(screen.getByRole('button', { name: 'Pause animation' }));
-    fireEvent.click(screen.getByRole('button', { name: /^Shipped/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Worker task · 10 min/ }));
     fireEvent(window, new Event('resize'));
     expect(post).not.toHaveBeenCalled();
     expect(get.mock.calls.every(([path]) => /\/scene-assets\//.test(String(path)))).toBe(true);
@@ -276,7 +276,7 @@ describe('art', () => {
     expect(screen.getByText('Map art is not available. Positions are still correct.')).toBeTruthy();
     await act(async () => undefined);
     expect(container.querySelectorAll('svg.sa-minion__fallback').length).toBe(4);
-    fireEvent.click(screen.getByRole('button', { name: /^Review me/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Worker task · 16 min/ }));
     expect(onSelect).toHaveBeenCalled();
   });
 });
@@ -301,14 +301,14 @@ describe('empty model', () => {
 });
 
 describe('celebration', () => {
-  const shipped = model.enemies.find((enemy) => enemy.title === 'Shipped')!;
-  const cue: PresentationCue = { id: 'c1', workId: shipped.workId, title: 'Shipped', committedXp: 100, durationMs: 1_800 };
+  const shipped = model.enemies.find((enemy) => enemy.title === 'Worker task · 10 min')!;
+  const cue: PresentationCue = { id: 'c1', workId: shipped.workId, title: 'Worker task · 10 min', committedXp: 100, durationMs: 1_800 };
 
   it('plays the defeat animation on the celebrating enemy only, and shows the cue', () => {
     const { container } = show({ cues: [cue], celebrating: new Set([shipped.workId]) });
     expect(container.querySelectorAll('.sa-minion.sa-is-defeat.sa-is-animated')).toHaveLength(1);
     expect(container.querySelector(`[data-token="${shipped.workId}"] .sa-is-defeat`)).not.toBeNull();
-    expect(container.querySelector('[data-cue]')?.textContent).toContain('Shipped · +100 XP');
+    expect(container.querySelector('[data-cue]')?.textContent).toContain('Worker task · 10 min · +100 XP');
   });
 
   it('keeps every defeated enemy a still, labelled pose when nothing is celebrating', () => {

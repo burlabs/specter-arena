@@ -1,9 +1,8 @@
-import type { HeroId, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
+import type { HeroId, RosterItemV1, SpecterV2, TaskItemV1, TaskSizeClassV1, TaskStateV1, XpSummaryV1 } from '../contracts/types';
 import type { SourceMode } from '../host';
-import type { WorkRowV1 } from '../work/model';
 import { nameOf } from '../observatory/model';
+import { taskTitle } from '../tasks/copy';
 
-export const ON_FIELD_STATES: ReadonlySet<string> = new Set(['open', 'awaiting-review', 'blocked', 'reopened']);
 export const ENEMY_CAP = 80;
 export const DEFEATED_MAX = 12;
 export const DEFEATED_WINDOW_MS = 24 * 3_600_000;
@@ -14,9 +13,10 @@ export interface SceneInputs {
   roster: readonly RosterItemV1[];
   specters: readonly SpecterV2[];
   xp: readonly XpSummaryV1[];
-  work: readonly WorkRowV1[];
-  /** A work stream still had a cursor after the page cap, so counts are a minimum. */
-  workTruncated?: boolean;
+  /** The tasks the arena read: open ones, and the latest credited and not-credited pages. */
+  tasks: readonly TaskItemV1[];
+  /** The open-task stream still had a cursor after the page cap, so counts are a minimum. */
+  tasksTruncated?: boolean;
   /** Whether the XP ledger has been read. While it has not, a bot's level and XP are unknown, never "Level 1" and "0 XP". Default `ready`. */
   xpStatus?: XpReading;
 }
@@ -44,14 +44,20 @@ export interface SceneSpecter {
   waitingReason: WaitingReason | null;
 }
 
+/**
+ * One enemy is one automatically built task. `workId` holds the task id (the name is kept so the drawing code does not
+ * change). `sizeClass` and `runMs` are presentation only: they never mean progress, health, remaining effort or XP.
+ */
 export interface SceneEnemy {
   workId: string;
   parentId: string | null;
   title: string;
   size: 'minion' | 'encounter';
-  state: WorkRowV1['state'];
+  state: TaskStateV1;
+  sizeClass: TaskSizeClassV1;
+  runMs: number;
   progress: Progress;
-  /** Encounters only: how many parts are accepted, a count and never a health value. */
+  /** Always null for a task. Kept for the encounter shape. */
   parts: { accepted: number; total: number } | null;
   blocked: boolean;
   engagedBy: string[];
@@ -76,23 +82,12 @@ const conditionOf = (item: RosterItemV1): SceneSpecter['condition'] => {
   return state === 'working' || state === 'settled' || state === 'waiting' ? state : 'unknown';
 };
 
-/** A bot-turn attempt is engaging only while the bot reports a running turn; a worker attempt only while a worker runs. */
-const running = (bot: RosterItemV1, kind: string): boolean =>
-  kind === 'bot-turn' ? bot.condition.state === 'working' : kind === 'worker' ? bot.workers.running > 0 : false;
-
-const PRIORITY: Readonly<Record<string, number>> = { blocked: 0, 'awaiting-review': 1, reopened: 2, open: 3 };
 const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 const byId = <T extends { workId: string }>(a: T, b: T): number => compareText(a.workId, b.workId);
-const byPriority = (a: WorkRowV1, b: WorkRowV1): number =>
-  (PRIORITY[a.state] ?? 9) - (PRIORITY[b.state] ?? 9) || b.createdAtMs - a.createdAtMs || byId(a, b);
+const byUpdated = (a: TaskItemV1, b: TaskItemV1): number => b.updatedAtMs - a.updatedAtMs || compareText(b.taskId, a.taskId);
 
-function progressOf(item: WorkRowV1): Progress {
-  return item.progress === null || item.progress.total <= 0 ? { kind: 'unknown' } : { kind: 'milestones', done: item.progress.done, total: item.progress.total };
-}
-
-/** Net of corrections already written by the ledger. Containers and unrewarded items carry no XP. */
-export const committedXpOf = (item: WorkRowV1): number | null =>
-  !item.rewardable || item.childCount > 0 ? null : item.contributors.reduce((sum, contributor) => sum + contributor.xpNet, 0);
+/** The award a credited task wrote, or null. Containers do not exist for tasks. */
+export const committedXpOf = (task: Pick<TaskItemV1, 'state' | 'xpCredited'>): number | null => (task.state === 'credited' ? task.xpCredited : null);
 
 function addTo(map: Map<string, Set<string>>, key: string, value: string): void {
   const existing = map.get(key);
@@ -111,29 +106,27 @@ export function buildSceneModel(inputs: SceneInputs, enemyCap: number = ENEMY_CA
   const specterByBot = new Map(inputs.specters.map((specter) => [specter.bindingId, specter]));
   const xpByBot = new Map(inputs.xp.map((summary) => [summary.bindingId, summary]));
 
-  const onField = inputs.work.filter((item) => ON_FIELD_STATES.has(item.state));
-  const defeated = inputs.work
-    .filter((item) => item.state === 'accepted' && item.updatedAtMs >= inputs.nowMs - DEFEATED_WINDOW_MS)
-    .sort((a, b) => b.updatedAtMs - a.updatedAtMs || byId(a, b))
+  const onField = inputs.tasks.filter((task) => task.state === 'open');
+  const defeated = inputs.tasks
+    .filter((task) => task.state === 'credited' && (task.closedAtMs ?? task.updatedAtMs) >= inputs.nowMs - DEFEATED_WINDOW_MS)
+    .sort((a, b) => (b.closedAtMs ?? b.updatedAtMs) - (a.closedAtMs ?? a.updatedAtMs) || compareText(a.taskId, b.taskId))
     .slice(0, DEFEATED_MAX);
   const room = Math.max(0, enemyCap - defeated.length);
-  const keptField = [...onField].sort(byPriority).slice(0, room);
-  const kept = [...defeated, ...keptField].sort(byId);
+  // The newest-updated open tasks stay when the cap drops some.
+  const keptField = [...onField].sort(byUpdated).slice(0, room);
+  const kept = [...defeated, ...keptField];
+  const keptIds = new Set(kept.map((task) => task.taskId));
 
-  const engagedByWork = new Map<string, Set<string>>();
+  const engagedByTask = new Map<string, Set<string>>();
   const openByBot = new Map<string, Set<string>>();
   const engagedByBot = new Map<string, Set<string>>();
-  const keptIds = new Set(kept.map((item) => item.workId));
-  for (const item of onField) {
-    for (const attempt of item.attempts) {
-      if (!attempt.present || attempt.ended) continue;
-      const bot = rosterById.get(attempt.bindingId);
-      if (bot === undefined) continue;
-      addTo(openByBot, bot.bindingId, attempt.attemptId);
-      if (!keptIds.has(item.workId) || !running(bot, attempt.kind)) continue;
-      addTo(engagedByWork, item.workId, bot.bindingId);
-      addTo(engagedByBot, bot.bindingId, item.workId);
-    }
+  for (const task of onField) {
+    const bot = rosterById.get(task.bindingId);
+    if (bot === undefined || task.attemptState === 'ended') continue;
+    addTo(openByBot, bot.bindingId, task.attemptId);
+    if (!keptIds.has(task.taskId) || task.attemptState !== 'working') continue;
+    addTo(engagedByTask, task.taskId, bot.bindingId);
+    addTo(engagedByBot, bot.bindingId, task.taskId);
   }
 
   const specters: SceneSpecter[] = [...inputs.roster]
@@ -157,26 +150,29 @@ export function buildSceneModel(inputs: SceneInputs, enemyCap: number = ENEMY_CA
       };
     });
 
-  const enemies: SceneEnemy[] = kept.map((item) => ({
-    workId: item.workId,
-    parentId: item.parentId,
-    title: item.title,
-    size: item.childCount > 0 ? 'encounter' : 'minion',
-    state: item.state,
-    progress: progressOf(item),
-    parts: item.childCount > 0 ? { accepted: item.childrenAccepted, total: item.childCount } : null,
-    blocked: item.state === 'blocked',
-    engagedBy: sorted(engagedByWork.get(item.workId)),
-    defeated: item.state === 'accepted',
-    committedXp: committedXpOf(item),
-  }));
+  const enemyOf = (task: TaskItemV1, engagedBy: string[]): SceneEnemy => ({
+    workId: task.taskId,
+    parentId: null,
+    title: taskTitle(task),
+    size: 'minion',
+    state: task.state,
+    sizeClass: task.sizeClass,
+    runMs: task.runMs,
+    progress: { kind: 'unknown' },
+    parts: null,
+    blocked: false,
+    engagedBy,
+    defeated: task.state === 'credited',
+    committedXp: committedXpOf(task),
+  });
+  const enemies = kept.map((task) => enemyOf(task, sorted(engagedByTask.get(task.taskId)))).sort(byId);
 
   return {
     mode: inputs.mode,
     asOfMs: inputs.nowMs,
     specters,
     enemies,
-    overflow: { enemies: onField.length - keptField.length, truncated: inputs.workTruncated === true },
+    overflow: { enemies: onField.length - keptField.length, truncated: inputs.tasksTruncated === true },
     coverage: {
       gaps: inputs.roster.filter((bot) => bot.coverage.state === 'gap').length,
       unknownBots: inputs.roster.filter((bot) => bot.coverage.state === 'unknown' || conditionOf(bot) === 'unknown').length,

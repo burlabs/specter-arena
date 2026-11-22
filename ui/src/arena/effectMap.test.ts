@@ -8,6 +8,8 @@ const enemy = (extra: Partial<SceneEnemy> = {}): SceneEnemy => ({
   title: 'T',
   size: 'minion',
   state: 'open',
+  sizeClass: 'medium',
+  runMs: 300_000,
   progress: { kind: 'unknown' },
   parts: null,
   blocked: false,
@@ -18,8 +20,8 @@ const enemy = (extra: Partial<SceneEnemy> = {}): SceneEnemy => ({
 });
 
 describe('effect map', () => {
-  it('has the sixteen rows, none of which changes any state', () => {
-    expect(EFFECT_MAP).toHaveLength(16);
+  it('has the ten rows, none of which changes any state', () => {
+    expect(EFFECT_MAP).toHaveLength(10);
     expect(EFFECT_MAP.every((row) => row.changes === 'none')).toBe(true);
   });
 
@@ -37,30 +39,27 @@ describe('effect map', () => {
     expect(enemyEffect(enemy())).toEqual({ pose: 'idle', marker: null, progressText: 'Progress unknown', stateText: 'Open' });
   });
 
-  it('shows linked running attempts as engaged, and several as assistance', () => {
-    expect(enemyEffect(enemy({ engagedBy: ['a'] }))).toMatchObject({ pose: 'engaged', marker: null });
-    expect(enemyEffect(enemy({ engagedBy: ['a', 'b'] }))).toMatchObject({ pose: 'engaged', marker: 'assistance' });
-  });
-
   it('prints milestones as "N of M milestones" and never a percentage', () => {
     expect(progressTextOf({ kind: 'milestones', done: 2, total: 3 })).toBe('2 of 3 milestones');
     expect(progressTextOf({ kind: 'unknown' })).toBe('Progress unknown');
   });
 
-  it('shows blocked with a blocked marker', () => {
-    expect(enemyEffect(enemy({ state: 'blocked', blocked: true }))).toMatchObject({ marker: 'blocked', stateText: 'Blocked' });
+  it('shows an open task as a plain open minion, and an engaged one as running', () => {
+    expect(enemyEffect(enemy())).toMatchObject({ pose: 'idle', marker: null, stateText: 'Open', progressText: 'Progress unknown' });
+    expect(enemyEffect(enemy({ engagedBy: ['a'] }))).toMatchObject({ pose: 'engaged', marker: null, stateText: 'Running' });
   });
 
-  it('shows awaiting-review as the evidence marker, in the words of the review, not a Crew approval', () => {
-    const effect = enemyEffect(enemy({ state: 'awaiting-review' }));
-    expect(effect).toMatchObject({ marker: 'evidence', stateText: 'Awaiting your review' });
+  it('shows a credited task as a defeated pose with the outcome marker, however it is engaged', () => {
+    expect(enemyEffect(enemy({ state: 'credited', defeated: true, engagedBy: ['a'] }))).toMatchObject({ pose: 'defeated', marker: 'outcome-accepted', stateText: 'Defeated' });
   });
 
-  it('shows accepted as a defeated pose with the accepted marker', () => {
-    expect(enemyEffect(enemy({ state: 'accepted', defeated: true, engagedBy: ['a'] }))).toMatchObject({ pose: 'defeated', marker: 'outcome-accepted', stateText: 'Defeated' });
+  it('words a task that closed without credit as not credited, with no marker', () => {
+    expect(enemyEffect(enemy({ state: 'not-credited' }))).toMatchObject({ pose: 'idle', marker: null, stateText: 'Not credited' });
   });
 
-  it('shows reopened as an ordinary returning enemy', () => {
-    expect(enemyEffect(enemy({ state: 'reopened' }))).toMatchObject({ pose: 'idle', stateText: 'Reopened', marker: null });
+  it('never lets size change the pose, marker or words', () => {
+    const small = enemyEffect(enemy({ sizeClass: 'small', runMs: 1_000 }));
+    const large = enemyEffect(enemy({ sizeClass: 'large', runMs: 5_000_000 }));
+    expect(large).toEqual(small);
   });
 });

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { SUMMARY_MAX_CHARS, diagnosticSummary, scrubSecrets } from './diagnosticSummary';
 import { buildSceneModel } from './sceneModel';
-import { NOW, attemptOf, botOf, inputsOf, workOf, xpOf } from './testData';
+import { NOW, botOf, creditedOf, inputsOf, notCreditedOf, taskOf, xpOf } from './testData';
 
 const bot = botOf(1, { displayName: 'Atlas', state: 'working' });
-const model = buildSceneModel(inputsOf({ roster: [bot], work: [] }));
+const model = buildSceneModel(inputsOf({ roster: [bot], tasks: [] }));
 
 // Built at run time so no literal credential-shaped string sits in the repository.
 const FAKES: ReadonlyArray<[string, string]> = [
@@ -33,25 +33,28 @@ const FAKES: ReadonlyArray<[string, string]> = [
 ];
 
 describe('diagnosticSummary', () => {
-  it('lists ids, states, ISO times, counts and contract versions for a work selection', () => {
-    const work = workOf(1, {
-      state: 'blocked',
-      attempts: [attemptOf(bot, 1)],
-      contributors: [{ bindingId: bot.bindingId, attemptCount: 1, xpNet: 0 }],
-      decisions: [{ decisionId: 'dec_1', seq: 1, action: 'block', fromState: 'open', toState: 'blocked', actor: 'app-owner', atMs: NOW, note: 'private words', evidenceRevision: null }],
-      progress: { done: 1, total: 3 },
-    });
-    const text = diagnosticSummary({ selection: { kind: 'work', workId: work.workId }, model, bot: null, work, xp: null });
-    expect(text).toContain(`workId: ${work.workId}`);
-    expect(text).toContain('state: blocked');
-    expect(text).toContain('progress: 1 of 3 milestones');
-    expect(text).toContain(`evidenceRevision: ${work.evidenceRevision}`);
+  it('lists ids, states, ISO times, counts and contract versions for a task selection', () => {
+    const task = notCreditedOf(1, bot, 'waiting-at-end', { runMs: 300_000 });
+    const text = diagnosticSummary({ selection: { kind: 'work', workId: task.taskId }, model, bot: null, work: task, xp: null });
+    expect(text).toContain(`taskId: ${task.taskId}`);
+    expect(text).toContain(`attemptId: ${task.attemptId}`);
+    expect(text).toContain('kind: worker');
+    expect(text).toContain('state: not-credited, closeReason waiting-at-end, attempt ended');
+    expect(text).toContain(`startedAt: ${new Date(task.startedAtMs).toISOString()}, endedAt ${new Date(task.endedAtMs ?? 0).toISOString()}`);
+    expect(text).toContain('runMs: 300000, sizeClass medium');
+    expect(text).toContain('xpCredited: none, policy xp-policy-2');
     expect(text).toContain(`asOf: ${new Date(NOW).toISOString()}`);
-    expect(text).toContain(`decision 1: block open>blocked at ${new Date(NOW).toISOString()}`);
     expect(text).toContain('mode: FIXTURE — demo data, not Crew activity');
-    expect(text).toContain('contracts: work-item v1');
-    expect(text).not.toContain('private words');
-    expect(text).not.toContain(work.acceptanceCondition);
+    expect(text).toContain('contracts: task-item v1');
+  });
+
+  it('says what a credited task earned and prints unknown times for an open one', () => {
+    const credited = creditedOf(1, bot, { xpCredited: 14 });
+    expect(diagnosticSummary({ selection: { kind: 'work', workId: credited.taskId }, model, bot: null, work: credited, xp: null })).toContain('xpCredited: 14, policy xp-policy-2');
+    const open = taskOf(2, bot);
+    const text = diagnosticSummary({ selection: { kind: 'work', workId: open.taskId }, model, bot: null, work: open, xp: null });
+    expect(text).toContain('state: open, closeReason none, attempt working');
+    expect(text).toContain('endedAt unknown, closedAt unknown');
   });
 
   it('describes a Specter selection from the bot and its XP, and leaves out the name', () => {
@@ -59,44 +62,29 @@ describe('diagnosticSummary', () => {
     expect(text).toContain(`bindingId: ${bot.bindingId}`);
     expect(text).toContain('condition: working (running)');
     expect(text).toContain('level: 2, totalXp 150');
-    expect(text).toContain('contracts: roster-item v1, xp-summary v1');
+    expect(text).toContain('contracts: roster-item v1, xp-summary v2');
     expect(text).not.toContain('Atlas');
   });
 
-  it('reports a minimum when the work read was cut short, and says so for unread contracts', () => {
-    const cut = buildSceneModel(inputsOf({ roster: [bot], work: [], workTruncated: true }));
+  it('reports a minimum when the task read was cut short, and says so for unread contracts', () => {
+    const cut = buildSceneModel(inputsOf({ roster: [bot], tasks: [], tasksTruncated: true }));
     const text = diagnosticSummary({ selection: { kind: 'specter', bindingId: bot.bindingId }, model: cut, bot: null, work: null, xp: null });
     expect(text).toContain('counts are a minimum');
     expect(text).toContain('contracts: none read');
   });
 
   it.each(FAKES)('removes a %s from every free-text field', (_name, fake) => {
-    const hostile = workOf(2, {
-      title: `Fix ${fake} now`,
-      state: 'blocked',
-      decisions: [{ decisionId: 'dec_2', seq: 1, action: 'block', fromState: 'open', toState: 'blocked', actor: 'app-owner', atMs: NOW, note: fake, evidenceRevision: null }],
-      review: { canAccept: false, blockers: [fake] },
-    });
+    const task = taskOf(2, bot);
     const poisoned = botOf(2, { condition: { ...bot.condition, reasonCode: fake } });
-    const text = diagnosticSummary({ selection: { kind: 'work', workId: hostile.workId }, model, bot: poisoned, work: hostile, xp: null });
+    const text = diagnosticSummary({ selection: { kind: 'work', workId: task.taskId }, model, bot: poisoned, work: task, xp: null });
     expect(text).not.toContain(fake);
     expect(text).toContain('[removed]');
   });
 
-  it('cuts a long title at 120 characters and flattens line breaks', () => {
-    const work = workOf(3, { title: `${'long '.repeat(60)}\nsecond line` });
-    const text = diagnosticSummary({ selection: { kind: 'work', workId: work.workId }, model, bot: null, work, xp: null });
-    const line = text.split('\n').find((candidate) => candidate.startsWith('title: ')) ?? '';
-    expect(line.length).toBeLessThanOrEqual('title: '.length + 120);
-    expect(line.endsWith('…')).toBe(true);
-    expect(text).not.toContain('second line');
-  });
-
   it('never exceeds 4,000 characters and ends with a truncation line when it had to cut', () => {
-    const many = workOf(4, {
-      attempts: Array.from({ length: 300 }, (_, index) => attemptOf(bot, index + 1)),
-    });
-    const text = diagnosticSummary({ selection: { kind: 'work', workId: many.workId }, model, bot: null, work: many, xp: null });
+    const task = taskOf(4, bot);
+    const long = botOf(3, { condition: { ...bot.condition, reasonCode: `${'long '.repeat(900)}` } });
+    const text = diagnosticSummary({ selection: { kind: 'work', workId: task.taskId }, model, bot: long, work: task, xp: null });
     expect(text.length).toBeLessThanOrEqual(SUMMARY_MAX_CHARS);
     expect(text.endsWith('\n[truncated]')).toBe(true);
   });

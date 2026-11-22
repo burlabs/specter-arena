@@ -5,7 +5,8 @@ import {
   ROSTER_PATH,
   HEROES_PATH,
   SPECTERS_PATH,
-  WORK_PATH,
+  TASKS_PATH,
+  XP_SUMMARIES_VIEW,
   XP_PATH,
   assetPath,
   sceneAssetPath,
@@ -13,11 +14,8 @@ import {
   rosterPath,
   specterPath,
   specterPortraitPath,
-  workAttemptsPath,
-  workDecisionsPath,
-  workListPath,
-  workMilestonesPath,
-  workPath,
+  taskPath,
+  tasksPath,
   xpHistoryPath,
   xpPagedPath,
 } from './paths';
@@ -59,27 +57,26 @@ describe('specter paths', () => {
   });
 });
 
-describe('work and xp paths', () => {
-  it('names the two collection paths', () => {
-    expect(WORK_PATH).toBe('/apps/specter-arena/api/work');
+describe('task and xp paths', () => {
+  it('builds the fixed collection paths under the app prefix', () => {
+    expect(TASKS_PATH).toBe('/apps/specter-arena/api/tasks');
     expect(XP_PATH).toBe('/apps/specter-arena/api/xp');
   });
 
-  it('omits a null state and cursor and encodes a cursor', () => {
-    expect(workListPath(null, 25, null, 'created')).toBe(`${WORK_PATH}?view=list&order=created&limit=25`);
-    expect(workListPath('awaiting-review', 25, 'a b/c', 'updated')).toBe(`${WORK_PATH}?state=awaiting-review&view=list&order=updated&limit=25&cursor=a%20b%2Fc`);
+  it('builds the tasks list path with an optional state and bot and an omitted null cursor', () => {
+    expect(tasksPath({ limit: 25, cursor: null })).toBe(`${TASKS_PATH}?limit=25`);
+    expect(tasksPath({ state: 'not-credited', limit: 25, cursor: 'a b/c' })).toBe(`${TASKS_PATH}?state=not-credited&limit=25&cursor=a%20b%2Fc`);
+    expect(tasksPath({ state: 'open', bindingId: 'bnd_1', limit: 10, cursor: null })).toBe(`${TASKS_PATH}?state=open&bindingId=bnd_1&limit=10`);
   });
 
-  it('names the paged xp path and omits a null cursor', () => {
-    expect(xpPagedPath(200, null)).toBe(`${XP_PATH}?view=paged&limit=200`);
-    expect(xpPagedPath(200, 'b_x y')).toBe(`${XP_PATH}?view=paged&limit=200&cursor=b_x%20y`);
+  it('encodes the task id in the item path', () => {
+    expect(taskPath('a/b')).toBe(`${TASKS_PATH}/a%2Fb`);
   });
 
-  it('encodes the work id in every item path', () => {
-    expect(workPath('a/b')).toBe(`${WORK_PATH}/a%2Fb`);
-    expect(workAttemptsPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/attempts`);
-    expect(workMilestonesPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/milestones`);
-    expect(workDecisionsPath('wrk_1')).toBe(`${WORK_PATH}/wrk_1/decisions`);
+  it('names the xp-summaries.v3 view and omits a null cursor', () => {
+    expect(XP_SUMMARIES_VIEW).toBe('tasks');
+    expect(xpPagedPath(200, null)).toBe(`${XP_PATH}?view=tasks&limit=200`);
+    expect(xpPagedPath(200, 'b_x y')).toBe(`${XP_PATH}?view=tasks&limit=200&cursor=b_x%20y`);
   });
 
   it('builds the xp history path with a default limit and an encoded id and cursor', () => {

@@ -22,15 +22,16 @@ async function openArena(page: Page, scenario: string) {
   await expect(listView(page)).toBeVisible();
 }
 
-test('A-1 Arena is the fourth tab, reached by keyboard, and the others keep their order', async ({ page }) => {
+test('A-1 there is no Work tab; Arena is reached by keyboard and the others keep their order', async ({ page }) => {
   await page.goto('./?scenario=arena');
   await expect(sectionTab(page, 'Roster')).toBeVisible();
-  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Work', 'Arena', 'Data']);
+  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Arena', 'Data']);
+  await expect(sectionTab(page, 'Work')).toHaveCount(0);
   await sectionTab(page, 'Roster').focus();
-  for (let i = 0; i < 3; i += 1) await page.keyboard.press('ArrowRight');
+  for (let i = 0; i < 2; i += 1) await page.keyboard.press('ArrowRight');
   await expect(sectionTab(page, 'Arena')).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('ArrowLeft');
-  await expect(sectionTab(page, 'Work')).toHaveAttribute('aria-selected', 'true');
+  await expect(sectionTab(page, 'Specters')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('A-2 the arena and its list view say FIXTURE and never LIVE, and never "waiting on you"', async ({ page }) => {
@@ -56,13 +57,28 @@ test('A-3 every bot appears once in the scene and once in the list; concurrent a
   await expect(arena(page).getByText('×3 attempts')).toHaveCount(6);
 });
 
-test('A-4 blocked and awaiting-review are labelled; progress is "N of M" or unknown, never a percentage', async ({ page }) => {
+test('A-4 every task says how it was closed and why, in words; size is a class and a run time, never a percentage or a progress word', async ({ page }) => {
   await openArena(page, 'arena');
-  await expect(listView(page)).toContainText('Blocked');
-  await expect(listView(page)).toContainText('Awaiting your review');
-  await expect(listView(page)).toContainText('Progress unknown');
-  await expect(listView(page)).toContainText(/\d of \d milestones done/);
+  const list = listView(page);
+  await expect(list).toContainText('Auto-credited when the task ended cleanly.');
+  await expect(list).toContainText('Not credited: a collection gap overlapped this task.');
+  await expect(list).toContainText('Not credited: an approval or a question was still pending when it ended.');
+  await expect(list).toContainText('Not credited: this task ended in a way the app could not read as a clean end.');
+  await expect(list).toContainText('Open: still running. It closes by itself when it ends.');
+  await expect(list).toContainText(/(Small|Medium|Large) · \d+ (s|min|h)/);
   await expect(arena(page)).not.toContainText(/\d\s?%/);
+  await expect(arena(page)).not.toContainText(/accept|reject|reopen/i);
+  await expect(page.locator('body')).not.toContainText(/health/i);
+  await expect(arena(page)).toContainText('A minion\'s size follows how long its task has run. It never means progress or remaining effort.');
+});
+
+test('A-4b the minions come in three sizes that follow run time, and the size classes are on the tokens', async ({ page }) => {
+  await openArena(page, 'arena');
+  const labels = await page.locator('[data-sprite="enemy"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  expect(labels.some((label) => /^Worker task · 1 min, Running/.test(label))).toBe(true);
+  expect(labels.some((label) => /^Worker task · 22 min, Running/.test(label))).toBe(true);
+  const sizes = await listView(page).getByRole('table', { name: 'Tasks' }).locator('tbody tr td:nth-child(3)').allTextContents();
+  expect(new Set(sizes.map((text) => text.split(' · ')[0]))).toEqual(new Set(['Small', 'Medium', 'Large']));
 });
 
 test('A-5 selecting, zooming, resizing, pausing and reloading under reduced motion send no write', async ({ page }) => {
@@ -72,7 +88,7 @@ test('A-5 selecting, zooming, resizing, pausing and reloading under reduced moti
   await expect(page.locator('[data-sprite="enemy"]').first()).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Zoom in' }).click();
   await page.getByRole('button', { name: 'Pause animation' }).click();
-  await listView(page).getByRole('button', { name: 'Blocked', exact: true }).click();
+  await listView(page).getByRole('button', { name: 'Running', exact: true }).click();
   await page.setViewportSize({ width: 480, height: 800 });
   expect(await writes(page)).toEqual([]);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -106,15 +122,16 @@ test('A-7 arena-perf-1 stays inside its node budget and lists everything', async
   await expect(page.locator('[data-sprite="enemy"]')).toHaveCount(80);
   expect(await page.locator('[data-scene-node]').count()).toBeLessThanOrEqual(160);
   await expect(rows(page, 'Specters')).toHaveCount(20);
-  await expect(rows(page, 'Work')).toHaveCount(112);
-  await expect(listView(page).getByText('32 more on-field items are listed below and not drawn in the scene.')).toBeVisible();
+  await expect(rows(page, 'Tasks')).toHaveCount(112);
+  await expect(listView(page).getByText('32 more open tasks are listed below and not drawn in the scene.')).toBeVisible();
   expect(await page.evaluate(() => performance.getEntriesByName('arena:first-render').length)).toBeGreaterThan(0);
   expect(await writes(page)).toEqual([]);
 });
 
 const inspector = (page: Page) => page.getByRole('complementary', { name: 'Encounter inspector' });
 const inspectorHeading = (page: Page) => inspector(page).getByRole('heading', { level: 2 });
-const workButton = (page: Page, title: string) => listView(page).getByRole('table', { name: 'Work' }).getByRole('button', { name: new RegExp(`^${title}`) });
+/** The select button of the first task row whose text contains `text`. */
+const taskButton = (page: Page, text: string) => listView(page).getByRole('table', { name: 'Tasks' }).locator('tbody tr', { hasText: text }).first().getByRole('button');
 const specterButton = (page: Page, name: string) => listView(page).getByRole('table', { name: 'Specters' }).getByRole('button', { name, exact: true });
 const navigations = (page: Page) => page.evaluate(() => (window as unknown as { __specterFixtureNavigations?: string[] }).__specterFixtureNavigations ?? []);
 const setVisibility = (page: Page, state: 'hidden' | 'visible') =>
@@ -131,15 +148,13 @@ async function tabTo(page: Page, target: Locator, maxTabs = 60) {
   throw new Error('The target never received focus by Tab');
 }
 
-async function acceptInInspector(page: Page, title: string) {
-  await workButton(page, title).click();
-  await expect(inspectorHeading(page)).toHaveText(title);
-  await inspector(page).getByRole('button', { name: 'Accept…' }).click();
-  await inspector(page).getByRole('checkbox', { name: /I reviewed the evidence above/ }).check();
-  await inspector(page).getByRole('button', { name: 'Accept work' }).click();
+/** Ends the watched task the way the backend would: it is credited at the next read. The seam is a FIXTURE hook, never a write. */
+async function closeWatchedTask(page: Page) {
+  await page.evaluate(() => (window as unknown as { __specterFixtureTasks: { close: () => void } }).__specterFixtureTasks.close());
 }
+const watchedId = (page: Page) => page.evaluate(() => (window as unknown as { __specterFixtureTasks: { watchedTaskId: string } }).__specterFixtureTasks.watchedTaskId);
 
-test('A-8 keyboard only: select a Specter, inspect it, open its work, reach the Crew handoff and the summary, and Escape returns', async ({ page, context }) => {
+test('A-8 keyboard only: select a Specter, inspect it, open its task, reach the Crew handoff and the summary, and Escape returns', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openArena(page, 'arena');
   const token = page.getByRole('group', { name: 'Arena map' }).getByRole('button', { name: /Atlas/ }).first();
@@ -148,13 +163,14 @@ test('A-8 keyboard only: select a Specter, inspect it, open its work, reach the 
   await expect(inspectorHeading(page)).toBeFocused();
   for (const name of ['Attempts', 'Coverage', 'XP ledger', 'Source details']) await expect(inspector(page).getByRole('heading', { level: 3, name })).toBeVisible();
 
-  const firstWork = inspector(page).getByRole('region', { name: 'Open work' }).getByRole('button').first();
+  const firstWork = inspector(page).getByRole('region', { name: 'Open tasks' }).getByRole('button').first();
   const title = (await firstWork.textContent()) ?? '';
   await tabTo(page, firstWork);
   await page.keyboard.press('Enter');
   await expect(inspectorHeading(page)).toHaveText(title);
   await expect(inspectorHeading(page)).toBeFocused();
-  for (const name of ['Where it stands', 'Evidence', 'Contributors', 'Decisions, newest first']) await expect(inspector(page).getByRole('heading', { level: 3, name })).toBeVisible();
+  for (const name of ['Task evidence', 'Reward']) await expect(inspector(page).getByRole('heading', { level: 3, name })).toBeVisible();
+  await expect(inspector(page).getByRole('button', { name: /accept|reject|reopen/i })).toHaveCount(0);
 
   await tabTo(page, inspector(page).getByRole('link', { name: 'Open Bots in Crew' }));
   await page.keyboard.press('Enter');
@@ -171,79 +187,93 @@ test('A-8 keyboard only: select a Specter, inspect it, open its work, reach the 
 
   await page.keyboard.press('Escape');
   await expect(token).toBeFocused();
-  await expect(inspector(page)).toContainText('Select a Specter or an enemy');
+  await expect(inspector(page)).toContainText('Select a Specter or a minion');
   expect(await writes(page)).toEqual([]);
 });
 
-test('A-9 accepting in the inspector makes exactly one write, defeats the enemy once with the committed XP, and a return shows the pose without a cue', async ({ page }) => {
+test('A-9 a task that ends cleanly is credited by itself: no click, no write, one defeat cue with its XP once, and a return shows the pose without a cue', async ({ page }) => {
+  await page.clock.install();
   await openArena(page, 'arena');
+  const id = await watchedId(page);
+  const token = page.locator(`[data-token="${id}"]`);
+  await expect(token).toContainText('Running');
   expect(await page.locator('[data-cue]').count()).toBe(0);
-  await acceptInInspector(page, 'Migrate the nightly report');
+  await closeWatchedTask(page);
+  await page.clock.runFor(16_000);
   await expect(page.locator('[data-cue]')).toHaveCount(1);
   const cueText = (await page.locator('[data-cue]').textContent()) ?? '';
+  expect(cueText).toContain('Task credited');
+  expect(cueText).not.toContain('Outcome accepted');
   const xp = Number(/\+(\d+) XP/.exec(cueText)?.[1]);
-  expect(xp).toBeGreaterThan(0);
-  await expect(page.locator('[data-cue]')).toHaveCount(0, { timeout: 6000 });
-  const defeated = page.locator('[data-sprite="enemy"]', { hasText: 'Migrate the nightly report' });
-  await expect(defeated).toContainText('Defeated');
-  await expect(defeated).toContainText(`+${xp} XP`);
-
-  const accepted = await writes(page);
-  expect(accepted).toHaveLength(1);
-  expect(accepted[0]?.method).toBe('POST');
-  expect(accepted[0]?.path).toMatch(/\/work\/wrk_[a-z0-9]+\/decisions$/);
-
-  await sectionTab(page, 'Work').click();
-  await page.getByRole('list', { name: 'Work items' }).getByRole('button', { name: /^Migrate the nightly report/ }).click();
-  // The Work tab list holds list rows only, so the detail pane waits for the item route before it has contributors to read.
-  const contributorRows = page.getByRole('region', { name: 'Work detail' }).getByRole('list', { name: 'Contributors' }).locator('li');
-  await expect(contributorRows.first()).toBeVisible();
-  const contributors = await contributorRows.allTextContents();
-  expect(contributors.reduce((sum, line) => sum + Number(/(\d+) XP/.exec(line)?.[1] ?? 0), 0)).toBe(xp);
+  expect(xp).toBe(13);
+  await page.clock.runFor(6000);
+  await expect(page.locator('[data-cue]')).toHaveCount(0);
+  await expect(token).toContainText('Defeated');
+  await expect(token).toContainText(`+${xp} XP`);
+  await expect(listView(page)).toContainText('Credited');
+  expect(await writes(page)).toEqual([]);
 
   await sectionTab(page, 'Roster').click();
   await sectionTab(page, 'Arena').click();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
-  await expect(page.locator('[data-sprite="enemy"]', { hasText: 'Migrate the nightly report' })).toContainText('Defeated');
+  await expect(page.locator(`[data-token="${id}"]`)).toContainText('Defeated');
   expect(await page.locator('[data-cue]').count()).toBe(0);
-  expect(await writes(page)).toHaveLength(1);
+  expect(await writes(page)).toEqual([]);
 });
 
-test('A-10 a defeat that happened while the tab was hidden, or after a long gap, shows the pose and the coverage line but no cue', async ({ page }) => {
+test('A-9b the inspector shows the credited task with how it closed and the XP written, and offers no way to change it', async ({ page }) => {
   await page.clock.install();
   await openArena(page, 'arena');
+  await closeWatchedTask(page);
+  await page.clock.runFor(16_000);
+  const id = await watchedId(page);
+  await page.locator(`[data-token="${id}"]`).click();
+  await expect(inspectorHeading(page)).toHaveText('Worker task · 6 min');
+  await expect(inspector(page)).toContainText('Auto-credited when the task ended cleanly.');
+  await expect(inspector(page)).toContainText('13 XP (xp-policy-2)');
+  await expect(inspector(page)).toContainText('Medium, ran 2 to under 15 minutes');
+  await expect(inspector(page)).toContainText('Size follows how long the task has run. It does not show progress, health or remaining effort.');
+  await expect(inspector(page).getByRole('button', { name: /accept|reject|reopen|submit|block|cancel/i })).toHaveCount(0);
+  expect(await writes(page)).toEqual([]);
+});
+
+test('A-10 a task credited while the tab was hidden, or after a long gap, shows the pose and the coverage line but no cue', async ({ page }) => {
+  await page.clock.install();
+  await openArena(page, 'arena');
+  const id = await watchedId(page);
   await setVisibility(page, 'hidden');
-  await acceptInInspector(page, 'Migrate the nightly report');
-  await page.clock.runFor(1000);
-  const defeated = page.locator('[data-sprite="enemy"]', { hasText: 'Migrate the nightly report' });
-  await expect(defeated).toContainText('Defeated');
+  await closeWatchedTask(page);
+  await page.clock.runFor(16_000);
   await page.clock.fastForward(10 * 60_000);
   await setVisibility(page, 'visible');
   await page.clock.runFor(15_000);
-  await expect(defeated).toContainText('Defeated');
+  await expect(page.locator(`[data-token="${id}"]`)).toContainText('Defeated');
   expect(await page.locator('[data-cue]').count()).toBe(0);
   await expect(arena(page).getByText(/^Coverage: /)).toBeVisible();
   await expect(arena(page).getByText(/^As of/)).toBeVisible();
-  expect((await writes(page)).length).toBe(1);
+  expect(await writes(page)).toEqual([]);
 });
 
-test('A-10b with reduced motion a defeat is a static label: no cue, no running animation', async ({ page }) => {
+test('A-10b with reduced motion a credited task is a static label: no cue, no running animation', async ({ page }) => {
+  await page.clock.install();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openArena(page, 'arena');
-  await acceptInInspector(page, 'Migrate the nightly report');
-  const defeated = page.locator('[data-sprite="enemy"]', { hasText: 'Migrate the nightly report' });
+  const id = await watchedId(page);
+  await closeWatchedTask(page);
+  await page.clock.runFor(16_000);
+  const defeated = page.locator(`[data-token="${id}"]`);
   await expect(defeated).toContainText('Defeated');
   await expect(defeated).toContainText(/\+\d+ XP/);
   expect(await page.locator('[data-cue]').count()).toBe(0);
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
 });
 
-test('A-11 a vanished item and a vanished bot show a fallback and keep none of the earlier evidence', async ({ page }) => {
+test('A-11 a vanished task and a vanished bot show a fallback and keep none of the earlier evidence', async ({ page }) => {
   await openArena(page, 'arena-stale');
-  await workButton(page, 'Audit the shared drive permissions').click();
+  await taskButton(page, 'Not credited: a collection gap').click();
   await expect(inspectorHeading(page)).toHaveText('This item is no longer available');
-  await expect(inspector(page)).not.toContainText('Waiting on the file owner');
-  await expect(inspector(page).getByRole('button', { name: 'Accept…' })).toHaveCount(0);
+  await expect(inspector(page)).not.toContainText('Not credited: a collection gap overlapped this task.');
+  await expect(inspector(page).getByRole('region', { name: 'Task evidence' })).toHaveCount(0);
   await expect(inspector(page).getByRole('button', { name: 'Copy diagnostic summary' })).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText(/waiting on you/i);
 });
@@ -532,7 +562,7 @@ test('A-18 at 390 px no tab scrolls sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openArena(page, 'arena');
   const widths: Record<string, number> = {};
-  for (const name of ['Arena', 'Roster', 'Specters', 'Work']) {
+  for (const name of ['Arena', 'Roster', 'Specters']) {
     await sectionTab(page, name).click();
     widths[name] = await page.evaluate(() => document.documentElement.scrollWidth);
   }
@@ -542,18 +572,18 @@ test('A-18 at 390 px no tab scrolls sideways', async ({ page }) => {
   for (const width of Object.values(widths)) expect(width).toBeLessThanOrEqual(390);
 });
 
-test('A-19 the arena, the Work tab and the XP read use only the v2 reads: list in update order, list in creation order, paged XP', async ({ page }) => {
+test('A-19 the arena and the XP read use only the task reads and the v3 XP view, and call no work route', async ({ page }) => {
   await openArena(page, 'arena-perf-1');
-  await sectionTab(page, 'Work').click();
-  await expect(page.getByRole('list', { name: 'Work items' })).toBeVisible();
   const gets = (await calls(page)).filter((call) => call.method === 'GET').map((call) => call.path);
-  const workReads = gets.filter((path) => /\/api\/work(\?|$)/.test(path));
+  const taskReads = gets.filter((path) => /\/api\/tasks(\?|$)/.test(path));
   const xpReads = gets.filter((path) => /\/api\/xp(\?|$)/.test(path));
-  expect(workReads.length).toBeGreaterThan(0);
+  expect(taskReads.length).toBeGreaterThan(0);
   expect(xpReads.length).toBeGreaterThan(0);
-  for (const path of workReads) expect(path, path).toMatch(/[?&]view=list&order=(updated|created)&limit=25/);
-  expect(workReads.some((path) => path.includes('order=updated'))).toBe(true);
-  expect(workReads.some((path) => path.includes('order=created'))).toBe(true);
-  for (const path of xpReads) expect(path, path).toMatch(/[?&]view=paged&limit=200/);
+  for (const path of taskReads) expect(path, path).toMatch(/[?&]state=(open|credited|not-credited)&limit=25/);
+  expect(taskReads.some((path) => path.includes('state=open'))).toBe(true);
+  expect(taskReads.some((path) => path.includes('state=credited'))).toBe(true);
+  expect(taskReads.some((path) => path.includes('state=not-credited'))).toBe(true);
+  for (const path of xpReads) expect(path, path).toMatch(/[?&]view=tasks&limit=200/);
+  expect(gets.filter((path) => /\/api\/work(\/|\?|$)/.test(path))).toEqual([]);
   expect(await writes(page)).toEqual([]);
 });

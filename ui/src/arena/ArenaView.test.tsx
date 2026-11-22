@@ -6,7 +6,7 @@ import { rosterBody } from '@kirocrew/app-sdk';
 import { clearSceneArtCache } from './sceneAssetCache';
 import { ArenaView } from './ArenaView';
 import { MARKS } from './marks';
-import { botOf, specterOf, xpOf } from './testData';
+import { botOf, creditedOf, specterOf, xpOf } from './testData';
 
 const collector = { state: 'running', reasonCode: null, sinceMs: 1 };
 const bots: RosterItemV1[] = rosterBody('default').items;
@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 function view(props: { bots?: RosterItemV1[]; complete?: boolean } = {}) {
-  return render(<ArenaView bots={props.bots ?? bots} complete={props.complete ?? true} collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+  return render(<ArenaView bots={props.bots ?? bots} complete={props.complete ?? true} collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} />);
 }
 
 const settle = () => screen.findByRole('group', { name: 'Arena map' });
@@ -52,7 +52,7 @@ describe('ready', () => {
       [first.bindingId, xpOf(first, 120, 2)],
       [second.bindingId, xpOf(second, 30, 1)],
     ]);
-    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={xp} onLedgerChanged={vi.fn()} />);
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={xp} />);
     await settle();
     const stats = screen.getByRole('group', { name: 'Arena summary' });
     expect(within(stats).getByText('Bots observed').nextElementSibling?.textContent).toBe(String(bots.length));
@@ -73,12 +73,12 @@ describe('ready', () => {
     view();
     await settle();
     const live = () => screen.getAllByRole('status').map((node) => node.textContent).join('|');
-    fireEvent.click(within(screen.getByRole('table', { name: 'Work' })).getAllByRole('button')[0]!);
+    fireEvent.click(within(screen.getByRole('table', { name: 'Tasks' })).getAllByRole('button')[0]!);
     await waitFor(() => expect(live()).toMatch(/Selected /));
     const inspector = screen.getByRole('complementary', { name: 'Encounter inspector' });
     expect(await within(inspector).findByRole('heading', { level: 2 })).toBeTruthy();
     fireEvent.click(within(screen.getByRole('complementary', { name: 'Specters' })).getAllByRole('button')[1]!);
-    expect(await within(inspector).findByText(/Open work/)).toBeTruthy();
+    expect(await within(inspector).findByText(/Open tasks/)).toBeTruthy();
     expect(live()).toMatch(/open attempts?/);
   });
 
@@ -100,7 +100,7 @@ describe('ready', () => {
     const { rerender } = view();
     await settle();
     fireEvent.click(within(screen.getByRole('table', { name: 'Specters' })).getAllByRole('button')[0]!);
-    rerender(<ArenaView bots={bots.slice(1)} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    rerender(<ArenaView bots={bots.slice(1)} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} />);
     expect(screen.getByRole('heading', { name: 'This item is no longer available' })).toBeTruthy();
   });
 });
@@ -112,26 +112,26 @@ describe('states', () => {
     expect(screen.getByText('Loading the arena…')).toBeTruthy();
   });
 
-  it('says there are no bots on an empty complete roster, and still reads work', async () => {
+  it('says there are no bots on an empty complete roster, and still reads tasks', async () => {
     setArenaScenario('arena-empty');
     view({ bots: [] });
     expect(await screen.findByText('No bots are on the roster yet')).toBeTruthy();
     expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
   });
 
-  it('draws an empty field when the roster has bots and no work', async () => {
+  it('draws an empty field when the roster has bots and no tasks', async () => {
     setArenaScenario('arena-empty');
     view({ bots: [botOf(1)] });
     await settle();
-    expect(screen.getByRole('table', { name: 'Work' })).toBeTruthy();
+    expect(screen.getByRole('table', { name: 'Tasks' })).toBeTruthy();
   });
 
   it.each([
-    ['not supported', new Response('{}', { status: 404 }), 'Work is not available on this backend', false],
+    ['not supported', new Response('{}', { status: 404 }), 'Tasks are not available on this backend', false],
     ['not permitted', new Response('{}', { status: 403 }), 'Not permitted', true],
     ['offline', null, 'Could not reach the app backend', true],
-    ['an error', new Response('{}', { status: 500 }), 'Work could not be loaded', true],
-    ['an unknown body', new Response('{"a":1}'), 'Work answered in a form this page does not know', true],
+    ['an error', new Response('{}', { status: 500 }), 'Tasks could not be loaded', true],
+    ['an unknown body', new Response('{"a":1}'), 'Tasks answered in a form this page does not know', true],
   ])('shows %s', async (_name, response, title, retry) => {
     setArenaScenario('arena');
     vi.spyOn(useAppApi(), 'get').mockImplementation(() => (response === null ? Promise.reject(new TypeError('x')) : Promise.resolve(response.clone())));
@@ -145,7 +145,7 @@ describe('states', () => {
     vi.useFakeTimers();
     const real = useAppApi().get.bind(useAppApi());
     let down = false;
-    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) => (down && path.includes('/work') ? Promise.resolve(new Response('{}', { status: 500 })) : real(path)));
+    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) => (down && path.includes('/tasks') ? Promise.resolve(new Response('{}', { status: 500 })) : real(path)));
     view();
     for (let i = 0; i < 12; i += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
     expect(screen.getByRole('group', { name: 'Arena map' })).toBeTruthy();
@@ -153,7 +153,7 @@ describe('states', () => {
     await act(async () => void (await vi.advanceTimersByTimeAsync(15_000)));
     for (let i = 0; i < 12; i += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
     const banner = screen.getByRole('alert');
-    expect(banner.textContent).toMatch(/Showing data from .*Work could not be loaded/);
+    expect(banner.textContent).toMatch(/Showing data from .*Tasks could not be loaded/);
     expect(screen.getByRole('group', { name: 'Arena map' })).toBeTruthy();
     down = false;
     fireEvent.click(within(banner).getByRole('button', { name: 'Retry' }));
@@ -191,68 +191,84 @@ describe('performance marks', () => {
 describe('with Specters', () => {
   it('names a Specter and its bot', async () => {
     setArenaScenario('arena');
-    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map([[bots[0]!.bindingId, specterOf(bots[0]!, 'Vesper')]])} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map([[bots[0]!.bindingId, specterOf(bots[0]!, 'Vesper')]])} xp={new Map()} />);
     await settle();
-    expect(screen.getByRole('button', { name: /^Vesper for Atlas/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Vesper.* for Atlas/ })).toBeTruthy();
   });
 });
 
 describe('celebrations', () => {
-  const inspector = () => screen.getByRole('complementary', { name: 'Encounter inspector' });
-
-  it('plays nothing on first load, even though accepted items are already on the field', async () => {
+  it('plays nothing on first load, even though credited tasks are already on the field', async () => {
     setArenaScenario('arena');
     const { container } = view();
     await settle();
     expect(container.querySelectorAll('[data-cue]')).toHaveLength(0);
     expect(container.querySelectorAll('.sa-is-defeat')).toHaveLength(0);
-    expect(screen.getAllByText('Defeated').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.sa-token--enemy.sa-is-defeated').length).toBeGreaterThan(0);
   });
 
-  it('plays exactly one cue with the committed XP when an item the user was watching is accepted, and none after a remount', async () => {
+  it('plays exactly one cue with the XP the task wrote when a task the user was watching is credited between two polls, and none after a remount', async () => {
     setArenaScenario('arena');
+    vi.useFakeTimers();
+    const real = useAppApi().get.bind(useAppApi());
+    const watched = creditedOf(77, bots[0]!, { xpCredited: 17, runMs: 300_000, kind: 'worker' });
+    const running = { ...watched, state: 'open', attemptState: 'working', closeReason: null, endedAtMs: null, closedAtMs: null, xpCredited: null } as const;
+    let done = false;
+    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) => {
+      const state = new URL(path, 'http://x').searchParams.get('state');
+      if (!path.includes('/tasks?')) return real(path);
+      const body = state === 'open' ? (done ? [] : [running]) : state === 'credited' ? (done ? [watched] : []) : [];
+      return Promise.resolve(new Response(JSON.stringify({ contractVersion: 1, items: body, nextCursor: null, asOfMs: 1794916800000 })));
+    });
     const first = view();
-    await settle();
-    fireEvent.click(within(screen.getByRole('table', { name: 'Work' })).getByRole('button', { name: /^Migrate the nightly report/ }));
-    await within(inspector()).findByRole('heading', { level: 2, name: 'Migrate the nightly report' });
-    fireEvent.click(within(inspector()).getByRole('button', { name: 'Accept…' }));
-    fireEvent.click(await within(inspector()).findByRole('checkbox', { name: /I reviewed the evidence above/ }));
-    fireEvent.click(within(inspector()).getByRole('button', { name: 'Accept work' }));
-    await waitFor(() => expect(first.container.querySelectorAll('[data-cue]')).toHaveLength(1));
+    for (let i = 0; i < 12; i += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
+    expect(first.container.querySelectorAll('[data-cue]')).toHaveLength(0);
+    done = true;
+    await act(async () => void (await vi.advanceTimersByTimeAsync(15_000)));
+    for (let i = 0; i < 12; i += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
+    expect(first.container.querySelectorAll('[data-cue]')).toHaveLength(1);
     const cue = first.container.querySelector('[data-cue]');
-    expect(cue?.textContent).toMatch(/Outcome accepted/);
-    expect(cue?.textContent).toMatch(/Migrate the nightly report · \+\d+ XP/);
+    expect(cue?.textContent).toMatch(/Task credited/);
+    expect(cue?.textContent).not.toMatch(/Outcome accepted/);
+    expect(cue?.textContent).toMatch(/Worker task · 5 min · \+17 XP/);
     expect(first.container.querySelectorAll('.sa-minion.sa-is-defeat')).toHaveLength(1);
 
     first.unmount();
     const again = view();
-    await settle();
+    for (let i = 0; i < 12; i += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
     expect(again.container.querySelectorAll('[data-cue]')).toHaveLength(0);
-    expect(screen.getAllByText('Defeated').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('.sa-token--enemy.sa-is-defeated').length).toBeGreaterThan(0);
   });
 
+  it('says plainly that a minion size is not progress and that a task closes by itself', async () => {
+    setArenaScenario('arena');
+    view();
+    await settle();
+    expect(screen.getByText(/size follows how long its task has run\. It never means progress or remaining effort\./)).toBeTruthy();
+    expect(screen.queryByText(/accept/i)).toBeNull();
+  });
 });
 
 describe('FP-21 fold-ins', () => {
   it('shows the attack legend and Loading or Unavailable XP until the ledger has been read, then the real numbers', async () => {
     setArenaScenario('arena');
     const first = bots[0]!;
-    const { rerender } = render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="loading" onLedgerChanged={vi.fn()} />);
+    const { rerender } = render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="loading" />);
     await settle();
     expect(screen.getByText(/^Attacks show live activity, not progress\./)).toBeTruthy();
     const stats = screen.getByRole('group', { name: 'Arena summary' });
     expect(within(stats).getByText('Committed XP').nextElementSibling?.textContent).toBe('Loading');
     expect(document.body.textContent).not.toMatch(/Lv\. 1 · 0 XP/);
     expect(document.body.textContent).not.toContain('Level 1, ');
-    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="failed" onLedgerChanged={vi.fn()} />);
+    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} xpStatus="failed" />);
     expect(within(screen.getByRole('group', { name: 'Arena summary' })).getByText('Committed XP').nextElementSibling?.textContent).toBe('Unavailable');
-    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map([[first.bindingId, xpOf(first, 120, 2)]])} xpStatus="ready" onLedgerChanged={vi.fn()} />);
+    rerender(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map([[first.bindingId, xpOf(first, 120, 2)]])} xpStatus="ready" />);
     expect(within(screen.getByRole('group', { name: 'Arena summary' })).getByText('Committed XP').nextElementSibling?.textContent).toBe('120');
   });
 
   it('shows the paused plate and starts no exchange timer while the collector is paused', async () => {
     setArenaScenario('arena');
-    render(<ArenaView bots={bots} complete collector={{ state: 'paused', reasonCode: null, sinceMs: 1 }} rosterRevision={1} specters={new Map()} xp={new Map()} onLedgerChanged={vi.fn()} />);
+    render(<ArenaView bots={bots} complete collector={{ state: 'paused', reasonCode: null, sinceMs: 1 }} rosterRevision={1} specters={new Map()} xp={new Map()} />);
     await settle();
     const plates = document.querySelectorAll('.sa-arena-plate--paused');
     expect(plates).toHaveLength(1);

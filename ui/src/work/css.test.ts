@@ -38,7 +38,7 @@ describe('work.css', () => {
   const { selectors, atRules } = selectorsOf(css);
 
   it('has rules (CSS-1)', () => {
-    expect(selectors.length).toBeGreaterThan(20);
+    expect(selectors.length).toBeGreaterThan(10);
   });
 
   it('roots every selector at .specter-arena-root and prefixes every class with sa- (CSS-2, CSS-3)', () => {

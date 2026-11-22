@@ -5,6 +5,7 @@ import { Time } from '../observatory/Time';
 import { collectorWords } from '../observatory/copy';
 import { Button, EmptyState, ErrorState } from '../observatory/ui';
 import { PARTIAL_ROSTER } from '../work/copy';
+import { taskTitle } from '../tasks/copy';
 import { ArenaInspector } from './ArenaInspector';
 import { ArenaListView } from './ArenaListView';
 import { ArenaRail } from './ArenaRail';
@@ -13,6 +14,7 @@ import { BattlefieldScene } from './BattlefieldScene';
 import { BotsOnField } from './BotsOnField';
 import { ModeBadge } from './ModeBadge';
 import { ARENA } from './copy';
+import { enemyEffect } from './effectMap';
 import { MARKS, mark } from './marks';
 import { buildSceneModel } from './sceneModel';
 import type { XpReading } from './sceneModel';
@@ -32,8 +34,6 @@ interface Props {
   xp: ReadonlyMap<string, XpSummaryV1>;
   /** Whether the XP ledger has been read. Without it a bot with no entry would read as Level 1 and 0 XP. Default `ready`. */
   xpStatus?: XpReading;
-  /** Called after the in-app decision flow changes the ledger, so the XP numbers elsewhere refresh. */
-  onLedgerChanged: () => void;
 }
 
 const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: string }>> = {
@@ -45,10 +45,10 @@ const FAILURE_COPY: Readonly<Record<ArenaWorkFailure, { title: string; body: str
 };
 
 /**
- * The Arena tab: a read-only projection of the roster, the Specters, the XP ledger and the work list. It starts
+ * The Arena tab: a read-only projection of the roster, the Specters, the XP ledger and the task list. It starts
  * its own work poll while mounted, so leaving the tab stops the poll and returning is a fresh baseline.
  */
-export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, xpStatus = 'ready', onLedgerChanged }: Props) {
+export function ArenaView({ bots, complete, collector, rosterRevision, specters, xp, xpStatus = 'ready' }: Props) {
   const mode = useSourceMode();
   const { state, refresh } = useArenaWork();
   const motion = useArenaMotion();
@@ -76,8 +76,8 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
       roster: bots,
       specters: [...specters.values()],
       xp: [...xp.values()],
-      work: snapshot.items,
-      workTruncated: snapshot.truncated,
+      tasks: snapshot.items,
+      tasksTruncated: snapshot.truncated,
       xpStatus,
     };
     return { scene: buildSceneModel(inputs), list: buildSceneModel(inputs, Infinity) };
@@ -85,17 +85,18 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
   const celebrations = useArenaScene(models?.scene ?? null, snapshot?.receivedAtMs ?? null, motion.animate);
   const collectorPaused = collector.state === 'paused';
   const exchanges = useArenaExchanges(models?.scene ?? null, motion.animate && !collectorPaused, celebrations.rises);
-  const items = useMemo(() => new Map((snapshot?.items ?? []).map((item) => [item.workId, item])), [snapshot]);
+  const items = useMemo(() => new Map((snapshot?.items ?? []).map((item) => [item.taskId, item])), [snapshot]);
   const drawn = useMemo(() => new Set(models?.scene.enemies.map((enemy) => enemy.workId) ?? []), [models]);
 
   const selectedSpecter = selection?.kind === 'specter' ? (models?.list.specters.find((s) => s.bindingId === selection.bindingId) ?? null) : null;
   const selectedEnemy = selection?.kind === 'work' ? (models?.list.enemies.find((e) => e.workId === selection.workId) ?? null) : null;
-  const selectedTitle = selection?.kind === 'work' ? (selectedEnemy?.title ?? items.get(selection.workId)?.title ?? null) : null;
+  const selectedTask = selection?.kind === 'work' ? items.get(selection.workId) : undefined;
+  const selectedTitle = selection?.kind === 'work' ? (selectedEnemy?.title ?? (selectedTask === undefined ? null : taskTitle(selectedTask))) : null;
   const announcement =
     selectedSpecter !== null
       ? ARENA.selected(selectedSpecter.specterName ?? selectedSpecter.displayName, ARENA.linked(selectedSpecter.openAttemptIds.length))
       : selectedEnemy !== null
-        ? ARENA.selected(selectedEnemy.title, selectedEnemy.defeated ? 'Defeated' : selectedEnemy.state)
+        ? ARENA.selected(selectedEnemy.title, enemyEffect(selectedEnemy).stateText)
         : selectedTitle !== null
           ? ARENA.selected(selectedTitle, 'not on the field')
           : '';
@@ -162,8 +163,6 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
             items={items}
             onSelect={setSelection}
             onClose={() => setSelection(null)}
-            onLedgerChanged={onLedgerChanged}
-            onWorkChanged={refresh}
           />
         </div>
         <ArenaListView model={models.list} bots={bots} items={items} drawn={drawn} selection={selection} onSelect={setSelection} />

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAttempts } from '../observatory/useAttempts';
-import { useWorkItem } from '../work/useWorkItem';
+import { useTaskEvidence } from '../arena/useTaskEvidence';
 import { HostApiError, useHostApi } from './useHostApi';
 
 const client = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
@@ -151,9 +151,9 @@ describe('useHostApi with the installed SDK, which throws ApiError', () => {
     }
   });
 
-  it('reaches the gone branch of useWorkItem on a thrown 404 unknown_work', async () => {
-    client.get.mockRejectedValue(apiError(404, '{"contractVersion":1,"error":"unknown_work"}'));
-    const { result } = renderHook(() => useWorkItem('wrk_1'));
+  it('reaches the gone branch of useTaskEvidence on a thrown 404 unknown_task', async () => {
+    client.get.mockRejectedValue(apiError(404, '{"contractVersion":1,"error":"unknown_task"}'));
+    const { result } = renderHook(() => useTaskEvidence('tsk_000000000000000000000001'));
     await flush();
     expect(result.current.state).toEqual({ status: 'gone' });
   });

@@ -89,9 +89,9 @@ describe('useXp (H-2)', () => {
     expect(result.current.truncated).toBe(false);
     expect(xpViewOf(result.current, binding(500))).toMatchObject({ status: 'ready', summary: { bindingId: binding(500) } });
     expect(api.getJson.mock.calls.map(([path]) => path)).toEqual([
-      '/apps/specter-arena/api/xp?view=paged&limit=200',
-      '/apps/specter-arena/api/xp?view=paged&limit=200&cursor=p_200',
-      '/apps/specter-arena/api/xp?view=paged&limit=200&cursor=p_400',
+      '/apps/specter-arena/api/xp?view=tasks&limit=200',
+      '/apps/specter-arena/api/xp?view=tasks&limit=200&cursor=p_200',
+      '/apps/specter-arena/api/xp?view=tasks&limit=200&cursor=p_400',
     ]);
   });
 
@@ -143,10 +143,24 @@ describe('useXp (H-2)', () => {
     expect(api.getJson).toHaveBeenCalledTimes(2);
   });
 
-  it('fails closed on a v1 body', async () => {
-    api.getJson.mockResolvedValue({ contractVersion: 1, items: [summaryOf()], asOfMs: 1 });
+  it.each([
+    ['a v1 body', { contractVersion: 1, items: [summaryOf()], asOfMs: 1 }],
+    ['a v2 page', { contractVersion: 2, items: [summaryOf()], nextCursor: null, asOfMs: 1 }],
+    ['a v3 page whose items are xp-summary v1', { contractVersion: 3, items: [{ ...summaryOf(), contractVersion: 1 }], nextCursor: null, asOfMs: 1 }],
+    ['a v3 page whose items lack creditedTaskCount', { contractVersion: 3, items: [{ ...summaryOf(), creditedTaskCount: undefined }], nextCursor: null, asOfMs: 1 }],
+    ['a v3 page with a negative credited count', { contractVersion: 3, items: [summaryOf({ creditedTaskCount: -1 })], nextCursor: null, asOfMs: 1 }],
+    ['a v3 page with more than 200 items', { contractVersion: 3, items: Array.from({ length: 201 }, () => summaryOf()), nextCursor: null, asOfMs: 1 }],
+  ])('fails closed on %s', async (_name, body) => {
+    api.getJson.mockResolvedValue(body);
     const { result } = renderHook(() => useXp());
     await flush();
     expect(result.current.failure).toBe('unexpected');
+  });
+
+  it('reads the credited task count and both-ledger total of the v2 summary', async () => {
+    api.getJson.mockResolvedValue(xpPageOf([summaryOf({ totalXp: 340, creditedTaskCount: 21 })]));
+    const { result } = renderHook(() => useXp());
+    await flush();
+    expect(xpViewOf(result.current, ATLAS)).toMatchObject({ status: 'ready', summary: { totalXp: 340, creditedTaskCount: 21, contractVersion: 2 } });
   });
 });

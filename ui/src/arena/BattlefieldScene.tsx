@@ -72,7 +72,7 @@ function enemyLabel(enemy: SceneEnemy): string {
   const effect = enemyEffect(enemy);
   const parts = [enemy.title, effect.stateText, effect.progressText];
   if (enemy.defeated && enemy.committedXp !== null) parts.push(ARENA.xpAward(enemy.committedXp));
-  parts.push(enemy.size === 'encounter' ? 'encounter' : 'work item');
+  parts.push(enemy.size === 'encounter' ? 'encounter' : 'task');
   return parts.join(', ');
 }
 

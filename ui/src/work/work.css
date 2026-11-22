@@ -1,77 +1,4 @@
-/* Work and Progression views. The form classes sa-form, sa-actions, sa-field, sa-help and sa-error come from specters.css, which the page injects beside this file. */
-
-.specter-arena-root .sa-work {
-  display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.specter-arena-root .sa-work > * {
-  min-width: 0;
-}
-
-.specter-arena-root .sa-work-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 8px 12px;
-  margin-bottom: 12px;
-}
-
-.specter-arena-root .sa-work-toolbar label {
-  display: grid;
-  gap: 4px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.specter-arena-root .sa-work select {
-  min-width: 0;
-  max-width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--raised);
-  color: var(--text);
-  font-size: 14px;
-}
-
-.specter-arena-root .sa-work-list {
-  display: grid;
-  gap: 8px;
-}
-
-.specter-arena-root .sa-work-row {
-  display: grid;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--raised);
-  color: var(--text);
-  text-align: left;
-  overflow-wrap: anywhere;
-}
-
-.specter-arena-root .sa-work-row:hover {
-  border-color: var(--violet);
-}
-
-.specter-arena-root .sa-work-row[aria-current="true"] {
-  border-color: var(--violet);
-  background: rgba(180, 154, 255, 0.12);
-}
-
-.specter-arena-root .sa-work-row__title {
-  font-size: 14px;
-}
-
-.specter-arena-root .sa-work-xp-chip {
-  justify-self: start;
-}
+/* XP and Progression views, and the task close-out badge. The shared classes sa-actions, sa-help and sa-error come from specters.css, which the page injects beside this file. */
 
 .specter-arena-root .sa-work-badge {
   display: inline-flex;
@@ -90,22 +17,6 @@
   border-color: var(--violet);
 }
 
-.specter-arena-root .sa-work-badge--review {
-  color: var(--amber);
-  border-color: var(--amber);
-}
-
-.specter-arena-root .sa-work-badge--blocked {
-  color: var(--danger);
-  border-color: var(--danger);
-  border-style: dashed;
-}
-
-.specter-arena-root .sa-work-badge--rejected {
-  color: var(--danger);
-  border-color: var(--danger);
-}
-
 .specter-arena-root .sa-work-badge--cancelled {
   color: var(--muted);
   border-color: var(--muted);
@@ -117,75 +28,25 @@
   border-color: var(--success);
 }
 
-.specter-arena-root .sa-work-progress {
+.specter-arena-root .sa-work-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.specter-arena-root .sa-work-facts dt {
   color: var(--muted);
   font-size: 13px;
 }
 
-.specter-arena-root .sa-work-detail {
-  display: grid;
-  gap: 16px;
-  min-width: 0;
+.specter-arena-root .sa-work-facts dd {
+  margin: 0;
   overflow-wrap: anywhere;
-}
-
-.specter-arena-root .sa-work-detail__head {
-  display: grid;
-  gap: 6px;
-  justify-items: start;
-}
-
-.specter-arena-root .sa-work-detail h2 {
-  font-size: 20px;
-}
-
-.specter-arena-root .sa-work-detail h3 {
-  font-size: 15px;
-}
-
-.specter-arena-root .sa-work-section {
-  display: grid;
-  gap: 8px;
-}
-
-.specter-arena-root .sa-work-facts {
-  display: grid;
-  gap: 8px;
 }
 
 .specter-arena-root .sa-work-text {
   white-space: pre-wrap;
-}
-
-.specter-arena-root .sa-work-milestones {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.specter-arena-root .sa-work-milestones legend {
-  padding: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.specter-arena-root .sa-work-milestones label,
-.specter-arena-root .sa-form label.sa-work-check,
-.specter-arena-root .sa-work-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 28px;
-}
-
-.specter-arena-root .sa-work-milestones input,
-.specter-arena-root .sa-work-check input,
-.specter-arena-root .sa-work-pick input {
-  width: 18px;
-  height: 18px;
-  flex: none;
 }
 
 .specter-arena-root .sa-work-plain {
@@ -193,44 +54,9 @@
   gap: 4px;
 }
 
-.specter-arena-root .sa-work-evidence,
-.specter-arena-root .sa-work-timeline,
 .specter-arena-root .sa-work-ledger {
   display: grid;
   gap: 8px;
-}
-
-.specter-arena-root .sa-work-evidence li,
-.specter-arena-root .sa-work-timeline li,
-.specter-arena-root .sa-work-ledger__entry {
-  display: grid;
-  gap: 2px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--violet);
-  border-radius: 8px;
-  background: var(--raised);
-}
-
-.specter-arena-root .sa-work-confirm {
-  border-color: var(--amber);
-  background: #1b1629;
-  padding: 12px;
-}
-
-.specter-arena-root .sa-work-confirm h3:focus-visible {
-  box-shadow: none;
-}
-
-.specter-arena-root .sa-work-confirm textarea {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--raised);
-  color: var(--text);
-  font-size: 14px;
 }
 
 .specter-arena-root .sa-work-xp-amount {
@@ -272,55 +98,18 @@
   gap: 6px;
 }
 
+.specter-arena-root .sa-work-ledger__entry {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  background: var(--raised);
+}
+
 .specter-arena-root .sa-work-ledger__title {
   overflow-wrap: anywhere;
-}
-
-.specter-arena-root .sa-work-attempts {
-  display: grid;
-  gap: 8px;
-}
-
-.specter-arena-root .sa-work-attempts label {
-  display: grid;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.specter-arena-root .sa-work-picker {
-  display: grid;
-  gap: 6px;
-  max-height: 260px;
-  margin: 0;
-  padding: 8px;
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.specter-arena-root .sa-work-attempts .sa-work-pick {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  min-height: 28px;
-}
-
-.specter-arena-root .sa-work-milestone-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 8px;
-}
-
-.specter-arena-root .sa-work-milestone-row label {
-  flex: 1 1 180px;
-}
-
-@media (max-width: 720px) {
-  .specter-arena-root .sa-work {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

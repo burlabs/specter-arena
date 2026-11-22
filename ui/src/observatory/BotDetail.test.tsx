@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { attemptsBody, rosterBody } from '@kirocrew/app-sdk';
+import { summaryOf } from '../work/testData';
 import type { XpView } from '../work/useXp';
 import { BotDetail } from './BotDetail';
 import type { AttemptsState } from './useAttempts';
@@ -93,9 +94,17 @@ describe('BotDetail', () => {
   it('shows the ledger on Progression while attempts are loading or gone (BD-2)', async () => {
     view({ status: 'loading' });
     fireEvent.click(tab('Progression'));
-    expect(await screen.findByText('No XP entries yet. XP comes only from work you accept.')).toBeTruthy();
+    expect(await screen.findByText('No ledger entries to list yet.')).toBeTruthy();
     expect(screen.getByText('Policy xp-policy-1 · Level table levels-1')).toBeTruthy();
     expect(screen.queryByText('Loading attempts…')).toBeNull();
+  });
+
+  it('shows the total and policy of the v2 summary on Progression when the XP read has one (BD-2b)', async () => {
+    const summary = summaryOf({ bindingId: atlas?.bindingId, totalXp: 340, level: 4, levelFloorXp: 250, nextLevelXp: 450, creditedTaskCount: 21 });
+    render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={{ status: 'loading' }} xp={{ status: 'ready', summary }} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(tab('Progression'));
+    expect(await screen.findByText('Level 4 · 340 XP')).toBeTruthy();
+    expect(screen.getByText('Policy xp-policy-2 · Level table levels-1')).toBeTruthy();
   });
 
   it('wraps the arrow keys over four tabs and End still lands on Source details (BD-3)', () => {

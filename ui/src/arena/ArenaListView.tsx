@@ -1,26 +1,24 @@
 import { useState } from 'react';
-import type { RosterItemV1 } from '../contracts/types';
+import type { RosterItemV1, TaskItemV1 } from '../contracts/types';
 import { ConditionBadge } from '../observatory/ConditionBadge';
 import { botCondition } from '../observatory/model';
-import { ProgressLine } from '../work/ProgressLine';
-import { StateBadge } from '../work/StateBadge';
-import { xpChipOf } from '../work/WorkList';
-import { ROW } from '../work/copy';
+import { Time } from '../observatory/Time';
+import { TASK, closeOutWords, taskTitle } from '../tasks/copy';
+import { TaskStateBadge } from '../tasks/TaskStateBadge';
 import { botNameOf } from '../work/model';
-import type { WorkRowV1 } from '../work/model';
 import { ModeBadge } from './ModeBadge';
 import { ARENA, FILTERS, levelXpText } from './copy';
 import type { FilterValue } from './copy';
-import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
+import type { SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
 import type { ArenaSelection } from './selection';
 
 interface Props {
-  /** Built without the scene's enemy cap, so every on-field item has a row. */
+  /** Built without the scene's enemy cap, so every open task has a row. */
   model: SceneModel;
   bots: readonly RosterItemV1[];
-  items: ReadonlyMap<string, WorkRowV1>;
-  /** Work ids the scene draws; the other rows say they are not drawn. */
+  items: ReadonlyMap<string, TaskItemV1>;
+  /** Task ids the scene draws; the other rows say they are not drawn. */
   drawn: ReadonlySet<string>;
   selection: ArenaSelection | null;
   onSelect: (selection: ArenaSelection) => void;
@@ -29,19 +27,28 @@ interface Props {
 const specterMatches = (specter: SceneSpecter, filter: FilterValue): boolean =>
   filter === 'all' || (filter === 'working' && specter.condition === 'working') || (filter === 'unknown' && specter.condition === 'unknown');
 
-const enemyMatches = (enemy: SceneEnemy, filter: FilterValue): boolean =>
+const taskMatches = (task: TaskItemV1, engaged: boolean, filter: FilterValue): boolean =>
   filter === 'all' ||
-  (filter === 'working' && enemy.engagedBy.length > 0) ||
-  (filter === 'blocked' && enemy.blocked) ||
-  (filter === 'awaiting-review' && enemy.state === 'awaiting-review') ||
-  (filter === 'defeated' && enemy.defeated);
+  (filter === 'working' && engaged) ||
+  (filter === 'credited' && task.state === 'credited') ||
+  (filter === 'not-credited' && task.state === 'not-credited') ||
+  (filter === 'unknown' && task.state === 'open' && task.attemptState === 'unknown');
+
+const byUpdatedDesc = (a: TaskItemV1, b: TaskItemV1): number => b.updatedAtMs - a.updatedAtMs || (a.taskId < b.taskId ? 1 : a.taskId > b.taskId ? -1 : 0);
 
 /** The always-available, text-first view of everything the scene draws, and what it does not. */
 export function ArenaListView({ model, bots, items, drawn, selection, onSelect }: Props) {
   const [filter, setFilter] = useState<FilterValue>('all');
   const botById = new Map(bots.map((bot) => [bot.bindingId, bot]));
   const specters = model.specters.filter((specter) => specterMatches(specter, filter));
-  const enemies = model.enemies.filter((enemy) => enemyMatches(enemy, filter));
+  // The field's tasks, then the tasks that closed without credit (they leave the field and stay listed with their reason).
+  const rows: Array<{ task: TaskItemV1; engaged: boolean }> = [];
+  for (const enemy of model.enemies) {
+    const task = items.get(enemy.workId);
+    if (task !== undefined) rows.push({ task, engaged: enemy.engagedBy.length > 0 });
+  }
+  for (const task of [...items.values()].filter((candidate) => candidate.state === 'not-credited').sort(byUpdatedDesc)) rows.push({ task, engaged: false });
+  const shown = rows.filter(({ task, engaged }) => taskMatches(task, engaged, filter));
   const hidden = model.enemies.filter((enemy) => !drawn.has(enemy.workId)).length;
 
   return (
@@ -59,7 +66,7 @@ export function ArenaListView({ model, bots, items, drawn, selection, onSelect }
       </div>
       {hidden > 0 && <p className="sa-help">{ARENA.overflow(hidden)}</p>}
       {model.overflow.truncated && <p className="sa-help">{ARENA.truncated}</p>}
-      <p className="sa-help">{ARENA.acceptedGap}</p>
+      <p className="sa-help">{ARENA.closedNote}</p>
 
       <table className="sa-arena-table">
         <caption>Specters</caption>
@@ -97,50 +104,43 @@ export function ArenaListView({ model, bots, items, drawn, selection, onSelect }
       </table>
 
       <table className="sa-arena-table">
-        <caption>Work</caption>
+        <caption>{TASK.listCaption}</caption>
         <thead>
           <tr>
-            <th scope="col">Work item</th>
-            <th scope="col">State</th>
-            <th scope="col">Progress</th>
-            <th scope="col">Contributors</th>
-            <th scope="col">XP</th>
+            <th scope="col">{TASK.listColumns.task}</th>
+            <th scope="col">{TASK.listColumns.closeOut}</th>
+            <th scope="col">{TASK.listColumns.size}</th>
+            <th scope="col">{TASK.listColumns.bot}</th>
+            <th scope="col">{TASK.listColumns.xp}</th>
           </tr>
         </thead>
         <tbody>
-          {enemies.map((enemy) => {
-            const item = items.get(enemy.workId);
-            const parent = enemy.parentId === null ? undefined : items.get(enemy.parentId);
-            return (
-              <tr key={enemy.workId}>
-                <th scope="row">
-                  <button
-                    type="button"
-                    className="sa-arena-table__select"
-                    aria-current={isSelected(selection, 'work', enemy.workId) ? 'true' : undefined}
-                    onClick={() => onSelect({ kind: 'work', workId: enemy.workId })}
-                  >
-                    {enemy.title}
-                  </button>
-                  {parent !== undefined && <span className="sa-help">{`${ARENA.partOf} ${parent.title}`}</span>}
-                  {!drawn.has(enemy.workId) && <span className="sa-help">{ARENA.notDrawn}</span>}
-                </th>
-                <td>
-                  <StateBadge state={enemy.state} />
-                </td>
-                <td>
-                  <ProgressLine progress={item?.progress ?? null} />
-                  {enemy.parts !== null && <span className="sa-help">{ARENA.partsAccepted(enemy.parts.accepted, enemy.parts.total)}</span>}
-                </td>
-                <td>
-                  {item === undefined || item.contributors.length === 0
-                    ? ROW.noBots
-                    : item.contributors.map((contributor) => botNameOf(bots, contributor.bindingId)).join(', ')}
-                </td>
-                <td>{item === undefined ? ARENA.noXp : xpChipOf(item)}</td>
-              </tr>
-            );
-          })}
+          {shown.map(({ task }) => (
+            <tr key={task.taskId}>
+              <th scope="row">
+                <button
+                  type="button"
+                  className="sa-arena-table__select"
+                  aria-current={isSelected(selection, 'work', task.taskId) ? 'true' : undefined}
+                  onClick={() => onSelect({ kind: 'work', workId: task.taskId })}
+                >
+                  {taskTitle(task)}
+                </button>
+                <span className="sa-help">
+                  {`${TASK.started} `}
+                  <Time ms={task.startedAtMs} />
+                </span>
+                {task.state === 'open' && !drawn.has(task.taskId) && <span className="sa-help">{ARENA.notDrawn}</span>}
+              </th>
+              <td>
+                <TaskStateBadge state={task.state} />
+                <span className="sa-help">{closeOutWords(task)}</span>
+              </td>
+              <td>{TASK.sizeAndRun(task)}</td>
+              <td>{botNameOf(bots, task.bindingId)}</td>
+              <td>{task.xpCredited === null ? (task.state === 'open' ? TASK.noXpYet : TASK.noXp) : ARENA.xpCommitted(task.xpCredited)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </section>

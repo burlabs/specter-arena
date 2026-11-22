@@ -1,20 +1,18 @@
-import type { RosterItemV1, WorkItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterItemV1, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { MODE } from './copy';
 import type { SceneModel } from './sceneModel';
 import type { ArenaSelection } from './selection';
 
 export const SUMMARY_MAX_CHARS = 4_000;
-export const SUMMARY_TITLE_MAX_CHARS = 120;
 const TRUNCATED_LINE = '[truncated]';
-const RECENT_DECISIONS = 5;
 const REDACTED = '[removed]';
 
 export interface DiagnosticInput {
   selection: ArenaSelection;
   model: SceneModel;
   bot: RosterItemV1 | null;
-  /** Only for a work selection, from the evidence read. */
-  work: WorkItemV1 | null;
+  /** Only for a task selection, from the evidence read. */
+  work: TaskItemV1 | null;
   xp: XpSummaryV1 | null;
 }
 
@@ -44,11 +42,6 @@ const clean = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
 const iso = (ms: number | null): string => (ms === null || !Number.isFinite(ms) ? 'unknown' : new Date(ms).toISOString());
 
-const limited = (title: string): string => {
-  const text = clean(title);
-  return text.length <= SUMMARY_TITLE_MAX_CHARS ? text : `${text.slice(0, SUMMARY_TITLE_MAX_CHARS - 1)}…`;
-};
-
 function botLines(bot: RosterItemV1): string[] {
   return [
     `bindingId: ${bot.bindingId}`,
@@ -60,31 +53,26 @@ function botLines(bot: RosterItemV1): string[] {
   ];
 }
 
-function workLines(work: WorkItemV1): string[] {
-  const lines = [
-    `workId: ${work.workId}`,
-    `parentId: ${work.parentId ?? 'none'}`,
-    `title: ${limited(work.title)}`,
-    `state: ${clean(work.state)}`,
-    `progress: ${work.progress === null ? 'unknown' : `${work.progress.done} of ${work.progress.total} milestones`}`,
-    `evidenceRevision: ${work.evidenceRevision}`,
-    `blockers: ${work.review.blockers.length === 0 ? 'none' : work.review.blockers.map(clean).join(', ')}`,
-    `attempts: ${work.attempts.length}`,
-    ...work.attempts.map((attempt) => `attempt ${attempt.attemptId}: ${clean(attempt.kind)}, ${attempt.present ? (attempt.ended ? 'ended' : 'open') : 'not found'}`),
-    ...work.contributors.map((contributor) => `contributor ${contributor.bindingId}: ${contributor.attemptCount} attempts, xpNet ${contributor.xpNet}`),
+function taskLines(task: TaskItemV1): string[] {
+  return [
+    `taskId: ${task.taskId}`,
+    `attemptId: ${task.attemptId}`,
+    `bindingId: ${task.bindingId}`,
+    `kind: ${clean(task.kind)}`,
+    `state: ${clean(task.state)}, closeReason ${task.closeReason === null ? 'none' : clean(task.closeReason)}, attempt ${clean(task.attemptState)}`,
+    `startedAt: ${iso(task.startedAtMs)}, endedAt ${iso(task.endedAtMs)}, closedAt ${iso(task.closedAtMs)}`,
+    `runMs: ${task.runMs}, sizeClass ${clean(task.sizeClass)}`,
+    `xpCredited: ${task.xpCredited === null ? 'none' : task.xpCredited}, policy ${clean(task.policyVersion)}`,
   ];
-  const recent = [...work.decisions].sort((a, b) => b.seq - a.seq).slice(0, RECENT_DECISIONS);
-  for (const decision of recent) lines.push(`decision ${decision.seq}: ${clean(decision.action)} ${clean(decision.fromState)}>${clean(decision.toState)} at ${iso(decision.atMs)}`);
-  return lines;
 }
 
 /**
  * Plain text for a person to paste into a bug report: ids, states, labels, ISO times, counts and contract versions.
- * It carries no decision note, acceptance condition, milestone label, profile prose, name, URL or message text.
+ * It carries no profile prose, name, URL or message text.
  */
 export function diagnosticSummary(input: DiagnosticInput): string {
   const { selection, model, bot, work, xp } = input;
-  const versions = [bot === null ? null : `roster-item v${bot.contractVersion}`, work === null ? null : `work-item v${work.contractVersion}`, xp === null ? null : `xp-summary v${xp.contractVersion}`].filter(
+  const versions = [bot === null ? null : `roster-item v${bot.contractVersion}`, work === null ? null : `task-item v${work.contractVersion}`, xp === null ? null : `xp-summary v${xp.contractVersion}`].filter(
     (entry): entry is string => entry !== null,
   );
   const lines = [
@@ -96,7 +84,7 @@ export function diagnosticSummary(input: DiagnosticInput): string {
     `field: ${model.enemies.length} drawn, ${model.overflow.enemies} not drawn${model.overflow.truncated ? ', counts are a minimum' : ''}`,
     ...(bot === null ? [] : botLines(bot)),
     ...(xp === null ? [] : [`level: ${xp.level}, totalXp ${xp.totalXp}, policy ${xp.policyVersion}`]),
-    ...(work === null ? [] : workLines(work)),
+    ...(work === null ? [] : taskLines(work)),
     `contracts: ${versions.length === 0 ? 'none read' : versions.join(', ')}`,
   ];
   const text = scrubSecrets(lines.join('\n'));

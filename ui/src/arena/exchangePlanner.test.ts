@@ -40,6 +40,8 @@ const enemy = (id: string, over: Partial<SceneEnemy> = {}): SceneEnemy => ({
   title: id,
   size: 'minion',
   state: 'open',
+  sizeClass: 'medium',
+  runMs: 300_000,
   progress: { kind: 'unknown' },
   parts: null,
   blocked: false,

@@ -1,7 +1,7 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody, setFixtureScenario, setSpecterScenario, setWorkScenario } from '@kirocrew/app-sdk';
+import { rosterBody, setFixtureScenario, setSpecterScenario, setTaskScenario } from '@kirocrew/app-sdk';
 import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
 import { WATCHED_KEY, writeWatched } from './watched';
@@ -326,16 +326,17 @@ describe('what the page never does', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it('shows XP, level and accepted work from the ledger, with no idle, healthy or available label', async () => {
-    setWorkScenario('work');
+  it('shows XP, level and credited tasks from both ledgers, with no idle, healthy or available label', async () => {
+    setTaskScenario('tasks');
     await open();
     selectRow('Atlas');
     const detail = await screen.findByRole('region', { name: 'Bot detail' });
-    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
+    await waitFor(() => expect(detail.textContent).toContain('115 XP'));
     const card = (title: string) => within(detail).getByRole('heading', { name: title }).parentElement;
-    expect(card('Accepted work')?.textContent).toBe('Accepted work2');
+    expect(card('Tasks credited')?.textContent).toBe('Tasks credited1');
+    expect(card('XP')?.textContent).toBe('XP115 XP');
     expect(card('Level')?.textContent).toContain('Level 2');
-    expect(card('Level')?.textContent).toContain('50 of 150 XP toward level 3');
+    expect(card('Level')?.textContent).toContain('15 of 150 XP toward level 3');
     expect(document.body.textContent ?? '').not.toMatch(/\b(idle|healthy|available)\b/i);
   });
 
@@ -343,12 +344,12 @@ describe('what the page never does', () => {
     await open();
     selectRow('Atlas');
     const detail = await screen.findByRole('region', { name: 'Bot detail' });
-    await waitFor(() => expect(detail.textContent).toContain('0 XP from accepted work'));
+    await waitFor(() => expect(detail.textContent).toContain('0 XP'));
     expect(detail.textContent).toContain('Level 1');
   });
 
   it('keeps the roster usable and never shows 0 when XP cannot be loaded', async () => {
-    setWorkScenario('work-failure');
+    setTaskScenario('tasks-failure');
     await open();
     selectRow('Atlas');
     expect(rowNames()).toContain('Atlas');
@@ -358,7 +359,7 @@ describe('what the page never does', () => {
   });
 
   it('says XP is not supported by an older backend', async () => {
-    setWorkScenario('work-unsupported');
+    setTaskScenario('tasks-unsupported');
     await open();
     selectRow('Atlas');
     const detail = await screen.findByRole('region', { name: 'Bot detail' });
@@ -366,15 +367,15 @@ describe('what the page never does', () => {
   });
 
   it('leaves the XP card unchanged when a Specter is renamed, because XP is keyed by binding', async () => {
-    setWorkScenario('work');
+    setTaskScenario('tasks');
     setSpecterScenario('specters');
     await open();
     selectRow('Atlas');
     const detail = await screen.findByRole('region', { name: 'Bot detail' });
-    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
+    await waitFor(() => expect(detail.textContent).toContain('115 XP'));
     await useAppApi().post('/apps/specter-arena/api/specters/bnd_aaaaaaaaaaaaaaaaaaaa0001/name', { expectedVersion: 1, name: 'Renamed', epithet: null });
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(detail.textContent).toContain('150 XP from accepted work'));
+    await waitFor(() => expect(detail.textContent).toContain('115 XP'));
   });
 });
 
@@ -383,9 +384,10 @@ describe('sections', () => {
   const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
   const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
 
-  it('offers Roster, Specters, Work, Arena and Data with Roster selected', async () => {
+  it('offers Roster, Specters, Arena and Data with Roster selected, and no Work tab', async () => {
     await open();
-    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Work', 'Arena', 'Data']);
+    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Arena', 'Data']);
+    expect(screen.queryByRole('tab', { name: 'Work' })).toBeNull();
     expect(rosterTab().getAttribute('aria-selected')).toBe('true');
     expect(specterTab().getAttribute('aria-selected')).toBe('false');
     expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
@@ -402,18 +404,18 @@ describe('sections', () => {
     fireEvent.keyDown(sections().getByRole('tab', { name: 'Data' }), { key: 'ArrowLeft' });
     expect(sections().getByRole('tab', { name: 'Arena' }).getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(sections().getByRole('tab', { name: 'Arena' }), { key: 'ArrowLeft' });
-    expect(sections().getByRole('tab', { name: 'Work' }).getAttribute('aria-selected')).toBe('true');
+    expect(specterTab().getAttribute('aria-selected')).toBe('true');
   });
 
-  it('opens the Arena tab as the fourth section with its mode badge, scoped style, and no poll before it is opened', async () => {
+  it('opens the Arena tab as the third section with its mode badge, scoped style, and no poll before it is opened', async () => {
     await open();
     const get = vi.spyOn(useAppApi(), 'get');
-    expect(get.mock.calls.filter(([path]) => String(path).includes('state=open'))).toHaveLength(0);
+    expect(get.mock.calls.filter(([path]) => String(path).includes('/tasks?'))).toHaveLength(0);
     expect(document.head.querySelectorAll('style[data-specter-arena-scene]')).toHaveLength(1);
     fireEvent.click(sections().getByRole('tab', { name: 'Arena' }));
     expect(await screen.findByRole('group', { name: 'Arena map' })).toBeTruthy();
     expect(screen.getAllByText('FIXTURE — demo data, not Crew activity').length).toBeGreaterThan(0);
-    expect(get.mock.calls.filter(([path]) => String(path).includes('state=open')).length).toBeGreaterThan(0);
+    expect(get.mock.calls.filter(([path]) => String(path).includes('/tasks?state=open')).length).toBeGreaterThan(0);
     fireEvent.click(rosterTab());
     expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
   });

@@ -11,7 +11,7 @@ const text = (view: XpView) => {
 
 describe('XpCards (XP-1..XP-5)', () => {
   it('says not loaded yet while loading', () => {
-    expect(text({ status: 'loading' })).toBe('Accepted workNot loaded yetXPNot loaded yetLevelNot loaded yet');
+    expect(text({ status: 'loading' })).toBe('Tasks creditedNot loaded yetXPNot loaded yetLevelNot loaded yet');
   });
 
   it('never shows a digit when XP is unsupported or failed', () => {
@@ -26,18 +26,18 @@ describe('XpCards (XP-1..XP-5)', () => {
 
   it('shows 0, 0 XP and Level 1 for a bot with no entry, and no next-level figure', () => {
     const result = text({ status: 'ready', summary: null });
-    expect(result).toContain('Accepted work0');
-    expect(result).toContain('0 XP from accepted work');
+    expect(result).toContain('Tasks credited0');
+    expect(result).toContain('0 XP');
     expect(result).toContain('Level 1');
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
-  it('shows the count, total, level, meter and the level note for a summary', () => {
+  it('shows the credited-task count, total, level, meter and the level note for a summary', () => {
     const result = text({ status: 'ready', summary: summaryOf() });
-    expect(result).toContain('Accepted work2');
-    expect(result).toContain('150 XP from accepted work');
+    expect(result).toContain('Tasks credited3');
+    expect(result).toContain('150 XP');
     expect(result).toContain('Level 2');
-    expect(result).toContain('Level reflects accepted work, not ability or current condition.');
+    expect(result).toContain('Level follows XP credited automatically for tasks, plus earlier accepted work. It reflects observed activity, not ability, outcome quality or current condition.');
     expect(screen.getByRole('progressbar')).toBeTruthy();
   });
 

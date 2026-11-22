@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, SpecterV2, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { ActivityPanel } from '../observatory/ActivityPanel';
 import { AttemptsList, AttemptsStatus } from '../observatory/AttemptsList';
 import { ConditionBadge } from '../observatory/ConditionBadge';
@@ -10,9 +10,9 @@ import { botCondition } from '../observatory/model';
 import { useAttempts } from '../observatory/useAttempts';
 import { Button } from '../observatory/ui';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
+import { taskTitle } from '../tasks/copy';
 import { entryKindWords } from '../work/copy';
 import { amountWords } from '../work/model';
-import type { WorkRowV1 } from '../work/model';
 import { useXpHistory } from '../work/useXpHistory';
 import { HandoffRow } from './HandoffRow';
 import { INSPECTOR, levelXpText } from './copy';
@@ -29,22 +29,20 @@ interface Props {
   list: SceneModel;
   collector: RosterCollectorV1;
   rosterRevision: number;
-  items: ReadonlyMap<string, WorkRowV1>;
+  items: ReadonlyMap<string, TaskItemV1>;
   onSelect: (selection: ArenaSelection) => void;
   onClose: () => void;
 }
 
-/** Work this bot has an open attempt on, drawn from the arena's own snapshot. */
-function openWorkOf(bindingId: string, items: ReadonlyMap<string, WorkRowV1>): WorkRowV1[] {
-  return [...items.values()]
-    .filter((item) => item.state !== 'accepted' && item.attempts.some((attempt) => attempt.bindingId === bindingId && attempt.present && !attempt.ended))
-    .sort((a, b) => (a.workId < b.workId ? -1 : 1));
+/** Tasks of this bot that are still open, from the arena's own snapshot. */
+function openTasksOf(bindingId: string, items: ReadonlyMap<string, TaskItemV1>): TaskItemV1[] {
+  return [...items.values()].filter((task) => task.bindingId === bindingId && task.state === 'open').sort((a, b) => b.startedAtMs - a.startedAtMs || (a.taskId < b.taskId ? -1 : 1));
 }
 
 export function SpecterInspector({ specter, bot, record, summary, headingRef, list, collector, rosterRevision, items, onSelect, onClose }: Props) {
   const attempts = useAttempts(specter.bindingId);
   const history = useXpHistory(specter.bindingId);
-  const openWork = openWorkOf(specter.bindingId, items);
+  const openWork = openTasksOf(specter.bindingId, items);
   const attemptsData = attempts.state.status === 'ready' ? attempts.state.data : null;
   const name = specter.specterName ?? specter.displayName;
 
@@ -80,9 +78,9 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
         ) : (
           <ul className="sa-arena-plain">
             {openWork.map((item) => (
-              <li key={item.workId}>
-                <Button variant="ghost" onClick={() => onSelect({ kind: 'work', workId: item.workId })}>
-                  {item.title}
+              <li key={item.taskId}>
+                <Button variant="ghost" onClick={() => onSelect({ kind: 'work', workId: item.taskId })}>
+                  {taskTitle(item)}
                 </Button>
               </li>
             ))}
@@ -119,9 +117,6 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
             {history.entries.map((entry) => (
               <li key={entry.entryId}>
                 <span>{INSPECTOR.entryLine(entryKindWords(entry.kind), amountWords(entry.amount), entry.workTitle)}</span> <Time ms={entry.createdAtMs} />
-                <Button variant="ghost" aria-label={`${INSPECTOR.openEvidence}: ${entry.workTitle}`} onClick={() => onSelect({ kind: 'work', workId: entry.workId, decisionId: entry.decisionId })}>
-                  {INSPECTOR.openEvidence}
-                </Button>
               </li>
             ))}
           </ul>
