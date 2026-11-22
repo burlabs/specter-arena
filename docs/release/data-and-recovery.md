@@ -2,11 +2,11 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
+Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
 
 This page says where Specter Arena keeps its data, what it never deletes, how to copy it, how to restore it and what a restore loses. Facts come from the code and tests named in each row. Anything not run on a live Crew install says so.
 
-Related: `docs/release/install.md` (install, update, uninstall), `docs/release/blockers.md` (KL-07, KL-08, KL-10 to KL-14, KL-23, KL-24), `docs/release/threat-model.md`.
+Related: `docs/release/install.md` (install, update, uninstall), `docs/release/blockers.md` (KL-07, KL-08, KL-10 to KL-14, KL-23 to KL-28), `docs/release/threat-model.md`.
 
 ## 1. Where data lives
 
@@ -30,9 +30,9 @@ A purge first copies the database to `data/store/backups/pre-purge-<stamp>.db` a
 | `observation`, `quarantine` | Deleted only by a purge. The SQL guard lets a DELETE through only while a `purge` run is `running` and the row is older than that run's cutoff. Otherwise UPDATE and DELETE abort | triggers `observation_keep`, `quarantine_keep` replaced in `store/migrations/0009_data_lifecycle.sql`; `backend/tests/test_store_lifecycle.py::test_nothing_deletes_outside_a_running_lifecycle_run`, `::test_the_observation_guard_respects_the_cutoff_of_the_open_run` |
 | Kept by a purge whatever their age | On each bot's direct-message slot, the newest observation of each kind and the newest `chat_done`; the newest observation with a turn and the newest with a turn generation of each bot; the row `bot_state` points at; the row that opened each running attempt; every row from a linked attempt's start to its end on its own slot | `backend/specter_arena/store/lifecycle.py` (`_OBSERVATION_CANDIDATES`); `backend/tests/test_store_lifecycle.py::test_a_purge_keeps_what_the_next_start_and_the_next_row_need`, `::test_observations_a_linked_attempt_needs_survive_and_old_unneeded_ones_go` |
 | `attempt` (projection) | A purge deletes ended attempts older than the cutoff that no work item links. Running and linked attempts stay. The table has no SQL delete guard; the code and its tests bound the delete. `rebuild_projection` still deletes from it and nothing in the running app calls that (KL-10) | `store/lifecycle.py` (`_ATTEMPT_CANDIDATES`); `backend/tests/test_store_lifecycle.py::test_a_purge_deletes_only_old_unlinked_ended_attempts`, `::test_a_rebuild_after_a_purge_reproduces_bot_state_and_every_kept_attempt` |
-| `bot_binding`, `bot_display_revision`, `bot_presence`, `binding_rebind`, `work_item`, `work_attempt`, `work_milestone`, `work_decision`, `hero_assignment`, `avatar_revision`, `xp_entry`, `retention_setting`, `lifecycle_run` | Never deleted. DELETE aborts in SQL, with or without a running purge. Rows that change do so only through guarded transitions | the `*_keep` triggers in migrations 0002, 0005, 0006, 0007 and 0009; `backend/tests/test_store_lifecycle.py::test_a_running_purge_still_cannot_delete_identity_heroes_work_or_xp`, `::test_a_purge_changes_no_identity_hero_decision_or_xp_row`, `::test_every_other_delete_guard_is_byte_for_byte_what_it_was_at_v8` |
+| `bot_binding`, `bot_display_revision`, `bot_presence`, `binding_rebind`, `work_item`, `work_attempt`, `work_milestone`, `work_decision`, `hero_assignment`, `avatar_revision`, `xp_entry`, `task`, `task_xp_entry`, `retention_setting`, `lifecycle_run` | Never deleted. DELETE aborts in SQL, with or without a running purge. Rows that change do so only through guarded transitions | the `*_keep` triggers in migrations 0002, 0005, 0006, 0007, 0009, 0010 and 0011; `backend/tests/test_store_lifecycle.py::test_a_running_purge_still_cannot_delete_identity_heroes_work_or_xp`, `::test_a_purge_changes_no_identity_hero_decision_or_xp_row`, `::test_every_other_delete_guard_is_byte_for_byte_what_it_was_at_v8` |
 | `asset` | Bundled art is never deleted. An uploaded asset is deleted only by "Remove unused uploads": it must be older than one hour and used by no avatar choice in the history. The SQL guard repeats both rules | `store/migrations/0009_data_lifecycle.sql` (`asset_keep`); `backend/tests/test_store_lifecycle.py::test_the_asset_guard_refuses_bundled_referenced_and_young_assets`, `::test_cleanup_deletes_only_old_unreferenced_uploads` |
-| XP and level | Not tied to `observation` or `attempt`. Each decision keeps its own evidence, at most 8192 bytes. Deleting, purging or rebuilding observations cannot zero XP. Work and XP reads were byte-identical before and after a purge in the tests | `store/migrations/0006_work_xp.sql` (`evidence_json` check); `backend/tests/test_store_release_hardening.py::test_deleting_or_rebuilding_observations_never_changes_xp`; `backend/tests/test_store_lifecycle.py::test_a_purge_changes_no_identity_hero_decision_or_xp_row` |
+| XP and level | Not tied to `observation` or `attempt`. Each task keeps its own snapshot of the times and end signal it was judged on, and each legacy decision keeps its own evidence, at most 8192 bytes. A task id is a hash of its attempt id, so rebuilding observations or losing the attempt changes no task and no award. Deleting, purging or rebuilding observations cannot zero XP. Work and XP reads were byte-identical before and after a purge in the tests | `store/migrations/0006_work_xp.sql` (`evidence_json` check); `backend/tests/test_store_release_hardening.py::test_deleting_or_rebuilding_observations_never_changes_xp`; `backend/tests/test_store_tasks.py::test_rebuilding_the_projection_changes_no_task_and_no_award`, `::test_tasks_and_awards_survive_the_loss_of_their_attempts`; `backend/tests/test_store_lifecycle.py::test_a_purge_changes_no_identity_hero_decision_or_xp_row` |
 | Purge horizon | The largest cutoff of any purge that deleted a row. Time before it reads as a coverage gap with the reason `purged`, never as zero activity. After a purge, `workers.seen` on a roster item counts only the worker attempts that were kept | `store/lifecycle.py` (`purge_horizon`, `with_purged_gap`); `backend/tests/test_store_lifecycle.py::test_a_window_that_reaches_the_purged_span_reads_it_as_a_gap_not_covered_time` |
 | Pre-migration backups | The newest 3 are kept | `KEEP_PRE_MIGRATION` in `store/backup.py`; `backend/tests/test_store_backup.py::test_successive_upgrades_keep_the_newest_three_pre_migration_backups` |
 | `pre-purge-<stamp>.db` and `pre-cleanup-<stamp>.db` | The newest one of each kind is kept. The older one is deleted only after the new copy is verified | `KEEP_PRE_LIFECYCLE` in `store/backup.py`; `backend/tests/test_store_lifecycle.py::test_a_pre_purge_backup_is_a_verified_copy_and_only_the_newest_is_kept`, `::test_pruning_touches_only_its_own_kind` |
@@ -51,15 +51,15 @@ The offline paths still work:
 1. Disable the app, then copy the whole `data` folder (section 5, step 1). Copy the folder, not only the `.db` file: recent writes can sit in the `-wal` file beside it (a 4 MB `-wal` beside a 168 KB `.db` was seen on the owner's machine on 2026-11-19).
 2. With the app disabled, run `sqlite3 ~/.kiro/crew/apps/specter-arena/data/store/specter-arena.db ".backup 'OUT.db'"`. The result is one closed file. The `.backup` command was run read-only against the owner's live file during research. It was not exercised through the owner's Crew with the app enabled.
 
-The in-app export route was tested in the repository. It is checked on the installed app in the RC-3 sitting (`docs/release/oa-5-runbook.md`, Part 1 step 10).
+The in-app export route was tested in the repository. It is checked on the installed app in the RC-4 sitting (`docs/release/oa-5-runbook.md`, Part 1 step 12).
 
 ## 4. Delete
 
-- **Purge** old history: Data tab, section 2 above. It deletes old observations, quarantine rows and ended attempts that no work item uses, and nothing else.
+- **Purge** old history: Data tab, section 2 above. It deletes old observations, quarantine rows and ended attempts that no work item uses, and nothing else. Tasks and their awards are never deleted, because each keeps its own snapshot of what it was judged on.
 - **Remove unused uploads**: Data tab. It first copies the database to `pre-cleanup-<stamp>.db`, then deletes uploaded portraits that no avatar choice in the history uses and that are older than one hour. At most 100 uploaded portraits are stored. A new image past that returns 409 `upload_limit_reached`. Bundled art is never deleted.
 - **Everything**: `kirocrew app uninstall specter-arena --purge-data`. The flag was confirmed in `kirocrew app uninstall --help` on Crew 0.12.2 during research. This deletes the whole folder including the database, `data/store/backups/` and `data/exports/`, and cannot be undone.
 
-There is still no per-item delete. Work items, decisions, XP entries, heroes and avatar choices cannot be deleted at all.
+There is still no per-item delete. Work items, decisions, XP entries, tasks, task awards, heroes and avatar choices cannot be deleted at all. A hero assignment is final (KL-29).
 
 ## 5. Restore
 
@@ -78,7 +78,7 @@ A backup is one closed file (`copy_database` sets `journal_mode = DELETE` and ru
 
 ## 6. What a restore loses
 
-A restore returns the store to the moment of the backup. Identity, heroes, avatars, work items and XP that existed in the backup are intact. Nothing written after it can be recovered from the restored store.
+A restore returns the store to the moment of the backup. Identity, heroes, avatars, tasks, work items and XP that existed in the backup are intact. Nothing written after it can be recovered from the restored store.
 
 | Backup file | Loses |
 |---|---|
@@ -87,30 +87,32 @@ A restore returns the store to the moment of the backup. Identity, heroes, avata
 | `pre-purge-<stamp>.db` (the newest one) | Everything written since that purge started. It also puts the purged observations, quarantine rows and attempts back |
 | `pre-cleanup-<stamp>.db` (the newest one) | Everything written since that cleanup started. It also puts the removed uploads back |
 | `export-v<N>-<stamp>.db` | Everything written since that export |
-| A backup taken before an acceptance | The later acceptance, its XP award and its evidence. Tested result: XP 0, empty XP history, the work item back at `awaiting-review`, the hero present (`backend/tests/test_store_release_hardening.py::test_a_backup_taken_before_acceptance_restores_without_the_later_award`) |
+| A backup taken before a legacy acceptance | The later acceptance, its XP award and its evidence. Tested result: XP 0, empty XP history, the work item back at `awaiting-review`, the hero present (`backend/tests/test_store_release_hardening.py::test_a_backup_taken_before_acceptance_restores_without_the_later_award`) |
+| A backup taken before a task was credited | The task's award is gone and the task is judged again by the next sweep, which can credit it again if its attempt is still retained and still meets the rule. XP for a task whose attempt was purged before the restore is not recovered. This follows from the sweep rule; no test restores a store across a credit |
+| A backup taken before a hero was assigned | The assignment. The bot has no Specter again and the walkthrough offers it (assignments are append-only, so a restore is the only way one goes away; no test restores across an assignment) |
 
-Accepted items, XP awards, observations and new bindings, heroes and avatar choices written after the backup are not recoverable from the restored store. The app shows no banner after a restore. This page is the disclosure.
+Tasks, XP awards, accepted items, observations and new bindings, hero assignments and avatar choices written after the backup are not recoverable from the restored store. The app shows no banner after a restore. This page is the disclosure.
 
 Migration 0007 removed the generated Specter text from the database tables. Dropped text may remain in free pages of the database file and in an old `pre-migrate-v6-to-v7-<stamp>.db` backup, if one is still kept. A purge leaves deleted rows in the same way (KL-23). The migration runner forbids `VACUUM`, so the file is not rewritten.
 
-Store version. The store is at version 9 (nine migrations; `npm run check:schema` reports 31 schemas and 9 migrations). Migration 0008 (FP-18) adds two indexes on `work_item` and no data. Migration 0009 (FP-19) adds the `lifecycle_run` and `retention_setting` tables and replaces the DELETE guards on `observation`, `quarantine` and `asset`. An older build refuses a version 9 store (`SchemaNewer`). Installing an older build over a migrated store is therefore not a rollback. A binary rollback needs the automatic backup taken before the migration: an update from version 6 writes one `pre-migrate-v6-to-v9-<stamp>.db`, and an update from version 8 writes `pre-migrate-v8-to-v9-<stamp>.db`. The runner takes one backup before all pending migrations, named with the version before and the version after. The newest 3 are kept. Restoring it loses what was written since the update (the first row of the table above). Test: `backend/tests/test_store_lifecycle.py::test_a_v8_store_migrates_to_v9_with_one_pre_migrate_backup`.
+Store version. The store is at version 11 (eleven migrations; `npm run check:schema` reports 37 schemas and 11 migrations). Migration 0008 (FP-18) adds two indexes on `work_item` and no data. Migration 0009 (FP-19) adds the `lifecycle_run` and `retention_setting` tables and replaces the DELETE guards on `observation`, `quarantine` and `asset`. Migration 0010 (FP-22) adds the append-only `task` and `task_xp_entry` tables, and the first sweep after it builds tasks from every retained attempt (KL-26). Migration 0011 (FP-23) rebuilds `hero_assignment` and `avatar_revision` so that a hero can be any of the 11 and a bot can have none: it copies every row, marks the existing assignments `auto`, and recreates the `asset_keep` guard from 0009. An older build refuses a version 11 store (`SchemaNewer`). Installing an older build over a migrated store is therefore not a rollback. A binary rollback needs the automatic backup taken before the migration: an update from version 6 writes one `pre-migrate-v6-to-v11-<stamp>.db`, an update from version 9 (RC-3) writes `pre-migrate-v9-to-v11-<stamp>.db`, and an update from version 10 writes `pre-migrate-v10-to-v11-<stamp>.db`. The runner takes one backup before all pending migrations, named with the version before and the version after. The newest 3 are kept. Restoring it loses what was written since the update (the first row of the table above). Tests: `backend/tests/test_store_lifecycle.py::test_a_v8_store_migrates_to_v9_with_one_pre_migrate_backup` (the one-backup rule) and `backend/tests/test_store_hero_choice_migration.py` (0011).
 
 ## 7. Scale and compatibility
 
-- Supported acceptance profile: 20 tracked bots, 100 active work items and a 10,000-observation journal (`backend/tests/test_store_load.py`; `backend/tests/test_store_release_hardening.py::test_a_hundred_work_items_over_twenty_bots_page_in_four_requests_inside_the_budget`). These are proposed targets, not advertised benchmarks.
+- Supported acceptance profile: 20 tracked bots, 100 work items (legacy) and a 10,000-observation journal (`backend/tests/test_store_load.py`; `backend/tests/test_store_release_hardening.py::test_a_hundred_work_items_over_twenty_bots_page_in_four_requests_inside_the_budget`). These are proposed targets, not advertised benchmarks.
 - Lists page at 25 items. The UI reads XP through `GET /api/xp?view=paged`, which walks every page with no 500 cap (KL-11, fixed in FP-18). `GET /api/xp` without `view` is still capped at 500 bindings, and no UI caller uses it.
 - At most 100 uploaded portraits are stored (`MAX_UPLOADED_ASSETS`). The gallery lists 200 entries, so every stored asset is listed (KL-14, fixed in FP-19).
-- Host: Kiro Crew 0.13.0 on macOS is the host of the RC-3 sitting (`kirocrew --version` on the owner's machine, 2026-11-20). Kiro Crew 0.12.2 was the tested combination before it (KL-C14). Neither is confirmed on an installed RC-3 until `docs/release/oa-5-result.md` exists.
+- Host: Kiro Crew 0.13.1 on macOS is the host of the RC-4 sitting. Kiro Crew 0.13.0 hosted the RC-3 test, and 0.12.2 was the tested combination before it (KL-C14). None is confirmed on an installed RC-4 until `docs/release/oa-5-result.md` exists.
 - SQLite 3.37 or newer, because the work tables are STRICT (KL-C11).
 - A second process holding the write lock makes readiness read `unavailable` for up to 5 seconds (`BUSY_TIMEOUT_S`), then it recovers (KL-12; `backend/tests/test_store_release_hardening.py::test_a_second_connection_holding_the_write_lock_makes_the_store_unavailable_then_it_recovers`).
 - Orphaned `.partial` and `.restore-*.db` files after a crash are swept when the store opens, if they are older than ten minutes, in `store/`, `backups/` and `exports/` (KL-13, fixed in FP-19). The sweep never touches a database, a `-wal` or `-shm` file, a backup or an export. Test: `backend/tests/test_store_lifecycle.py::test_the_sweep_deletes_only_matching_names_older_than_ten_minutes`.
-- After a manual projection rebuild, re-accepting an item can be refused until its attempt is observed again (KL-10).
+- After a manual projection rebuild, re-accepting a legacy work item can be refused until its attempt is observed again (KL-10). Tasks are not affected.
 
 ## 8. Recovery runbook
 
 | Symptom | Cause | Action |
 |---|---|---|
-| App reports `SchemaNewer` | An older release was installed over a newer database (version 9 at RC-3) | Install the newer release, or restore a pre-migration backup (section 5) |
+| App reports `SchemaNewer` | An older release was installed over a newer database (version 11 at RC-4) | Install the newer release, or restore a pre-migration backup (section 5) |
 | A purge or cleanup answers `backup_failed` (500) | The backup copy before it could not be written. Nothing was deleted | Free disk space and try again |
 | A purge or cleanup answers `lifecycle_busy` (409) | Another purge, cleanup, export or retention change is running or was left open | Wait. A run a crash left open is closed as `interrupted` the next time the app starts |
 | A purge removed more than you wanted | The purge ran as asked | Disable the app and restore the newest `pre-purge-*.db` (section 5). Read section 6 for what it loses |

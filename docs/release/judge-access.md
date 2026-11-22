@@ -4,7 +4,7 @@ Specter Arena is a Kiro Crew app. It runs inside a Kiro Crew installation, so th
 
 ## The real app (default and only supported path)
 
-1. Install Kiro Crew 0.12.2 or later on macOS or Linux.
+1. Install Kiro Crew 0.13.1 or later on macOS or Linux. The tested host is 0.13.1; the manifest minimum is 0.12.0 (`app.json` `minKiroCrewVersion`).
 2. Download the release artifact and its checksum from the GitHub Release page for the tagged commit, named on the Release page and, once published, in `docs/release/release-record.md`.
 3. Follow `docs/release/install.md` from "Verify and extract" to "Check it works".
 4. You need at least one Crew bot for a populated roster, network access to PyPI on first enable.
@@ -13,7 +13,7 @@ This is the same artifact the maintainer tested, identified by the commit and sh
 
 ## What a working run shows
 
-A roster of the bots you pick, a named Specter for each, work items you create and accept, XP from accepted work, a read-only arena and an evidence inspector. "Open Bots in Crew" opens the Bots page; Crew 0.12.2 has no route to one bot's chat or an approval.
+A roster of the bots you pick, a named Specter for each bot once you assign one (the app walks you through it, or randomizes), a showcase of the 11 heroes, tasks the app observes and closes by itself, XP credited automatically when a task ends cleanly, a read-only arena with an evidence inspector, and a Data tab. XP reflects observed activity; nobody accepts anything. "Open Bots in Crew" opens the Bots page; Crew has no route for an app to open one bot's chat or an approval.
 
 ## Supplementary material (not the app)
 

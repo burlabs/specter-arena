@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
+Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
 
 This is the release threat model for Specter Arena (FP-14-AC02). Every control and test named below was found in the repository at the commit above. Where a limit is disclosed rather than fixed, the last column gives its ID in `docs/release/blockers.md`. Nothing here was verified on a live Crew install; that is the job of OA-5 (`docs/release/oa-5-runbook.md`).
 
@@ -16,7 +16,7 @@ This is the release threat model for Specter Arena (FP-14-AC02). Every control a
 ## 2. Assets
 
 - The owner's Crew access: the gateway signing secret the host passes to the backend through `KIROCREW_PROXY_SECRET` (`backend/specter_arena/config.py`), and the app token used for the `slots:user` feed and `GET /api/agents`.
-- The store: Specters, portraits, work items, decisions and the XP ledger (`docs/release/data-and-recovery.md`).
+- The store: Specters, portraits, tasks, task awards, earlier work items and decisions, and the XP ledgers (`docs/release/data-and-recovery.md`).
 - Bot names and activity metadata the collector keeps (`docs/compatibility/monitoring-scope.md`, "What the collector keeps").
 
 ## 3. Trust boundaries
@@ -55,6 +55,7 @@ This is the release threat model for Specter Arena (FP-14-AC02). Every control a
 | Threat | Control | Test | Residual risk | ID |
 |---|---|---|---|---|
 | A hero's text is edited, generated or injected | The text is shipped content in `backend/specter_arena/specters/heroes.json`, loaded and validated at start; no route writes it | `backend/tests/test_heroes.py` (names, ids, limits, markup and control characters, denied words); `backend/tests/test_specter_routes.py::test_removed_routes_answer_404_even_when_signed` | Changing a hero needs a new release | none |
+| A request assigns a hero the owner did not choose, or changes one | `POST /api/specters/{bindingId}/hero` is signed like every route, body-capped and version-checked. An assignment is append-only: a different request on an assigned binding answers 409 `version_conflict`, a same-hero replay is a no-op, and two threads assigning one binding write one row. A random pick uses `secrets.choice` among the least-held heroes. The hero text is not writable | `backend/tests/test_store_hero_choice.py::test_a_different_hero_on_an_assigned_binding_is_a_conflict`, `::test_two_threads_assigning_one_binding_write_one_row`, `::test_a_random_pick_chooses_only_among_the_least_held_heroes` | none (KL-29: assignments are final) | KL-29 |
 | An uploaded avatar is hostile or oversized | PNG only, re-encoded, at most 1 MiB and 1024 px, label cleaned (existing rule) | `backend/tests/test_specter_service.py::test_upload_rejections` | none | none |
 | The app reaches a model or Crew chat | The manifest grants only `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`; the release guard rejects `/api/chat` and any agent | `backend/tests/test_manifest.py`; `scripts/__tests__/check-fixtures.test.mjs` | none | none |
 
@@ -83,7 +84,7 @@ What the summary can contain: ids, states, ISO times, counts and contract versio
 | A second purge, cleanup or export starts while one runs | One run at a time: a unique index on `lifecycle_run` and a lock answer 409 `lifecycle_busy` | `backend/tests/test_store_lifecycle.py::test_a_run_cannot_be_widened_reopened_or_doubled` | none | none |
 | Data readable by another local user | Directories are mode 0700 and backups are created 0600 (`backend/specter_arena/store/location.py`, `backend/specter_arena/store/backup.py`) | `backend/tests/test_store_backup.py::test_a_backup_of_a_live_wal_store_is_one_verified_owner_only_file` | The live database file mode depends on the directory; it is not separately asserted | none |
 | Damaged or newer database | `quick_check` on open and on restore; `SchemaNewer` refuses a newer schema; migration checksums re-verified; a failing migration rolls back | `backend/tests/test_store_migrations.py::test_a_failing_migration_rolls_back_completely`; `backend/tests/test_store_backup.py::test_a_failed_pre_migration_backup_aborts_the_migration` | none | none |
-| Lost update or double award under concurrency | One writer under `BEGIN IMMEDIATE`; acceptance is idempotent per token | `backend/tests/test_store_work_concurrency.py::test_eight_concurrent_accepts_with_distinct_tokens_make_one_award`, `::test_four_handles_accepting_at_once_make_one_award`; `backend/tests/test_store_xp_properties.py` | none | none |
+| Lost update or double award under concurrency | One writer under `BEGIN IMMEDIATE`; a task earns at most one award, enforced by SQL triggers on `task_xp_entry`; the sweep writes nothing on a second run. The legacy acceptance path is idempotent per token | `backend/tests/test_store_tasks.py::test_a_second_sweep_writes_nothing`, `::test_a_credited_task_whose_worker_runs_again_earns_nothing_more`; `backend/tests/test_store_work_concurrency.py::test_eight_concurrent_accepts_with_distinct_tokens_make_one_award`, `::test_four_handles_accepting_at_once_make_one_award`; `backend/tests/test_store_xp_properties.py` | none | none |
 | A second process holds the write lock | Readiness reads `unavailable` for up to 5 seconds, then recovers | `backend/tests/test_store_release_hardening.py::test_a_second_connection_holding_the_write_lock_makes_the_store_unavailable_then_it_recovers` | Up to 5 seconds of `503 store_unavailable` | KL-12 |
 | Restore loses identity or progression | `restore()` verifies and replaces atomically | `backend/tests/test_store_release_hardening.py::test_a_restored_backup_keeps_identity_heroes_avatars_and_xp`, `::test_a_backup_taken_before_acceptance_restores_without_the_later_award` | The hand procedure for restore is untested on a live Crew install | KL-08, BLK-06 |
 
@@ -95,6 +96,7 @@ What the summary can contain: ids, states, ISO times, counts and contract versio
 | A secret in the repository or its history | The `secret-scan` job runs a pinned, checksum-verified gitleaks over the full history. `npm run check:provenance` fails if an env file other than `.env.example` is tracked | `secret-scan` and `provenance` jobs | none | none |
 | A dev dependency ships | `@axe-core/playwright` 4.14.0 is a dev dependency (MPL-2.0), never bundled (`DEPENDENCIES.md`). The packager packs only tracked files plus the built `ui/dist/index.mjs` | `scripts/__tests__/package.test.mjs` (including `fails on missing blocker list`) | none | none |
 | Vulnerable development tooling | `npm audit` at this commit reports three moderate findings in an `eslint` chain through `minimatch`. None ships in the artifact. No Python audit was run | none | Findings stay until the toolchain is updated | KL-19 |
+| Repository-only files ship in the artifact (`avatar-packs/`, `docs/images/`) | The packager filters both directories out of the tracked file list (`RELEASE_EXCLUDED` in `scripts/package.mjs`). The agent also lists the extracted artifact for these paths and for `agents/` at each release candidate | `scripts/__tests__/package.test.mjs`; `docs/release/evidence-checklist.md` section 6 | none | none |
 | An artifact without its blocker list | The packager refuses a commit that lacks `docs/release/blockers.md` | `scripts/__tests__/package.test.mjs::fails on missing blocker list` | Older commits cannot be re-packaged after this change | none |
 
 ## 5. Result

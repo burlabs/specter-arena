@@ -1,30 +1,28 @@
-# Demo script (target 2:38, hard limit 3:00)
+# Demo script (target 2:28, hard limit 3:00)
 
-Draft for Eric's review. Eric records and uploads; the agent does not. Record the real installed app in Kiro Crew on the Mac it runs on (Crew 0.13.0). Use harmless bots and work only; no credentials or personal data on screen. No music, or only music you made or licensed.
+Draft for Eric's review. Eric records and uploads; the agent does not. Record the real installed app in Kiro Crew on the Mac it runs on (Crew 0.13.1). Use harmless bots and work only; no credentials or personal data on screen. No music, or only music you made or licensed. FP-15 Stage B finalizes this script after the RC-4 sitting passes.
 
-Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
+Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
 
 Labels: anything from the FIXTURE preview or any prerecorded clip carries an on-screen label for its whole duration: "FIXTURE (sample data)" or "PRERECORDED". The default plan uses neither.
 
 | Shot | Time | Budget | What is on screen | Voice-over (about) | Evidence it can be done |
 |---|---|---|---|---|---|
-| 0 Title | 0:00-0:08 | 8 s | App name, "Kiro Crew app, running live", Crew version | "Specter Arena turns the work your Kiro Crew bots do into a game, and only work you accept counts." | `app.json` `displayName` |
-| 1 Bots arrive with their heroes | 0:08-0:36 | 28 s | Specters tab with several bots, each already named by its hero with epithet and personality; change one avatar; no class, role or tier anywhere | "Every bot arrives with a hero. The names are fixed. The avatar is yours." | `.kiro/specs/fp-16-heroes-parity` ACs; needs OA-5 to pass |
-| 2 Real bot turn on the roster | 0:36-0:58 | 22 s | Roster shows the bot "Working" with the reason; then "No turn running"; coverage shown as time, "Not collected" instead of zero | "The roster shows what Crew actually reports. No turn running is not unhealthy." | FP-04 spec; `docs/compatibility/monitoring-scope.md` |
-| 3 A work item accepted | 0:58-1:26 | 28 s | Create a work item, link the bot's attempt, review the evidence, click Accept (labelled in-app acceptance, not a Crew tool approval) | "Finishing a session proves nothing. A person accepts the work." | `.kiro/specs/fp-08-09-work-encounters-xp`; `xp-policy-1` |
-| 4 XP and an arena defeat | 1:26-1:54 | 28 s | Switch to Arena: the enemy is defeated, XP and level are shown, "N of M" milestones, no health bar | "Accepted work becomes XP. The arena only shows it." | `.kiro/specs/fp-10-11-live-arena` event-to-effect map |
-| 5 Inspector evidence and a blocker | 1:54-2:18 | 24 s | Open the inspector on an item to show its evidence list and XP history entry. Then, on another open item in the Work tab, press "Mark blocked", return to the Arena and open the inspector to show the Blocked marker | "Every number traces to a recorded fact. A blocker is something you say, and it stays visible." | See "Blocker shot" below |
-| 6 Open Bots in Crew | 2:18-2:30 | 12 s | Click "Open Bots in Crew"; Crew's Bots page opens | "For the bot's chat and approvals, hand off to Crew." | `docs/compatibility/handoff-routes.md`; lands on the Bots page, not the selected bot. Not live-clicked yet (issue #124) |
-| 7 End card | 2:30-2:38 | 8 s | Repo URL, "MIT licensed", "Install: docs/release/install.md" | | `rules-checklist.md` R-4, R-5 |
+| 0 Title | 0:00-0:08 | 8 s | App name, "Kiro Crew app, running live", Crew version | "Specter Arena turns the work your Kiro Crew bots do into a game. The app watches, and the XP follows what it saw." | `app.json` `displayName` |
+| 1 Assign your Specters | 0:08-0:36 | 28 s | A new bot appears. The walkthrough opens over the Arena: pick a hero for one bot by hand, then press "Randomize all unassigned" for the rest; the summary reads "N assigned" | "A new bot has no Specter. You pick one, or let the app pick. The names are fixed. Once assigned, it is final." | `docs/release/oa-5-runbook.md` step 7; FP-23 handoff; needs OA-5 to pass |
+| 2 The Specter showcase | 0:36-0:56 | 20 s | Specters tab: the big idle hero with its epithet and personality, press Attack and Cast, open "Bots with this Specter" and jump to the Roster | "Eleven heroes. Fixed names, fixed personalities. Your avatar is the only thing you change." | `docs/release/oa-5-runbook.md` step 8 |
+| 3 A real worker run becomes a minion | 0:56-1:24 | 28 s | Arena: a bot starts a worker; a small minion appears on the field; the hero attacks it; the minion grows past 2 minutes (speed the footage up, labelled as sped up, or cut between states) | "A worker session is a task. It shows up as a minion, sized by how long it runs. Size is only a look." | `docs/release/oa-5-runbook.md` steps 10 and 11; attacks are presentation (KL-22) |
+| 4 Auto-credit | 1:24-1:52 | 28 s | The worker ends cleanly: the minion is defeated, the inspector reads "Credited" with the XP, "Auto-credited when the task ended cleanly" and "XP follows what the app observed. It is not a check that the outcome was right." | "When a task ends cleanly, the app credits the XP by itself. Nobody accepts anything, and the app says so." | `backend/tests/test_store_tasks.py`; `xp-policy-2`; step 11 |
+| 5 A bot waiting on you | 1:52-2:06 | 14 s | A bot waiting on a tool approval shows "Waiting on you"; its hero does not attack | "A bot waiting on you does not attack." | Include only if the RC-4 sitting confirmed it (KL-21, KL-27) |
+| 6 Open Bots in Crew | 2:06-2:18 | 12 s | Click "Open Bots in Crew"; Crew's Bots page opens | "For the bot's chat and approvals, hand off to Crew." | `docs/compatibility/handoff-routes.md`; lands on the Bots page, not the selected bot. Not live-clicked yet (issue #124) |
+| 7 End card | 2:18-2:28 | 10 s | Repo URL, "MIT licensed", "Install: docs/release/install.md" | | `rules-checklist.md` R-4, R-5 |
 
-Total: 8 + 28 + 22 + 28 + 28 + 24 + 12 + 8 = 158 s. That leaves 22 s of margin under 180 s. Cut shot 2 first if a take runs long.
-
-## Blocker shot
-
-The UI can set a blocked state. In `ui/src/work/model.ts` the action table `ACTIONS_BY_STATE` offers `block` on `open`, `reopened` and `awaiting-review` items. `ui/src/work/copy.ts` labels it "Mark blocked", and `ui/src/work/ReviewPanel.tsx` sends it directly with no confirmation panel. The Work tab then shows the state "Blocked" with the reason "You marked this blocked." The arena shows a blocked marker, and the inspector line comes from `blockerLine` in `ui/src/arena/WorkInspector.tsx`: the note of the latest block decision, or a no-reason text. The unit tests under `ui/src/work/` and `ui/src/arena/` cover those paths. Nothing here is a Crew bot state; the roster never shows "Blocked". Say "you marked it blocked" in the voice-over, not "the bot is blocked". This was read from code, not recorded; confirm it on the recording day.
+Total: 8 + 28 + 20 + 28 + 28 + 14 + 12 + 10 = 148 s. That leaves 32 s of margin under 180 s. Cut shot 5 first, then shot 2, if a take runs long.
 
 ## Rules the footage must follow
 
-- Real supported behavior only. Do not show Blocked as a bot state (it is not observable), a numeric health value, a classification, or XP from tokens. "Waiting on you" is read from Crew's source, not live-tested (KL-21): show it only if the RC-3 sitting confirmed it, and say so. Arena attacks show live activity, not progress or damage (KL-22).
+- Real supported behavior only. Do not show Blocked as a bot state (it is not observable), a numeric health value, a classification, or XP from tokens. Do not say that XP means the work was good or accepted: it means the app watched the task end cleanly. Do not say anyone reviewed it.
+- "Waiting on you" is read from Crew's source, not live-tested (KL-21): show it only if the RC-4 sitting confirmed it, and say so. Arena attacks show live activity, not progress or damage (KL-22). Minion size is run time only, and hero places on the map are random (KL-31).
 - State plainly in the voice-over that the arena is read-only.
-- If the blocker shot cannot be recorded on the day, drop it and say in the checklist that the blocker is covered by tests, not by footage.
+- The worker run in shot 3 takes minutes. Record it live in one take, or record separate takes of the same run and label the cut.
+- If a shot cannot be recorded on the day, drop it and say in the checklist which behaviour is covered by tests, not by footage.

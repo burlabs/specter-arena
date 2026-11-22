@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `d53b16ea6373094cb0835352adf68c255a9e1398` (`main` after the logo PR #181; re-read for release candidate RC-3)
+Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
 
 The full record is `docs/provenance.md`. This page is the short version for the submission form. AI rewriting or new commit dates do not change where code came from.
 
@@ -11,6 +11,7 @@ The full record is `docs/provenance.md`. This page is the short version for the 
 | App code and docs | Written for Specter Arena in this repository, from an empty first commit that holds only `LICENSE` (`156385b`) | `docs/provenance.md` "Original work" | New work, with the three exceptions below |
 | Adapted UI code | Began as Figma Make output and was adapted to this repository's contracts, toolchain and scoped CSS | `docs/provenance.md` "Generated code: Figma Make export" (file-by-file table) | Disclosed. Terms checked 2026-11-18 |
 | Raster art (38 files: 11 portraits, the arena map, 4 minion images, 11 hero sprites and 11 hero thumbnails) | Created by Eric Jeffers using ChatGPT (OpenAI) image generation | `docs/provenance.md` "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" (one row per file with sha256) | Disclosed. `npm run check:provenance` fails if a shipped image has no row. Terms checked 2026-11-18 |
+| Eleven Kiro Crew avatar packs (`avatar-packs/`, optional, repository only) | Each embeds a hero's committed portrait byte for byte, so the art is Eric Jeffers's ChatGPT (OpenAI) image generation output. The SVG wrappers around it are vector code written for the packs. They are not part of the release artifact | `docs/provenance.md` "Kiro Crew avatar packs" (one row per pack with the source blob SHA) | Disclosed. `scripts/__tests__/avatar-packs.test.mjs` fails if an embedded image differs from its portrait |
 | Twelve vector drawings (nine from FP-10+11, three structures from FP-16) | Authored in the Figma Make project and shipped as TSX code, not as images | `docs/provenance.md` "Figma Make-authored vector code, ported as TSX" | Disclosed. Terms checked 2026-11-18 |
 | Dragonboat (`burlabs/dragonboat-cms`) | Read once as an architectural pattern reference. Nothing copied | `docs/provenance.md` "Reference only: Dragonboat" | `npm run check:provenance` fails on Dragonboat-only identifiers |
 | Crew prior art (`iamwhatever/xiaoya-crew-app`) | Read once on 2026-11-09 as a reference for what an app can reach. Nothing copied | `docs/provenance.md` "Reference only: Crew prior art" | Disclosed |
