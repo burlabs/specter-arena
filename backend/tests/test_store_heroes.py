@@ -1,17 +1,17 @@
-"""Hero assignment at binding creation, and the avatar as the only user choice (FP-16, WL)."""
+"""The Specter store: the hero table, the roster order, and the avatar as the user choice
+(FP-16, FP-23, WL). `bind_many` gives each new binding the next roster hero, the FP-16 numbering;
+the choice itself is in `test_store_hero_choice.py`."""
 
 import inspect
 import json
 import re
 import sqlite3
-import threading
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-import backend.specter_arena.store.bindings as bindings_module
 from backend.specter_arena.store import (
     HERO_IDS,
     ROSTER_SIZE,
@@ -36,10 +36,13 @@ from backend.specter_arena.store import (
 from backend.specter_arena.store import specters as sp
 from backend.specter_arena.store.bindings import insert_binding, store_id
 
+from .specter_fakes import assign_unassigned
+
 T0 = 1_800_000_000_000
 BACKEND = Path(__file__).resolve().parents[1] / "specter_arena"
 HEROES_JSON = BACKEND / "specters" / "heroes.json"
 MIGRATION_0007 = BACKEND / "store" / "migrations" / "0007_hero_roster.sql"
+MIGRATION_0011 = BACKEND / "store" / "migrations" / "0011_hero_choice.sql"
 PNG = sp.PNG_SIGNATURE + b"\x00" * 24
 
 
@@ -61,11 +64,16 @@ def installation(opened: Store) -> str:
         return store_id(conn)
 
 
-def bind_many(opened: Store, count: int, first: int = 0, *, seen: int = T0) -> list[str]:
+def bind_many(
+    opened: Store, count: int, first: int = 0, *, seen: int = T0, assign: bool = True
+) -> list[str]:
+    """Create `count` bindings; unless `assign` is False, give each the next roster hero."""
     if first == 0:
         start_run(opened, run_id="run-00000001", now_ms=T0 - 1)
     items = tuple(BindingSeen(key(first + i), seen + i) for i in range(count))
     result = ingest(opened, IngestBatch("run-00000001", installation(opened), items))
+    if assign:
+        assign_unassigned(opened, at_ms=seen)
     return [made.binding_id for made in result.bindings]
 
 
@@ -122,17 +130,22 @@ def test_heroes_json_lists_the_same_ids_in_the_same_order() -> None:
     assert roster_ids() == list(HERO_IDS)
 
 
-def test_the_migration_check_and_backfill_list_the_same_ids_in_the_same_order(
+def test_the_migration_checks_and_backfill_list_the_same_ids_in_the_same_order(
     store: Store,
 ) -> None:
     table_sql = rows(store, "SELECT sql FROM sqlite_master WHERE name = 'hero_assignment'")[0][0]
-    assert case_ids(table_sql) == list(HERO_IDS)
+    allowed = table_sql[table_sql.index("hero_id IN (") : table_sql.index("assigned_ms")]
+    assert re.findall(r"'([a-z]+)'", allowed) == list(HERO_IDS)
     file_sql = MIGRATION_0007.read_text(encoding="utf-8")
     backfill = file_sql[file_sql.index("INSERT INTO hero_assignment") :]
     assert case_ids(backfill) == list(HERO_IDS)
+    new_sql = MIGRATION_0011.read_text(encoding="utf-8")
+    start = new_sql.index("hero_id IN (")
+    created = new_sql[start : new_sql.index("ordinal ", start)]
+    assert re.findall(r"'([a-z]+)'", created) == list(HERO_IDS)
 
 
-# --- assignment ---------------------------------------------------------------------------------
+# --- the roster walk (bindings given the next hero in creation order) --------------------------
 
 
 def test_a_new_binding_gets_the_first_hero_at_ordinal_one(store: Store) -> None:
@@ -175,13 +188,18 @@ def test_an_ambiguous_store_clash_creates_neither_binding_nor_assignment(store: 
     assert count(store, "bot_binding") == 1 == count(store, "hero_assignment")
 
 
-def test_assignment_follows_creation_order_not_first_seen_time(store: Store) -> None:
+def test_assignment_numbers_follow_the_order_of_assignment_not_first_seen_time(
+    store: Store,
+) -> None:
     start_run(store, run_id="run-00000001", now_ms=T0 - 1)
     items = (BindingSeen(key(0), T0 + 500), BindingSeen(key(1), T0 + 100))
     result = ingest(store, IngestBatch("run-00000001", installation(store), items))
     first, second = (made.binding_id for made in result.bindings)
-    assert (get_hero(store, first).hero_id, get_hero(store, second).hero_id) == ("vell", "stitch")
-    assert get_hero(store, second).assigned_ms == T0 + 100
+    sp.choose_hero(store, second, 0, "stitch", T0 + 600)
+    sp.choose_hero(store, first, 0, "vell", T0 + 601)
+    assert [h.binding_id for h in list_heroes(store)] == [second, first]
+    assert [h.assignment_no for h in list_heroes(store)] == [0, 1]
+    assert get_hero(store, second).assigned_ms == T0 + 600
 
 
 def test_a_rename_never_changes_the_hero(store: Store) -> None:
@@ -194,12 +212,19 @@ def test_a_rename_never_changes_the_hero(store: Store) -> None:
     assert rows(store, "SELECT count(*) FROM bot_display_revision")[0][0] >= 2
 
 
-def test_assignment_reads_no_observation_roster_or_presence_table(store: Store) -> None:
-    bind_many(store, 1)
+def test_a_new_binding_gets_no_hero(store: Store) -> None:
+    bind_many(store, 2, assign=False)
+    assert count(store, "bot_binding") == 2
+    assert count(store, "hero_assignment") == 0
+    assert list_heroes(store) == ()
+
+
+def test_creating_a_binding_reads_and_writes_no_hero_table(store: Store) -> None:
+    bind_many(store, 1, assign=False)
     touched: set[str] = set()
 
     def authorizer(action: int, arg1: str | None, *_rest: object) -> int:
-        if action == sqlite3.SQLITE_READ and arg1:
+        if action in (sqlite3.SQLITE_READ, sqlite3.SQLITE_INSERT) and arg1:
             touched.add(arg1)
         return sqlite3.SQLITE_OK
 
@@ -210,46 +235,9 @@ def test_assignment_reads_no_observation_roster_or_presence_table(store: Store) 
         finally:
             conn.set_authorizer(None)
     assert not isinstance(made, str) and made.created
-    # `store_meta` and `avatar_revision` are read by SQLite's own foreign-key checks.
-    assert {"bot_binding", "hero_assignment"} <= touched
-    assert touched <= {"bot_binding", "hero_assignment", "store_meta", "avatar_revision"}
-    assert "observation" not in inspect.getsource(sp.assign_hero)
-
-
-def test_a_failed_assignment_rolls_the_binding_back_with_it(
-    store: Store, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def broken(conn: sqlite3.Connection, binding_id: str, assigned_ms: int) -> None:
-        conn.execute("INSERT INTO hero_assignment VALUES (?, 99, 'vell', 1, 0)", (binding_id,))
-
-    monkeypatch.setattr(bindings_module, "assign_hero", broken)
-    start_run(store, run_id="run-00000001", now_ms=T0 - 1)
-    result = ingest(
-        store, IngestBatch("run-00000001", installation(store), (BindingSeen(key(0), T0),))
-    )
-    assert [(r.index, r.reason) for r in result.rejections] == [(0, "constraint")]
-    assert count(store, "bot_binding") == 0 == count(store, "hero_assignment")
-
-
-def test_concurrent_first_sights_leave_a_gapless_sequence(store: Store) -> None:
-    start_run(store, run_id="run-00000001", now_ms=T0 - 1)
-    install = installation(store)
-    failures: list[BaseException] = []
-
-    def one(n: int) -> None:
-        try:
-            batch = IngestBatch("run-00000001", install, (BindingSeen(key(n), T0 + n),))
-            ingest(store, batch)
-        except BaseException as error:  # noqa: BLE001 - collected and asserted below
-            failures.append(error)
-
-    threads = [threading.Thread(target=one, args=(n,)) for n in range(8)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
-    assert failures == []
-    assert [h.assignment_no for h in list_heroes(store)] == list(range(8))
+    assert "hero_assignment" not in touched and "avatar_revision" not in touched
+    assert "observation" not in inspect.getsource(sp.choose_hero)
+    assert not hasattr(sp, "assign_hero")
 
 
 # --- the database itself enforces the rule -------------------------------------------------------
@@ -259,8 +247,9 @@ def test_concurrent_first_sights_leave_a_gapless_sequence(store: Store) -> None:
     "values",
     [
         (1, "vell", 1),  # out of sequence: the next number is 0
-        (0, "stitch", 1),  # hero does not match the number
-        (0, "vell", 2),  # ordinal does not match the number
+        (0, "nova", 1),  # not one of the eleven heroes
+        (0, "vell", 2),  # the first holder of a hero is ordinal 1
+        (0, "vell", 0),
         (-1, "vell", 1),
     ],
 )
@@ -275,9 +264,9 @@ def test_the_table_rejects_a_row_that_breaks_the_roster_rule(
             (installation(store),),
         )
     bound = "bnd_" + "0" * 24
-    row = (bound, *values, 0)
+    row = (bound, *values, 0, "auto")
     with pytest.raises(sqlite3.DatabaseError), store.write() as conn:
-        conn.execute("INSERT INTO hero_assignment VALUES (?, ?, ?, ?, ?)", row)
+        conn.execute("INSERT INTO hero_assignment VALUES (?, ?, ?, ?, ?, ?)", row)
     assert count(store, "hero_assignment") == 0
 
 

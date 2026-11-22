@@ -69,8 +69,15 @@ class UnknownBinding(StoreError):
     code = "unknown-binding"
 
 
+class NoHero(StoreError):
+    """The binding exists but holds no hero yet."""
+
+    code = "no-hero"
+
+
 class VersionConflict(StoreError):
-    """The caller's expected avatar version is not the current one (0 means none chosen yet)."""
+    """The caller's expected avatar version is not the current one (0 means none chosen yet), or
+    the hero the caller expected to assign is not the one the binding holds."""
 
     code = "version-conflict"
 

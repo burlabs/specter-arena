@@ -5,6 +5,7 @@ import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 import { isTaskItem } from '../tasks/model.ts';
 import {
+  ASSIGNED_BY,
   HERO_IDS,
   HEROES_ITEM_KEYS,
   HEROES_KEYS,
@@ -31,6 +32,8 @@ import {
   ROSTER_WORKERS_KEYS,
   SCENE_ASSET_KEYS,
   SPECTER_KEYS,
+  SPECTER_V3_KEYS,
+  SPECTERS_V3_KEYS,
   SPECTERS_KEYS,
   WORK_ATTEMPT_KEYS,
   WORK_CONTRIBUTOR_KEYS,
@@ -72,6 +75,8 @@ import type {
   RosterV1,
   SpecterV2,
   SpectersV2,
+  SpecterV3,
+  SpectersV3,
   WorkItemV1,
   WorkItemsV1,
   XpHistoryV1,
@@ -180,6 +185,8 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'scene-asset', path: [], keys: SCENE_ASSET_KEYS },
   { schema: 'specter', version: 2, path: [], keys: SPECTER_KEYS },
   { schema: 'specters', version: 2, path: [], keys: SPECTERS_KEYS },
+  { schema: 'specter', version: 3, path: [], keys: SPECTER_V3_KEYS },
+  { schema: 'specters', version: 3, path: [], keys: SPECTERS_V3_KEYS },
   { schema: 'heroes', path: [], keys: HEROES_KEYS },
   { schema: 'heroes', path: ['properties', 'items', 'items'], keys: HEROES_ITEM_KEYS },
   { schema: 'work-item', path: [], keys: WORK_ITEM_KEYS },
@@ -336,6 +343,10 @@ describe('hand-written types', () => {
       updatedAtMs: 1760000005000,
     };
     const specters: SpectersV2 = { contractVersion: 2, items: [specter] };
+    const specterV3: SpecterV3 = { ...specter, contractVersion: 3, assignedBy: 'picked' };
+    const specterV3Auto: SpecterV3 = { ...specterV3, assignedBy: 'auto' };
+    const specterV3Random: SpecterV3 = { ...specterV3, assignedBy: 'random' };
+    const specters3: SpectersV3 = { contractVersion: 3, items: [specterV3], unassignedBindingIds: ['bnd_1a1b2c3d4e5f60718293a4b5'] };
     const bindingId = 'bnd_0a1b2c3d4e5f60718293a4b5';
     const workItem: WorkItemV1 = {
       contractVersion: 1,
@@ -440,6 +451,10 @@ describe('hand-written types', () => {
     }
     expect(ajv.getSchema('urn:specter-arena:contract:specter:v2')?.(specter)).toBe(true);
     expect(ajv.getSchema('urn:specter-arena:contract:specters:v2')?.(specters)).toBe(true);
+    for (const value of [specterV3, specterV3Auto, specterV3Random]) {
+      expect(ajv.getSchema('urn:specter-arena:contract:specter:v3')?.(value)).toBe(true);
+    }
+    expect(ajv.getSchema('urn:specter-arena:contract:specters:v3')?.(specters3)).toBe(true);
   });
 });
 
@@ -464,6 +479,22 @@ describe('PA-2 identity contracts', () => {
   it('HERO_IDS equals the heroId enum of specter.v2', () => {
     const schema = readJson(`${schemasDir}specter.v2.schema.json`) as { properties: { heroId: { enum: string[] } } };
     expect([...HERO_IDS]).toEqual(schema.properties.heroId.enum);
+  });
+
+  it('HERO_IDS equals the heroId enum of specter.v3, and ASSIGNED_BY its assignedBy enum', () => {
+    const schema = readJson(`${schemasDir}specter.v3.schema.json`) as {
+      properties: { heroId: { enum: string[] }; assignedBy: { enum: string[] } };
+    };
+    expect([...HERO_IDS]).toEqual(schema.properties.heroId.enum);
+    expect([...ASSIGNED_BY]).toEqual(schema.properties.assignedBy.enum);
+  });
+
+  it('the v3 assignment contracts say FROZEN in OWNERS.md', () => {
+    const owners = readFileSync(`${contractsDir}OWNERS.md`, 'utf8');
+    for (const name of ['specter', 'specters']) {
+      const row = owners.split('\n').find((line) => line.startsWith(`| \`${name}\` | 3 |`)) ?? '';
+      expect(row).toContain('| FROZEN |');
+    }
   });
 
   it('the four retired v1 identity contracts say RETIRED in OWNERS.md and the v2 ones say FROZEN', () => {

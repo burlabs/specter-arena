@@ -30,6 +30,8 @@ from backend.specter_arena.store import (
 )
 from backend.specter_arena.store.dmkey import build_dm_key
 
+from .specter_fakes import assign_unassigned
+
 T0 = 1_800_000_000_000
 RUN = "run-00000001"
 LEDGER_TABLES = ("work_item", "work_attempt", "work_milestone", "work_decision", "xp_entry")
@@ -141,6 +143,7 @@ def open_seeded(root: Path, *, bots: int = 4, per_bot: int = 8) -> tuple[Store, 
     store = open_store(root / "data")
     start_run(store, run_id=RUN, now_ms=T0 - 1)
     send(store, *(BindingSeen(dm_key_of(i), T0) for i in range(bots)))
+    assign_unassigned(store, at_ms=T0)  # new bindings start without a hero (FP-23)
     with store.read() as conn:
         bindings = tuple(
             str(

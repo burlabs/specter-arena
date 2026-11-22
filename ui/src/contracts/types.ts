@@ -219,6 +219,47 @@ export interface SpectersV2 {
   items: SpecterV2[];
 }
 
+export type AssignedBy = 'auto' | 'picked' | 'random';
+export const ASSIGNED_BY = ['auto', 'picked', 'random'] as const;
+
+/** One bot's hero in the assignment view. Same fields as SpecterV2 plus `assignedBy`. */
+export interface SpecterV3 {
+  contractVersion: 3;
+  bindingId: string;
+  version: number;
+  heroId: HeroId;
+  ordinal: number;
+  displayName: string;
+  name: string;
+  epithet: string;
+  personality: string;
+  appearance: string;
+  portrait: PortraitAssetV1;
+  avatarChosen: boolean;
+  assignedBy: AssignedBy;
+  source: 'roster';
+  createdAtMs: number;
+  updatedAtMs: number;
+}
+
+/** GET /api/specters?view=assignment. A binding is in `items` or in `unassignedBindingIds`, never both. */
+export interface SpectersV3 {
+  contractVersion: 3;
+  items: SpecterV3[];
+  unassignedBindingIds: string[];
+}
+
+/** Body of POST /api/specters/{bindingId}/hero. `heroId: null` asks for a random hero. */
+export interface AssignHeroRequest {
+  expectedVersion: number;
+  heroId: HeroId | null;
+}
+
+/** Error codes the assignment routes can return, on top of api-error.v1. */
+export type AssignmentErrorCode =
+  | 'invalid_body' | 'invalid_view' | 'unauthorized' | 'unknown_binding' | 'no_hero'
+  | 'version_conflict' | 'body_too_large' | 'store_not_ready' | 'store_unavailable';
+
 /** One roster hero in `heroes.v1`. `assignedCount` is how many bots were ever given it; `assigned` is `assignedCount > 0`. */
 export interface HeroesItemV1 {
   heroId: HeroId;
@@ -267,6 +308,8 @@ export const PORTRAIT_ASSET_KEYS: Record<keyof PortraitAssetV1, true> = { contra
 export const SCENE_ASSET_KEYS: Record<keyof SceneAssetV1, true> = { contractVersion: true, key: true, mediaType: true, width: true, height: true, sha256: true, byteLength: true, dataBase64: true };
 export const SPECTER_KEYS: Record<keyof SpecterV2, true> = { contractVersion: true, bindingId: true, version: true, heroId: true, ordinal: true, displayName: true, name: true, epithet: true, personality: true, appearance: true, portrait: true, avatarChosen: true, source: true, createdAtMs: true, updatedAtMs: true };
 export const SPECTERS_KEYS: Record<keyof SpectersV2, true> = { contractVersion: true, items: true };
+export const SPECTER_V3_KEYS: Record<keyof SpecterV3, true> = { contractVersion: true, bindingId: true, version: true, heroId: true, ordinal: true, displayName: true, name: true, epithet: true, personality: true, appearance: true, portrait: true, avatarChosen: true, assignedBy: true, source: true, createdAtMs: true, updatedAtMs: true };
+export const SPECTERS_V3_KEYS: Record<keyof SpectersV3, true> = { contractVersion: true, items: true, unassignedBindingIds: true };
 export const HEROES_ITEM_KEYS: Record<keyof HeroesItemV1, true> = { heroId: true, name: true, epithet: true, personality: true, assigned: true, assignedCount: true };
 export const HEROES_KEYS: Record<keyof HeroesV1, true> = { contractVersion: true, items: true };
 

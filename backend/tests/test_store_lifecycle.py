@@ -661,7 +661,7 @@ def test_an_export_is_a_verified_closed_owner_only_copy_in_the_exports_directory
     store = build(tmp_path).store
     made = export_database(store)
     path = tmp_path / "data" / "exports" / made.file_name
-    assert re.fullmatch(r"export-v10-\d{8}T\d{12}Z\.db", made.file_name)
+    assert re.fullmatch(r"export-v11-\d{8}T\d{12}Z\.db", made.file_name)
     assert path.is_file() and made.byte_length == path.stat().st_size > 0
     import hashlib
 

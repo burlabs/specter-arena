@@ -31,6 +31,8 @@ from backend.specter_arena.store import (
 from backend.specter_arena.store import specters as sp
 from backend.specter_arena.store.bindings import store_id
 
+from .specter_fakes import assign_unassigned
+
 ALPHA = DmKey("alpha-0123456789ab", "memory-alpha")
 T0 = 1_800_000_000_000
 OWN_TABLES = {"asset", "hero_assignment", "avatar_revision"}
@@ -73,6 +75,7 @@ def seed_monitoring(opened: Store) -> str:
         row,
     )
     result = ingest(opened, IngestBatch("run-00000001", installation, items))
+    assign_unassigned(opened, at_ms=T0)  # new bindings start without a hero (FP-23)
     return result.bindings[0].binding_id
 
 
