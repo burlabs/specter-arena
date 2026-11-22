@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { gotoRoster } from './support';
 
 // FP-20 PR-C: the waiting condition and the context reading, on the FIXTURE `crew-signals` scenario.
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
@@ -14,7 +15,7 @@ const selectBot = (page: Page, name: string) => bots(page).getByRole('button', {
 const sectionTab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Sections' }).getByRole('tab', { name });
 
 async function open(page: Page) {
-  await page.goto('./?scenario=crew-signals');
+  await gotoRoster(page, './?scenario=crew-signals');
   await expect(bots(page).getByRole('listitem')).toHaveCount(6);
 }
 

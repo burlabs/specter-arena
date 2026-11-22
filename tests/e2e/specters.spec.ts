@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { gotoRoster } from './support';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
@@ -10,7 +11,7 @@ const botList = (page: Page) => page.getByRole('list', { name: 'Specter collecti
 const detail = (page: Page) => page.getByRole('region', { name: 'Specter detail' });
 
 async function openSpecters(page: Page, scenario: string) {
-  await page.goto(`./?scenario=${scenario}`);
+  await gotoRoster(page, `./?scenario=${scenario}`);
   await expect(page.getByRole('list', { name: 'Bots' }).getByRole('listitem')).toHaveCount(7);
   await specterTab(page).click();
   await expect(botList(page)).toBeVisible();
@@ -19,7 +20,7 @@ async function openSpecters(page: Page, scenario: string) {
 const selectSpecterBot = (page: Page, name: string) => botList(page).getByRole('button', { name: new RegExp(`^${name}`) }).click();
 
 test('a keyboard-only journey changes the avatar and lands on the hero heading', async ({ page }) => {
-  await page.goto('./?scenario=specters');
+  await gotoRoster(page, './?scenario=specters');
   await expect(page.getByRole('list', { name: 'Bots' }).getByRole('listitem')).toHaveCount(7);
   await page.getByRole('tab', { name: 'Roster' }).focus();
   await page.keyboard.press('ArrowRight');
@@ -50,7 +51,7 @@ test('a keyboard-only journey changes the avatar and lands on the hero heading',
 });
 
 test('every bot row shows its hero name after the bot name, and never idle, healthy or available', async ({ page }) => {
-  await page.goto('./?scenario=specters');
+  await gotoRoster(page, './?scenario=specters');
   const list = page.getByRole('list', { name: 'Bots' });
   await expect(list.getByRole('button', { name: /^Atlas/ })).toBeVisible();
   for (const hero of ['Vell', 'Stitch', 'Reeve', 'Rattle', 'Ember', 'Shard', 'Poly']) {
@@ -74,7 +75,7 @@ test('no control edits the hero name or personality', async ({ page }) => {
 });
 
 test('a twelfth bot shows the second hero ordinal', async ({ page }) => {
-  await page.goto('./?scenario=arena-perf-1');
+  await gotoRoster(page, './?scenario=arena-perf-1');
   const list = page.getByRole('list', { name: 'Bots' });
   await expect(list.getByText('Specter: Vell II', { exact: true })).toBeVisible();
   await expect(list.getByText('Specter: Lume II', { exact: true })).toBeVisible();
@@ -88,7 +89,7 @@ test('a portrait that fails to load falls back to a labelled token', async ({ pa
 
 test('with reduced motion requested, nothing animates, even for a working bot with a Specter', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('./?scenario=specters');
+  await gotoRoster(page, './?scenario=specters');
   await expect(page.getByRole('list', { name: 'Bots' }).getByText('Specter: Vell', { exact: true })).toBeVisible();
   await specterTab(page).click();
   await selectSpecterBot(page, 'Atlas');
@@ -97,7 +98,7 @@ test('with reduced motion requested, nothing animates, even for a working bot wi
 });
 
 test('the Specter stylesheet is scoped and leaves the host page alone', async ({ page }) => {
-  await page.goto('./?scenario=specters');
+  await gotoRoster(page, './?scenario=specters');
   await expect(page.getByRole('list', { name: 'Bots' })).toBeVisible();
   await expect(page.locator('style[data-specter-arena]')).toHaveCount(1);
   await expect(page.locator('style[data-specter-arena-specters]')).toHaveCount(1);

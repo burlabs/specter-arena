@@ -1,17 +1,18 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
+import { gotoRoster } from './support';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-const SECTIONS = ['Roster', 'Specters', 'Arena', 'Data'] as const;
+const SECTIONS = ['Arena', 'Roster', 'Specters', 'Data'] as const;
 
 const sectionTab = (page: Page, name: string) => page.getByRole('tablist', { name: 'Sections' }).getByRole('tab', { name });
 const rosterList = (page: Page) => page.getByRole('list', { name: 'Bots' });
 
 async function open(page: Page, scenario: string) {
-  await page.goto(`./?scenario=${scenario}`);
+  await gotoRoster(page, `./?scenario=${scenario}`);
   await expect(rosterList(page).getByRole('listitem')).toHaveCount(7);
 }
 
@@ -117,9 +118,9 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
     Arena: page.getByRole('group', { name: 'Arena map' }),
     Data: page.getByRole('button', { name: 'Pause collection' }),
   };
-  await sectionTab(page, 'Roster').focus();
+  await sectionTab(page, 'Arena').click();
   for (const section of SECTIONS) {
-    if (section !== 'Roster') await page.keyboard.press('ArrowRight');
+    if (section !== 'Arena') await page.keyboard.press('ArrowRight');
     await expect(sectionTab(page, section)).toHaveAttribute('aria-selected', 'true');
     await expect(sectionTab(page, section)).toBeFocused();
     await expect(ready[section]).toBeVisible();
@@ -129,7 +130,7 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
     await sectionTab(page, section).focus();
   }
   await page.keyboard.press('ArrowRight');
-  await expect(sectionTab(page, 'Roster')).toHaveAttribute('aria-selected', 'true');
+  await expect(sectionTab(page, 'Arena')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('AX-7 the Specter collection controls and their states have no WCAG 2.1 A or AA axe violation', async ({ page }) => {

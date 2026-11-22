@@ -10,6 +10,8 @@ describe('operational parity', () => {
   it('shows the same bot names and condition words as the roster, and the same XP as the bot detail', async () => {
     setArenaScenario('arena');
     render(<ObservatoryPage />);
+    await screen.findByRole('group', { name: 'Arena map' });
+    openTab('Roster');
     const roster = await screen.findByRole('list', { name: 'Bots' });
     const rosterRows = new Map(
       within(roster)
@@ -33,8 +35,7 @@ describe('operational parity', () => {
   it('words each task the same in the list, the inspector and the screen-reader line', async () => {
     setArenaScenario('arena');
     render(<ObservatoryPage />);
-    await screen.findByRole('list', { name: 'Bots' });
-    openTab('Arena');
+    await screen.findByRole('group', { name: 'Arena map' });
     const taskTable = await screen.findByRole('table', { name: 'Tasks' });
     const rows = within(taskTable).getAllByRole('row').slice(1);
     expect(rows.length).toBeGreaterThan(5);

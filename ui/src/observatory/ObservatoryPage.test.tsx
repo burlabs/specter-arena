@@ -17,6 +17,12 @@ async function open(scenario: ScenarioName = 'default') {
   render(<ObservatoryPage />);
   await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
   await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
+  showRoster();
+}
+
+/** The page opens on the Arena, so tests of the roster move to its tab first. */
+function showRoster() {
+  fireEvent.click(within(screen.getByRole('tablist', { name: 'Sections' })).getByRole('tab', { name: 'Roster' }));
 }
 
 const rowNames = () => {
@@ -30,6 +36,8 @@ describe('first load', () => {
     setFixtureScenario('default');
     render(<ObservatoryPage />);
     expect(screen.getByRole('status').textContent).toBe('Loading bots…');
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    showRoster();
     await screen.findByRole('list', { name: 'Bots' });
     expect(rowNames()).toEqual(['Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Unnamed bot']);
     expect(screen.getByText('7 of 7 bots')).toBeTruthy();
@@ -116,6 +124,8 @@ describe('selection, watching and search', () => {
       return Promise.resolve(new Response(JSON.stringify(body)));
     });
     render(<ObservatoryPage />);
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    showRoster();
     await screen.findByRole('list', { name: 'Bots' });
     selectRow('Atlas');
     truncatedLoad = true;
@@ -295,6 +305,8 @@ describe('failures', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     });
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    showRoster();
     await screen.findByRole('list', { name: 'Bots' });
   });
 
@@ -384,13 +396,18 @@ describe('sections', () => {
   const rosterTab = () => sections().getByRole('tab', { name: 'Roster' });
   const specterTab = () => sections().getByRole('tab', { name: 'Specters' });
 
-  it('offers Roster, Specters, Arena and Data with Roster selected, and no Work tab', async () => {
-    await open();
-    expect(within(screen.getByRole('tablist', { name: 'Sections' })).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Roster', 'Specters', 'Arena', 'Data']);
+  const arenaTab = () => sections().getByRole('tab', { name: 'Arena' });
+
+  it('offers Arena, Roster, Specters and Data with the Arena selected on load, and no Work tab', async () => {
+    setFixtureScenario('default');
+    render(<ObservatoryPage />);
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
+    expect(sections().getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Arena', 'Roster', 'Specters', 'Data']);
     expect(screen.queryByRole('tab', { name: 'Work' })).toBeNull();
-    expect(rosterTab().getAttribute('aria-selected')).toBe('true');
-    expect(specterTab().getAttribute('aria-selected')).toBe('false');
-    expect(screen.getByRole('tabpanel', { name: 'Roster' }).id).toBe(rosterTab().getAttribute('aria-controls'));
+    expect(arenaTab().getAttribute('aria-selected')).toBe('true');
+    expect(rosterTab().getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tabpanel', { name: 'Arena' }).id).toBe(arenaTab().getAttribute('aria-controls'));
   });
 
   it('moves between sections with the arrow, Home and End keys', async () => {
@@ -398,26 +415,47 @@ describe('sections', () => {
     fireEvent.keyDown(rosterTab(), { key: 'ArrowRight' });
     expect(specterTab().getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(specterTab(), { key: 'Home' });
-    expect(rosterTab().getAttribute('aria-selected')).toBe('true');
-    fireEvent.keyDown(rosterTab(), { key: 'End' });
+    expect(arenaTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(arenaTab(), { key: 'End' });
     expect(sections().getByRole('tab', { name: 'Data' }).getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(sections().getByRole('tab', { name: 'Data' }), { key: 'ArrowLeft' });
-    expect(sections().getByRole('tab', { name: 'Arena' }).getAttribute('aria-selected')).toBe('true');
-    fireEvent.keyDown(sections().getByRole('tab', { name: 'Arena' }), { key: 'ArrowLeft' });
     expect(specterTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(specterTab(), { key: 'ArrowLeft' });
+    expect(rosterTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(rosterTab(), { key: 'ArrowLeft' });
+    expect(arenaTab().getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(arenaTab(), { key: 'ArrowLeft' });
+    expect(sections().getByRole('tab', { name: 'Data' }).getAttribute('aria-selected')).toBe('true');
   });
 
-  it('opens the Arena tab as the third section with its mode badge, scoped style, and no poll before it is opened', async () => {
-    await open();
+  it('opens on the Arena, which polls from mount with its mode badge and scoped style, and stops polling once left', async () => {
     const get = vi.spyOn(useAppApi(), 'get');
-    expect(get.mock.calls.filter(([path]) => String(path).includes('/tasks?'))).toHaveLength(0);
-    expect(document.head.querySelectorAll('style[data-specter-arena-scene]')).toHaveLength(1);
-    fireEvent.click(sections().getByRole('tab', { name: 'Arena' }));
+    setFixtureScenario('default');
+    render(<ObservatoryPage />);
     expect(await screen.findByRole('group', { name: 'Arena map' })).toBeTruthy();
+    expect(document.head.querySelectorAll('style[data-specter-arena-scene]')).toHaveLength(1);
     expect(screen.getAllByText('FIXTURE — demo data, not Crew activity').length).toBeGreaterThan(0);
     expect(get.mock.calls.filter(([path]) => String(path).includes('/tasks?state=open')).length).toBeGreaterThan(0);
     fireEvent.click(rosterTab());
     expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
+    const after = get.mock.calls.length;
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(get.mock.calls.slice(after).filter(([path]) => String(path).includes('/tasks?'))).toHaveLength(0);
+  });
+
+  it('gives the Arena one visit seed that survives a tab switch', async () => {
+    await open();
+    fireEvent.click(arenaTab());
+    await screen.findByRole('group', { name: 'Arena map' });
+    const lefts = () => [...document.querySelectorAll<HTMLElement>('[data-sprite="specter"]')].map((node) => `${node.style.left},${node.style.top}`);
+    await waitFor(() => expect(lefts().length).toBeGreaterThan(0));
+    const first = lefts();
+    fireEvent.click(rosterTab());
+    fireEvent.click(arenaTab());
+    await screen.findByRole('group', { name: 'Arena map' });
+    await waitFor(() => expect(lefts()).toEqual(first));
   });
 
   it('opens the Data tab as the fifth section with its scoped style, and polls Data only once it is opened', async () => {

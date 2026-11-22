@@ -16,22 +16,22 @@ const writes = async (page: Page) => (await calls(page)).filter((call) => call.m
 
 async function openArena(page: Page, scenario: string) {
   await page.goto(`./?scenario=${scenario}`);
-  await expect(page.getByRole('list', { name: 'Bots' })).toBeVisible();
-  await sectionTab(page, 'Arena').click();
+  await expect(page.getByRole('tab', { name: 'Arena', selected: true })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
   await expect(listView(page)).toBeVisible();
 }
 
-test('A-1 there is no Work tab; Arena is reached by keyboard and the others keep their order', async ({ page }) => {
+test('A-1 the Arena is the first tab and is selected on load; there is no Work tab; the keyboard walks the tabs in order', async ({ page }) => {
   await page.goto('./?scenario=arena');
   await expect(sectionTab(page, 'Roster')).toBeVisible();
-  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Roster', 'Specters', 'Arena', 'Data']);
-  await expect(sectionTab(page, 'Work')).toHaveCount(0);
-  await sectionTab(page, 'Roster').focus();
-  for (let i = 0; i < 2; i += 1) await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('tablist', { name: 'Sections' }).getByRole('tab')).toHaveText(['Arena', 'Roster', 'Specters', 'Data']);
   await expect(sectionTab(page, 'Arena')).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('ArrowLeft');
+  await expect(sectionTab(page, 'Work')).toHaveCount(0);
+  await sectionTab(page, 'Arena').focus();
+  for (let i = 0; i < 2; i += 1) await page.keyboard.press('ArrowRight');
   await expect(sectionTab(page, 'Specters')).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowLeft');
+  await expect(sectionTab(page, 'Roster')).toHaveAttribute('aria-selected', 'true');
 });
 
 test('A-2 the arena and its list view say FIXTURE and never LIVE, and never "waiting on you"', async ({ page }) => {

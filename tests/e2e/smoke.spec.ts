@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { gotoRoster } from './support';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
@@ -6,7 +7,7 @@ test('the preview harness shows the FIXTURE banner and the observatory roster', 
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
 
-  await page.goto('./');
+  await gotoRoster(page, './');
 
   await expect(page.locator('#fixture-banner')).toHaveText(
     'SPECTER-FIXTURE-ONLY: FIXTURE, not live Crew data; backend not running in preview',

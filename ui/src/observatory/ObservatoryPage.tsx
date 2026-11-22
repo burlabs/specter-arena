@@ -31,12 +31,12 @@ const VIEWS: ReadonlyArray<{ name: ViewName; label: string }> = [
   { name: 'all', label: 'All bots' },
 ];
 
-type SectionName = 'roster' | 'specters' | 'arena' | 'data';
+type SectionName = 'arena' | 'roster' | 'specters' | 'data';
 
 const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
+  { name: 'arena', label: 'Arena' },
   { name: 'roster', label: 'Roster' },
   { name: 'specters', label: 'Specters' },
-  { name: 'arena', label: 'Arena' },
   { name: 'data', label: 'Data' },
 ];
 
@@ -79,7 +79,7 @@ export function ObservatoryPage() {
   const tabsId = useId();
   const panelId = `${tabsId}-panel`;
   const tabId = (name: ViewName) => `${tabsId}-tab-${name}`;
-  const [section, setSection] = useState<SectionName>('roster');
+  const [section, setSection] = useState<SectionName>('arena');
   const sectionsId = useId();
   const sectionPanelId = `${sectionsId}-panel`;
   const sectionTabId = (name: SectionName) => `${sectionsId}-tab-${name}`;

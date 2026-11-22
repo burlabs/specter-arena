@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { gotoRoster } from './support';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
@@ -10,7 +11,7 @@ const detailPanel = (page: Page) => page.getByRole('tabpanel', { name: /^(Attemp
 const selectBot = (page: Page, name: string) => page.getByRole('list', { name: 'Bots' }).getByRole('button', { name: new RegExp(`^${name}`) }).click();
 
 test('two concurrent workers show both conditions, each with its own reason', async ({ page }) => {
-  await page.goto('./?scenario=two-concurrent');
+  await gotoRoster(page, './?scenario=two-concurrent');
   const row = page.getByRole('list', { name: 'Bots' }).getByRole('listitem').first();
   await expect(row).toContainText('Atlas');
   await expect(row).toContainText('Working');
@@ -34,7 +35,7 @@ test('two concurrent workers show both conditions, each with its own reason', as
 });
 
 test('a keyboard-only journey reaches the detail tabs', async ({ page }) => {
-  await page.goto('./?scenario=two-concurrent');
+  await gotoRoster(page, './?scenario=two-concurrent');
   const list = page.getByRole('list', { name: 'Bots' });
   await expect(list.getByRole('listitem')).toHaveCount(1);
   await page.keyboard.press('/');
@@ -57,7 +58,7 @@ test('a keyboard-only journey reaches the detail tabs', async ({ page }) => {
 });
 
 test('every reason has words and none says idle, healthy or available', async ({ page }) => {
-  await page.goto('./?scenario=all-reasons');
+  await gotoRoster(page, './?scenario=all-reasons');
   const list = page.getByRole('list', { name: 'Bots' });
   // The list fills after the first poll; wait for all 21 rows before reading the count (B11).
   await expect(list.getByRole('listitem')).toHaveCount(21);
@@ -74,9 +75,9 @@ test('every reason has words and none says idle, healthy or available', async ({
 });
 
 test('a paused collector is named, and a bot with no collected time says Not collected', async ({ page }) => {
-  await page.goto('./?scenario=paused');
+  await gotoRoster(page, './?scenario=paused');
   await expect(page.getByRole('status').filter({ hasText: 'Collection paused' })).toContainText('Nothing new is being recorded.');
-  await page.goto('./?scenario=not-collected');
+  await gotoRoster(page, './?scenario=not-collected');
   await selectBot(page, 'Atlas');
   await page.getByRole('tab', { name: 'Activity' }).click();
   await expect(page.locator('.sa-activity').getByText('Not collected')).toHaveCount(2);
@@ -85,7 +86,7 @@ test('a paused collector is named, and a bot with no collected time says Not col
 });
 
 test('an attempts 404 says the bot is gone and keeps the roster', async ({ page }) => {
-  await page.goto('./?scenario=attempt-gone');
+  await gotoRoster(page, './?scenario=attempt-gone');
   await selectBot(page, 'Atlas');
   await expect(detailPanel(page)).toHaveText('This bot is no longer on the roster.');
   await expect(page.getByRole('list', { name: 'Bots' }).getByRole('listitem')).toHaveCount(7);
@@ -93,7 +94,7 @@ test('an attempts 404 says the bot is gone and keeps the roster', async ({ page 
 
 test('with reduced motion requested, nothing animates', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('./?scenario=two-concurrent');
+  await gotoRoster(page, './?scenario=two-concurrent');
   await selectBot(page, 'Atlas');
   await expect(page.getByRole('list', { name: 'Attempts, newest first' })).toBeVisible();
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
