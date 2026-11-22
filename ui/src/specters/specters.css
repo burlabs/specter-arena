@@ -300,6 +300,13 @@
   box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
 }
 
+.specter-arena-root .sa-hero-choice__item .sa-portrait {
+  width: 100%;
+  max-width: 96px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
 .specter-arena-root .sa-hero-choice__input {
   position: absolute;
   inset: 0;
