@@ -390,7 +390,11 @@ export interface WorkItemsV2 {
 }
 
 export interface XpSummaryV1 {
-  contractVersion: 1;
+  /**
+   * 1 on the history route. `xp-summary.v2` (the paged read) is a superset with the same level fields, so a v2 body
+   * is assignable here and every reader of `totalXp`, `level`, `levelFloorXp` and `nextLevelXp` takes either.
+   */
+  contractVersion: 1 | 2;
   bindingId: string;
   totalXp: number;
   level: number;
@@ -399,6 +403,16 @@ export interface XpSummaryV1 {
   nextLevelXp: number | null;
   acceptedWorkCount: number;
   policyVersion: string;
+}
+
+/**
+ * One bot's derived total under `xp-summary.v2`: every v1 member, with `totalXp` net of both ledgers (`xp-policy-1`
+ * history and `xp-policy-2` task awards). Task XP is credited automatically when a task ends cleanly and reflects
+ * observed activity, not verified outcomes. `acceptedWorkCount` is the legacy count and never changes.
+ */
+export interface XpSummaryV2 extends XpSummaryV1 {
+  contractVersion: 2;
+  creditedTaskCount: number;
 }
 
 export interface XpSummariesV1 {
@@ -411,6 +425,14 @@ export interface XpSummariesV1 {
 export interface XpSummariesV2 {
   contractVersion: 2;
   items: XpSummaryV1[];
+  nextCursor: string | null;
+  asOfMs: number;
+}
+
+/** Body of the paged XP read of `xp-summaries.v3`: one keyset page (200 at most, ascending bindingId) of `xp-summary.v2`. Read pages until nextCursor is null. */
+export interface XpSummariesV3 {
+  contractVersion: 3;
+  items: XpSummaryV2[];
   nextCursor: string | null;
   asOfMs: number;
 }
@@ -436,6 +458,44 @@ export interface XpHistoryV1 {
   asOfMs: number;
 }
 
+export type TaskKindV1 = 'bot-turn' | 'worker';
+export type TaskStateV1 = 'open' | 'credited' | 'not-credited';
+export type TaskAttemptStateV1 = 'working' | 'ended' | 'unknown';
+export type TaskCloseReasonV1 = 'clean-end' | 'unknown-terminal' | 'coverage-gap' | 'waiting-at-end';
+export type TaskSizeClassV1 = 'small' | 'medium' | 'large';
+
+/**
+ * `task-item.v1`: one task the backend built from one observed attempt and closed out by itself. `credited` is final.
+ * `runMs` is `endedAtMs - startedAtMs` when ended, else `asOfMs - startedAtMs`, and `sizeClass` is a function of it:
+ * small below 120,000, medium below 900,000, large from 900,000. Size is presentation only.
+ */
+export interface TaskItemV1 {
+  contractVersion: 1;
+  taskId: string;
+  bindingId: string;
+  attemptId: string;
+  kind: TaskKindV1;
+  state: TaskStateV1;
+  attemptState: TaskAttemptStateV1;
+  closeReason: TaskCloseReasonV1 | null;
+  startedAtMs: number;
+  endedAtMs: number | null;
+  closedAtMs: number | null;
+  updatedAtMs: number;
+  runMs: number;
+  sizeClass: TaskSizeClassV1;
+  xpCredited: number | null;
+  policyVersion: string;
+}
+
+/** `tasks.v1`: `GET /api/tasks`, one keyset page of at most 25 tasks, `updatedAtMs` newest first. */
+export interface TasksV1 {
+  contractVersion: 1;
+  items: TaskItemV1[];
+  nextCursor: string | null;
+  asOfMs: number;
+}
+
 export const WORK_ATTEMPT_KEYS: Record<keyof WorkAttemptV1, true> = { attemptId: true, bindingId: true, kind: true, startedMs: true, endedMs: true, endSignal: true, ended: true, present: true };
 export const WORK_CONTRIBUTOR_KEYS: Record<keyof WorkContributorV1, true> = { bindingId: true, attemptCount: true, xpNet: true };
 export const WORK_MILESTONE_KEYS: Record<keyof WorkMilestoneV1, true> = { position: true, label: true, doneAtMs: true };
@@ -449,6 +509,27 @@ export const WORK_ITEMS_V2_KEYS: Record<keyof WorkItemsV2, true> = { contractVer
 export const XP_SUMMARY_KEYS: Record<keyof XpSummaryV1, true> = { contractVersion: true, bindingId: true, totalXp: true, level: true, levelTableVersion: true, levelFloorXp: true, nextLevelXp: true, acceptedWorkCount: true, policyVersion: true };
 export const XP_SUMMARIES_KEYS: Record<keyof XpSummariesV1, true> = { contractVersion: true, items: true, asOfMs: true };
 export const XP_SUMMARIES_PAGED_KEYS: Record<keyof XpSummariesV2, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
+export const XP_SUMMARY_TASK_VIEW_KEYS: Record<keyof XpSummaryV2, true> = { ...XP_SUMMARY_KEYS, creditedTaskCount: true };
+export const XP_SUMMARIES_TASK_VIEW_KEYS: Record<keyof XpSummariesV3, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
+export const TASK_ITEM_KEYS: Record<keyof TaskItemV1, true> = {
+  contractVersion: true,
+  taskId: true,
+  bindingId: true,
+  attemptId: true,
+  kind: true,
+  state: true,
+  attemptState: true,
+  closeReason: true,
+  startedAtMs: true,
+  endedAtMs: true,
+  closedAtMs: true,
+  updatedAtMs: true,
+  runMs: true,
+  sizeClass: true,
+  xpCredited: true,
+  policyVersion: true,
+};
+export const TASKS_KEYS: Record<keyof TasksV1, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
 export const XP_ENTRY_KEYS: Record<keyof XpEntryV1, true> = { entryId: true, workId: true, workTitle: true, kind: true, amount: true, policyVersion: true, decisionId: true, createdAtMs: true };
 export const XP_HISTORY_KEYS: Record<keyof XpHistoryV1, true> = { contractVersion: true, bindingId: true, summary: true, items: true, nextCursor: true, asOfMs: true };
 
