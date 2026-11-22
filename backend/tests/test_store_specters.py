@@ -118,6 +118,7 @@ def test_the_specter_store_module_imports_no_clock_network_or_event_loop() -> No
 
 def test_the_specter_store_module_writes_only_its_own_tables() -> None:
     own = {"asset", "hero_assignment", "avatar_revision"}
+    reads_only = {"bot_binding"}  # `choose_hero` checks the binding exists; it never writes it
     tree = ast.parse((STORE_DIR / "specters.py").read_text(encoding="utf-8"))
     sql = " ".join(
         node.value
@@ -128,4 +129,4 @@ def test_the_specter_store_module_writes_only_its_own_tables() -> None:
     assert targets == own
     assert "DELETE FROM" not in sql and "UPDATE " not in sql
     reads = set(re.findall(r"\b(?:FROM|JOIN)\s+([a-z_]+)", sql))
-    assert reads <= own
+    assert reads <= own | reads_only

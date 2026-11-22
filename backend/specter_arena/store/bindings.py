@@ -8,7 +8,6 @@ from .errors import StoreUsageError
 from .guard import translate_errors
 from .records import BindingRecord, BindingRef, DmKey, RosterPoll, RosterRowIn
 from .roster import binding_record
-from .specters import assign_hero
 from .store import Store
 
 MAX_REBIND_NOTE_CHARS = 200
@@ -52,7 +51,6 @@ def insert_binding(
         " VALUES (?, ?, ?, ?, ?, ?)",
         (binding_id, installation_id, dm_key, key.member_id, key.memory_store, seen_at_ms),
     )
-    assign_hero(conn, binding_id, seen_at_ms)
     return BindingRef(binding_id, int(cursor.lastrowid or 0), dm_key, key.memory_store, True)
 
 

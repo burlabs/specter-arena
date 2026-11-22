@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import re
+import secrets
 import sqlite3
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
 from .errors import (
+    NoHero,
+    StoreError,
     StoreUsageError,
     UnknownAsset,
     UnknownBinding,
@@ -19,6 +22,8 @@ from .store import Store
 from .validate import is_time_ms
 
 AssetOrigin = Literal["bundled", "uploaded"]
+AssignedBy = Literal["auto", "picked", "random"]
+Pick = Callable[[Sequence[str]], str]
 
 # The roster order of `backend/specter_arena/specters/heroes.json` and of the CHECK and backfill
 # in migration 0007. `test_store_heroes.py` pins all three to each other.
@@ -84,6 +89,7 @@ class HeroRecord:
     version: int
     asset_id: str | None
     updated_ms: int
+    assigned_by: AssignedBy
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,7 +140,7 @@ def _asset(row: Sequence[object], data: bytes | None = None) -> AssetRecord:
 
 _HERO_SELECT = (
     "SELECT h.binding_id, h.assignment_no, h.hero_id, h.ordinal, h.assigned_ms,"
-    " v.revision_no, v.created_ms, v.asset_id"
+    " v.revision_no, v.created_ms, v.asset_id, h.assigned_by"
     " FROM hero_assignment h"
     " LEFT JOIN avatar_revision v ON v.binding_id = h.binding_id AND v.revision_no = ("
     "SELECT max(revision_no) FROM avatar_revision WHERE binding_id = h.binding_id)"
@@ -152,25 +158,7 @@ def _hero(row: Sequence[object]) -> HeroRecord:
         version=int(row[5]) if chosen else 0,  # type: ignore[call-overload]
         asset_id=None if row[7] is None else str(row[7]),
         updated_ms=int(row[6] if chosen else row[4]),  # type: ignore[call-overload]
-    )
-
-
-def assign_hero(conn: sqlite3.Connection, binding_id: str, assigned_ms: int) -> None:
-    """Give a just-created binding its hero: assignment number n gets hero n % 11 at ordinal
-    n // 11 + 1. Runs inside the transaction that inserted the binding (the writer lock makes the
-    count exact; the table's own UNIQUE, CHECKs and sequence trigger are the backstop). Reads
-    nothing about the bot except its id."""
-    number = int(conn.execute("SELECT count(*) FROM hero_assignment").fetchone()[0])
-    conn.execute(
-        "INSERT INTO hero_assignment (binding_id, assignment_no, hero_id, ordinal, assigned_ms)"
-        " VALUES (?, ?, ?, ?, ?)",
-        (
-            binding_id,
-            number,
-            HERO_IDS[number % ROSTER_SIZE],
-            number // ROSTER_SIZE + 1,
-            assigned_ms,
-        ),
+        assigned_by="random" if row[8] == "random" else "picked" if row[8] == "picked" else "auto",
     )
 
 
@@ -205,6 +193,93 @@ def get_hero(store: Store, binding_id: str) -> HeroRecord:
         return _hero(row)
 
 
+def _missing_hero(conn: sqlite3.Connection, binding_id: str) -> StoreError:
+    """`NoHero` for a binding that exists without a hero, `UnknownBinding` otherwise."""
+    known = conn.execute("SELECT 1 FROM bot_binding WHERE binding_id = ?", (binding_id,)).fetchone()
+    return NoHero() if known is not None else UnknownBinding()
+
+
+def get_assignment(store: Store, binding_id: str) -> HeroRecord:
+    """Like `get_hero`, but a known binding that holds no hero raises `NoHero`."""
+    if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
+        raise UnknownBinding
+    with translate_errors(), store.read() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is None:
+            raise _missing_hero(conn, binding_id)
+        return _hero(row)
+
+
+def list_assignment(store: Store) -> tuple[tuple[HeroRecord, ...], tuple[str, ...]]:
+    """The assigned heroes in assignment order and the ids of the bindings that hold no hero,
+    oldest binding first, each at most `MAX_LISTED_HEROES`, read in one snapshot."""
+    with translate_errors(), store.read() as conn:
+        heroes = conn.execute(
+            _HERO_SELECT + " ORDER BY h.assignment_no LIMIT ?", (MAX_LISTED_HEROES,)
+        ).fetchall()
+        bare = conn.execute(
+            "SELECT b.binding_id FROM bot_binding b WHERE NOT EXISTS"
+            " (SELECT 1 FROM hero_assignment h WHERE h.binding_id = b.binding_id)"
+            " ORDER BY b.first_seen_ms, b.binding_seq LIMIT ?",
+            (MAX_LISTED_HEROES,),
+        ).fetchall()
+        return tuple(_hero(row) for row in heroes), tuple(str(row[0]) for row in bare)
+
+
+def choose_hero(
+    store: Store,
+    binding_id: str,
+    expected_version: int,
+    hero_id: str | None,
+    now_ms: int,
+    *,
+    pick: Pick = secrets.choice,
+) -> HeroRecord:
+    """Give an unassigned binding a hero: `hero_id` as given ('picked'), or, for None, one of the
+    heroes held by the fewest bindings chosen uniformly at random ('random'). Idempotent: a binding
+    that already holds `hero_id` is returned unchanged. Appends one `hero_assignment` row and
+    nothing else (not the binding, not XP, not the avatar). Raises `UnknownBinding`,
+    `VersionConflict` (the binding holds a different hero, a random request on an assigned
+    binding, or `expected_version` is not 0), `StoreUsageError`."""
+    _need_id(_BINDING_ID, binding_id, "binding id")
+    _need_time(now_ms)
+    expected = _need_version(expected_version)
+    if hero_id is not None and hero_id not in HERO_IDS:
+        raise StoreUsageError("hero id")
+    with translate_errors(), store.write() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is not None:
+            current = _hero(row)
+            if hero_id is not None and hero_id == current.hero_id:
+                return current
+            raise VersionConflict(current.version)
+        known = conn.execute(
+            "SELECT 1 FROM bot_binding WHERE binding_id = ?", (binding_id,)
+        ).fetchone()
+        if known is None:
+            raise UnknownBinding
+        if expected != 0:
+            raise VersionConflict(0)
+        held = {
+            str(r[0]): int(r[1])
+            for r in conn.execute("SELECT hero_id, count(*) FROM hero_assignment GROUP BY hero_id")
+        }
+        assigned_by: AssignedBy = "picked"
+        if hero_id is None:
+            fewest = min(held.get(h, 0) for h in HERO_IDS)
+            hero_id = pick([h for h in HERO_IDS if held.get(h, 0) == fewest])
+            assigned_by = "random"
+        number = int(conn.execute("SELECT count(*) FROM hero_assignment").fetchone()[0])
+        conn.execute(
+            "INSERT INTO hero_assignment"
+            " (binding_id, assignment_no, hero_id, ordinal, assigned_ms, assigned_by)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (binding_id, number, hero_id, held.get(hero_id, 0) + 1, now_ms, assigned_by),
+        )
+        saved = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        return _hero(saved)
+
+
 def set_avatar(
     store: Store,
     binding_id: str,
@@ -223,7 +298,7 @@ def set_avatar(
     with translate_errors(), store.write() as conn:
         row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
         if row is None:
-            raise UnknownBinding
+            raise _missing_hero(conn, binding_id)
         current = _hero(row)
         if current.version != expected:
             raise VersionConflict(current.version)

@@ -225,7 +225,7 @@ def test_the_migration_file_passes_the_runner_validation_and_drops_in_child_firs
 def test_the_v6_fixture_gets_a_hero_keeps_its_portrait_and_loses_its_text(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V6)
-    opened = open_store(data_dir, migrations=PACKAGED[:7])
+    opened = open_store(data_dir)
     try:
         assert opened.status().state == "ready"
         hero = get_hero(opened, FIXTURE_BINDING)
@@ -241,11 +241,15 @@ def test_the_v6_fixture_gets_a_hero_keeps_its_portrait_and_loses_its_text(tmp_pa
             assert "Fixture Specter" not in dump and "lantern-bearer" not in dump
             assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
             assert conn.execute("PRAGMA integrity_check").fetchone() == ("ok",)
-            assert conn.execute("PRAGMA user_version").fetchone() == (7,)
-            assert conn.execute("SELECT max(version) FROM schema_migrations").fetchone() == (7,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (latest_version(),)
+            assert conn.execute("SELECT max(version) FROM schema_migrations").fetchone() == (
+                latest_version(),
+            )
     finally:
         opened.close()
-    backups = list((data_dir / "store" / "backups").glob("pre-migrate-v6-to-v7-*.db"))
+    backups = list(
+        (data_dir / "store" / "backups").glob(f"pre-migrate-v6-to-v{latest_version()}-*.db")
+    )
     assert len(backups) == 1
     old = sqlite3.connect(backups[0])
     try:
@@ -255,17 +259,24 @@ def test_the_v6_fixture_gets_a_hero_keeps_its_portrait_and_loses_its_text(tmp_pa
         old.close()
 
 
-def test_the_v5_fixture_upgrades_to_v7_in_one_open_with_one_backup(tmp_path: Path) -> None:
+def test_the_v5_fixture_upgrades_to_the_latest_in_one_open_with_one_backup(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V5)
-    opened = open_store(data_dir, migrations=PACKAGED[:7])
+    opened = open_store(data_dir)
     try:
-        assert opened.status() == StoreStatus("ready", 7, 7)
+        assert opened.status() == StoreStatus("ready", latest_version(), latest_version())
         hero = get_hero(opened, FIXTURE_BINDING)
         assert (hero.hero_id, hero.asset_id) == ("vell", FIXTURE_ASSET)
     finally:
         opened.close()
-    assert len(list((data_dir / "store" / "backups").glob("pre-migrate-v5-to-v7-*.db"))) == 1
+    assert (
+        len(
+            list(
+                (data_dir / "store" / "backups").glob(f"pre-migrate-v5-to-v{latest_version()}-*.db")
+            )
+        )
+        == 1
+    )
 
 
 def test_work_and_xp_rows_and_bindings_are_untouched_by_the_migration(tmp_path: Path) -> None:
@@ -451,13 +462,20 @@ def test_the_frozen_v7_fixture_has_the_schema_the_migrations_create(tmp_path: Pa
 def test_the_v7_fixture_opens_and_serves_its_heroes_and_avatar(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     place(data_dir, FIXTURE_V7)
-    opened = open_store(data_dir, migrations=PACKAGED[:7])
+    opened = open_store(data_dir)
     try:
-        assert opened.status() == StoreStatus("ready", 7, 7)
+        assert opened.status() == StoreStatus("ready", latest_version(), latest_version())
         heroes = list_heroes(opened)
         assert [(h.hero_id, h.ordinal) for h in heroes] == [("vell", 1), ("stitch", 1)]
         assert [h.version for h in heroes] == [1, 0]
         assert heroes[0].asset_id == FIXTURE_ASSET and heroes[1].asset_id is None
     finally:
         opened.close()
-    assert not (data_dir / "store" / "backups").exists()
+    assert (
+        len(
+            list(
+                (data_dir / "store" / "backups").glob(f"pre-migrate-v7-to-v{latest_version()}-*.db")
+            )
+        )
+        == 1
+    )
