@@ -112,16 +112,17 @@ RC-4 is the candidate built from `main` after FP-22 (#186, #187), FP-23 (#192 to
 
 | Item | Value |
 |---|---|
-| Commit | pending |
-| Artifact name | pending |
-| Bytes | pending |
-| sha256 | pending |
-| File count | pending |
-| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) | pending |
-| Host | Kiro Crew 0.13.1 |
+| Commit | `7745c24e0c125c3471ae8a5e9f60f3ec4a3c5bf1` (PR #197, `main` after the RC-4 docs refresh) |
+| Artifact name | `specter-arena-0.1.0-7745c24e0c12.tar.gz` |
+| Bytes | 6,305,686 |
+| sha256 | `7a9859d77c19aaadb4b203e2003ac9b64059d0f3a0572c0d8dd30fe98257f96b` |
+| File count | 1,750 (the packager's count; `tar -t` lists the same 1,750 entries) |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) | absent: a listing of the tarball matched none of the three. `app.json` grants `/apps/specter-arena/api/*`, `/api/agents` and `slots:user` and has no `agents` key. It carries `0010_auto_tasks.sql` and `0011_hero_choice.sql` and the four `ui/icons/` files |
+| Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
-| Coverage (Node scripts, UI, backend) | pending |
-| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
+| Build | 2026-11-22, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0. Two builds from separate clones gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass |
+| Coverage (Node scripts, UI, backend) | the `coverage` CI job passed on the PR #197 head `e7cd4021`, which has the same tree as the RC-4 commit for everything but the squash. Percentages were not re-measured in this window; the figures at the FP-23 PR-C head are in its handoff (UI 99.76% lines) |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both APPROVED on PR #197 head `e7cd4021`; verdict files `pr197-e7cd402-requirements.md` and `pr197-e7cd402-fit.md` in the release window's local gates folder (not committed). Earlier heads: `6c42e2f4` BLOCKED by both (a wrong bot-detail tab list, a stale step number); `13c33cec` APPROVED |
 | Store version and migrations | 11 and 11 (`npm run check:schema`: 37 schemas, 11 migrations, read at `232629b6`) |
 | UI bundle cap | 367,000 characters (`ui/src/build-output.test.ts`; the build was 307.49 kB at the FP-23 PR-C head, per the FP-23 report) |
 | OA-5 and OA-6 result | `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (steps 1 to 18; the optional avatar-pack step 19 is recorded there if it was run) |
