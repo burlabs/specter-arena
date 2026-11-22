@@ -4,6 +4,7 @@ import {
   PORTRAITS_PATH,
   ROSTER_PATH,
   HEROES_PATH,
+  SPECTERS_ASSIGNMENT_PATH,
   SPECTERS_PATH,
   TASKS_PATH,
   XP_SUMMARIES_VIEW,
@@ -13,6 +14,7 @@ import {
   attemptsPath,
   rosterPath,
   specterPath,
+  specterHeroPath,
   specterPortraitPath,
   taskPath,
   tasksPath,
@@ -38,6 +40,9 @@ describe('roster and attempts paths', () => {
 describe('specter paths', () => {
   it('builds the fixed collection paths under the app prefix', () => {
     expect(SPECTERS_PATH).toBe('/apps/specter-arena/api/specters');
+    expect(SPECTERS_ASSIGNMENT_PATH).toBe('/apps/specter-arena/api/specters?view=assignment');
+    expect(specterHeroPath('bnd_1')).toBe('/apps/specter-arena/api/specters/bnd_1/hero');
+    expect(specterHeroPath('a/b')).toBe('/apps/specter-arena/api/specters/a%2Fb/hero');
     expect(HEROES_PATH).toBe('/apps/specter-arena/api/heroes');
     expect(PORTRAITS_PATH).toBe('/apps/specter-arena/api/portraits');
     expect(ASSETS_PATH).toBe('/apps/specter-arena/api/assets');

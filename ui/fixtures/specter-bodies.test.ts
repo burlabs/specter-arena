@@ -9,6 +9,7 @@ import { HERO_IDS } from '../src/contracts/types.ts';
 import { SCENARIO_NAMES } from './monitoring-bodies.ts';
 import {
   FIXTURE_BOT_COUNT,
+  FIXTURE_UNASSIGNED_COUNT,
   SPECTER_SCENARIO_NAMES,
   activeSpecterScenario,
   displayNameOf,
@@ -37,7 +38,8 @@ const bindingOf = (n: number) => `bnd_${'a'.repeat(20)}${n.toString(16).padStart
 const NAMES = ['Vell', 'Stitch', 'Reeve', 'Rattle', 'Ember', 'Shard', 'Poly', 'Tide', 'Lume', 'Moss', 'bur'];
 
 async function call(method: 'GET' | 'POST', path: string, body?: unknown): Promise<{ status: number; body: any }> {
-  const response = await specterResponse(`${PREFIX}${path}`, method, body);
+  const [pathname = '', query] = path.split('?');
+  const response = await specterResponse(`${PREFIX}${pathname}`, method, body, query === undefined ? '' : `?${query}`);
   if (response === null) throw new Error(`not a specter route: ${path}`);
   return { status: response.status, body: await response.json() };
 }
@@ -356,5 +358,121 @@ describe('installPortraitArt', () => {
     expect(after.body.items[1].assetId).toBe(before.body.items[1].assetId);
     resetSpecterFixtures();
     expect((await call('GET', '/portraits')).body.items[0].assetId).toBe(before.body.items[0].assetId);
+  });
+});
+
+describe('the assignment view', () => {
+  const hero = (bindingId: string, heroId: string | null, expectedVersion = 0) => call('POST', `/specters/${bindingId}/hero`, { expectedVersion, heroId });
+  // The v3 schemas ship with the backend change; when they are in contracts/schemas the bodies are checked against them too.
+  const checkV3 = (name: 'specters' | 'specter', body: unknown) => {
+    const validate = ajv.getSchema(`urn:specter-arena:contract:${name}:v3`);
+    if (validate !== undefined) expect(validate(body), JSON.stringify(validate.errors)).toBe(true);
+  };
+
+  it('serves specters.v3 with the unassigned ids, oldest binding first, in a list of their own', async () => {
+    setSpecterScenario('specters-unassigned');
+    const list = await call('GET', '/specters?view=assignment');
+    expect(list.status).toBe(200);
+    checkV3('specters', list.body);
+    expect(list.body.contractVersion).toBe(3);
+    expect(list.body.items.map((item: any) => item.displayName)).toEqual(['Vell', 'Stitch', 'Reeve']);
+    expect(list.body.items.every((item: any) => item.contractVersion === 3 && item.assignedBy === 'auto')).toBe(true);
+    expect(list.body.unassignedBindingIds).toEqual([4, 5, 6, 7].map(bindingOf));
+    expect(FIXTURE_UNASSIGNED_COUNT['specters-unassigned']).toBe(4);
+    expect(FIXTURE_BOT_COUNT['specters-unassigned'] + FIXTURE_UNASSIGNED_COUNT['specters-unassigned']).toBe(7);
+  });
+
+  it('keeps the plain routes on v2 bodies and refuses another view', async () => {
+    setSpecterScenario('specters-unassigned');
+    const v2 = await call('GET', '/specters');
+    expect(v2.body.contractVersion).toBe(2);
+    expect(v2.body.items).toHaveLength(3);
+    expect(v2.body.items[0]).not.toHaveProperty('assignedBy');
+    expect((await call('GET', '/specters?view=other')).body).toEqual({ contractVersion: 1, error: 'invalid_view' });
+    expect((await call('GET', `/specters/${bindingOf(1)}?view=other`)).status).toBe(400);
+  });
+
+  it('serves every other scenario with an empty unassigned list', async () => {
+    for (const scenario of SPECTER_SCENARIO_NAMES.filter((name) => FIXTURE_UNASSIGNED_COUNT[name] === 0)) {
+      setSpecterScenario(scenario);
+      const list = await call('GET', '/specters?view=assignment');
+      expect(list.body.unassignedBindingIds, scenario).toEqual([]);
+      expect(list.body.items, scenario).toHaveLength(FIXTURE_BOT_COUNT[scenario]);
+    }
+  });
+
+  it('reads one binding as v3, and says no_hero for an unassigned one and unknown_binding for a stranger', async () => {
+    setSpecterScenario('specters-unassigned');
+    const one = await call('GET', `/specters/${bindingOf(1)}?view=assignment`);
+    checkV3('specter', one.body);
+    expect(one.body).toMatchObject({ contractVersion: 3, assignedBy: 'auto', name: 'Vell' });
+    expect(await call('GET', `/specters/${bindingOf(4)}?view=assignment`)).toMatchObject({ status: 404, body: { error: 'no_hero' } });
+    expect(await call('GET', `/specters/${bindingOf(4)}`)).toMatchObject({ status: 404, body: { error: 'unknown_binding' } });
+    expect(await call('GET', `/specters/${bindingOf(9)}?view=assignment`)).toMatchObject({ status: 404, body: { error: 'unknown_binding' } });
+  });
+
+  it('assigns the hero asked for once, then replays the same request as the same Specter', async () => {
+    setSpecterScenario('specters-unassigned');
+    const first = await hero(bindingOf(4), 'tide');
+    expect(first.status).toBe(200);
+    checkV3('specter', first.body);
+    expect(first.body).toMatchObject({ contractVersion: 3, heroId: 'tide', ordinal: 1, displayName: 'Tide', version: 0, assignedBy: 'picked', avatarChosen: false });
+    const replay = await hero(bindingOf(4), 'tide', 3);
+    expect(replay).toEqual(first);
+    const list = await call('GET', '/specters?view=assignment');
+    expect(list.body.items).toHaveLength(4);
+    expect(list.body.unassignedBindingIds).toEqual([5, 6, 7].map(bindingOf));
+  });
+
+  it('answers 409 with no state for a different hero or a random request on an assigned bot, and 409 for a stale version', async () => {
+    setSpecterScenario('specters-unassigned');
+    expect(await hero(bindingOf(1), 'tide')).toEqual({ status: 409, body: { contractVersion: 1, error: 'version_conflict' } });
+    expect((await hero(bindingOf(1), null)).status).toBe(409);
+    expect((await hero(bindingOf(4), 'tide', 2)).status).toBe(409);
+    expect((await hero(bindingOf(1), 'vell')).status).toBe(200);
+  });
+
+  it('picks the least held hero for random, and gives a second holder the next ordinal', async () => {
+    setSpecterScenario('specters-all-unassigned');
+    const names: string[] = [];
+    for (let n = 1; n <= 7; n += 1) {
+      const result = await hero(bindingOf(n), null);
+      expect(result.body.assignedBy).toBe('random');
+      names.push(result.body.name);
+    }
+    expect(names).toEqual(NAMES.slice(0, 7));
+    setSpecterScenario('specters-unassigned');
+    const second = await hero(bindingOf(4), 'vell');
+    expect(second.body).toMatchObject({ ordinal: 2, displayName: 'Vell II' });
+    const heroes = (await call('GET', '/heroes')).body.items as { heroId: string; assignedCount: number }[];
+    expect(heroes.find((item) => item.heroId === 'vell')?.assignedCount).toBe(2);
+  });
+
+  it('refuses malformed bodies, unknown heroes and strangers', async () => {
+    setSpecterScenario('specters-unassigned');
+    const bad = (body: unknown) => call('POST', `/specters/${bindingOf(4)}/hero`, body);
+    for (const body of [null, [], {}, { heroId: 'vell' }, { expectedVersion: 0 }, { expectedVersion: 0, heroId: 'vell', extra: 1 }, { expectedVersion: -1, heroId: 'vell' }, { expectedVersion: 0, heroId: 'nobody' }, { expectedVersion: 0, heroId: 7 }]) {
+      expect((await bad(body)).body, JSON.stringify(body)).toEqual({ contractVersion: 1, error: 'invalid_body' });
+    }
+    expect((await call('POST', `/specters/${bindingOf(9)}/hero`, { expectedVersion: 0, heroId: null })).body.error).toBe('unknown_binding');
+    expect((await call('POST', '/specters/not-a-binding/hero', { expectedVersion: 0, heroId: null })).body.error).toBe('unknown_binding');
+    expect((await call('GET', `/specters/${bindingOf(4)}/hero`)).status).toBe(405);
+  });
+
+  it('fails every assignment with 503 in specters-assign-fail and leaves the bots unassigned', async () => {
+    setSpecterScenario('specters-assign-fail');
+    expect(await hero(bindingOf(4), 'vell')).toEqual({ status: 503, body: { contractVersion: 1, error: 'store_unavailable' } });
+    expect((await call('GET', '/specters?view=assignment')).body.unassignedBindingIds).toHaveLength(4);
+  });
+
+  it('answers the avatar route with no_hero for an unassigned bot, and keeps its v2 body for an assigned one', async () => {
+    setSpecterScenario('specters-unassigned');
+    expect((await call('POST', `/specters/${bindingOf(4)}/portrait`, { expectedVersion: 0, assetId: null })).body.error).toBe('no_hero');
+    const portraits = (await call('GET', '/portraits')).body.items as { assetId: string }[];
+    const changed = await call('POST', `/specters/${bindingOf(1)}/portrait`, { expectedVersion: 0, assetId: portraits[5]?.assetId });
+    expect(changed.body.contractVersion).toBe(2);
+    expect(changed.body).not.toHaveProperty('assignedBy');
+    const v3 = (await call('GET', `/specters/${bindingOf(1)}?view=assignment`)).body;
+    expect(v3).toMatchObject({ contractVersion: 3, version: 1, avatarChosen: true, assignedBy: 'auto' });
   });
 });

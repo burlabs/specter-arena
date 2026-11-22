@@ -40,9 +40,13 @@ test('AX-2 selected states have no violation: bot, Specter, and every Arena toke
   await page.getByRole('tab', { name: 'Progression' }).click();
   expect(await violations(page), 'progression').toEqual([]);
 
+  await page.getByRole('tab', { name: 'Specter', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Change avatar' })).toBeVisible();
+  expect(await violations(page), 'Specter tab of the bot detail').toEqual([]);
+
   await sectionTab(page, 'Specters').click();
-  await page.getByRole('list', { name: 'Specter collection' }).getByRole('button').first().click();
-  expect(await violations(page), 'Specter detail').toEqual([]);
+  await expect(page.getByRole('region', { name: 'Specter showcase' })).toBeVisible();
+  expect(await violations(page), 'Specter showcase').toEqual([]);
 
   await sectionTab(page, 'Arena').click();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
@@ -58,8 +62,8 @@ test('AX-2 selected states have no violation: bot, Specter, and every Arena toke
 
 test('AX-3 the avatar picker has no violation', async ({ page }) => {
   await open(page, 'specters');
-  await sectionTab(page, 'Specters').click();
-  await page.getByRole('list', { name: 'Specter collection' }).getByRole('button').first().click();
+  await rosterList(page).getByRole('button', { name: /^Atlas/ }).click();
+  await page.getByRole('tab', { name: 'Specter', exact: true }).click();
   await page.getByRole('button', { name: 'Change avatar' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Portraits' })).toBeVisible();
   expect(await violations(page)).toEqual([]);
@@ -114,7 +118,7 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
   await open(page, 'arena');
   const ready: Record<(typeof SECTIONS)[number], Locator> = {
     Roster: rosterList(page),
-    Specters: page.getByRole('list', { name: 'Specter collection' }),
+    Specters: page.getByRole('region', { name: 'Specter showcase' }),
     Arena: page.getByRole('group', { name: 'Arena map' }),
     Data: page.getByRole('button', { name: 'Pause collection' }),
   };
@@ -133,15 +137,19 @@ test('AX-6 one keyboard-only pass reaches all four tabs and moves focus into eac
   await expect(sectionTab(page, 'Arena')).toHaveAttribute('aria-selected', 'true');
 });
 
-test('AX-7 the Specter collection controls and their states have no WCAG 2.1 A or AA axe violation', async ({ page }) => {
+test('AX-7 the Specter showcase and its states have no WCAG 2.1 A or AA axe violation', async ({ page }) => {
   await open(page, 'arena');
   await sectionTab(page, 'Specters').click();
-  await expect(page.getByRole('list', { name: 'Specter collection' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Specter showcase' })).toBeVisible();
   expect(await violations(page), 'default').toEqual([]);
-  await page.getByRole('combobox', { name: 'Filter' }).selectOption('unassigned');
-  expect(await violations(page), 'unassigned heroes').toEqual([]);
-  await page.getByRole('combobox', { name: 'Sort' }).selectOption('xp');
-  await page.getByRole('searchbox', { name: 'Search Specters' }).fill('no such hero');
-  await expect(page.getByText('No Specters match')).toBeVisible();
-  expect(await violations(page), 'empty result').toEqual([]);
+  await page.getByRole('radio', { name: /^Stitch/ }).check();
+  await page.getByRole('button', { name: /^Bots with this Specter/ }).click();
+  expect(await violations(page), 'holders open').toEqual([]);
+  await page.getByRole('radio', { name: /^Tide/ }).check();
+  await page.getByRole('button', { name: /^Bots with this Specter/ }).click();
+  await expect(page.getByText('No bot holds Tide yet.')).toBeVisible();
+  expect(await violations(page), 'a hero nobody holds').toEqual([]);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.getByText('Attack and Cast are off because reduced motion is requested.')).toBeVisible();
+  expect(await violations(page), 'reduced motion').toEqual([]);
 });

@@ -27,7 +27,8 @@ interface Props {
   onToggle: () => void;
   /** Default `ready`. */
   specterStatus?: SpecterReading;
-  /** The bindings the backend says have no Specter. When given, the "No Specter yet" group is exactly these roster bots. */
+  /** The bindings the backend says have no Specter (`unassignedBindingIds`). Every bot not on the field is listed under
+   * "No Specter yet"; when this set is given, only the bots in it get an Assign button. */
   unassigned?: ReadonlySet<string>;
   /** Opens the assignment flow for a bot. Without it the rail shows no Assign button. */
   onAssign?: (bindingId: string) => void;
@@ -37,7 +38,8 @@ interface Props {
 export function ArenaRail({ model, bots, specters, xp, selection, onSelect, open, onToggle, specterStatus = 'ready', unassigned, onAssign }: Props) {
   const botById = new Map(bots.map((bot) => [bot.bindingId, bot]));
   const heroed = model.specters.filter((specter) => specter.heroId !== null);
-  const heroless = model.specters.filter((specter) => (unassigned === undefined ? specter.heroId === null : unassigned.has(specter.bindingId)));
+  const heroless = model.specters.filter((specter) => specter.heroId === null);
+  const canAssign = (bindingId: string): boolean => onAssign !== undefined && (unassigned === undefined || unassigned.has(bindingId));
 
   const row = (specter: SceneSpecter) => {
     const record = specters.get(specter.bindingId);
@@ -90,7 +92,7 @@ export function ArenaRail({ model, bots, specters, xp, selection, onSelect, open
                 {heroless.map((specter) => (
                   <li key={specter.bindingId} className="sa-arena-rail__unassigned-row">
                     {row(specter)}
-                    {onAssign !== undefined && (
+                    {canAssign(specter.bindingId) && onAssign !== undefined && (
                       <Button onClick={() => onAssign(specter.bindingId)} aria-label={ARENA.assignFor(specter.displayName)}>
                         {ARENA.assign}
                       </Button>

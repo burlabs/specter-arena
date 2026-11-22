@@ -170,7 +170,8 @@ describe('collapsible panes', () => {
     const onAssign = vi.fn();
     render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} onAssign={onAssign} unassigned={new Set([bots[0]!.bindingId])} />);
     await settle();
-    expect(within(rail()).getByRole('region', { name: 'No Specter yet (1)' })).toBeTruthy();
+    expect(within(rail()).getByRole('region', { name: `No Specter yet (${bots.length})` })).toBeTruthy();
+    expect(within(rail()).getAllByRole('button', { name: /^Assign a Specter to / })).toHaveLength(1);
     fireEvent.click(within(rail()).getByRole('button', { name: /^Assign a Specter to / }));
     expect(onAssign).toHaveBeenCalledWith(bots[0]!.bindingId);
   });

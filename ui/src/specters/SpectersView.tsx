@@ -1,105 +1,65 @@
-import { useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
-import type { RosterItemV1, SpecterV2 } from '../contracts/types';
+import { useEffect, useId, useState } from 'react';
+import type { RosterItemV1 } from '../contracts/types';
+import { AnimatedSpecter } from '../arena/AnimatedSpecter';
+import { combatTimingOf } from '../arena/heroCombat';
 import { nameOf } from '../observatory/model';
-import { targetIndex } from '../observatory/RosterList';
 import { Button, EmptyState, ErrorState, Panel } from '../observatory/ui';
-import type { XpState } from '../work/useXp';
-import { CollectionToolbar } from './CollectionToolbar';
-import { HeroCard } from './HeroCard';
-import { HeroThumb } from './HeroThumb';
-import { SpecterDetail } from './SpecterDetail';
-import { SpecterPortrait } from './SpecterPortrait';
-import { SpecterProgression } from './SpecterProgression';
-import { DEFAULT_VIEW, buildCollection } from './collection';
-import type { ViewState } from './collection';
-import { BOT_GONE, COLLECTION, LIST, LOADING_SPECTERS, NO_SPECTER, SELECT_A_BOT, UNSUPPORTED_BACKEND, errorWords } from './copy';
-import { useHeroes } from './useHeroes';
+import { HeroChoice } from './HeroChoice';
+import { LOADING_SPECTERS, SHOWCASE, UNSUPPORTED_BACKEND, errorWords } from './copy';
+import { tokenInitials } from './model';
 import type { HeroesState } from './useHeroes';
+import { useMotionAllowed } from './useMotionAllowed';
 import type { SpectersState } from './useSpecters';
 
 interface Props {
   bots: readonly RosterItemV1[];
-  complete: boolean;
   specters: SpectersState;
-  xp: XpState;
+  heroes: HeroesState;
+  /** Roster bots with no hero yet; the button that reopens the walkthrough shows only when this is above zero. */
+  pendingCount: number;
+  onAssign: () => void;
+  /** Opens the Roster tab with this bot selected. */
+  onShowInRoster: (bindingId: string) => void;
 }
 
-const CARD_ART_SIZE = 96;
+const SETTLE_MS = 60;
 
-/** The 96 px hero thumbnail, or the chosen avatar once the user has picked one. */
-function CardArt({ specter }: { specter: SpecterV2 }) {
-  return specter.avatarChosen ? (
-    <SpecterPortrait specter={specter} size="md" decorative />
-  ) : (
-    <span className="sa-portrait sa-portrait--md" aria-hidden="true">
-      <HeroThumb heroId={specter.heroId} name={specter.displayName} size={CARD_ART_SIZE} />
-    </span>
-  );
-}
+/** The hero showcase: the 11 heroes, the chosen one large with its idle loop, and the bots that hold it. Everything here is a preview; it never reads a bot's work. */
+export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, onShowInRoster }: Props) {
+  const motion = useMotionAllowed();
+  const noteId = useId();
+  const holdersId = useId();
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [playing, setPlaying] = useState<'attack' | 'cast' | null>(null);
+  const [holdersOpen, setHoldersOpen] = useState(false);
 
-/** One line in place of the hero cards when the hero list is not there; the bot cards never wait for it. */
-function HeroesNote({ heroes }: { heroes: HeroesState }) {
-  if (heroes.status === 'ready') return null;
-  if (heroes.status === 'loading') return <p className="sa-help">{COLLECTION.heroesLoading}</p>;
-  return (
-    <p className="sa-collection-note" role="alert">
-      <span>{heroes.failure === 'unsupported' ? COLLECTION.heroesUnsupported : COLLECTION.heroesFailed}</span>
-      {heroes.failure !== 'unsupported' && (
-        <Button variant="ghost" onClick={heroes.refresh}>
-          {COLLECTION.retry}
-        </Button>
-      )}
-    </p>
-  );
-}
+  const items = heroes.items;
+  // The hero the first bot in roster order holds, else the first hero (Q8).
+  const firstHeld = bots.map((bot) => specters.byBinding.get(bot.bindingId)?.heroId).find((id) => id !== undefined);
+  const hero = items?.find((entry) => entry.heroId === (pickedId ?? firstHeld)) ?? items?.[0];
+  const heroId = hero?.heroId;
 
-export function SpectersView({ bots, complete, specters, xp }: Props) {
-  const progressionOf = (bindingId: string, compact: boolean) => (
-    <SpecterProgression compact={compact} summary={xp.byBinding.get(bindingId)} unavailable={xp.status === 'ready' ? undefined : xp.status === 'loading' ? 'loading' : 'failed'} />
-  );
-  const buttons = useRef(new Map<string, HTMLButtonElement>());
-  const searchRef = useRef<HTMLInputElement>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [rovingId, setRovingId] = useState<string | null>(null);
-  const [view, setView] = useState<ViewState>(DEFAULT_VIEW);
-  const heroes = useHeroes();
-  const xpReady = xp.status === 'ready';
-  const collection = useMemo(
-    () => buildCollection({ bots, specters: specters.byBinding, heroes: heroes.items, xp: xp.byBinding, xpReady }, view),
-    [bots, specters.byBinding, heroes.items, xp.byBinding, xpReady, view],
-  );
-  const shownBots = collection.cards.flatMap((card) => (card.kind === 'bot' ? [card.bot] : []));
-  // The roving stop and the arrow keys cover the cards on screen; the detail panel keeps following the selected bot.
-  const has = (id: string | null) => id !== null && shownBots.some((bot) => bot.bindingId === id);
-  const activeId = has(rovingId) ? rovingId : has(selectedId) ? selectedId : (shownBots[0]?.bindingId ?? null);
-  const selected = bots.find((bot) => bot.bindingId === selectedId);
-  const departed = selectedId !== null && selected === undefined && complete;
-  const clearView = () => {
-    setView(DEFAULT_VIEW);
-    searchRef.current?.focus();
-  };
+  useEffect(() => {
+    setPlaying(null);
+    setHoldersOpen(false);
+  }, [heroId]);
 
-  const onKeyDown = (event: KeyboardEvent<HTMLUListElement>) => {
-    const from = shownBots.findIndex((bot) => bot.bindingId === activeId);
-    const to = targetIndex(event.key, Math.max(0, from), shownBots.length - 1);
-    const target = to === null ? undefined : shownBots[to];
-    if (target === undefined) return;
-    event.preventDefault();
-    setRovingId(target.bindingId);
-    buttons.current.get(target.bindingId)?.focus();
-  };
+  useEffect(() => {
+    if (playing === null || heroId === undefined) return;
+    const timer = setTimeout(() => setPlaying(null), (combatTimingOf(heroId)?.[playing] ?? 0) + SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [playing, heroId]);
 
   if (specters.status === 'loading') {
     return (
-      <Panel label="Specters">
+      <Panel label={SHOWCASE.label}>
         <p role="status">{LOADING_SPECTERS}</p>
       </Panel>
     );
   }
   if (specters.status === 'failed') {
     return (
-      <Panel label="Specters">
+      <Panel label={SHOWCASE.label}>
         {specters.failure === 'unsupported' ? (
           <EmptyState title="Specters are not supported here" body={UNSUPPORTED_BACKEND} />
         ) : (
@@ -108,82 +68,94 @@ export function SpectersView({ bots, complete, specters, xp }: Props) {
       </Panel>
     );
   }
-  if (bots.length === 0) {
-    return (
-      <Panel label="Specters">
-        <EmptyState title={LIST.noBots} body={LIST.noBotsBody} />
-      </Panel>
-    );
-  }
 
-  const showHeroNote = view.filter === 'all' || view.filter === 'unassigned';
-  const everyHeroHeld = view.filter === 'unassigned' && view.query.trim() === '' && heroes.status === 'ready' && collection.unassignedTotal === 0;
+  const holders = bots.flatMap((bot) => {
+    const specter = specters.byBinding.get(bot.bindingId);
+    return specter !== undefined && specter.heroId === heroId ? [{ bot, specter }] : [];
+  });
+  const play = (kind: 'attack' | 'cast') => {
+    if (playing === null) setPlaying(kind);
+  };
 
   return (
-    <div className="sa-specters">
-      <Panel label={LIST.collectionLabel}>
-        <CollectionToolbar view={view} onChange={setView} searchRef={searchRef} />
-        <p className="sa-collection-count" aria-live="polite">
-          {COLLECTION.count(collection.cards.length, collection.total)}
-          {collection.sortHeld && <span className="sa-collection-held">{` ${COLLECTION.sortHeld}`}</span>}
-        </p>
-        {showHeroNote && <HeroesNote heroes={heroes} />}
-        {collection.cards.length === 0 ? (
-          everyHeroHeld ? (
-            <EmptyState title={COLLECTION.everyHeroTitle} body={COLLECTION.everyHeroBody} />
-          ) : view.filter === 'unassigned' && heroes.status !== 'ready' ? null : (
-            <EmptyState
-              title={COLLECTION.emptyTitle}
-              body={COLLECTION.emptyBody}
-              action={
-                <Button variant="secondary" onClick={clearView}>
-                  {COLLECTION.clear}
+    <Panel label={SHOWCASE.label}>
+      <div className="sa-showcase">
+        <header className="sa-showcase__head">
+          <div>
+            <h2>{SHOWCASE.heading}</h2>
+            <p className="sa-help">{SHOWCASE.intro}</p>
+          </div>
+          {pendingCount > 0 && <Button onClick={onAssign}>{SHOWCASE.assignButton(pendingCount)}</Button>}
+        </header>
+
+        {items === null ? (
+          heroes.status === 'loading' ? (
+            <p className="sa-help" role="status">
+              {SHOWCASE.heroesLoading}
+            </p>
+          ) : (
+            <p className="sa-collection-note" role="alert">
+              <span>{heroes.failure === 'unsupported' ? SHOWCASE.heroesUnsupported : SHOWCASE.heroesFailed}</span>
+              {heroes.failure !== 'unsupported' && (
+                <Button variant="ghost" onClick={heroes.refresh}>
+                  {SHOWCASE.retry}
                 </Button>
-              }
-            />
+              )}
+            </p>
           )
         ) : (
-          <ul className="sa-specter-list" aria-label={LIST.collectionLabel} onKeyDown={onKeyDown}>
-            {collection.cards.map((card) => {
-              if (card.kind === 'hero') return <HeroCard key={card.key} hero={card.hero} />;
-              const { bot, specter } = card;
-              return (
-                <li key={card.key}>
-                  <button
-                    type="button"
-                    className="sa-specter-row"
-                    ref={(element) => {
-                      if (element) buttons.current.set(bot.bindingId, element);
-                      else buttons.current.delete(bot.bindingId);
-                    }}
-                    tabIndex={bot.bindingId === activeId ? 0 : -1}
-                    aria-current={bot.bindingId === selectedId ? 'true' : undefined}
-                    onFocus={() => setRovingId(bot.bindingId)}
-                    onClick={() => setSelectedId(bot.bindingId)}
-                  >
-                    {specter !== undefined && <CardArt specter={specter} />}
-                    <span className="sa-specter-row__names">
-                      <strong>{nameOf(bot)}</strong>
-                      <span>{specter === undefined ? NO_SPECTER : specter.displayName}</span>
-                      {specter !== undefined && <span className="sa-specter-row__epithet">{specter.epithet}</span>}
-                    </span>
-                    {progressionOf(bot.bindingId, true)}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <HeroChoice name={`${holdersId}-heroes`} label="Heroes" heroes={items} value={heroId ?? null} onChange={setPickedId} size={96} />
         )}
-      </Panel>
-      <Panel label={LIST.detailLabel}>
-        {selected !== undefined ? (
-          <SpecterDetail key={selected.bindingId} bot={selected} specter={specters.byBinding.get(selected.bindingId) ?? null} specters={specters} progression={progressionOf(selected.bindingId, false)} />
-        ) : departed ? (
-          <p role="status">{BOT_GONE}</p>
-        ) : (
-          <p>{SELECT_A_BOT}</p>
+
+        {hero !== undefined && (
+          <div className="sa-showcase__main">
+            <div className="sa-showcase__stage" role="img" aria-label={SHOWCASE.stageLabel(hero.name)}>
+              <span className="sa-showcase__zoom">
+                <AnimatedSpecter heroId={hero.heroId} animate={motion} initials={tokenInitials(hero.name)} animation={playing ?? 'idle'} />
+              </span>
+            </div>
+            <div className="sa-showcase__copy">
+              <h3>{hero.name}</h3>
+              <p className="sa-showcase__epithet">{hero.epithet}</p>
+              <p>{hero.personality}</p>
+              <div className="sa-actions">
+                <Button aria-disabled={playing !== null} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => play('attack')}>
+                  {SHOWCASE.attack}
+                </Button>
+                <Button aria-disabled={playing !== null} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => play('cast')}>
+                  {SHOWCASE.cast}
+                </Button>
+              </div>
+              {!motion && (
+                <p id={noteId} className="sa-help">
+                  {SHOWCASE.motionOff}
+                </p>
+              )}
+              <p className="sa-help">{SHOWCASE.previewNote}</p>
+
+              <Button aria-expanded={holdersOpen} aria-controls={holdersId} onClick={() => setHoldersOpen((open) => !open)}>
+                {SHOWCASE.holders(holders.length)}
+              </Button>
+              <div id={holdersId} className="sa-showcase__holders" hidden={!holdersOpen}>
+                {holders.length === 0 ? (
+                  <p className="sa-help">{SHOWCASE.noHolders(hero.name)}</p>
+                ) : (
+                  <ul>
+                    {holders.map(({ bot, specter }) => (
+                      <li key={bot.bindingId}>
+                        <button type="button" className="sa-showcase__holder" onClick={() => onShowInRoster(bot.bindingId)}>
+                          <strong>{nameOf(bot)}</strong> <span>{specter.displayName}</span>{' '}
+                          <span className="sa-visually-hidden">{SHOWCASE.showInRoster}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
         )}
-      </Panel>
-    </div>
+      </div>
+    </Panel>
   );
 }

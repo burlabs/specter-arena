@@ -1,10 +1,19 @@
 // SPECTER-FIXTURE-ONLY: FIXTURE Specter routes for the preview harness and unit tests; never imported by ui/src.
 import { appApiPath } from '../src/host/paths.ts';
-import type { HeroesV1, PortraitAssetV1, SpecterV2 } from '../src/contracts/types.ts';
+import type { AssignedBy, HeroesV1, PortraitAssetV1, SpecterV2, SpecterV3 } from '../src/contracts/types.ts';
 import roster from '../../backend/specter_arena/specters/heroes.json';
 import { canonicalArenaScenario } from './arena-scenarios.ts';
 
-export const SPECTER_SCENARIO_NAMES = ['specters-none', 'specters', 'asset-failed', 'heroes-wrapped', 'arena-perf-specters'] as const;
+export const SPECTER_SCENARIO_NAMES = [
+  'specters-none',
+  'specters',
+  'asset-failed',
+  'heroes-wrapped',
+  'arena-perf-specters',
+  'specters-unassigned',
+  'specters-all-unassigned',
+  'specters-assign-fail',
+] as const;
 export type SpecterScenarioName = (typeof SPECTER_SCENARIO_NAMES)[number];
 
 const FIXTURE_NOW_MS = 1794916800000;
@@ -169,13 +178,28 @@ const bundledPortraits = (art: Readonly<Record<string, string>>): readonly Store
 
 let bundled: readonly StoredAsset[] = bundledPortraits({});
 
-/** Bindings per scenario; a test pins these against the roster fixture. */
+/** Bindings that hold a hero at the start of each scenario; a test pins these against the roster fixture. */
 export const FIXTURE_BOT_COUNT: Record<SpecterScenarioName, number> = {
   'specters-none': 0,
   specters: 7,
   'asset-failed': 7,
   'heroes-wrapped': 13,
   'arena-perf-specters': 20,
+  'specters-unassigned': 3,
+  'specters-all-unassigned': 0,
+  'specters-assign-fail': 3,
+};
+
+/** Bindings with no hero at the start of each scenario, oldest first (specters.v3 `unassignedBindingIds`). Every other scenario has none. */
+export const FIXTURE_UNASSIGNED_COUNT: Record<SpecterScenarioName, number> = {
+  'specters-none': 0,
+  specters: 0,
+  'asset-failed': 0,
+  'heroes-wrapped': 0,
+  'arena-perf-specters': 0,
+  'specters-unassigned': 4,
+  'specters-all-unassigned': 7,
+  'specters-assign-fail': 4,
 };
 
 const ROMAN: ReadonlyArray<readonly [number, string]> = [
@@ -199,7 +223,9 @@ export function displayNameOf(name: string, ordinal: number): string {
 
 interface FixtureState {
   scenario: SpecterScenarioName;
-  specters: Map<string, SpecterV2>;
+  specters: Map<string, SpecterV2 & { assignedBy?: AssignedBy }>;
+  /** Binding numbers 1..bindingCount exist; the ones not in `specters` hold no hero. */
+  bindingCount: number;
   uploaded: Map<string, StoredAsset>;
 }
 
@@ -254,7 +280,8 @@ function seed(scenario: SpecterScenarioName): SpecterV2[] {
 }
 
 function freshState(scenario: SpecterScenarioName): FixtureState {
-  return { scenario, specters: new Map(seed(scenario).map((specter) => [specter.bindingId, specter])), uploaded: new Map() };
+  const bindingCount = FIXTURE_BOT_COUNT[scenario] + FIXTURE_UNASSIGNED_COUNT[scenario];
+  return { scenario, specters: new Map(seed(scenario).map((specter) => [specter.bindingId, specter])), bindingCount, uploaded: new Map() };
 }
 
 let store: FixtureState | null = null;
@@ -298,7 +325,7 @@ function setPortrait(state: FixtureState, bindingId: string, body: unknown): Res
     return apiError(400, 'invalid_body');
   }
   const existing = state.specters.get(bindingId);
-  if (existing === undefined) return apiError(404, 'unknown_binding');
+  if (existing === undefined) return apiError(404, knownBinding(state, bindingId) ? 'no_hero' : 'unknown_binding');
   if (existing.version !== body.expectedVersion) return apiError(409, 'version_conflict');
   const assetId = body.assetId;
   if (assetId !== null && typeof assetId !== 'string') return apiError(400, 'invalid_body');
@@ -307,10 +334,10 @@ function setPortrait(state: FixtureState, bindingId: string, body: unknown): Res
   const portrait = (chosen ?? bundled[heroIndexOf(existing)])?.meta;
   if (portrait === undefined) return apiError(404, 'unknown_asset');
   const same = chosen === undefined ? !existing.avatarChosen : existing.avatarChosen && existing.portrait.assetId === portrait.assetId;
-  if (same) return json(existing);
+  if (same) return json(withoutAssignedBy(existing));
   const next: SpecterV2 = { ...existing, version: existing.version + 1, portrait, avatarChosen: chosen !== undefined, updatedAtMs: existing.updatedAtMs + 1 };
   state.specters.set(bindingId, next);
-  return json(next);
+  return json(withoutAssignedBy(next));
 }
 
 function uploadAsset(state: FixtureState, body: unknown): Response {
@@ -348,18 +375,98 @@ function heroesBody(state: FixtureState): HeroesV1 {
   };
 }
 
+const knownBinding = (state: FixtureState, bindingId: string): boolean =>
+  Array.from({ length: state.bindingCount }, (_, index) => bindingIdOf(index + 1)).includes(bindingId);
+
+/** The v2 record as specter.v3: the fixture's seeded Specters came from the first assignment step, so they read `auto`. */
+const v3Of = (specter: SpecterV2 & { assignedBy?: AssignedBy }): SpecterV3 => ({ ...specter, contractVersion: 3, assignedBy: specter.assignedBy ?? 'auto' });
+
+const unassignedIds = (state: FixtureState): string[] =>
+  Array.from({ length: state.bindingCount }, (_, index) => bindingIdOf(index + 1)).filter((id) => !state.specters.has(id));
+
+const holdersOf = (state: FixtureState, heroId: string): number => [...state.specters.values()].filter((specter) => specter.heroId === heroId).length;
+
+/** Fewest holders first, ties in roster order. The backend picks uniformly among the ties; the fixture takes the first so screenshots and tests are stable. */
+const leastHeldHeroIndex = (state: FixtureState): number => {
+  const counts = HEROES.map((hero) => holdersOf(state, hero.id));
+  return counts.indexOf(Math.min(...counts));
+};
+
+/** `POST /specters/{id}/hero`: the rules of the real route (SC 4.3 and 6), with the 409 body that carries no state. */
+function assignHero(state: FixtureState, bindingId: string, body: unknown): Response {
+  if (state.scenario === 'specters-assign-fail') return apiError(503, 'store_unavailable');
+  if (!BINDING_ID.test(bindingId) || !knownBinding(state, bindingId)) return apiError(404, 'unknown_binding');
+  if (!isObject(body) || Object.keys(body).length !== 2 || !isVersion(body.expectedVersion) || !('heroId' in body)) return apiError(400, 'invalid_body');
+  const requested = body.heroId;
+  if (requested !== null && !HEROES.some((hero) => hero.id === requested)) return apiError(400, 'invalid_body');
+  const existing = state.specters.get(bindingId);
+  if (existing !== undefined) return requested === existing.heroId ? json(v3Of(existing)) : apiError(409, 'version_conflict');
+  if (body.expectedVersion !== 0) return apiError(409, 'version_conflict');
+  const index = requested === null ? leastHeldHeroIndex(state) : HEROES.findIndex((hero) => hero.id === requested);
+  const hero = HEROES[index];
+  const own = bundled[index];
+  if (hero === undefined || own === undefined) return apiError(503, 'store_unavailable');
+  const ordinal = holdersOf(state, hero.id) + 1;
+  const assigned: SpecterV2 & { assignedBy?: AssignedBy } = {
+    contractVersion: 2,
+    bindingId,
+    version: 0,
+    heroId: hero.id as SpecterV2['heroId'],
+    ordinal,
+    displayName: displayNameOf(hero.name, ordinal),
+    name: hero.name,
+    epithet: hero.epithet,
+    personality: hero.personality,
+    appearance: hero.appearance,
+    portrait: own.meta,
+    avatarChosen: false,
+    source: 'roster',
+    createdAtMs: FIXTURE_NOW_MS,
+    updatedAtMs: FIXTURE_NOW_MS,
+    assignedBy: requested === null ? 'random' : 'picked',
+  };
+  state.specters.set(bindingId, assigned);
+  return json(v3Of(assigned));
+}
+
+const withoutAssignedBy = (specter: SpecterV2 & { assignedBy?: AssignedBy }): SpecterV2 => {
+  const { assignedBy: _assignedBy, ...rest } = specter;
+  return rest;
+};
+
+/** `?view=assignment` is the only accepted query on the Specter reads; the plain routes keep their v2 bodies. */
+const viewOf = (search: string): 'v2' | 'assignment' | 'invalid' => {
+  const view = new URLSearchParams(search).get('view');
+  return view === null ? 'v2' : view === 'assignment' ? 'assignment' : 'invalid';
+};
+
 const SEGMENT = '([^/]+)';
-const routes: ReadonlyArray<{ pattern: RegExp; method: 'GET' | 'POST'; handle: (state: FixtureState, match: RegExpExecArray, body: unknown) => Response }> = [
-  { pattern: new RegExp(`^${appApiPath('/specters')}$`), method: 'GET', handle: (state) => json({ contractVersion: 2, items: [...state.specters.values()] }) },
+const routes: ReadonlyArray<{ pattern: RegExp; method: 'GET' | 'POST'; handle: (state: FixtureState, match: RegExpExecArray, body: unknown, search: string) => Response }> = [
+  {
+    pattern: new RegExp(`^${appApiPath('/specters')}$`),
+    method: 'GET',
+    handle: (state, _match, _body, search) => {
+      const view = viewOf(search);
+      if (view === 'invalid') return apiError(400, 'invalid_view');
+      if (view === 'v2') return json({ contractVersion: 2, items: [...state.specters.values()].map(withoutAssignedBy) });
+      return json({ contractVersion: 3, items: [...state.specters.values()].map(v3Of), unassignedBindingIds: unassignedIds(state) });
+    },
+  },
   { pattern: new RegExp(`^${appApiPath('/heroes')}$`), method: 'GET', handle: (state) => json(heroesBody(state)) },
   {
     pattern: new RegExp(`^${appApiPath('/specters')}/${SEGMENT}$`),
     method: 'GET',
-    handle: (state, match) => {
-      const found = state.specters.get(decodeURIComponent(match[1] ?? ''));
-      return found === undefined ? apiError(404, 'unknown_binding') : json(found);
+    handle: (state, match, _body, search) => {
+      const view = viewOf(search);
+      if (view === 'invalid') return apiError(400, 'invalid_view');
+      const bindingId = decodeURIComponent(match[1] ?? '');
+      const found = state.specters.get(bindingId);
+      if (view === 'v2') return found === undefined ? apiError(404, 'unknown_binding') : json(withoutAssignedBy(found));
+      if (found !== undefined) return json(v3Of(found));
+      return apiError(404, knownBinding(state, bindingId) ? 'no_hero' : 'unknown_binding');
     },
   },
+  { pattern: new RegExp(`^${appApiPath('/specters')}/${SEGMENT}/hero$`), method: 'POST', handle: (state, match, body) => assignHero(state, decodeURIComponent(match[1] ?? ''), body) },
   { pattern: new RegExp(`^${appApiPath('/specters')}/${SEGMENT}/portrait$`), method: 'POST', handle: (state, match, body) => setPortrait(state, decodeURIComponent(match[1] ?? ''), body) },
   {
     pattern: new RegExp(`^${appApiPath('/portraits')}$`),
@@ -371,12 +478,12 @@ const routes: ReadonlyArray<{ pattern: RegExp; method: 'GET' | 'POST'; handle: (
 ];
 
 /** Null for any path that is not a Specter route, so the caller can fall through. */
-export function specterResponse(pathname: string, method: 'GET' | 'POST', body?: unknown): Promise<Response> | null {
+export function specterResponse(pathname: string, method: 'GET' | 'POST', body?: unknown, search = ''): Promise<Response> | null {
   for (const route of routes) {
     const match = route.pattern.exec(pathname);
     if (match === null) continue;
     if (route.method !== method) return Promise.resolve(apiError(405, 'invalid_body'));
-    return Promise.resolve(route.handle(current(), match, body));
+    return Promise.resolve(route.handle(current(), match, body, search));
   }
   return null;
 }

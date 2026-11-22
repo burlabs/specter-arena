@@ -50,7 +50,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
     return (
       dataResponse(pathname, method, body) ??
       monitoringResponse(pathname, search) ??
-      specterResponse(pathname, method, body) ??
+      specterResponse(pathname, method, body, search) ??
       taskResponse(pathname, method, body, search) ??
       sceneAssetResponse(pathname, method) ??
       Promise.resolve(CANNED_RESPONSE)

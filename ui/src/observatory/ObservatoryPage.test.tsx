@@ -1,9 +1,10 @@
 import { useAppApi } from '@kirocrew/app-sdk';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { rosterBody, setArenaScenario, setFixtureScenario, setSpecterScenario, setTaskScenario } from '@kirocrew/app-sdk';
 import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
+import { ONBOARDING_KEY } from '../specters/onboarding';
 import { WATCHED_KEY, writeWatched } from './watched';
 
 const ATLAS = 'bnd_aaaaaaaaaaaaaaaaaaaa0001';
@@ -231,7 +232,7 @@ describe('detail and announcements', () => {
     selectRow('Atlas');
     expect(await screen.findByText('Showing Atlas: Working, 2 open attempts')).toBeTruthy();
     const tabs = screen.getByRole('tablist', { name: 'Bot detail sections' });
-    expect(within(tabs).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Source details']);
+    expect(within(tabs).getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Specter', 'Source details']);
     expect(screen.getByRole('list', { name: 'Attempts, newest first' })).toBeTruthy();
     fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(screen.getByRole('region', { name: 'Last 24 hours' }).textContent).toContain('Sample size3');
@@ -503,10 +504,10 @@ describe('sections', () => {
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'atl' } });
     fireEvent.click(specterTab());
     expect(screen.getByRole('tabpanel', { name: 'Specters' })).toBeTruthy();
-    expect(await screen.findByRole('list', { name: 'Specter collection' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Specter showcase' })).toBeTruthy();
     expect(screen.queryByRole('list', { name: 'Bots' })).toBeNull();
     fireEvent.click(rosterTab());
-    expect(screen.queryByRole('list', { name: 'Specter collection' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Specter showcase' })).toBeNull();
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('atl');
     expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
   });
@@ -551,6 +552,122 @@ describe('Specters in the roster rows', () => {
     expect(document.head.querySelectorAll('style[data-specter-arena]')).toHaveLength(1);
     expect(document.head.querySelectorAll('style[data-specter-arena-specters]')).toHaveLength(1);
     fireEvent.click(within(screen.getByRole('tablist', { name: 'Sections' })).getByRole('tab', { name: 'Specters' }));
-    expect(await screen.findByRole('list', { name: 'Specter collection' })).toBeTruthy();
+    expect(await screen.findByRole('region', { name: 'Specter showcase' })).toBeTruthy();
+  });
+});
+
+describe('assigning Specters', () => {
+  const dialog = () => document.querySelector('dialog');
+  const sectionsTab = (name: string) => within(screen.getByRole('tablist', { name: 'Sections' })).getByRole('tab', { name });
+  const offered = () => (JSON.parse(window.localStorage.getItem(ONBOARDING_KEY) ?? 'null') as { offered: string[] } | null)?.offered ?? null;
+  const flushAll = () => act(async () => void (await new Promise((resolve) => setTimeout(resolve, 20))));
+
+  async function openUnassigned() {
+    setSpecterScenario('specters-unassigned');
+    setFixtureScenario('default');
+    render(<ObservatoryPage />);
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await waitFor(() => expect(dialog()).not.toBeNull());
+  }
+
+  it('opens the walkthrough by itself over the shown tab when bots have no Specter, and Escape records them as offered', async () => {
+    await openUnassigned();
+    expect(sectionsTab('Arena').getAttribute('aria-selected')).toBe('true');
+    expect(within(dialog() as HTMLElement).getByText('Step 1 of 4')).toBeTruthy();
+    fireEvent(dialog() as HTMLElement, new Event('cancel', { cancelable: true }));
+    expect(dialog()).toBeNull();
+    expect(offered()).toHaveLength(4);
+    expect(JSON.stringify(offered())).not.toMatch(/Dune|Ember/);
+  });
+
+  it('does not open again after a reload for bots it already offered, but keeps the way back', async () => {
+    await openUnassigned();
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Close' }));
+    cleanup();
+    render(<ObservatoryPage />);
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await flushAll();
+    expect(dialog()).toBeNull();
+    fireEvent.click(sectionsTab('Specters'));
+    expect(await screen.findByRole('button', { name: 'Assign Specters (4)' })).toBeTruthy();
+  });
+
+  it('never opens when every bot has a Specter, or when the Specters list is empty', async () => {
+    for (const scenario of ['specters', 'specters-none'] as const) {
+      setSpecterScenario(scenario);
+      render(<ObservatoryPage />);
+      await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+      await flushAll();
+      expect(dialog(), scenario).toBeNull();
+      cleanup();
+    }
+  });
+
+  it('reopens from the Specters tab, and a finished walkthrough empties the button and gives the Roster its heroes', async () => {
+    await openUnassigned();
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Randomize all unassigned' }));
+    await waitFor(() => expect(within(dialog() as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe('Specters assigned'));
+    expect(within(dialog() as HTMLElement).getByRole('status').textContent).toBe('4 assigned, 0 skipped');
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Done' }));
+    expect(dialog()).toBeNull();
+    fireEvent.click(sectionsTab('Specters'));
+    await screen.findByRole('region', { name: 'Specter showcase' });
+    expect(screen.queryByRole('button', { name: /^Assign Specters/ })).toBeNull();
+    fireEvent.click(sectionsTab('Roster'));
+    expect(screen.getAllByText(/^Specter: /)).toHaveLength(7);
+    expect(screen.queryByText('No Specter yet')).toBeNull();
+  });
+
+  it('opens from a Roster row on that bot, and from the bot detail', async () => {
+    await openUnassigned();
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Close' }));
+    fireEvent.click(sectionsTab('Roster'));
+    expect(screen.getAllByText('No Specter yet')).toHaveLength(4);
+    fireEvent.click(screen.getByRole('button', { name: 'Assign a Specter to Fenn' }));
+    expect(within(dialog() as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe('Choose a Specter for Fenn');
+    expect(within(dialog() as HTMLElement).getByText('Step 1 of 4')).toBeTruthy();
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Close' }));
+    selectRow('Dune');
+    fireEvent.click(await screen.findByRole('tab', { name: 'Specter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Assign a Specter' }));
+    expect(within(dialog() as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe('Choose a Specter for Dune');
+  });
+
+  it('opens from the Arena rail on the bot clicked', async () => {
+    await openUnassigned();
+    fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Close' }));
+    await screen.findByRole('group', { name: 'Arena map' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Assign a Specter to Ember' }));
+    expect(within(dialog() as HTMLElement).getByRole('heading', { level: 2 }).textContent).toBe('Choose a Specter for Ember');
+  });
+
+  it('shows a holder in the Roster with the bot selected and focused, even when the search and the view hid it', async () => {
+    setSpecterScenario('specters');
+    await open();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
+    fireEvent.click(sectionsTab('Specters'));
+    await screen.findByRole('region', { name: 'Specter showcase' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Bots with this Specter (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Atlas .*Show in the Roster$/ }));
+    expect(sectionsTab('Roster').getAttribute('aria-selected')).toBe('true');
+    const row = await screen.findByRole('button', { name: /^Atlas/ });
+    expect(row.getAttribute('aria-current')).toBe('true');
+    expect(document.activeElement).toBe(row);
+    expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('');
+    expect(screen.getByRole('heading', { level: 2, name: 'Atlas' })).toBeTruthy();
+  });
+
+  it('switches Watched to All bots so a holder that is not watched can be shown', async () => {
+    setSpecterScenario('specters');
+    writeWatched([ATLAS]);
+    await open();
+    expect(screen.getByRole('tab', { name: 'Watched' }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.click(sectionsTab('Specters'));
+    await screen.findByRole('region', { name: 'Specter showcase' });
+    fireEvent.click(await screen.findByRole('radio', { name: /^Stitch/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Bots with this Specter (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Brindle .*Show in the Roster$/ }));
+    expect(screen.getByRole('tab', { name: 'All bots' }).getAttribute('aria-selected')).toBe('true');
+    expect((await screen.findByRole('button', { name: /^Brindle/ })).getAttribute('aria-current')).toBe('true');
   });
 });

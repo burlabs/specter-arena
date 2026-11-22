@@ -1,19 +1,22 @@
 import { rosterBody, setSpecterScenario, useAppApi } from '@kirocrew/app-sdk';
 import type { SpecterScenarioName } from '@kirocrew/app-sdk';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearAssetCache } from './assetCache';
-import type { XpState } from '../work/useXp';
-import { SpectersView } from './SpectersView';
+import { SpecterDetail } from './SpecterDetail';
 import { useSpecters } from './useSpecters';
 
 const bots = rosterBody('default').items;
-const XP_READY: XpState = { status: 'ready', byBinding: new Map(), failure: null, refresh: () => undefined };
 
 
-function Harness() {
+let current = 'Atlas';
+const assignSpy = vi.fn();
+
+function Harness({ withAssign = false }: { withAssign?: boolean }) {
   const specters = useSpecters();
-  return <SpectersView bots={bots} complete specters={specters} xp={XP_READY} />;
+  const bot = bots.find((entry) => entry.displayName === current);
+  if (specters.status !== 'ready' || bot === undefined) return null;
+  return <SpecterDetail bot={bot} specter={specters.byBinding.get(bot.bindingId) ?? null} specters={specters} progression={<span>progress</span>} onAssign={withAssign ? assignSpy : undefined} />;
 }
 
 beforeEach(() => {
@@ -24,21 +27,21 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  assignSpy.mockReset();
 });
 
 const flush = async () => {
   for (let index = 0; index < 4; index += 1) await act(async () => void (await vi.advanceTimersByTimeAsync(0)));
 };
 
-async function open(scenario: SpecterScenarioName, bot: string) {
+async function open(scenario: SpecterScenarioName, bot: string, withAssign = false) {
   setSpecterScenario(scenario);
-  render(<Harness />);
-  await flush();
-  fireEvent.click(within(screen.getByRole('list', { name: 'Specter collection' })).getByRole('button', { name: new RegExp(`^${bot}`) }));
+  current = bot;
+  render(<Harness withAssign={withAssign} />);
   await flush();
 }
 
-const detail = () => screen.getByRole('region', { name: 'Specter detail' });
+const detail = () => document.querySelector('.sa-profile') as HTMLElement;
 const heading = () => within(detail()).getByRole('heading', { level: 2 });
 const button = (name: string) => within(detail()).getByRole('button', { name });
 
@@ -49,8 +52,9 @@ describe('hero card', () => {
     expect(detail().textContent).toContain('The caped one with the golden clasp');
     expect(detail().textContent).toContain('Calm and a little formal.');
     expect(detail().textContent).toContain('Pale lavender');
-    expect(within(detail()).getByText('Bot')).toBeTruthy();
-    expect(detail().textContent).toContain('This hero came with the bot when it first appeared');
+    expect(within(detail()).queryByText('Bot')).toBeNull();
+    expect(detail().textContent).toContain('This hero was assigned to the bot');
+    expect(detail().textContent).toContain('progress');
     expect(detail().querySelectorAll('input[type=text], textarea')).toHaveLength(0);
   });
 
@@ -71,12 +75,23 @@ describe('hero card', () => {
 
   it('renders the pending state with Check again when no hero is listed yet', async () => {
     await open('specters-none', 'Atlas');
-    expect(heading().textContent).toBe('Atlas');
+    expect(heading().textContent).toBe('No Specter yet');
     expect(detail().textContent).toContain('has not been given a hero yet');
     const get = vi.spyOn(useAppApi(), 'get');
     fireEvent.click(button('Check again'));
     await flush();
     expect(get).toHaveBeenCalled();
+  });
+});
+
+describe('a bot with no hero', () => {
+  it('offers the walkthrough instead of Check again when the page says the bot is unassigned', async () => {
+    await open('specters-unassigned', 'Dune', true);
+    expect(heading().textContent).toBe('No Specter yet');
+    expect(within(detail()).queryByRole('button', { name: 'Check again' })).toBeNull();
+    expect(detail().textContent).toContain('A bot keeps its Specter once assigned.');
+    fireEvent.click(button('Assign a Specter'));
+    expect(assignSpy).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -1,15 +1,15 @@
 import type { CSSProperties } from 'react';
-import type { SpecterV2 } from '../contracts/types';
 import { TOKEN_CAPTION, TOKEN_FAILED_CAPTION } from './copy';
 import { tokenHue, tokenInitials } from './model';
 import { useAsset } from './useAsset';
 import { HeroThumb } from './HeroThumb';
 import { useMotionAllowed } from './useMotionAllowed';
+import type { ArenaSpecter } from '../arena/specterShape';
 
 export type PortraitSize = 'sm' | 'md' | 'lg';
 
 interface Props {
-  specter: SpecterV2;
+  specter: ArenaSpecter;
   size: PortraitSize;
   /** Hides the portrait from assistive technology; the row prints the Specter name as text. */
   decorative?: boolean;
