@@ -26,6 +26,7 @@ from .records import (
 )
 from .runs import apply_coverage_mark, bump_revision, record_roster_check, run_is_live
 from .store import Store
+from .tasks import sweep_guarded
 from .validate import (
     binding_seen_reason,
     coverage_mark_reason,
@@ -47,6 +48,7 @@ class _Accumulator:
     bindings: list[BindingRef] = field(default_factory=list)
     roster_unmatched: int = 0
     last_seq: int | None = None
+    latest_observed_ms: int | None = None
 
     def record(self, index: int, kind: ItemKind, outcome: Outcome, reason: str | None) -> None:
         self.counts[kind][outcome] += 1
@@ -109,6 +111,11 @@ def _apply(
         outcome, reason, seq = insert_observation(conn, installation_id, item)
         if seq is not None:
             acc.last_seq = seq if acc.last_seq is None else max(acc.last_seq, seq)
+        if outcome == "persisted":
+            seen = item.received_at_ms
+            acc.latest_observed_ms = (
+                seen if acc.latest_observed_ms is None else max(acc.latest_observed_ms, seen)
+            )
         return outcome, reason
     if not run_is_live(conn, run_id):
         return "rejected", "unknown-run"
@@ -156,4 +163,7 @@ def ingest(store: Store, batch: IngestBatch) -> IngestResult:
             acc.record(index, kind, outcome, reason)
         if acc.persisted_any():
             bump_revision(conn)
+        if acc.latest_observed_ms is not None:
+            # Tasks follow the projection this batch just changed, in the same transaction.
+            sweep_guarded(conn, acc.latest_observed_ms)
         return acc.result()

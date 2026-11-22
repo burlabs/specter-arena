@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
+import { isTaskItem } from '../tasks/model.ts';
 import {
   HERO_IDS,
   HEROES_ITEM_KEYS,
@@ -45,7 +46,11 @@ import {
   XP_HISTORY_KEYS,
   XP_SUMMARIES_KEYS,
   XP_SUMMARIES_PAGED_KEYS,
+  XP_SUMMARIES_TASK_VIEW_KEYS,
   XP_SUMMARY_KEYS,
+  XP_SUMMARY_TASK_VIEW_KEYS,
+  TASK_ITEM_KEYS,
+  TASKS_KEYS,
   DATA_LIFECYCLE_KEYS,
   DATA_RETENTION_KEYS,
   DATA_PREVIEW_KEYS,
@@ -72,6 +77,10 @@ import type {
   XpHistoryV1,
   XpSummariesV1,
   XpSummaryV1,
+  XpSummaryV2,
+  XpSummariesV3,
+  TaskItemV1,
+  TasksV1,
 } from './types.ts';
 
 // The wire schemas and their shared cases live outside ui/src and backend/specter_arena, so
@@ -186,6 +195,10 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'xp-summary', path: [], keys: XP_SUMMARY_KEYS },
   { schema: 'xp-summaries', path: [], keys: XP_SUMMARIES_KEYS },
   { schema: 'xp-summaries', version: 2, path: [], keys: XP_SUMMARIES_PAGED_KEYS },
+  { schema: 'xp-summary', version: 2, path: [], keys: XP_SUMMARY_TASK_VIEW_KEYS },
+  { schema: 'xp-summaries', version: 3, path: [], keys: XP_SUMMARIES_TASK_VIEW_KEYS },
+  { schema: 'task-item', path: [], keys: TASK_ITEM_KEYS },
+  { schema: 'tasks', path: [], keys: TASKS_KEYS },
   { schema: 'xp-history', path: [], keys: XP_HISTORY_KEYS },
   { schema: 'xp-history', path: ['properties', 'items', 'items'], keys: XP_ENTRY_KEYS },
   { schema: 'data-lifecycle', path: [], keys: DATA_LIFECYCLE_KEYS },
@@ -395,6 +408,33 @@ describe('hand-written types', () => {
       ['xp-summaries', xpSummaries],
       ['xp-history', xpHistory],
     ] as const;
+    const xpSummaryV2: XpSummaryV2 = { ...xpSummary, contractVersion: 2, creditedTaskCount: 3, policyVersion: 'xp-policy-2' };
+    const xpSummariesV3: XpSummariesV3 = { contractVersion: 3, items: [xpSummaryV2], nextCursor: null, asOfMs: 1760000007000 };
+    const task: TaskItemV1 = {
+      contractVersion: 1,
+      taskId: 'tsk_0a1b2c3d4e5f60718293a4b5',
+      bindingId: 'bnd_0a1b2c3d4e5f60718293a4b5',
+      attemptId: 'att_0a1b2c3d4e5f60718293a4b5',
+      kind: 'worker',
+      state: 'credited',
+      attemptState: 'ended',
+      closeReason: 'clean-end',
+      startedAtMs: 1760000000000,
+      endedAtMs: 1760000300000,
+      closedAtMs: 1760000330000,
+      updatedAtMs: 1760000330000,
+      runMs: 300000,
+      sizeClass: 'medium',
+      xpCredited: 12,
+      policyVersion: 'xp-policy-2',
+    };
+    const open: TaskItemV1 = { ...task, state: 'open', attemptState: 'working', closeReason: null, endedAtMs: null, closedAtMs: null, runMs: 90000, sizeClass: 'small', xpCredited: null };
+    const tasks: TasksV1 = { contractVersion: 1, items: [task, open], nextCursor: null, asOfMs: 1760000400000 };
+    expect(ajv.getSchema('urn:specter-arena:contract:xp-summary:v2')?.(xpSummaryV2)).toBe(true);
+    expect(ajv.getSchema('urn:specter-arena:contract:xp-summaries:v3')?.(xpSummariesV3)).toBe(true);
+    expect(ajv.getSchema('urn:specter-arena:contract:task-item:v1')?.(task)).toBe(true);
+    expect(ajv.getSchema('urn:specter-arena:contract:task-item:v1')?.(open)).toBe(true);
+    expect(ajv.getSchema('urn:specter-arena:contract:tasks:v1')?.(tasks)).toBe(true);
     for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
@@ -431,5 +471,16 @@ describe('PA-2 identity contracts', () => {
     const row = (name: string, version: number) => owners.split('\n').find((line) => line.startsWith(`| \`${name}\` | ${version} |`)) ?? '';
     for (const name of ['specter-profile', 'specter', 'specters', 'summoning']) expect(row(name, 1)).toContain('| RETIRED |');
     for (const name of ['specter', 'specters']) expect(row(name, 2)).toContain('| FROZEN |');
+  });
+});
+
+describe('task parser against the shared task-item cases', () => {
+  const dir = `${contractsDir}cases/task-item/v1/`;
+  const entries = readJson(`${dir}cases.json`) as CaseEntry[];
+
+  it.each(entries)('$file is read as the schema reads it', (entry) => {
+    const parsed = parseCase(`${dir}${entry.file}`);
+    if (!parsed.ok) return;
+    expect(isTaskItem(parsed.value)).toBe(entry.valid);
   });
 });

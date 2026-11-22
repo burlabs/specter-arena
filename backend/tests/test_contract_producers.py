@@ -59,8 +59,8 @@ def schemas_without_a_producer(
     return missing
 
 
-def test_the_registry_lists_all_thirty_one_schemas() -> None:
-    assert len(SCHEMA_IDS) == 31
+def test_the_registry_lists_all_thirty_five_schemas() -> None:
+    assert len(SCHEMA_IDS) == 35
     assert "urn:specter-arena:contract:roster:v2" in SCHEMA_IDS
     assert "urn:specter-arena:contract:roster-item:v2" in SCHEMA_IDS
     assert "urn:specter-arena:contract:roster:v1" in SCHEMA_IDS
@@ -75,6 +75,10 @@ def test_the_registry_lists_all_thirty_one_schemas() -> None:
     assert "urn:specter-arena:contract:work-items:v2" in SCHEMA_IDS
     assert "urn:specter-arena:contract:work-list-item:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:xp-summaries:v2" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:task-item:v1" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:tasks:v1" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:xp-summary:v2" in SCHEMA_IDS
+    assert "urn:specter-arena:contract:xp-summaries:v3" in SCHEMA_IDS
     assert "urn:specter-arena:contract:data-lifecycle:v1" in SCHEMA_IDS
     assert "urn:specter-arena:contract:collector-control:v1" in SCHEMA_IDS
     for name in ("work-item", "work-items", "xp-summary", "xp-summaries", "xp-history"):

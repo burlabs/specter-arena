@@ -1,0 +1,203 @@
+[
+  {
+    "file": "valid/open-worker-small.json",
+    "valid": true
+  },
+  {
+    "file": "valid/open-unknown-large.json",
+    "valid": true
+  },
+  {
+    "file": "valid/credited-bot-turn-medium.json",
+    "valid": true
+  },
+  {
+    "file": "valid/credited-rerunning-worker.json",
+    "valid": true
+  },
+  {
+    "file": "valid/not-credited-unknown-terminal.json",
+    "valid": true
+  },
+  {
+    "file": "valid/not-credited-coverage-gap.json",
+    "valid": true
+  },
+  {
+    "file": "valid/not-credited-waiting-at-end.json",
+    "valid": true
+  },
+  {
+    "file": "valid/times-at-max-integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-health-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-size-class.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-close-reason.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/task-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/taskId"
+  },
+  {
+    "file": "invalid/task-id-uppercase-hex.json",
+    "valid": false,
+    "instancePath": "/taskId"
+  },
+  {
+    "file": "invalid/task-id-wrong-prefix.json",
+    "valid": false,
+    "instancePath": "/taskId"
+  },
+  {
+    "file": "invalid/task-id-short.json",
+    "valid": false,
+    "instancePath": "/taskId"
+  },
+  {
+    "file": "invalid/attempt-id-slot-key.json",
+    "valid": false,
+    "instancePath": "/attemptId"
+  },
+  {
+    "file": "invalid/binding-id-empty.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-with-space.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/kind-unknown.json",
+    "valid": false,
+    "instancePath": "/kind"
+  },
+  {
+    "file": "invalid/state-unknown.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/state-uppercase.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/attempt-state-unknown-token.json",
+    "valid": false,
+    "instancePath": "/attemptState"
+  },
+  {
+    "file": "invalid/close-reason-free-text.json",
+    "valid": false,
+    "instancePath": "/closeReason"
+  },
+  {
+    "file": "invalid/close-reason-undefined-token.json",
+    "valid": false,
+    "instancePath": "/closeReason"
+  },
+  {
+    "file": "invalid/size-class-unknown.json",
+    "valid": false,
+    "instancePath": "/sizeClass"
+  },
+  {
+    "file": "invalid/size-class-uppercase.json",
+    "valid": false,
+    "instancePath": "/sizeClass"
+  },
+  {
+    "file": "invalid/xp-credited-zero.json",
+    "valid": false,
+    "instancePath": "/xpCredited"
+  },
+  {
+    "file": "invalid/xp-credited-thirty-one.json",
+    "valid": false,
+    "instancePath": "/xpCredited"
+  },
+  {
+    "file": "invalid/xp-credited-string.json",
+    "valid": false,
+    "instancePath": "/xpCredited"
+  },
+  {
+    "file": "invalid/xp-credited-fraction.json",
+    "valid": false,
+    "instancePath": "/xpCredited"
+  },
+  {
+    "file": "invalid/run-ms-negative.json",
+    "valid": false,
+    "instancePath": "/runMs"
+  },
+  {
+    "file": "invalid/run-ms-fraction.json",
+    "valid": false,
+    "instancePath": "/runMs"
+  },
+  {
+    "file": "invalid/run-ms-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/started-negative.json",
+    "valid": false,
+    "instancePath": "/startedAtMs"
+  },
+  {
+    "file": "invalid/ended-string.json",
+    "valid": false,
+    "instancePath": "/endedAtMs"
+  },
+  {
+    "file": "invalid/closed-negative.json",
+    "valid": false,
+    "instancePath": "/closedAtMs"
+  },
+  {
+    "file": "invalid/updated-above-max-integer.json",
+    "valid": false,
+    "instancePath": "/updatedAtMs"
+  },
+  {
+    "file": "invalid/policy-version-uppercase.json",
+    "valid": false,
+    "instancePath": "/policyVersion"
+  },
+  {
+    "file": "invalid/policy-version-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/policyVersion"
+  }
+]

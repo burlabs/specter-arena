@@ -102,6 +102,24 @@ async def decide(request: Request) -> Response:
 
 
 @signed
+async def list_tasks(request: Request) -> Response:
+    query = request.query_params
+    return await _call(
+        request,
+        "list_tasks",
+        state=query.get("state"),
+        binding_id=query.get("bindingId"),
+        cursor=query.get("cursor"),
+        limit=query.get("limit"),
+    )
+
+
+@signed
+async def get_task(request: Request) -> Response:
+    return await _call(request, "get_task", _p(request, "task_id"))
+
+
+@signed
 async def get_xp(request: Request) -> Response:
     query = request.query_params
     if "view" not in query:
@@ -135,6 +153,8 @@ def work_routes() -> list[BaseRoute]:
         Route("/api/work/{work_id}/attempts", link_attempt, methods=["POST"]),
         Route("/api/work/{work_id}/milestones", set_milestone, methods=["POST"]),
         Route("/api/work/{work_id}/decisions", decide, methods=["POST"]),
+        Route("/api/tasks", list_tasks, methods=["GET"]),
+        Route("/api/tasks/{task_id}", get_task, methods=["GET"]),
         Route("/api/xp", get_xp, methods=["GET"]),
         Route("/api/roster/{binding_id}/xp", get_xp_history, methods=["GET"]),
     ]

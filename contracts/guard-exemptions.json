@@ -24,6 +24,12 @@
       "name": "heroId",
       "reason": "The identifier of one of 11 fixed, authored, cosmetic characters (Eric's art). It selects no behaviour, role, capability, lane or tier, and the closed list is the roster itself, so a twelfth hero needs a new migration and a v3 contract.",
       "approvedBy": "FP-16 planner under Eric's 2026-11-17 delegation (all gates self-approved)"
+    },
+    {
+      "file": "contracts/schemas/task-item.v1.schema.json",
+      "name": "sizeClass",
+      "reason": "A display size bucket of one task's observed run time (small, medium, large), named by the PA-3 shared contract so the arena can scale minion art. It is not a bot or Specter class: it classifies a task, selects no behaviour, role or capability, is never stored, and is derived on each read from runMs.",
+      "approvedBy": "FP-22 backend worker building to the orchestrator's shared contract, under Eric's 2026-11-17 delegation (all gates self-approved)"
     }
   ]
 }

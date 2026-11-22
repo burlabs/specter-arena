@@ -87,6 +87,10 @@ class UnknownWork(StoreError):
     code = "unknown-work"
 
 
+class UnknownTask(StoreError):
+    code = "unknown-task"
+
+
 class UnknownAttempt(StoreError):
     """The attempt id is not in the `attempt` projection."""
 
