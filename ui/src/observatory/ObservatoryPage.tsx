@@ -13,7 +13,10 @@ import { useInjectedStyle } from './useInjectedStyle';
 import { useRoster } from './useRoster';
 import type { RosterData } from './useRoster';
 import { useWatched } from './watched';
+import { AssignDialog } from '../specters/AssignDialog';
 import { SpectersView } from '../specters/SpectersView';
+import { useAssignFlow } from '../specters/useAssignFlow';
+import { useHeroes } from '../specters/useHeroes';
 import { useSpecterStyle } from '../specters/useSpecterStyle';
 import { useSpecters } from '../specters/useSpecters';
 import { DataView } from '../lifecycle/DataView';
@@ -41,6 +44,8 @@ const SECTIONS: ReadonlyArray<{ name: SectionName; label: string }> = [
   { name: 'data', label: 'Data' },
 ];
 
+const NO_BOTS: readonly RosterItemV1[] = [];
+
 function initialView(data: RosterData | null, watched: ReadonlySet<string>): ViewName | null {
   if (data === null) return null;
   const onRoster = data.complete ? [...watched].some((id) => data.items.some((item) => item.bindingId === id)) : watched.size > 0;
@@ -58,6 +63,7 @@ export function ObservatoryPage() {
   useDataStyle();
   const { state, refresh } = useRoster();
   const specters = useSpecters();
+  const heroes = useHeroes();
   const xp = useXp();
   const data = state.data;
   const rosterIds = useMemo(
@@ -65,6 +71,8 @@ export function ObservatoryPage() {
     [data],
   );
   const { watched, toggle, clear, persistFailed, full } = useWatched(rosterIds);
+  const assignFlow = useAssignFlow({ ready: data?.complete === true && specters.status === 'ready', bots: data?.items ?? NO_BOTS, unassigned: specters.unassigned });
+  const unassignedIds = useMemo(() => new Set(assignFlow.pending), [assignFlow.pending]);
   const [latchedView, setLatchedView] = useState<ViewName | null>(null);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -98,6 +106,23 @@ export function ObservatoryPage() {
     setDeparted(false);
     setSelectedId(bindingId);
   };
+
+  const [focusId, setFocusId] = useState<string | null>(null);
+  /** Opens the Roster with this bot selected and focused, whatever the search or the view hid. */
+  const showInRoster = (bindingId: string) => {
+    setQuery('');
+    if (view === 'watched' && !watched.has(bindingId)) setLatchedView('all');
+    select(bindingId);
+    setSection('roster');
+    setFocusId(bindingId);
+  };
+  useEffect(() => {
+    if (focusId === null || section !== 'roster') return;
+    const target = [...document.querySelectorAll<HTMLElement>('.sa-roster [data-binding-id]')].find((element) => element.dataset.bindingId === focusId);
+    if (target === undefined) return;
+    target.focus();
+    setFocusId(null);
+  }, [focusId, section, data, query, latchedView]);
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -163,6 +188,8 @@ export function ObservatoryPage() {
         watched={watched}
         watchListFull={full}
         specters={specters.byBinding}
+        unassigned={unassignedIds}
+        onAssign={assignFlow.open}
         onSelect={select}
         onToggleWatch={toggle}
       />
@@ -252,6 +279,9 @@ export function ObservatoryPage() {
                     rosterRevision={roster.rosterRevision}
                     attempts={attempts.state}
                     xp={xpViewOf(xp, selected.bindingId)}
+                    specter={specters.byBinding.get(selected.bindingId) ?? null}
+                    specters={specters}
+                    onAssign={unassignedIds.has(selected.bindingId) ? () => assignFlow.open(selected.bindingId) : undefined}
                     onLoadOlder={attempts.loadOlder}
                     onRetry={attempts.refresh}
                   />
@@ -263,7 +293,7 @@ export function ObservatoryPage() {
               </Panel>
             </div>
           </div>
-          {section === 'specters' && <SpectersView bots={items} complete={roster.complete} specters={specters} xp={xp} />}
+          {section === 'specters' && <SpectersView bots={items} specters={specters} heroes={heroes} pendingCount={assignFlow.pending.length} onAssign={() => assignFlow.open()} onShowInRoster={showInRoster} />}
           {section === 'data' && <DataView />}
           {section === 'arena' && (
             <ArenaView
@@ -276,9 +306,12 @@ export function ObservatoryPage() {
               xp={xp.byBinding}
               xpStatus={xp.status}
               visitSeed={visitSeed}
+              unassigned={unassignedIds}
+              onAssign={assignFlow.open}
             />
           )}
         </div>
+        {assignFlow.queue !== null && <AssignDialog bots={items} queue={assignFlow.queue} specters={specters} heroes={heroes} onClose={assignFlow.close} />}
         <p className="sa-visually-hidden" role="status" aria-live="polite">
           {selected !== undefined && selectedCondition !== null
             ? `Showing ${nameOf(selected)}: ${selectedCondition.label}${openAttempts === null ? '' : `, ${openAttempts} open ${openAttempts === 1 ? 'attempt' : 'attempts'}`}`

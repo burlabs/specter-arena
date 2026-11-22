@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { attemptsBody, rosterBody } from '@kirocrew/app-sdk';
+import { heroOf } from '../specters/testData';
+import type { SpectersState } from '../specters/useSpecters';
 import { summaryOf } from '../work/testData';
 import type { XpView } from '../work/useXp';
 import { BotDetail } from './BotDetail';
@@ -14,11 +16,14 @@ if (data === null) throw new Error('fixture');
 const ready: AttemptsState = { status: 'ready', data, items: data.items, hasOlder: true, loadingOlder: false, olderFailed: false, failure: null };
 
 function view(attempts: AttemptsState = ready, handlers = { onLoadOlder: vi.fn(), onRetry: vi.fn() }) {
-  render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={attempts} xp={XP_NONE} {...handlers} />);
+  render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={attempts} xp={XP_NONE} {...NO_SPECTER_PROPS} {...handlers} />);
   return handlers;
 }
 
 const XP_NONE: XpView = { status: 'ready', summary: null };
+const refresh = vi.fn();
+const SPECTERS: SpectersState = { status: 'ready', byBinding: new Map(), unassigned: [], failure: null, refresh, apply: vi.fn(), assign: vi.fn() };
+const NO_SPECTER_PROPS = { specter: null, specters: SPECTERS };
 
 const tab = (name: string) => screen.getByRole('tab', { name });
 
@@ -86,9 +91,9 @@ describe('BotDetail', () => {
     expect(screen.getByRole('tabpanel').textContent).toBe('');
   });
 
-  it('offers four tabs in order, with Progression between Activity and Source details (BD-1)', () => {
+  it('offers five tabs in order, with Specter between Progression and Source details (BD-1)', () => {
     view();
-    expect(within(screen.getByRole('tablist')).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Source details']);
+    expect(within(screen.getByRole('tablist')).getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Specter', 'Source details']);
   });
 
   it('shows the ledger on Progression while attempts are loading or gone (BD-2)', async () => {
@@ -101,18 +106,21 @@ describe('BotDetail', () => {
 
   it('shows the total and policy of the v2 summary on Progression when the XP read has one (BD-2b)', async () => {
     const summary = summaryOf({ bindingId: atlas?.bindingId, totalXp: 340, level: 4, levelFloorXp: 250, nextLevelXp: 450, creditedTaskCount: 21 });
-    render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={{ status: 'loading' }} xp={{ status: 'ready', summary }} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={{ status: 'loading' }} xp={{ status: 'ready', summary }} {...NO_SPECTER_PROPS} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
     fireEvent.click(tab('Progression'));
     expect(await screen.findByText('Level 4 · 340 XP')).toBeTruthy();
     expect(screen.getByText('Policy xp-policy-2 · Level table levels-1')).toBeTruthy();
   });
 
-  it('wraps the arrow keys over four tabs and End still lands on Source details (BD-3)', () => {
+  it('wraps the arrow keys over five tabs and End still lands on Source details (BD-3)', () => {
     view();
+    expect(screen.getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Attempts', 'Activity', 'Progression', 'Specter', 'Source details']);
     fireEvent.keyDown(tab('Attempts'), { key: 'ArrowRight' });
     fireEvent.keyDown(tab('Activity'), { key: 'ArrowRight' });
     expect(tab('Progression').getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(tab('Progression'), { key: 'ArrowRight' });
+    expect(tab('Specter').getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(tab('Specter'), { key: 'ArrowRight' });
     expect(tab('Source details').getAttribute('aria-selected')).toBe('true');
     fireEvent.keyDown(tab('Source details'), { key: 'ArrowRight' });
     expect(tab('Attempts').getAttribute('aria-selected')).toBe('true');
@@ -132,8 +140,43 @@ describe('BotDetail', () => {
 
   it('shows the figure for a v2 item with a reading', () => {
     const item = { ...(atlas as NonNullable<typeof atlas>), contractVersion: 2 as const, tokenReading: { kind: 'context' as const, used: 48_000, window: 200_000, observedAt: 1 } };
-    render(<BotDetail item={item} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={XP_NONE} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    render(<BotDetail item={item} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={XP_NONE} {...NO_SPECTER_PROPS} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
     fireEvent.click(tab('Activity'));
     expect(screen.getByRole('region', { name: 'Context in use' }).textContent).toMatch(/48,000 of 200,000 tokens/);
+  });
+
+  it('shows the hero, its note and the progression on the Specter tab, and the avatar button', () => {
+    const summary = summaryOf({ bindingId: atlas?.bindingId, totalXp: 40, level: 2, levelFloorXp: 30, nextLevelXp: 100 });
+    render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={{ status: 'ready', summary }} specter={heroOf({ bindingId: atlas?.bindingId ?? '' })} specters={SPECTERS} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(tab('Specter'));
+    const panel = screen.getByRole('tabpanel');
+    expect(within(panel).getByRole('heading', { level: 2, name: 'Vell' })).toBeTruthy();
+    expect(panel.textContent).toContain('This hero was assigned to the bot.');
+    expect(panel.textContent).toContain('Level 2');
+    expect(within(panel).getByRole('button', { name: 'Change avatar' })).toBeTruthy();
+  });
+
+  it('says the XP could not be read, never 0, when the ledger is loading or failed', () => {
+    for (const xp of [{ status: 'loading' } as const, { status: 'failed', failure: 'offline' } as const]) {
+      const { unmount } = render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={xp} specter={heroOf()} specters={SPECTERS} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+      fireEvent.click(tab('Specter'));
+      expect(screen.getByRole('tabpanel').textContent).not.toContain('0 XP');
+      unmount();
+    }
+  });
+
+  it('offers Assign on the Specter tab of a bot with no hero, and Check again when the page does not know', () => {
+    const onAssign = vi.fn();
+    const { unmount } = render(<BotDetail item={atlas as NonNullable<typeof atlas>} collector={roster.collector} rosterRevision={roster.rosterRevision} attempts={ready} xp={XP_NONE} {...NO_SPECTER_PROPS} onAssign={onAssign} onLoadOlder={vi.fn()} onRetry={vi.fn()} />);
+    fireEvent.click(tab('Specter'));
+    expect(screen.getByRole('heading', { level: 2, name: 'No Specter yet' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Assign a Specter' }));
+    expect(onAssign).toHaveBeenCalledTimes(1);
+    unmount();
+    view();
+    fireEvent.click(tab('Specter'));
+    expect(screen.queryByRole('button', { name: 'Assign a Specter' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
+    expect(refresh).toHaveBeenCalled();
   });
 });

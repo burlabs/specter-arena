@@ -115,4 +115,38 @@ describe('RosterList with Specters', () => {
     expect(targetIndex('End', 0, 3)).toBe(3);
     expect(targetIndex('q', 0, 3)).toBeNull();
   });
+
+  it('says No Specter yet and offers Assign on a bot the Specters list says has none, and nowhere else', () => {
+    const onAssign = vi.fn();
+    setup({ specters: withSpecter(), unassigned: new Set([items[1]?.bindingId ?? '']), onAssign });
+    const rows = screen.getAllByRole('listitem');
+    expect(rows[1]?.querySelector('.sa-row__specter--none')?.textContent).toBe('No Specter yet');
+    expect(rows[0]?.textContent).not.toContain('No Specter yet');
+    expect(rows[2]?.textContent).not.toContain('No Specter yet');
+    const assign = within(rows[1] as HTMLElement).getByRole('button', { name: `Assign a Specter to ${items[1]?.displayName}` });
+    expect(assign.textContent).toBe('Assign');
+    fireEvent.click(assign);
+    expect(onAssign).toHaveBeenCalledWith(items[1]?.bindingId);
+    expect(screen.getAllByRole('button', { name: /^Assign a Specter/ })).toHaveLength(1);
+  });
+
+  it('shows the words but no button without an Assign handler, and neither for a bot that holds a hero', () => {
+    setup({ specters: withSpecter(), unassigned: new Set([items[1]?.bindingId ?? '', items[0]?.bindingId ?? '']) });
+    expect(screen.queryByRole('button', { name: /^Assign a Specter/ })).toBeNull();
+    const rows = screen.getAllByRole('listitem');
+    expect(rows[1]?.textContent).toContain('No Specter yet');
+    expect(rows[0]?.textContent).not.toContain('No Specter yet');
+  });
+
+  it('puts Assign in the same tab stop as the row it belongs to', () => {
+    setup({ unassigned: new Set([items[0]?.bindingId ?? '', items[1]?.bindingId ?? '']), onAssign: vi.fn() });
+    const assigns = screen.getAllByRole('button', { name: /^Assign a Specter/ });
+    expect(assigns[0]?.tabIndex).toBe(0);
+    expect(assigns[1]?.tabIndex).toBe(-1);
+  });
+
+  it('marks each row button with its binding id for the Specters tab to focus', () => {
+    setup();
+    expect(selectButtons().map((button) => button.getAttribute('data-binding-id'))).toEqual(items.map((item) => item.bindingId));
+  });
 });

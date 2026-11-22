@@ -1,25 +1,25 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { RosterItemV1, SpecterV2 } from '../contracts/types';
-import { HostApiError, specterPortraitPath, useHostApi } from '../host';
-import { nameOf } from '../observatory/model';
+import type { RosterItemV1, SpecterV2, SpecterV3 } from '../contracts/types';
+import { specterPortraitPath, useHostApi } from '../host';
 import { Button } from '../observatory/ui';
 import { PortraitPicker } from './PortraitPicker';
 import { SpecterPortrait } from './SpecterPortrait';
-import { ACTIONS, COSMETIC_NOTE, FIELD_LABELS, HERO_NOTE, HERO_PENDING, errorWords } from './copy';
+import { ACTIONS, ASSIGN, COSMETIC_NOTE, FIELD_LABELS, HERO_NOTE, HERO_PENDING, NO_SPECTER, errorWords } from './copy';
+import { errorCodeOf } from './useSpecters';
 import type { SpectersState } from './useSpecters';
 
 interface Props {
   bot: RosterItemV1;
-  specter: SpecterV2 | null;
+  specter: SpecterV3 | null;
   specters: SpectersState;
   /** The bot's level and XP, drawn by the list so the card and the detail agree. */
   progression: ReactNode;
+  /** Given for a bot that holds no hero: offers the assignment walkthrough. */
+  onAssign?: () => void;
 }
 
-const codeOf = (error: unknown): string => (error instanceof HostApiError ? (error.error ?? `http_${error.status}`) : 'offline');
-
-export function SpecterDetail({ bot, specter, specters, progression }: Props) {
+export function SpecterDetail({ bot, specter, specters, progression, onAssign }: Props) {
   const api = useHostApi();
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -37,9 +37,18 @@ export function SpecterDetail({ bot, specter, specters, progression }: Props) {
   if (specter === null) {
     return (
       <section className="sa-profile" aria-labelledby={headingId}>
-        <h2 id={headingId}>{nameOf(bot)}</h2>
-        <p className="sa-help">{HERO_PENDING}</p>
-        <Button onClick={specters.refresh}>{ACTIONS.checkAgain}</Button>
+        <h2 id={headingId}>{NO_SPECTER}</h2>
+        {onAssign === undefined ? (
+          <>
+            <p className="sa-help">{HERO_PENDING}</p>
+            <Button onClick={specters.refresh}>{ACTIONS.checkAgain}</Button>
+          </>
+        ) : (
+          <>
+            <p className="sa-help">{ASSIGN.detailHelp}</p>
+            <Button onClick={onAssign}>{ACTIONS.assign}</Button>
+          </>
+        )}
       </section>
     );
   }
@@ -52,7 +61,7 @@ export function SpecterDetail({ bot, specter, specters, progression }: Props) {
       focusHeading.current = true;
       setPicking(false);
     } catch (error) {
-      const code = codeOf(error);
+      const code = errorCodeOf(error);
       if (code === 'version_conflict') specters.refresh();
       setWriteError(code);
     } finally {
@@ -74,10 +83,6 @@ export function SpecterDetail({ bot, specter, specters, progression }: Props) {
         </div>
       </div>
       <dl>
-        <div className="sa-field">
-          <dt>{FIELD_LABELS.bot}</dt>
-          <dd>{nameOf(bot)}</dd>
-        </div>
         <div className="sa-field">
           <dt>{FIELD_LABELS.progression}</dt>
           <dd>{progression}</dd>
