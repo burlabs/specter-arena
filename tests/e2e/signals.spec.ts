@@ -69,14 +69,16 @@ test('SG-3 Context in use shows on the Activity tab only: a figure, a real zero,
   await expect(bots(page)).not.toContainText('tokens');
 });
 
-test('SG-4 the arena says Waiting on you for a waiting Specter and shows its reason in the inspector', async ({ page }) => {
+test('SG-4 the arena says Waiting on you for a waiting bot and shows its reason in the inspector', async ({ page }) => {
   await open(page);
   await sectionTab(page, 'Arena').click();
   await expect(page.getByRole('group', { name: 'Arena map' })).toBeVisible();
-  const token = page.locator('[data-scene-node="specter"]').and(page.getByRole('button', { name: /for Approval, Waiting on you|^Approval, .*Waiting on you/ }));
-  await expect(token).toHaveCount(1);
-  await expect(token).not.toHaveClass(/sa-is-engaging/);
-  await token.click();
+  // crew-signals has no Specters, so the bots are listed in the rail under "No Specter yet" and no token is drawn (FP-23).
+  await expect(page.locator('[data-scene-node="specter"]')).toHaveCount(0);
+  const row = page.getByRole('complementary', { name: 'Specters' }).getByRole('button', { name: /^Approval/ });
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText('Waiting on you');
+  await row.click();
   const inspector = page.getByRole('complementary', { name: 'Encounter inspector' });
   await expect(inspector).toContainText("Crew's row flag says a tool approval is waiting for you");
   await expect(inspector).not.toContainText('Context in use');
