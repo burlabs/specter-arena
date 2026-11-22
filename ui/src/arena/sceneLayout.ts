@@ -25,6 +25,9 @@ const EDGE_MAX = 0.97;
 
 export const SLOT_COUNT = ENEMY_COLUMNS * ENEMY_ROWS;
 
+/** Two points are far enough apart for one cell when they differ by a whole cell in x or in y. The one rule the layout tests use. */
+export const apart = (a: Point, b: Point, cell: { x: number; y: number }): boolean => Math.abs(a.x - b.x) >= cell.x - 1e-9 || Math.abs(a.y - b.y) >= cell.y - 1e-9;
+
 const clampPoint = (point: Point): Point => ({ x: clamp(point.x, EDGE_MIN, EDGE_MAX), y: clamp(point.y, EDGE_MIN, EDGE_MAX) });
 
 function distanceToSegment(point: Point, from: Point, to: Point): number {
@@ -105,10 +108,11 @@ export function specterSlot(index: number): Point {
 }
 
 /**
- * Where every Specter and enemy stands. Each Specter keeps its own staging cell whatever it is doing, and an
- * engagement is shown by a line to the enemy, so one position per Specter and nothing here reads a role or a lane.
+ * Where every Specter and enemy stands. A Specter stands on the point `heroPoints` gives it, or on its own staging cell when
+ * it has none, whatever it is doing. An engagement is shown by a line to the enemy, so one position per Specter and nothing
+ * here reads a role or a lane.
  */
-export function placeScene(model: SceneModel, slots: ReadonlyMap<string, number>): Placement {
+export function placeScene(model: SceneModel, slots: ReadonlyMap<string, number>, heroPoints: ReadonlyMap<string, Point> = new Map()): Placement {
   const slotPoints = enemySlots();
   const center: Point = { x: 0.5, y: 0.5 };
   const enemies = new Map<string, Point>();
@@ -117,6 +121,6 @@ export function placeScene(model: SceneModel, slots: ReadonlyMap<string, number>
     enemies.set(enemy.workId, slot === undefined ? center : (slotPoints[slot] ?? center));
   }
   const specters = new Map<string, Point>();
-  model.specters.forEach((specter, index) => specters.set(specter.bindingId, specterSlot(index)));
+  model.specters.forEach((specter, index) => specters.set(specter.bindingId, heroPoints.get(specter.bindingId) ?? specterSlot(index)));
   return { specters, enemies };
 }

@@ -1,14 +1,17 @@
 import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { rosterBody, setFixtureScenario, setSpecterScenario, setTaskScenario } from '@kirocrew/app-sdk';
+import { rosterBody, setArenaScenario, setFixtureScenario, setSpecterScenario, setTaskScenario } from '@kirocrew/app-sdk';
 import type { ScenarioName } from '@kirocrew/app-sdk';
 import { ObservatoryPage } from './ObservatoryPage';
 import { WATCHED_KEY, writeWatched } from './watched';
 
 const ATLAS = 'bnd_aaaaaaaaaaaaaaaaaaaa0001';
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  setArenaScenario(null);
+});
 
 const rosterResponse = () => new Response(JSON.stringify(rosterBody('default')));
 
@@ -445,17 +448,40 @@ describe('sections', () => {
     expect(get.mock.calls.slice(after).filter(([path]) => String(path).includes('/tasks?'))).toHaveLength(0);
   });
 
-  it('gives the Arena one visit seed that survives a tab switch', async () => {
-    await open();
-    fireEvent.click(arenaTab());
+  it('gives the Arena one visit seed that survives a tab switch, and a new page visit gets another', async () => {
+    const spots = () => [...document.querySelectorAll<HTMLElement>('[data-sprite="specter"]')].map((node) => `${node.dataset.token}@${node.style.left},${node.style.top}`).sort();
+    setArenaScenario('arena');
+    const first = render(<ObservatoryPage />);
     await screen.findByRole('group', { name: 'Arena map' });
-    const lefts = () => [...document.querySelectorAll<HTMLElement>('[data-sprite="specter"]')].map((node) => `${node.style.left},${node.style.top}`);
-    await waitFor(() => expect(lefts().length).toBeGreaterThan(0));
-    const first = lefts();
+    await waitFor(() => expect(spots().length).toBe(7));
+    const before = spots();
     fireEvent.click(rosterTab());
+    expect(screen.queryByRole('group', { name: 'Arena map' })).toBeNull();
     fireEvent.click(arenaTab());
     await screen.findByRole('group', { name: 'Arena map' });
-    await waitFor(() => expect(lefts()).toEqual(first));
+    await waitFor(() => expect(spots().length).toBe(7));
+    expect(spots()).toEqual(before);
+    first.unmount();
+    const others = new Set<string>();
+    for (let visit = 0; visit < 3; visit += 1) {
+      const again = render(<ObservatoryPage />);
+      await screen.findByRole('group', { name: 'Arena map' });
+      await waitFor(() => expect(spots().length).toBe(7));
+      others.add(spots().join('|'));
+      again.unmount();
+    }
+    expect(others.has(before.join('|')) && others.size === 1).toBe(false);
+  });
+
+  it('tells the rail when the Specters read failed, instead of listing every bot as having no Specter', async () => {
+    setArenaScenario('arena');
+    vi.spyOn(useAppApi(), 'get').mockImplementation((path: string) =>
+      String(path).includes('/specters') ? Promise.resolve(new Response('{}', { status: 500 })) : Promise.resolve(new Response(JSON.stringify(rosterBody('default')))),
+    );
+    render(<ObservatoryPage />);
+    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
+    expect(screen.queryByText(/No Specter yet/)).toBeNull();
   });
 
   it('opens the Data tab as the fifth section with its scoped style, and polls Data only once it is opened', async () => {

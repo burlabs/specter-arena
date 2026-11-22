@@ -19,8 +19,10 @@ import { effectAngle } from './heroCombat';
 import type { MarkerKind } from './effectMap';
 import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect } from './geometry';
 import { ARENA_INTRINSIC } from './mapLayout';
+import { MINION_SCALE, minionBasePx } from './minionSize';
+import { placeHeroes } from './heroPlacement';
 import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
-import type { Placement } from './sceneLayout';
+import type { Placement, Point } from './sceneLayout';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
 import type { ArenaSelection } from './selection';
@@ -30,6 +32,8 @@ import { useSceneAsset } from './useSceneAsset';
 import { Button } from '../observatory/ui';
 
 const ZOOM_STEP = 0.25;
+/** The seed a scene uses when the page gives none (tests, the harness): one fixed, repeatable layout. */
+export const DEFAULT_VISIT_SEED = 0x5eed;
 
 interface Props {
   model: SceneModel;
@@ -150,7 +154,7 @@ interface EnemyTokenProps {
 
 function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, hit, onSelect, register }: EnemyTokenProps) {
   const effect = enemyEffect(enemy);
-  const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
+  const style = { left: `${position.x * 100}%`, top: `${position.y * 100}%`, '--sa-minion-scale': MINION_SCALE[enemy.sizeClass] } as CSSProperties;
   return (
     <button
       type="button"
@@ -158,6 +162,7 @@ function EnemyToken({ enemy, position, selected, roving, animate, celebrating, s
       className={`sa-token sa-token--enemy sa-token--${enemy.size} sa-is-${effect.pose}${selected ? ' sa-is-selected' : ''}${enemy.blocked ? ' sa-is-blocked' : ''}`}
       style={style}
       data-sprite="enemy"
+      data-size-class={enemy.sizeClass}
       data-scene-node="enemy"
       data-token={enemy.workId}
       aria-pressed={selected}
@@ -212,7 +217,7 @@ const cssUrl = (url: string): string | null => (url.length > MAX_CSS_VAR_URL_CHA
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model: fullModel, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false }: Props) {
+export function BattlefieldScene({ model: fullModel, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false, visitSeed = DEFAULT_VISIT_SEED }: Props) {
   const model = useMemo(() => ({ ...fullModel, specters: fullModel.specters.filter(isDrawn) }), [fullModel]);
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
@@ -239,7 +244,14 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
     slotMemory.current = next;
     return next;
   }, [slotIds]);
-  const placement = useMemo(() => placeScene(model, slots), [model, slots]);
+  const heroMemory = useRef<ReadonlyMap<string, Point>>(new Map());
+  const heroBindingIds = useMemo(() => model.specters.map((specter) => specter.bindingId), [model]);
+  const heroPoints = useMemo(() => {
+    const next = placeHeroes(heroMemory.current, heroBindingIds, visitSeed);
+    heroMemory.current = next;
+    return next;
+  }, [heroBindingIds, visitSeed]);
+  const placement = useMemo(() => placeScene(model, slots, heroPoints), [model, slots, heroPoints]);
   const view = useMemo(() => visibleNormalizedRect(transform), [transform]);
 
   const order = useMemo(() => [...model.specters.map((s) => s.bindingId), ...model.enemies.map((e) => e.workId)], [model]);
@@ -328,12 +340,13 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
   if (mapUrl !== null) sceneStyle['--sa-map'] = mapUrl;
   if (patchlingUrl !== null) sceneStyle['--sa-sprite-patchling'] = patchlingUrl;
   if (patchbruteUrl !== null) sceneStyle['--sa-sprite-patchbrute'] = patchbruteUrl;
-  const stageStyle: CSSProperties = {
+  const stageStyle = {
     left: transform.offset.x + transform.pan.x,
     top: transform.offset.y + transform.pan.y,
     width: transform.displayed.width,
     height: transform.displayed.height,
-  };
+    '--sa-minion-base': `${minionBasePx(transform.displayed.width).toFixed(2)}px`,
+  } as CSSProperties;
 
   return (
     <section className={`sa-arena-scene ${motion.animate ? 'sa-is-animated' : 'sa-is-static'}`} aria-label="Arena scene" style={sceneStyle}>

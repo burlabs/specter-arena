@@ -128,6 +128,63 @@ describe('tokens', () => {
   });
 });
 
+describe('hero placement and minion size', () => {
+  const heroSpots = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>('[data-sprite="specter"]')].map((node) => [node.dataset.token, node.style.left, node.style.top]);
+  const percent = (text: string) => Number.parseFloat(text);
+  const props = { selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
+
+  it('stands every hero in the lower map, a cell apart', () => {
+    const { container } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const spots = heroSpots(container);
+    expect(spots).toHaveLength(3);
+    for (const [, left, top] of spots) {
+      expect(percent(top as string)).toBeGreaterThanOrEqual(60);
+      expect(percent(top as string)).toBeLessThanOrEqual(95);
+      expect(percent(left as string)).toBeGreaterThanOrEqual(6);
+      expect(percent(left as string)).toBeLessThanOrEqual(94);
+    }
+  });
+
+  it('keeps the same spots for the same seed, and moves them for another', () => {
+    const one = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={11} />).container);
+    const same = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={11} />).container);
+    const other = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={12} />).container);
+    expect(same).toEqual(one);
+    expect(other).not.toEqual(one);
+  });
+
+  it('does not move a hero on a later poll, and a joining bot leaves the others where they stand', () => {
+    const { container, rerender } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const before = heroSpots(container);
+    const polled = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper'), specterOf(brindle, 'Wisp'), specterOf(dune, 'Murk')], xp: [xpOf(atlas, 251, 3)], tasks: work }));
+    rerender(<BattlefieldScene model={polled} {...props} visitSeed={11} />);
+    expect(heroSpots(container)).toEqual(before);
+    const fenn = botOf(4, { displayName: 'Fenn' });
+    const joined = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune, fenn], specters: [specterOf(atlas, 'Vesper'), specterOf(brindle, 'Wisp'), specterOf(dune, 'Murk'), specterOf(fenn, 'Hollow')], tasks: work }));
+    rerender(<BattlefieldScene model={joined} {...props} visitSeed={11} />);
+    const after = heroSpots(container);
+    expect(after).toHaveLength(4);
+    for (const spot of before) expect(after).toContainEqual(spot);
+  });
+
+  it('sets the minion scale from the size class on each token and a base size on the stage', () => {
+    const { container } = render(<BattlefieldScene model={model} {...props} />);
+    const byClass = new Map<string, string>();
+    for (const token of container.querySelectorAll<HTMLElement>('[data-sprite="enemy"]')) byClass.set(token.dataset.sizeClass as string, token.style.getPropertyValue('--sa-minion-scale'));
+    expect(Object.fromEntries(byClass)).toEqual({ small: '0.8', medium: '1', large: '1.3' });
+    expect(container.querySelector<HTMLElement>('.sa-arena-stage')?.style.getPropertyValue('--sa-minion-base')).toBe('28.00px');
+  });
+
+  it('puts the overview after the map frame, not inside it', () => {
+    const { container } = render(<BattlefieldScene model={model} {...props} />);
+    const minimap = container.querySelector('.sa-arena-minimap');
+    expect(minimap).not.toBeNull();
+    expect(container.querySelector('.sa-arena-frame')?.contains(minimap)).toBe(false);
+    expect(minimap?.parentElement).toBe(container.querySelector('.sa-arena-scene'));
+    expect(container.querySelector('.sa-arena-frame')?.nextElementSibling).toBe(minimap);
+  });
+});
+
 describe('roving focus', () => {
   it('has one tab stop and moves it with the arrow keys, Home and End', () => {
     const { container } = show();

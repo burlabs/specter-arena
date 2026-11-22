@@ -3,14 +3,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { RosterItemV1, TaskItemV1 } from '../contracts/types';
 import { rosterPath, tasksPath } from '../host/paths';
 import { ARENA_INTRINSIC } from './mapLayout';
-import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
+import { placeHeroes } from './heroPlacement';
+import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, apart, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
 import type { Point } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
 import { botOf, inputsOf, taskOf } from './testData';
 
 afterEach(() => setArenaScenario(null));
-
-const apart = (a: Point, b: Point, cell: { x: number; y: number }): boolean => Math.abs(a.x - b.x) >= cell.x - 1e-9 || Math.abs(a.y - b.y) >= cell.y - 1e-9;
 
 function pairsTooClose(points: readonly Point[], cell: { x: number; y: number }): number[][] {
   const bad: number[][] = [];
@@ -108,6 +107,23 @@ describe('placeScene on the demo scenarios', () => {
     }
   });
 
+  it.each([['arena', 1], ['arena', 99999], ['arena-perf-1', 1], ['arena-perf-1', 99999]] as const)('%s with seeded hero points (seed %i): the same three properties hold', async (scenario, seed) => {
+    const model = await modelOf(scenario);
+    const heroPoints = placeHeroes(new Map(), model.specters.map((specter) => specter.bindingId), seed);
+    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model)), heroPoints);
+    expect(placement.specters.size).toBe(model.specters.length);
+    expect(pairsTooClose([...placement.specters.values()], SPECTER_CELL)).toEqual([]);
+    const lowestEnemy = Math.max(...[...placement.enemies.values()].map((p) => p.y));
+    const highestSpecter = Math.min(...[...placement.specters.values()].map((p) => p.y));
+    expect(highestSpecter - lowestEnemy).toBeGreaterThanOrEqual(0.12);
+    for (const p of placement.specters.values()) {
+      expect(p.x).toBeGreaterThanOrEqual(0.03);
+      expect(p.x).toBeLessThanOrEqual(0.97);
+      expect(p.y).toBeGreaterThanOrEqual(0.03);
+      expect(p.y).toBeLessThanOrEqual(0.97);
+    }
+  });
+
   it('draws 20 Specters and 80 enemies for arena-perf-1', async () => {
     const model = await modelOf('arena-perf-1');
     expect(model.specters).toHaveLength(20);
@@ -133,6 +149,20 @@ describe('placeScene', () => {
   it('falls back to the centre for an enemy that has no slot or a slot out of range', () => {
     expect(placeScene(model, new Map()).enemies.get(work[2]!.taskId)).toEqual({ x: 0.5, y: 0.5 });
     expect(placeScene(model, new Map([[work[2]!.taskId, 9999]])).enemies.get(work[2]!.taskId)).toEqual({ x: 0.5, y: 0.5 });
+  });
+
+  it('uses a given hero point and falls back to the staging cell for a Specter without one', () => {
+    const point = { x: 0.5, y: 0.7 };
+    const placed = placeScene(model, assignSlots(new Map(), slotIdsOf(model)), new Map([[model.specters[1]!.bindingId, point]]));
+    expect(placed.specters.get(model.specters[1]!.bindingId)).toEqual(point);
+    expect(placed.specters.get(model.specters[0]!.bindingId)).toEqual(specterSlot(0));
+    expect(placed.specters.get(model.specters[2]!.bindingId)).toEqual(specterSlot(2));
+  });
+
+  it('apart means a whole cell in x or in y', () => {
+    expect(apart({ x: 0, y: 0 }, { x: 0.135, y: 0 }, SPECTER_CELL)).toBe(true);
+    expect(apart({ x: 0, y: 0 }, { x: 0.1, y: 0.1 }, SPECTER_CELL)).toBe(false);
+    expect(apart({ x: 0, y: 0 }, { x: 0.01, y: 0.16 }, SPECTER_CELL)).toBe(true);
   });
 
   it('is deterministic', () => {
