@@ -1,4 +1,4 @@
-import type { HeroId, PortraitAssetV1, SpecterV2 } from '../contracts/types';
+import type { HeroId, PortraitAssetV1, SpecterV3 } from '../contracts/types';
 
 export const BINDING = `bnd_${'a'.repeat(20)}0001`;
 
@@ -15,8 +15,8 @@ export const portraitOf = (assetId = `ast_${'3'.repeat(24)}`, extra: Partial<Por
   ...extra,
 });
 
-export const heroOf = (extra: Partial<SpecterV2> = {}): SpecterV2 => ({
-  contractVersion: 2,
+export const heroOf = (extra: Partial<SpecterV3> = {}): SpecterV3 => ({
+  contractVersion: 3,
   bindingId: BINDING,
   version: 0,
   heroId: 'vell' satisfies HeroId,
@@ -28,6 +28,7 @@ export const heroOf = (extra: Partial<SpecterV2> = {}): SpecterV2 => ({
   appearance: 'Pale lavender, rounded ghost with a deep purple cape.',
   portrait: portraitOf(),
   avatarChosen: false,
+  assignedBy: 'auto',
   source: 'roster',
   createdAtMs: 1,
   updatedAtMs: 1,

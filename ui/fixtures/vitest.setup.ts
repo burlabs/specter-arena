@@ -9,6 +9,17 @@ import { resetSceneAssetFixtures } from './scene-bodies.ts';
 import { resetSpecterFixtures } from './specter-bodies.ts';
 import { resetTaskFixtures } from './task-bodies.ts';
 
+// jsdom has HTMLDialogElement but neither showModal nor close: stand-ins that only toggle `open`.
+if (typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototype.showModal !== 'function') {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.removeAttribute('open');
+    this.dispatchEvent(new Event('close'));
+  };
+}
+
 let teardown: (() => void) | undefined;
 
 beforeEach(() => {

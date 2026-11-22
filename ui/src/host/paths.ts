@@ -28,11 +28,15 @@ export const attemptsPath = (bindingId: string, limit = 50, cursor: string | nul
 const enc = encodeURIComponent;
 
 export const SPECTERS_PATH = appApiPath('/specters');
+/** `specters.v3`: assigned bindings plus `unassignedBindingIds`. The plain path keeps its `specters.v2` body. */
+export const SPECTERS_ASSIGNMENT_PATH = withQuery(SPECTERS_PATH, { view: 'assignment' });
 export const HEROES_PATH = appApiPath('/heroes');
 export const PORTRAITS_PATH = appApiPath('/portraits');
 export const ASSETS_PATH = appApiPath('/assets');
 
 export const specterPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}`);
+/** `POST {expectedVersion, heroId | null}` assigns a hero (specter.v3). */
+export const specterHeroPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}/hero`);
 export const specterPortraitPath = (bindingId: string): string => appApiPath(`/specters/${enc(bindingId)}/portrait`);
 export const assetPath = (assetId: string): string => appApiPath(`/assets/${enc(assetId)}`);
 export const sceneAssetPath = (key: string): string => appApiPath(`/scene-assets/${enc(key)}`);
