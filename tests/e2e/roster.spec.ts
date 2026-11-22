@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { gotoRoster } from './support';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 test('a keyboard-only user can find a bot, select it, watch it and switch views', async ({ page }) => {
-  await page.goto('./?scenario=default');
+  await gotoRoster(page, './?scenario=default');
   const roster = page.getByRole('list', { name: 'Bots' });
   await expect(roster.getByRole('listitem')).toHaveCount(7);
 
@@ -32,12 +33,13 @@ test('a keyboard-only user can find a bot, select it, watch it and switch views'
   await expect(roster.getByRole('listitem')).toHaveCount(1);
 
   await page.reload();
+  await page.getByRole('tab', { name: 'Roster', exact: true }).click();
   await expect(watchedTab).toHaveAttribute('aria-selected', 'true');
   await expect(roster.getByRole('listitem')).toHaveCount(1);
 });
 
 test('the legend lists Waiting on you as observed and Blocked as not observable', async ({ page }) => {
-  await page.goto('./');
+  await gotoRoster(page, './');
   await page.getByRole('button', { name: /What the states mean/ }).click();
   await expect(page.getByText('Not observable yet.')).toHaveCount(1);
 });
@@ -51,7 +53,7 @@ test('an empty roster and an unreachable backend each get their own state', asyn
 });
 
 test('the stylesheet does not leak onto the host page', async ({ page, context }) => {
-  await page.goto('./?scenario=default');
+  await gotoRoster(page, './?scenario=default');
   await expect(page.getByRole('list', { name: 'Bots' })).toBeVisible();
   await expect(page.locator('style[data-specter-arena]')).toHaveCount(1);
 

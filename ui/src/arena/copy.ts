@@ -1,7 +1,3 @@
-import { TOKEN_CAPTION } from '../specters/copy';
-
-export const PLACEHOLDER_TOKEN = TOKEN_CAPTION;
-
 export const STATE_TEXT = {
   defeated: 'Defeated',
   notCredited: 'Not credited',
@@ -22,6 +18,11 @@ export const ARENA = {
   listLabel: 'Arena list',
   listHeading: 'Everyone on the field',
   railLabel: 'Specters',
+  noSpecterYet: 'No Specter yet',
+  assign: 'Assign',
+  assignFor: (name: string): string => `Assign a Specter to ${name}`,
+  specterLoading: 'Specters are loading.',
+  specterUnavailable: 'Specters could not be read, so no hero is drawn yet.',
   minimapLabel: 'Arena overview',
   selectionLabel: 'Selection',
   selectionEmpty: 'Select a Specter or a minion in the map, the rail or the list.',
@@ -82,6 +83,8 @@ export const HUD = {
   minimapHide: 'Hide overview',
   railShow: 'Show Specter rail',
   railHide: 'Hide Specter rail',
+  inspectorShow: 'Show inspector',
+  inspectorHide: 'Hide inspector',
 } as const;
 
 export const MODE = {

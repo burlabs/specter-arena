@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ArenaListView } from './ArenaListView';
@@ -25,29 +26,81 @@ const model = buildSceneModel(inputs);
 const items = new Map(tasks.map((task) => [task.taskId, task]));
 
 describe('ArenaRail', () => {
-  it('lists every Specter once with the roster words, selects and collapses', () => {
+  const xpMap = new Map([[atlas.bindingId, xpOf(atlas, 100, 2)]]);
+  const rail = (props: Partial<ComponentProps<typeof ArenaRail>> = {}) =>
+    render(<ArenaRail model={model} bots={bots} specters={specters} xp={xpMap} selection={{ kind: 'specter', bindingId: brindle.bindingId }} onSelect={vi.fn()} open onToggle={vi.fn()} {...props} />);
+  const aside = () => screen.getByRole('complementary', { name: 'Specters' });
+
+  it('lists each drawn Specter once with the roster words, and the bots with no Specter under "No Specter yet"', () => {
     const onSelect = vi.fn();
-    render(<ArenaRail model={model} bots={bots} specters={specters} xp={new Map([[atlas.bindingId, xpOf(atlas, 100, 2)]])} selection={{ kind: 'specter', bindingId: brindle.bindingId }} onSelect={onSelect} />);
-    const rail = screen.getByRole('complementary', { name: 'Specters' });
-    expect(within(rail).getAllByRole('listitem')).toHaveLength(3);
-    expect(within(rail).getByText('Vesper')).toBeTruthy();
-    expect(within(rail).getByText('for Atlas')).toBeTruthy();
-    expect(within(rail).getByText('Working')).toBeTruthy();
-    expect(within(rail).getByText('No turn running')).toBeTruthy();
-    expect(within(rail).getByText('Unknown')).toBeTruthy();
-    expect(within(rail).getByText('Level 2')).toBeTruthy();
-    expect(within(rail).getByText('100 XP')).toBeTruthy();
-    expect(within(rail).getByText('2 open attempts')).toBeTruthy();
-    expect(within(rail).getAllByText('Level 1')).toHaveLength(2);
-    expect(within(rail).queryAllByRole('progressbar')).toHaveLength(0);
-    expect(rail.querySelectorAll('.sa-xp-bar[aria-hidden="true"]')).toHaveLength(1);
-    const pressed = within(rail).getAllByRole('button', { pressed: true });
-    expect(pressed).toHaveLength(1);
-    fireEvent.click(within(rail).getByText('Vesper'));
+    rail({ onSelect });
+    const group = within(aside()).getByRole('region', { name: 'No Specter yet (2)' });
+    expect(within(aside()).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(group).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(aside()).getByText('Vesper')).toBeTruthy();
+    expect(within(aside()).getByText('for Atlas')).toBeTruthy();
+    expect(within(aside()).getByText('Working')).toBeTruthy();
+    expect(within(group).getByText('Brindle')).toBeTruthy();
+    expect(within(group).getByText('Dune')).toBeTruthy();
+    expect(within(group).getByText('No turn running')).toBeTruthy();
+    expect(within(group).getByText('Unknown')).toBeTruthy();
+    expect(within(aside()).getByText('Level 2')).toBeTruthy();
+    expect(within(aside()).getByText('100 XP')).toBeTruthy();
+    expect(within(aside()).getByText('2 open attempts')).toBeTruthy();
+    expect(within(aside()).queryAllByRole('progressbar')).toHaveLength(0);
+    expect(aside().querySelectorAll('.sa-xp-bar[aria-hidden="true"]')).toHaveLength(1);
+    expect(within(aside()).getAllByRole('button', { pressed: true })).toHaveLength(1);
+    fireEvent.click(within(aside()).getByText('Vesper'));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
-    const toggle = within(rail).getByRole('button', { name: 'Hide Specter rail' });
-    fireEvent.click(toggle);
-    expect(within(rail).getByRole('button', { name: 'Show Specter rail' }).getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(within(group).getByText('Brindle'));
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: brindle.bindingId });
+  });
+
+  it('shows no Assign button without onAssign, and one per bot that calls it with the binding id', () => {
+    const { unmount } = rail();
+    expect(within(aside()).queryByRole('button', { name: /^Assign/ })).toBeNull();
+    unmount();
+    const onAssign = vi.fn();
+    rail({ onAssign });
+    expect(within(aside()).getAllByRole('button', { name: /^Assign a Specter to / })).toHaveLength(2);
+    fireEvent.click(within(aside()).getByRole('button', { name: 'Assign a Specter to Dune' }));
+    expect(onAssign).toHaveBeenCalledWith(dune.bindingId);
+  });
+
+  it('uses the backend unassigned set when given: the group is exactly those roster bots', () => {
+    rail({ unassigned: new Set([dune.bindingId, 'bnd_not_on_the_roster']) });
+    const group = within(aside()).getByRole('region', { name: 'No Specter yet (1)' });
+    expect(within(group).getByText('Dune')).toBeTruthy();
+    expect(within(group).queryByText('Brindle')).toBeNull();
+  });
+
+  it('hides the group and says so while the Specters read is not done', () => {
+    const { unmount } = rail({ specterStatus: 'loading' });
+    expect(screen.getByRole('status').textContent).toBe('Specters are loading.');
+    expect(screen.queryByText(/No Specter yet/)).toBeNull();
+    unmount();
+    rail({ specterStatus: 'failed' });
+    expect(screen.getByRole('status').textContent).toBe('Specters could not be read, so no hero is drawn yet.');
+  });
+
+  it('omits the group when every bot has a Specter', () => {
+    rail({ unassigned: new Set() });
+    expect(screen.queryByText(/No Specter yet/)).toBeNull();
+  });
+
+  it('collapses by prop: the toggle names its state, points at the body, and the body is hidden', () => {
+    const onToggle = vi.fn();
+    const { rerender } = rail({ onToggle });
+    const hide = within(aside()).getByRole('button', { name: 'Hide Specter rail' });
+    expect(hide.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(hide.getAttribute('aria-controls') ?? '')?.hidden).toBe(false);
+    fireEvent.click(hide);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    rerender(<ArenaRail model={model} bots={bots} specters={specters} xp={xpMap} selection={null} onSelect={vi.fn()} open={false} onToggle={onToggle} />);
+    const show = within(aside()).getByRole('button', { name: 'Show Specter rail' });
+    expect(show.getAttribute('aria-expanded')).toBe('false');
+    expect(document.getElementById(show.getAttribute('aria-controls') ?? '')?.hidden).toBe(true);
+    expect(aside().className).toContain('sa-is-collapsed');
   });
 });
 

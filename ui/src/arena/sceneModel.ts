@@ -1,7 +1,8 @@
-import type { HeroId, RosterItemV1, SpecterV2, TaskItemV1, TaskSizeClassV1, TaskStateV1, XpSummaryV1 } from '../contracts/types';
+import type { HeroId, RosterItemV1, TaskItemV1, TaskSizeClassV1, TaskStateV1, XpSummaryV1 } from '../contracts/types';
 import type { SourceMode } from '../host';
 import { nameOf } from '../observatory/model';
 import { taskTitle } from '../tasks/copy';
+import type { ArenaSpecter } from './specterShape';
 
 export const ENEMY_CAP = 80;
 export const DEFEATED_MAX = 12;
@@ -11,7 +12,7 @@ export interface SceneInputs {
   mode: SourceMode;
   nowMs: number;
   roster: readonly RosterItemV1[];
-  specters: readonly SpecterV2[];
+  specters: readonly ArenaSpecter[];
   xp: readonly XpSummaryV1[];
   /** The tasks the arena read: open ones, and the latest credited and not-credited pages. */
   tasks: readonly TaskItemV1[];

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { HeroId } from '../contracts/types';
 import { tokenInitials } from '../specters/model';
 import { AnimatedMinion } from './AnimatedMinion';
 import { AnimatedSpecter } from './AnimatedSpecter';
@@ -9,7 +10,7 @@ import { PresentationCueLayer } from './PresentationCueLayer';
 import { StrikeLayer, strikeShotsOf } from './StrikeLayer';
 import type { PresentationCue } from './PresentationCueLayer';
 import { MarkerAssistanceSvg, MarkerAwaitingApprovalSvg, MarkerBlockedSvg, MarkerCoverageUnknownSvg, MarkerEvidenceSvg, MarkerOutcomeAcceptedSvg } from './SceneSvgs';
-import { ARENA, HUD, PLACEHOLDER_TOKEN } from './copy';
+import { ARENA, HUD } from './copy';
 import { CONDITION_LABEL, collectorWords } from '../observatory/copy';
 import { enemyEffect, specterStance } from './effectMap';
 import { EMPTY_SNAPSHOT } from './exchangePlanner';
@@ -18,8 +19,10 @@ import { effectAngle } from './heroCombat';
 import type { MarkerKind } from './effectMap';
 import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect } from './geometry';
 import { ARENA_INTRINSIC } from './mapLayout';
+import { MINION_SCALE, heroSizePx, minionBasePx } from './minionSize';
+import { placeHeroes } from './heroPlacement';
 import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
-import type { Placement } from './sceneLayout';
+import type { Placement, Point } from './sceneLayout';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
 import type { ArenaSelection } from './selection';
@@ -29,6 +32,8 @@ import { useSceneAsset } from './useSceneAsset';
 import { Button } from '../observatory/ui';
 
 const ZOOM_STEP = 0.25;
+/** The seed a scene uses when the page gives none (tests, the harness): one fixed, repeatable layout. */
+export const DEFAULT_VISIT_SEED = 0x5eed;
 
 interface Props {
   model: SceneModel;
@@ -44,6 +49,8 @@ interface Props {
   exchanges?: ExchangeSnapshot;
   /** The collector is paused: nothing plays and the plate says so, so the field never looks live. */
   collectorPaused?: boolean;
+  /** One number per page visit; heroes are placed from it. */
+  visitSeed?: number;
 }
 
 function MarkerIcon({ kind }: { kind: MarkerKind }) {
@@ -56,14 +63,18 @@ function MarkerIcon({ kind }: { kind: MarkerKind }) {
   return <MarkerCoverageUnknownSvg {...common} />;
 }
 
-function specterName(specter: SceneSpecter): string {
+/** A bot with a hero. A bot with no Specter yet is not drawn: the rail lists it instead. */
+type DrawnSpecter = SceneSpecter & { heroId: HeroId; specterName: string };
+const isDrawn = (specter: SceneSpecter): specter is DrawnSpecter => specter.heroId !== null && specter.specterName !== null;
+
+function specterName(specter: DrawnSpecter): string {
   // The printed name and the "×N attempts" badge come first and in the printed order, so the accessible name contains the visible text.
-  const printed = specter.openAttemptIds.length > 1 ? `${specter.specterName ?? specter.displayName} ${ARENA.attemptsBadge(specter.openAttemptIds.length)}` : (specter.specterName ?? specter.displayName);
-  return specter.specterName === null ? `${printed}, no Specter yet` : `${printed} for ${specter.displayName}`;
+  const printed = specter.openAttemptIds.length > 1 ? `${specter.specterName} ${ARENA.attemptsBadge(specter.openAttemptIds.length)}` : specter.specterName;
+  return `${printed} for ${specter.displayName}`;
 }
 
-function specterLabel(specter: SceneSpecter, conditionLabel: string): string {
-  const parts = [specterName(specter), specter.specterName === null ? PLACEHOLDER_TOKEN : null, conditionLabel, specter.xpReading === 'ready' ? `Level ${specter.level}` : null];
+function specterLabel(specter: DrawnSpecter, conditionLabel: string): string {
+  const parts = [specterName(specter), conditionLabel, specter.xpReading === 'ready' ? `Level ${specter.level}` : null];
   if (specter.openAttemptIds.length > 0) parts.push(ARENA.linked(specter.openAttemptIds.length));
   return parts.filter((part): part is string => part !== null).join(', ');
 }
@@ -77,7 +88,7 @@ function enemyLabel(enemy: SceneEnemy): string {
 }
 
 interface SpecterTokenProps {
-  specter: SceneSpecter;
+  specter: DrawnSpecter;
   position: { x: number; y: number };
   selected: boolean;
   roving: boolean;
@@ -108,13 +119,9 @@ function SpecterToken({ specter, position, selected, roving, animate, animation,
       tabIndex={roving ? 0 : -1}
       onClick={onSelect}
     >
-      {specter.heroId !== null ? (
-        <AnimatedSpecter heroId={specter.heroId} animate={animate} animation={animation} angle={angle} flip={flip} initials={tokenInitials(specter.specterName ?? specter.displayName)} />
-      ) : (
-        <span className="sa-token__placeholder" aria-hidden="true" data-initials={tokenInitials(specter.displayName)} />
-      )}
+      <AnimatedSpecter heroId={specter.heroId} animate={animate} animation={animation} angle={angle} flip={flip} initials={tokenInitials(specter.specterName)} />
       <span className="sa-token__label" aria-hidden="true">
-        {specter.specterName ?? specter.displayName}
+        {specter.specterName}
       </span>
       {specter.openAttemptIds.length > 1 && (
         <>
@@ -147,7 +154,7 @@ interface EnemyTokenProps {
 
 function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, hit, onSelect, register }: EnemyTokenProps) {
   const effect = enemyEffect(enemy);
-  const style: CSSProperties = { left: `${position.x * 100}%`, top: `${position.y * 100}%` };
+  const style = { left: `${position.x * 100}%`, top: `${position.y * 100}%`, '--sa-minion-scale': MINION_SCALE[enemy.sizeClass] } as CSSProperties;
   return (
     <button
       type="button"
@@ -155,6 +162,7 @@ function EnemyToken({ enemy, position, selected, roving, animate, celebrating, s
       className={`sa-token sa-token--enemy sa-token--${enemy.size} sa-is-${effect.pose}${selected ? ' sa-is-selected' : ''}${enemy.blocked ? ' sa-is-blocked' : ''}`}
       style={style}
       data-sprite="enemy"
+      data-size-class={enemy.sizeClass}
       data-scene-node="enemy"
       data-token={enemy.workId}
       aria-pressed={selected}
@@ -209,7 +217,8 @@ const cssUrl = (url: string): string | null => (url.length > MAX_CSS_VAR_URL_CHA
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false }: Props) {
+export function BattlefieldScene({ model: fullModel, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false, visitSeed = DEFAULT_VISIT_SEED }: Props) {
+  const model = useMemo(() => ({ ...fullModel, specters: fullModel.specters.filter(isDrawn) }), [fullModel]);
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
   const patchbrute = useSceneAsset('minion-patchbrute-sprite');
@@ -235,7 +244,14 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
     slotMemory.current = next;
     return next;
   }, [slotIds]);
-  const placement = useMemo(() => placeScene(model, slots), [model, slots]);
+  const heroMemory = useRef<ReadonlyMap<string, Point>>(new Map());
+  const heroBindingIds = useMemo(() => model.specters.map((specter) => specter.bindingId), [model]);
+  const heroPoints = useMemo(() => {
+    const next = placeHeroes(heroMemory.current, heroBindingIds, visitSeed);
+    heroMemory.current = next;
+    return next;
+  }, [heroBindingIds, visitSeed]);
+  const placement = useMemo(() => placeScene(model, slots, heroPoints), [model, slots, heroPoints]);
   const view = useMemo(() => visibleNormalizedRect(transform), [transform]);
 
   const order = useMemo(() => [...model.specters.map((s) => s.bindingId), ...model.enemies.map((e) => e.workId)], [model]);
@@ -324,12 +340,14 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
   if (mapUrl !== null) sceneStyle['--sa-map'] = mapUrl;
   if (patchlingUrl !== null) sceneStyle['--sa-sprite-patchling'] = patchlingUrl;
   if (patchbruteUrl !== null) sceneStyle['--sa-sprite-patchbrute'] = patchbruteUrl;
-  const stageStyle: CSSProperties = {
+  const stageStyle = {
     left: transform.offset.x + transform.pan.x,
     top: transform.offset.y + transform.pan.y,
     width: transform.displayed.width,
     height: transform.displayed.height,
-  };
+    '--sa-minion-base': `${minionBasePx(transform.displayed.width).toFixed(2)}px`,
+    '--sa-hero-size': `${heroSizePx(transform.displayed.width, transform.displayed.height).toFixed(2)}px`,
+  } as CSSProperties;
 
   return (
     <section className={`sa-arena-scene ${motion.animate ? 'sa-is-animated' : 'sa-is-static'}`} aria-label="Arena scene" style={sceneStyle}>
@@ -417,8 +435,8 @@ export function BattlefieldScene({ model, selection, onSelect, motion, cues, cel
           )}
           <PresentationCueLayer cues={cues} onComplete={onCueComplete} />
         </div>
-        <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
       </div>
+      <ArenaMinimap placement={placement} view={view} hasMap={mapUrl !== null} open={minimapOpen} onToggle={() => setMinimapOpen((open) => !open)} />
     </section>
   );
 }

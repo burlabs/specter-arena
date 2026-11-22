@@ -2,6 +2,7 @@ import { fixtureNavigations, rosterBody, setArenaScenario, useAppApi } from '@ki
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RosterItemV1 } from '../contracts/types';
+import { ArenaInspector } from './ArenaInspector';
 import { ArenaView } from './ArenaView';
 import { clearSceneArtCache } from './sceneAssetCache';
 
@@ -283,5 +284,27 @@ describe('fallbacks that clear evidence', () => {
     await within(inspector()).findByRole('heading', { level: 2, name: 'This item is no longer available' });
     fireEvent.click(within(inspector()).getByRole('button', { name: 'Close inspector' }));
     expect(within(inspector()).getByText(/Select a Specter or a minion/)).toBeTruthy();
+  });
+});
+
+describe('the inspector toggle', () => {
+  it('names its state, points at the body, and hides the body when closed', async () => {
+    setArenaScenario('arena');
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <ArenaInspector selection={null} list={{ mode: 'FIXTURE', asOfMs: 1, specters: [], enemies: [], overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } }} bots={bots} collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} items={new Map()} open onToggle={onToggle} onSelect={vi.fn()} onClose={vi.fn()} />,
+    );
+    const hide = screen.getByRole('button', { name: 'Hide inspector' });
+    expect(hide.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(hide.getAttribute('aria-controls') ?? '')?.hidden).toBe(false);
+    fireEvent.click(hide);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    rerender(
+      <ArenaInspector selection={null} list={{ mode: 'FIXTURE', asOfMs: 1, specters: [], enemies: [], overflow: { enemies: 0, truncated: false }, coverage: { gaps: 0, unknownBots: 0 } }} bots={bots} collector={collector} rosterRevision={1} specters={new Map()} xp={new Map()} items={new Map()} open={false} onToggle={onToggle} onSelect={vi.fn()} onClose={vi.fn()} />,
+    );
+    const show = screen.getByRole('button', { name: 'Show inspector' });
+    expect(show.getAttribute('aria-expanded')).toBe('false');
+    expect(document.getElementById(show.getAttribute('aria-controls') ?? '')?.hidden).toBe(true);
+    expect(inspector().className).toContain('sa-is-collapsed');
   });
 });

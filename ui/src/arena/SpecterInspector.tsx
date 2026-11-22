@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { RosterCollectorV1, RosterItemV1, SpecterV2, TaskItemV1, XpSummaryV1 } from '../contracts/types';
+import type { RosterCollectorV1, RosterItemV1, TaskItemV1, XpSummaryV1 } from '../contracts/types';
 import { ActivityPanel } from '../observatory/ActivityPanel';
 import { AttemptsList, AttemptsStatus } from '../observatory/AttemptsList';
 import { ConditionBadge } from '../observatory/ConditionBadge';
@@ -15,6 +15,8 @@ import { entryKindWords } from '../work/copy';
 import { amountWords } from '../work/model';
 import { useXpHistory } from '../work/useXpHistory';
 import { HandoffRow } from './HandoffRow';
+import { asPortraitRecord } from './specterShape';
+import type { ArenaSpecter } from './specterShape';
 import { INSPECTOR, levelXpText } from './copy';
 import { diagnosticSummary } from './diagnosticSummary';
 import type { SceneModel, SceneSpecter } from './sceneModel';
@@ -23,7 +25,7 @@ import type { ArenaSelection } from './selection';
 interface Props {
   specter: SceneSpecter;
   bot: RosterItemV1;
-  record: SpecterV2 | undefined;
+  record: ArenaSpecter | undefined;
   summary: XpSummaryV1 | undefined;
   headingRef: RefObject<HTMLHeadingElement>;
   list: SceneModel;
@@ -49,7 +51,7 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
   return (
     <div className="sa-arena-inspector__body">
       <div className="sa-arena-inspector__head">
-        {record !== undefined && <SpecterPortrait specter={record} size="md" />}
+        {record !== undefined && <SpecterPortrait specter={asPortraitRecord(record)} size="md" />}
         <div>
           <h2 ref={headingRef} tabIndex={-1}>
             {name}
