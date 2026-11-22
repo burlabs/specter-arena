@@ -1,0 +1,151 @@
+[
+  {
+    "file": "valid/level-two-with-tasks.json",
+    "valid": true
+  },
+  {
+    "file": "valid/no-entries-level-one.json",
+    "valid": true
+  },
+  {
+    "file": "valid/last-level-no-next.json",
+    "valid": true
+  },
+  {
+    "file": "valid/legacy-xp-only-no-tasks.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integers-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-one.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-three.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/missing-credited-task-count.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/credited-task-count-negative.json",
+    "valid": false,
+    "instancePath": "/creditedTaskCount"
+  },
+  {
+    "file": "invalid/credited-task-count-fraction.json",
+    "valid": false,
+    "instancePath": "/creditedTaskCount"
+  },
+  {
+    "file": "invalid/credited-task-count-string.json",
+    "valid": false,
+    "instancePath": "/creditedTaskCount"
+  },
+  {
+    "file": "invalid/extra-health-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-rank-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-binding-id.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/binding-id-empty.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-65-chars.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/total-xp-negative.json",
+    "valid": false,
+    "instancePath": "/totalXp"
+  },
+  {
+    "file": "invalid/total-xp-fraction.json",
+    "valid": false,
+    "instancePath": "/totalXp"
+  },
+  {
+    "file": "invalid/total-xp-string.json",
+    "valid": false,
+    "instancePath": "/totalXp"
+  },
+  {
+    "file": "invalid/total-xp-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/level-zero.json",
+    "valid": false,
+    "instancePath": "/level"
+  },
+  {
+    "file": "invalid/level-eleven.json",
+    "valid": false,
+    "instancePath": "/level"
+  },
+  {
+    "file": "invalid/level-table-version-uppercase.json",
+    "valid": false,
+    "instancePath": "/levelTableVersion"
+  },
+  {
+    "file": "invalid/floor-negative.json",
+    "valid": false,
+    "instancePath": "/levelFloorXp"
+  },
+  {
+    "file": "invalid/next-level-string.json",
+    "valid": false,
+    "instancePath": "/nextLevelXp"
+  },
+  {
+    "file": "invalid/missing-next-level.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/accepted-work-negative.json",
+    "valid": false,
+    "instancePath": "/acceptedWorkCount"
+  },
+  {
+    "file": "invalid/policy-version-empty.json",
+    "valid": false,
+    "instancePath": "/policyVersion"
+  },
+  {
+    "file": "invalid/policy-version-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/policyVersion"
+  }
+]
