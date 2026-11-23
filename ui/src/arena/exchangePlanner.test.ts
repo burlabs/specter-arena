@@ -16,7 +16,7 @@ import {
   snapshotOf,
 } from './exchangePlanner';
 import type { PlannerInput } from './exchangePlanner';
-import { HERO_COMBAT } from './heroCombat';
+import { COUNTER_GAP_MS, FLINCH_MS, HERO_COMBAT, MINION_COUNTER } from './heroCombat';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 
 const specter = (id: string, over: Partial<SceneSpecter> = {}): SceneSpecter => ({
@@ -110,7 +110,12 @@ describe('advance', () => {
     const timing = HERO_COMBAT.vell;
     expect(exchange.impactMs - exchange.startMs).toBe(timing.attackImpact);
     expect(exchange.heroEndMs - exchange.startMs).toBe(timing.attack);
-    expect(exchange.endMs - exchange.impactMs).toBe(320);
+    expect(exchange.hitEndMs - exchange.impactMs).toBe(320);
+    expect(exchange.counterStartMs - exchange.hitEndMs).toBe(COUNTER_GAP_MS);
+    expect(exchange.counterImpactMs - exchange.counterStartMs).toBe(MINION_COUNTER.patchling.impact);
+    expect(exchange.counterEndMs - exchange.counterStartMs).toBe(MINION_COUNTER.patchling.attack);
+    expect(exchange.flinchEndMs - exchange.counterImpactMs).toBe(FLINCH_MS);
+    expect(exchange.endMs).toBe(Math.max(exchange.counterEndMs, exchange.flinchEndMs));
   });
 
   it('walks through the hero impact and end, then waits 2.5 to 4 s after the hero ends', () => {
@@ -119,11 +124,12 @@ describe('advance', () => {
     result = advance(result.state, input, result.nextWakeMs!);
     const started = result.state.active[0]!;
     const seen: number[] = [];
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 7; i += 1) {
       seen.push(result.nextWakeMs!);
       result = advance(result.state, input, result.nextWakeMs!);
     }
-    expect(seen).toEqual([started.impactMs, started.heroEndMs, started.endMs].sort((a, b) => a - b));
+    const phases = [started.impactMs, started.heroEndMs, started.hitEndMs, started.counterStartMs, started.counterImpactMs, started.counterEndMs, started.flinchEndMs];
+    expect(seen).toEqual([...new Set([...phases, started.endMs])].sort((a, b) => a - b).slice(0, 7));
     expect(result.state.active).toEqual([]);
     expect(result.nextWakeMs! - started.heroEndMs).toBeGreaterThanOrEqual(CADENCE_MIN_MS);
     expect(result.nextWakeMs! - started.heroEndMs).toBeLessThanOrEqual(CADENCE_MAX_MS);
@@ -259,6 +265,65 @@ describe('snapshotOf', () => {
     expect(late.layers).toBe(0);
     expect(snapshotOf(state, x.endMs).enemies.size).toBe(0);
     expect(signatureOf(early)).not.toBe(signatureOf(mid));
-    expect(signatureOf({ heroes: new Map(), enemies: new Map(), layers: 0 })).toBe('|');
+    expect(signatureOf({ heroes: new Map(), enemies: new Map(), counters: new Map(), flinches: new Map(), layers: 0 })).toBe('|||');
+  });
+});
+
+describe('two-way exchange', () => {
+  const input = plannerInputOf(model([specter('a', { engagedWorkIds: ['w1'] })], [enemy('w1')]));
+  const started = () => {
+    const first = advance(initialPlanner(), input, 0);
+    return advance(first.state, input, first.nextWakeMs!).state;
+  };
+
+  it('plays hero strike, minion hit, minion strike, hero flinch, in that order', () => {
+    const state = started();
+    const x = state.active[0]!;
+    const order = (at: number) => {
+      const view = snapshotOf(state, at);
+      return { hero: view.heroes.has('a'), hit: view.enemies.has('w1'), counter: view.counters.has('w1'), flinch: view.flinches.has('a') };
+    };
+    expect(order(x.startMs)).toEqual({ hero: true, hit: false, counter: false, flinch: false });
+    expect(order(x.impactMs)).toMatchObject({ hit: true, counter: false, flinch: false });
+    expect(order(x.hitEndMs)).toEqual({ hero: false, hit: false, counter: false, flinch: false });
+    expect(order(x.counterStartMs)).toEqual({ hero: false, hit: false, counter: true, flinch: false });
+    expect(order(x.counterImpactMs)).toEqual({ hero: false, hit: false, counter: true, flinch: true });
+    expect(order(x.counterEndMs)).toMatchObject({ counter: false });
+    expect(order(x.flinchEndMs)).toEqual({ hero: false, hit: false, counter: false, flinch: false });
+    expect(x.hitEndMs).toBeLessThan(x.counterStartMs);
+    expect(x.counterImpactMs).toBeLessThan(x.flinchEndMs);
+  });
+
+  it('keeps the hero from starting another exchange until its flinch ends', () => {
+    const state = started();
+    const x = state.active[0]!;
+    const result = advance({ ...state, due: new Map([['a:w1', { atMs: x.counterImpactMs, seed: 1 }]]) }, input, x.counterImpactMs);
+    expect(result.state.active).toHaveLength(1);
+    expect(result.state.due.get('a:w1')!.atMs).toBeGreaterThanOrEqual(x.flinchEndMs);
+  });
+
+  it('gives a recoil with no hero no counter and no flinch', () => {
+    const lone = plannerInputOf(model([], [enemy('w1')]));
+    const state = requestCast(initialPlanner(), lone, 'w1', 0);
+    const x = state.active[0]!;
+    expect(x.kind).toBe('recoil');
+    expect(x.counterStartMs).toBe(x.hitEndMs);
+    expect(x.endMs).toBe(x.hitEndMs);
+    for (let at = 0; at <= x.endMs; at += 20) {
+      const view = snapshotOf(state, at);
+      expect(view.counters.size + view.flinches.size).toBe(0);
+    }
+  });
+
+  it('counts the whole exchange against the cap of 8', () => {
+    const many = plannerInputOf(model(Array.from({ length: 12 }, (_, i) => specter(`h${i}`, { engagedWorkIds: [`w${i}`] })), Array.from({ length: 12 }, (_, i) => enemy(`w${i}`))));
+    let result = advance(initialPlanner(), many, 0);
+    let peak = 0;
+    for (let i = 0; i < 400 && result.nextWakeMs !== null; i += 1) {
+      result = advance(result.state, many, result.nextWakeMs);
+      const view = snapshotOf(result.state, result.nextWakeMs ?? 0);
+      peak = Math.max(peak, result.state.active.length, view.layers);
+    }
+    expect(peak).toBeLessThanOrEqual(MAX_CONCURRENT_EXCHANGES);
   });
 });

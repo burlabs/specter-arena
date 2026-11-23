@@ -1,6 +1,6 @@
 import { MINION_DURATIONS_MS } from './AnimatedMinion';
 import type { MinionType } from './AnimatedMinion';
-import { RECOIL_ONLY_IMPACT_MS, combatTimingOf } from './heroCombat';
+import { COUNTER_GAP_MS, FLINCH_MS, MINION_COUNTER, RECOIL_ONLY_IMPACT_MS, combatTimingOf } from './heroCombat';
 import type { SceneModel } from './sceneModel';
 
 /** Field-wide cap on exchanges that draw a hero effect layer. A milestone recoil with no layer does not count. */
@@ -37,6 +37,13 @@ export interface Exchange {
   startMs: number;
   impactMs: number;
   heroEndMs: number;
+  /** The minion's hit reaction runs from `impactMs` to here. */
+  hitEndMs: number;
+  /** The minion strikes back from `counterStartMs`; its strike lands at `counterImpactMs` and the hero flinches until `flinchEndMs`. All equal `endMs` for a recoil with no hero, which has no counter. */
+  counterStartMs: number;
+  counterImpactMs: number;
+  counterEndMs: number;
+  flinchEndMs: number;
   endMs: number;
   strong: boolean;
 }
@@ -107,6 +114,12 @@ function build(id: number, kind: ExchangeKind, pair: Pair | null, workId: string
   const timing = pair === null ? null : combatTimingOf(pair.heroId);
   const length = timing === null ? 0 : kind === 'cast' ? timing.cast : timing.attack;
   const impact = timing === null ? RECOIL_ONLY_IMPACT_MS : kind === 'cast' ? timing.castImpact : timing.attackImpact;
+  const hitEnd = nowMs + impact + MINION_DURATIONS_MS[minionType].hit;
+  const counterStart = hitEnd + COUNTER_GAP_MS;
+  const counterImpact = counterStart + MINION_COUNTER[minionType].impact;
+  const counterEnd = counterStart + MINION_COUNTER[minionType].attack;
+  const flinchEnd = counterImpact + FLINCH_MS;
+  const counters = timing !== null;
   return {
     id,
     kind: timing === null ? 'recoil' : kind,
@@ -117,7 +130,12 @@ function build(id: number, kind: ExchangeKind, pair: Pair | null, workId: string
     startMs: nowMs,
     impactMs: nowMs + impact,
     heroEndMs: nowMs + length,
-    endMs: nowMs + impact + MINION_DURATIONS_MS[minionType].hit,
+    hitEndMs: hitEnd,
+    counterStartMs: counters ? counterStart : hitEnd,
+    counterImpactMs: counters ? counterImpact : hitEnd,
+    counterEndMs: counters ? counterEnd : hitEnd,
+    flinchEndMs: counters ? flinchEnd : hitEnd,
+    endMs: counters ? Math.max(counterEnd, flinchEnd) : hitEnd,
     strong,
   };
 }
@@ -163,7 +181,7 @@ export function advance(previous: PlannerState, input: PlannerInput, nowMs: numb
     const pair = pairByKey.get(key);
     if (pair === undefined) continue;
     const enemyBusyUntil = Math.max(free.get(pair.workId) ?? 0, ...active.filter((exchange) => exchange.workId === pair.workId).map((exchange) => exchange.endMs + TURN_GAP_MS));
-    const heroBusyUntil = Math.max(0, ...active.filter((exchange) => exchange.bindingId === pair.bindingId).map((exchange) => exchange.heroEndMs));
+    const heroBusyUntil = Math.max(0, ...active.filter((exchange) => exchange.bindingId === pair.bindingId).map((exchange) => exchange.flinchEndMs));
     if (enemyBusyUntil > nowMs || heroBusyUntil > nowMs) {
       due.set(key, { atMs: Math.max(enemyBusyUntil, heroBusyUntil, nowMs + 1), seed: slot.seed });
       continue;
@@ -186,7 +204,7 @@ export function advance(previous: PlannerState, input: PlannerInput, nowMs: numb
 function nextWake(state: PlannerState, nowMs: number): number | null {
   const times: number[] = [];
   for (const slot of state.due.values()) times.push(slot.atMs);
-  for (const exchange of state.active) times.push(exchange.heroEndMs, exchange.impactMs, exchange.endMs);
+  for (const exchange of state.active) times.push(exchange.heroEndMs, exchange.impactMs, exchange.hitEndMs, exchange.counterStartMs, exchange.counterImpactMs, exchange.counterEndMs, exchange.flinchEndMs, exchange.endMs);
   const upcoming = times.filter((time) => time > nowMs);
   return upcoming.length === 0 ? null : Math.min(...upcoming);
 }
@@ -200,7 +218,7 @@ export function requestCast(previous: PlannerState, input: PlannerInput, workId:
   if (!input.liveWorkIds.has(workId)) return state;
   const candidates = input.pairs.filter((pair) => pair.workId === workId).sort((a, b) => (a.bindingId < b.bindingId ? -1 : a.bindingId > b.bindingId ? 1 : 0));
   const withoutThisEnemy = state.active.filter((exchange) => exchange.workId !== workId);
-  const hero = candidates.find((pair) => !withoutThisEnemy.some((exchange) => exchange.bindingId === pair.bindingId && exchange.heroEndMs > nowMs));
+  const hero = candidates.find((pair) => !withoutThisEnemy.some((exchange) => exchange.bindingId === pair.bindingId && exchange.flinchEndMs > nowMs));
   const kind: ExchangeKind = hero !== undefined && layerCount(withoutThisEnemy) < MAX_CONCURRENT_EXCHANGES ? 'cast' : 'recoil';
   const minionType = candidates[0]?.minionType ?? 'patchling';
   const exchange = build(state.nextId, kind, kind === 'cast' ? (hero ?? null) : null, workId, minionType, nowMs, true);
@@ -209,7 +227,7 @@ export function requestCast(previous: PlannerState, input: PlannerInput, workId:
   return { nextId: state.nextId + 1, due, active: [...withoutThisEnemy, exchange], enemyFreeAtMs: state.enemyFreeAtMs };
 }
 
-/** What the scene draws at one instant. A hero animates until `heroEndMs`; an enemy recoils from `impactMs` to `endMs`. */
+/** What the scene draws at one instant. A hero animates until `heroEndMs`; an enemy recoils from `impactMs` to `hitEndMs`, strikes back from `counterStartMs` to `counterEndMs`, and the hero flinches until `flinchEndMs`. */
 export interface HeroView {
   exchangeId: number;
   kind: 'attack' | 'cast';
@@ -221,29 +239,55 @@ export interface EnemyView {
   /** The hero the recoil is away from, or null for a recoil with no hero. */
   bindingId: string | null;
 }
+/** A minion striking back at its hero. */
+export interface CounterView {
+  exchangeId: number;
+  bindingId: string;
+}
+/** A hero flinching from its minion's strike. */
+export interface FlinchView {
+  exchangeId: number;
+  workId: string;
+}
 export interface ExchangeSnapshot {
   heroes: ReadonlyMap<string, HeroView>;
   enemies: ReadonlyMap<string, EnemyView>;
+  /** Minions that are striking back right now, by work id. */
+  counters: ReadonlyMap<string, CounterView>;
+  /** Heroes that are flinching right now, by binding id. */
+  flinches: ReadonlyMap<string, FlinchView>;
   /** Exchanges drawing a hero layer right now. */
   layers: number;
 }
 
-export const EMPTY_SNAPSHOT: ExchangeSnapshot = { heroes: new Map(), enemies: new Map(), layers: 0 };
+export const EMPTY_SNAPSHOT: ExchangeSnapshot = { heroes: new Map(), enemies: new Map(), counters: new Map(), flinches: new Map(), layers: 0 };
 
 export function snapshotOf(state: PlannerState, nowMs: number): ExchangeSnapshot {
   const heroes = new Map<string, HeroView>();
   const enemies = new Map<string, EnemyView>();
+  const counters = new Map<string, CounterView>();
+  const flinches = new Map<string, FlinchView>();
   let layers = 0;
   for (const exchange of state.active) {
     if (exchange.kind !== 'recoil' && exchange.bindingId !== null && nowMs >= exchange.startMs && nowMs < exchange.heroEndMs) {
       heroes.set(exchange.bindingId, { exchangeId: exchange.id, kind: exchange.kind, workId: exchange.workId });
       layers += 1;
     }
-    if (nowMs >= exchange.impactMs && nowMs < exchange.endMs) enemies.set(exchange.workId, { exchangeId: exchange.id, strong: exchange.strong, bindingId: exchange.bindingId });
+    if (nowMs >= exchange.impactMs && nowMs < exchange.hitEndMs) enemies.set(exchange.workId, { exchangeId: exchange.id, strong: exchange.strong, bindingId: exchange.bindingId });
+    if (exchange.kind !== 'recoil' && exchange.bindingId !== null) {
+      if (nowMs >= exchange.counterStartMs && nowMs < exchange.counterEndMs) counters.set(exchange.workId, { exchangeId: exchange.id, bindingId: exchange.bindingId });
+      if (nowMs >= exchange.counterImpactMs && nowMs < exchange.flinchEndMs) flinches.set(exchange.bindingId, { exchangeId: exchange.id, workId: exchange.workId });
+    }
   }
-  return { heroes, enemies, layers };
+  return { heroes, enemies, counters, flinches, layers };
 }
 
 /** A stable text form, so the hook can skip a render when nothing the scene draws has changed. */
 export const signatureOf = (snapshot: ExchangeSnapshot): string =>
-  [...snapshot.heroes].map(([id, view]) => `h${id}=${view.exchangeId}`).join(',') + '|' + [...snapshot.enemies].map(([id, view]) => `e${id}=${view.exchangeId}`).join(',');
+  [...snapshot.heroes].map(([id, view]) => `h${id}=${view.exchangeId}`).join(',') +
+  '|' +
+  [...snapshot.enemies].map(([id, view]) => `e${id}=${view.exchangeId}`).join(',') +
+  '|' +
+  [...snapshot.counters].map(([id, view]) => `c${id}=${view.exchangeId}`).join(',') +
+  '|' +
+  [...snapshot.flinches].map(([id, view]) => `f${id}=${view.exchangeId}`).join(',');

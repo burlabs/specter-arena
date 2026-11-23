@@ -27,6 +27,26 @@ describe('AnimatedMinion', () => {
     expect(container.firstElementChild?.getAttribute('data-facing')).toBe('right');
   });
 
+  it('strikes back toward the hero with a lunge direction and reports once after its duration', () => {
+    const done = vi.fn();
+    const { container } = render(<AnimatedMinion minionType="patchling" animation="attack" animate spriteReady requestId={3} lunge={-1} onAnimationComplete={done} />);
+    const minion = container.querySelector<HTMLElement>('.sa-minion');
+    expect(minion?.className).toContain('sa-is-attack');
+    expect(minion?.style.getPropertyValue('--sa-lunge')).toBe('-1');
+    expect(container.querySelector('.sa-minion-impact')).toBeNull();
+    act(() => void vi.advanceTimersByTime(MINION_DURATIONS_MS.patchling.attack - 1));
+    expect(done).not.toHaveBeenCalled();
+    act(() => void vi.advanceTimersByTime(1));
+    expect(done).toHaveBeenCalledWith(3);
+  });
+
+  it('reports an attack at once and draws it static when motion is off', () => {
+    const done = vi.fn();
+    const { container } = render(<AnimatedMinion minionType="patchbrute" animation="attack" animate={false} spriteReady requestId={4} onAnimationComplete={done} />);
+    expect(container.querySelector('.sa-minion')?.className).toContain('sa-is-static');
+    expect(done).toHaveBeenCalledWith(4);
+  });
+
   it('starts no timer for a looping animation', () => {
     const spy = vi.spyOn(window, 'setTimeout');
     render(<AnimatedMinion minionType="patchbrute" animation="engaged" animate spriteReady />);

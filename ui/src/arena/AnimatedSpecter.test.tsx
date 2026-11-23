@@ -80,6 +80,17 @@ describe('AnimatedSpecter', () => {
     expect(still.container.querySelector('.sa-hero__fx')).toBeNull();
   });
 
+  it('flinches away from the minion with no effect layer, and stays idle when motion is off', async () => {
+    const flinch = render(<AnimatedSpecter heroId="vell" animate animation="flinch" flip={-1} initials="V" />);
+    await waitFor(() => expect(sprite(flinch.container)).not.toBeNull());
+    expect(sprite(flinch.container)?.className).toContain('sa-is-flinch');
+    expect(sprite(flinch.container)?.style.getPropertyValue('--sa-flinch')).toBe('1');
+    expect(flinch.container.querySelector('.sa-hero__fx')).toBeNull();
+    const still = render(<AnimatedSpecter heroId="vell" animate={false} animation="flinch" initials="V" />);
+    await waitFor(() => expect(sprite(still.container)).not.toBeNull());
+    expect(sprite(still.container)?.className).toContain('sa-is-idle');
+  });
+
   it('stays idle for a hero with no combat timing', async () => {
     const { container } = render(<AnimatedSpecter heroId="newcomer" animate animation="attack" initials="N" />);
     await act(async () => undefined);

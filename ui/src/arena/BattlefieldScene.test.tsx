@@ -425,6 +425,8 @@ describe('exchanges and the paused collector', () => {
   const attacking = (kind: 'attack' | 'cast', recoilFrom: string | null = atlas.bindingId): ExchangeSnapshot => ({
     heroes: new Map([[atlas.bindingId, { exchangeId: 7, kind, workId: model.enemies[0]!.workId }]]),
     enemies: new Map([[model.enemies[0]!.workId, { exchangeId: 7, strong: kind === 'cast', bindingId: recoilFrom }]]),
+    counters: new Map(),
+    flinches: new Map(),
     layers: 1,
   });
 
@@ -447,6 +449,24 @@ describe('exchanges and the paused collector', () => {
     expect(container.querySelectorAll('.sa-strike--cast')).toHaveLength(1);
     expect(container.querySelector('.sa-minion.sa-is-hit.sa-is-strong')).not.toBeNull();
     expect(container.querySelector<HTMLElement>('.sa-minion.sa-is-hit')?.style.getPropertyValue('--sa-recoil')).toBe('1');
+  });
+
+  it('draws the minion strike toward its hero, then the hero flinch, and no damage anywhere', async () => {
+    const work = model.enemies[0]!.workId;
+    const props = { model, selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
+    const empty = { heroes: new Map(), enemies: new Map(), layers: 0 };
+    const { container, rerender } = show();
+    await waitFor(() => expect(container.querySelector('.sa-hero')).not.toBeNull());
+    rerender(<BattlefieldScene {...props} exchanges={{ ...empty, counters: new Map([[work, { exchangeId: 9, bindingId: atlas.bindingId }]]), flinches: new Map() }} />);
+    const strike = container.querySelector<HTMLElement>('.sa-minion.sa-is-attack');
+    expect(strike).not.toBeNull();
+    expect(['-1', '1']).toContain(strike?.style.getPropertyValue('--sa-lunge'));
+    expect(container.querySelector('.sa-hero.sa-is-attack, .sa-hero.sa-is-cast')).toBeNull();
+    rerender(<BattlefieldScene {...props} exchanges={{ ...empty, counters: new Map(), flinches: new Map([[atlas.bindingId, { exchangeId: 9, workId: work }]]) }} />);
+    await waitFor(() => expect(container.querySelector('.sa-hero.sa-is-flinch')).not.toBeNull());
+    expect(container.querySelector('.sa-hero__fx')).toBeNull();
+    expect(container.querySelector('.sa-minion.sa-is-attack')).toBeNull();
+    expect(container.textContent ?? '').not.toMatch(/\d\s?%|damage|health/i);
   });
 
   it('shows one status plate and no exchange effect when the collector is paused', () => {

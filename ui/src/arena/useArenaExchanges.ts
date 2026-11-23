@@ -13,7 +13,7 @@ import type { MilestoneRise } from './useArenaScene';
 export function useArenaExchanges(model: SceneModel | null, enabled: boolean, rises: readonly MilestoneRise[]): ExchangeSnapshot {
   const planner = useRef<PlannerState>(initialPlanner());
   const handled = useRef<ReadonlySet<string>>(new Set());
-  const signature = useRef('|');
+  const signature = useRef('|||');
   const [snapshot, setSnapshot] = useState<ExchangeSnapshot>(EMPTY_SNAPSHOT);
   const input = useMemo(() => (model === null ? null : plannerInputOf(model)), [model]);
 
@@ -21,7 +21,7 @@ export function useArenaExchanges(model: SceneModel | null, enabled: boolean, ri
     if (!enabled || input === null) {
       planner.current = initialPlanner();
       handled.current = new Set();
-      signature.current = '|';
+      signature.current = '|||';
       setSnapshot((current) => (current === EMPTY_SNAPSHOT ? current : EMPTY_SNAPSHOT));
       return;
     }
