@@ -2,6 +2,8 @@ import { useAppApi } from '@kirocrew/app-sdk';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setSceneAssetsFailing } from '@kirocrew/app-sdk';
+import { HERO_GAP_PX } from './heroPlacement';
+import { laneSlots } from './laneSlots';
 import { BattlefieldScene } from './BattlefieldScene';
 import type { ExchangeSnapshot } from './exchangePlanner';
 import type { PresentationCue } from './PresentationCueLayer';
@@ -133,16 +135,38 @@ describe('hero placement and minion size', () => {
   const percent = (text: string) => Number.parseFloat(text);
   const props = { selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
 
-  it('stands every hero in the lower map, a cell apart', () => {
+  it('stands every hero on a lane or jungle slot, at least a hero gap apart', () => {
     const { container } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
     const spots = heroSpots(container);
     expect(spots).toHaveLength(3);
-    for (const [, left, top] of spots) {
-      expect(percent(top as string)).toBeGreaterThanOrEqual(60);
-      expect(percent(top as string)).toBeLessThanOrEqual(95);
-      expect(percent(left as string)).toBeGreaterThanOrEqual(6);
-      expect(percent(left as string)).toBeLessThanOrEqual(94);
+    const points = spots.map(([, left, top]) => ({ x: percent(left as string) / 100, y: percent(top as string) / 100 }));
+    for (const point of points) expect(laneSlots().some((slot) => Math.abs(slot.point.x - point.x) < 1e-4 && Math.abs(slot.point.y - point.y) < 1e-4)).toBe(true);
+    for (let i = 0; i < points.length; i += 1) {
+      for (let j = i + 1; j < points.length; j += 1) {
+        expect(Math.hypot(((points[i] as { x: number }).x - (points[j] as { x: number }).x) * 1672, ((points[i] as { y: number }).y - (points[j] as { y: number }).y) * 941)).toBeGreaterThanOrEqual(HERO_GAP_PX);
+      }
     }
+  });
+
+  it('draws each task beside its own hero, closer to it than to any other hero', () => {
+    const { container } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const at = (el: Element) => {
+      const style = (el as HTMLElement).style;
+      return { x: percent(style.left) / 100, y: percent(style.top) / 100 };
+    };
+    const heroes = new Map([...container.querySelectorAll('[data-sprite="specter"]')].map((el) => [el.getAttribute('data-token') as string, at(el)]));
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot((a.x - b.x) * 1672, (a.y - b.y) * 941);
+    let checked = 0;
+    for (const enemy of model.enemies) {
+      const owner = enemy.engagedBy.find((id) => heroes.has(id));
+      if (owner === undefined) continue;
+      const el = container.querySelector(`[data-token="${enemy.workId}"]`) as Element;
+      const mine = dist(at(el), heroes.get(owner) as { x: number; y: number });
+      expect(mine).toBeLessThan(275);
+      for (const [id, point] of heroes) if (id !== owner) expect(dist(at(el), point)).toBeGreaterThan(mine);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it('keeps the same spots for the same seed, and moves them for another', () => {

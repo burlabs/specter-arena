@@ -1,12 +1,17 @@
 import { seedOf } from './exchangePlanner';
+import { ARENA_INTRINSIC } from './mapLayout';
+import { REGIONS, laneSlots } from './laneSlots';
+import type { Region, Slot } from './laneSlots';
 import type { Point } from './sceneLayout';
-import { SPECTER_CELL, apart, specterSlot } from './sceneLayout';
+import { specterSlot } from './sceneLayout';
 
-/** Where a hero may stand: the lower band of the map, below the enemy lattice (its lowest row is y 0.46). */
-export const HERO_REGION = { xMin: 0.06, xMax: 0.94, yMin: 0.6, yMax: 0.95 } as const;
 export const PLACEMENT_TRIES = 12;
-/** Three staging rows of seven: y 0.95, 0.79 and 0.63, all inside `HERO_REGION`. */
+/** Three staging rows of seven (FP-23): the last resort when no jittered point is clear. */
 export const STAGING_CELLS = 21;
+/** A hero that stands off the slot list is jittered this far from a slot of the least-used region (map units). */
+export const FALLBACK_JITTER = 0.04;
+/** Two heroes on slots or jitter points stand at least this far apart, in art pixels (map 1672 x 941); about 51 px on an 860 px map. */
+export const HERO_GAP_PX = 100;
 
 /** mulberry32: a 32-bit seeded generator that returns numbers in [0, 1). */
 export function mulberry32(seed: number): () => number {
@@ -19,51 +24,62 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-const clear = (point: Point, placed: readonly Point[]): boolean => placed.every((other) => apart(point, other, SPECTER_CELL));
-
-const freeStagingCells = (placed: readonly Point[]): number => {
-  let free = 0;
-  for (let index = 0; index < STAGING_CELLS; index += 1) if (clear(specterSlot(index), placed)) free += 1;
-  return free;
-};
-
-const inRegion = (point: Point): boolean =>
-  Number.isFinite(point.x) && Number.isFinite(point.y) && point.x >= HERO_REGION.xMin && point.x <= HERO_REGION.xMax && point.y >= HERO_REGION.yMin && point.y <= HERO_REGION.yMax;
-
+const gapPx = (a: Point, b: Point): number => Math.hypot((a.x - b.x) * ARENA_INTRINSIC.width, (a.y - b.y) * ARENA_INTRINSIC.height);
+const clear = (point: Point, placed: readonly Point[]): boolean => placed.every((other) => gapPx(point, other) >= HERO_GAP_PX);
+const onMap = (point: Point): boolean => Number.isFinite(point.x) && Number.isFinite(point.y) && point.x >= 0.03 && point.x <= 0.97 && point.y >= 0.03 && point.y <= 0.97;
 const compareText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9;
+
+/** The region of a point that is exactly a slot, or null for a fallback point. */
+const regionOf = (point: Point, slots: readonly Slot[]): Region | null => slots.find((slot) => same(slot.point, point))?.region ?? null;
 
 /**
- * Where each hero stands. Pure in `(previous, bindingIds, visitSeed)`: a hero that already has a valid point keeps it,
- * and each new one is drawn from its own stream `mulberry32(seedOf(seed:id))` (the arena's shared FNV-1a hash), so the result does not depend on the order
- * heroes arrive in. Nothing here reads a role, a lane, a condition or progress.
+ * Where each hero stands. Pure in `(previous, bindingIds, visitSeed)`. A hero that already has a valid point keeps it. Each new
+ * hero, in sorted id order, draws from its own stream `mulberry32(seedOf(seed:id))`: it takes a region that holds the fewest
+ * heroes so far (a tie is broken by its own draw), then a random free slot of that region. When the region has no free slot
+ * the hero stands near a slot of the least-used region, and last of all on a staging cell. The region is a spread rule only:
+ * nothing here reads a role, a condition or progress, and no region name leaves this function.
  */
 export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: readonly string[], visitSeed: number): Map<string, Point> {
+  const slots = laneSlots();
   const ids = [...new Set(bindingIds)].sort(compareText);
   const next = new Map<string, Point>();
   const placed: Point[] = [];
+  const counts = new Map<Region, number>(REGIONS.map((region) => [region, 0]));
+  const count = (point: Point) => {
+    const region = regionOf(point, slots);
+    if (region !== null) counts.set(region, (counts.get(region) ?? 0) + 1);
+  };
   for (const id of ids) {
     const kept = previous.get(id);
-    if (kept !== undefined && inRegion(kept) && clear(kept, placed)) {
+    if (kept !== undefined && onMap(kept) && clear(kept, placed)) {
       next.set(id, kept);
       placed.push(kept);
+      count(kept);
     }
   }
-  const fresh = ids.filter((id) => !next.has(id));
-  fresh.forEach((id, index) => {
-    const remaining = fresh.length - 1 - index;
+  for (const id of ids.filter((candidate) => !next.has(candidate))) {
     const random = mulberry32(seedOf(`${visitSeed >>> 0}:${id}`));
-    const freeBefore = freeStagingCells(placed);
+    const free = (region: Region) => slots.filter((slot) => slot.region === region && clear(slot.point, placed));
+    const open = REGIONS.filter((region) => free(region).length > 0);
     let chosen: Point | null = null;
-    for (let attempt = 0; attempt < PLACEMENT_TRIES && chosen === null; attempt += 1) {
-      const candidate = {
-        x: HERO_REGION.xMin + random() * (HERO_REGION.xMax - HERO_REGION.xMin),
-        y: HERO_REGION.yMin + random() * (HERO_REGION.yMax - HERO_REGION.yMin),
-      };
-      if (clear(candidate, placed) && freeStagingCells([...placed, candidate]) >= Math.min(remaining, freeBefore - 1)) chosen = candidate;
-    }
-    if (chosen === null) {
-      const scan = STAGING_CELLS + placed.length;
-      for (let slot = 0; slot < scan && chosen === null; slot += 1) {
+    if (open.length > 0) {
+      const fewest = Math.min(...open.map((region) => counts.get(region) ?? 0));
+      const tied = open.filter((region) => (counts.get(region) ?? 0) === fewest);
+      const region = tied[Math.floor(random() * tied.length)] as Region;
+      const options = free(region);
+      chosen = (options[Math.floor(random() * options.length)] as Slot).point;
+    } else {
+      const fewest = Math.min(...REGIONS.map((region) => counts.get(region) ?? 0));
+      const tied = REGIONS.filter((region) => (counts.get(region) ?? 0) === fewest);
+      const region = tied[Math.floor(random() * tied.length)] as Region;
+      const near = slots.filter((slot) => slot.region === region);
+      for (let attempt = 0; attempt < PLACEMENT_TRIES && chosen === null; attempt += 1) {
+        const anchor = (near[Math.floor(random() * near.length)] as Slot).point;
+        const candidate = { x: anchor.x + (random() * 2 - 1) * FALLBACK_JITTER, y: anchor.y + (random() * 2 - 1) * FALLBACK_JITTER };
+        if (onMap(candidate) && clear(candidate, placed)) chosen = candidate;
+      }
+      for (let slot = 0; slot < STAGING_CELLS && chosen === null; slot += 1) {
         const cell = specterSlot(slot);
         if (clear(cell, placed)) chosen = cell;
       }
@@ -71,6 +87,7 @@ export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: re
     const point = chosen ?? specterSlot(placed.length);
     next.set(id, point);
     placed.push(point);
-  });
+    count(point);
+  }
   return next;
 }

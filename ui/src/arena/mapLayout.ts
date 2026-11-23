@@ -14,7 +14,9 @@ export const ARENA_INTRINSIC = { width: 1672, height: 941 } as const;
 
 /**
  * Anchors read off the supplied 1672 x 941 painting, in 0..1 coordinates with the origin at the top left.
- * They select baked-in features of the art; none of them names a role, a team or a lane.
+ * They select baked-in features of the art. FP-24 (PA-4, Eric's request, reversing the FP-16 G3 OUT ruling) builds the hero slots
+ * from the three paths and the three clearings (`laneSlots.ts`). A path is placement only: none of these anchors names a role,
+ * a team, a class or progress, and no path name is ever shown.
  */
 export const ARENA_LAYOUT = {
   alliedBase: { id: 'allied-base', x: 0.16208133971291866, y: 0.711996, label: 'Allied base' },

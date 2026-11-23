@@ -603,7 +603,7 @@ test('A-21 at 390 px the panes start collapsed and stack below the map, and sele
   await expect(inspectorHeading(page)).toBeVisible();
 });
 
-test('A-22 heroes stand in the lower map a cell apart, keep their places across a tab switch, and move on a reload', async ({ page }) => {
+test('A-22 heroes stand on lane and jungle slots apart from each other, keep their places across a tab switch, and move on a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openArena(page, 'arena');
   const spots = () =>
@@ -612,17 +612,15 @@ test('A-22 heroes stand in the lower map a cell apart, keep their places across 
     );
   const first = await spots();
   expect(first).toHaveLength(7);
-  for (const spot of first) {
-    expect(spot.y).toBeGreaterThanOrEqual(60);
-    expect(spot.y).toBeLessThanOrEqual(95);
-  }
   for (let i = 0; i < first.length; i += 1) {
     for (let j = i + 1; j < first.length; j += 1) {
       const a = first[i]!;
       const b = first[j]!;
-      expect(Math.abs(a.x - b.x) >= 13.5 - 0.01 || Math.abs(a.y - b.y) >= 16 - 0.01, `${a.id} ${b.id}`).toBe(true);
+      expect(Math.hypot((a.x - b.x) * 16.72, (a.y - b.y) * 9.41), `${a.id} ${b.id}`).toBeGreaterThanOrEqual(100 - 0.5);
     }
   }
+  // Seven heroes on four regions: no spot sits in the old lower staging band by rule; they spread over the whole map.
+  expect(new Set(first.map((spot) => Math.round(spot.y / 20))).size).toBeGreaterThan(1);
   await sectionTab(page, 'Roster').click();
   await sectionTab(page, 'Arena').click();
   await expect(page.locator('[data-sprite="specter"]')).toHaveCount(7);
@@ -658,7 +656,7 @@ test('A-23 minions are drawn small, medium and large, in that order of width, an
         const b = boxes[j]!;
         const across = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
         const down = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
-        expect(across > 0.5 && down > 0.5, `${width}px minions ${i} and ${j} overlap`).toBe(false);
+        expect(across > 0.5 && down > 0.5, `${width}px minions ${i} and ${j} overlap ${JSON.stringify([a, b])}`).toBe(false);
       }
     }
   }
