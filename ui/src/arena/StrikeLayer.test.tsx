@@ -45,6 +45,8 @@ describe('strikeShotsOf', () => {
       ['d', { exchangeId: 4, kind: 'attack', workId: 'w9' }],
     ]),
     enemies: new Map(),
+    counters: new Map(),
+    flinches: new Map(),
     layers: 4,
   };
 

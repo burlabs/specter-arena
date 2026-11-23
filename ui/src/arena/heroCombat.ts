@@ -57,3 +57,16 @@ export function effectAngle(dx: number, dy: number): number {
   const angle = (Math.atan2(dy, Math.abs(dx)) * 180) / Math.PI;
   return Math.max(-MAX_EFFECT_ANGLE_DEG, Math.min(MAX_EFFECT_ANGLE_DEG, angle));
 }
+
+/**
+ * The minion's strike back, per minion type, in milliseconds: how long the lunge runs and when it lands. Scaled from the
+ * export's hit rows (Patchling 320 ms, Patchbrute 420 ms). Presentation only: it never reaches the backend.
+ */
+export const MINION_COUNTER = {
+  patchling: { attack: 520, impact: 260 },
+  patchbrute: { attack: 700, impact: 340 },
+} as const;
+/** The minion waits this long after its own hit reaction ends before it strikes back. */
+export const COUNTER_GAP_MS = 120;
+/** How long the hero flinches once the minion's strike lands. */
+export const FLINCH_MS = 360;

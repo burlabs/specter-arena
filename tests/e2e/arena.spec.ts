@@ -441,13 +441,37 @@ test('A-20 FP-21 a working hero attacks its enemy on a cadence, the enemy recoil
   expect(await writes(page)).toEqual([]);
 });
 
+test('A-25 FP-24 an exchange plays hero strike, minion hit, minion strike, hero flinch, in that order, and never shows damage', async ({ page }) => {
+  await openArena(page, 'arena');
+  await page.evaluate(() => {
+    const seen: Record<string, number> = {};
+    const probes: Record<string, string> = { strike: '.sa-hero.sa-is-attack, .sa-hero.sa-is-cast', hit: '.sa-minion.sa-is-hit', counter: '.sa-minion.sa-is-attack', flinch: '.sa-hero.sa-is-flinch' };
+    const tick = () => {
+      for (const [name, selector] of Object.entries(probes)) if (seen[name] === undefined && document.querySelector(selector) !== null) seen[name] = performance.now();
+      requestAnimationFrame(tick);
+    };
+    (window as unknown as { __fp24Seen: Record<string, number> }).__fp24Seen = seen;
+    requestAnimationFrame(tick);
+  });
+  await expect(page.locator('.sa-hero.sa-is-flinch')).toHaveCount(1, { timeout: 9000 });
+  const seen = await page.evaluate(() => (window as unknown as { __fp24Seen: Record<string, number> }).__fp24Seen);
+  expect(Object.keys(seen).sort()).toEqual(['counter', 'flinch', 'hit', 'strike']);
+  expect(seen.strike).toBeLessThan(seen.hit!);
+  expect(seen.hit).toBeLessThan(seen.counter!);
+  expect(seen.counter).toBeLessThan(seen.flinch!);
+  await expect(page.locator('.sa-hero.sa-is-flinch')).toHaveCount(0, { timeout: 3000 });
+  const text = (await arena(page).textContent()) ?? '';
+  expect(text).not.toMatch(/\bHP\b|damage|health|\d\s?%/i);
+  expect(await writes(page)).toEqual([]);
+});
+
 test('A-21 FP-21 with reduced motion no attack, cast or effect layer is ever drawn', async ({ browser }) => {
   const context = await browser.newContext({ locale: 'en-US', timezoneId: 'UTC', baseURL: 'http://127.0.0.1:4173/', reducedMotion: 'reduce' });
   const page = await context.newPage();
   await openArena(page, 'arena');
   await page.waitForTimeout(6000);
   expect(await page.locator('.sa-hero__fx, .sa-strike').count()).toBe(0);
-  expect(await page.locator('.sa-hero.sa-is-attack, .sa-hero.sa-is-cast, .sa-minion.sa-is-hit').count()).toBe(0);
+  expect(await page.locator('.sa-hero.sa-is-attack, .sa-hero.sa-is-cast, .sa-hero.sa-is-flinch, .sa-minion.sa-is-hit, .sa-minion.sa-is-attack').count()).toBe(0);
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   await context.close();
 });

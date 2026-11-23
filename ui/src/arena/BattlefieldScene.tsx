@@ -148,11 +148,13 @@ interface EnemyTokenProps {
   facing: 'left' | 'right';
   /** Set while the enemy recoils from a hero's hit or a milestone. */
   hit: { exchangeId: number; strong: boolean; recoil: -1 | 1 } | null;
+  /** Set while the enemy strikes back at its hero; `lunge` is the screen direction toward the hero. */
+  counter: { exchangeId: number; lunge: -1 | 1 } | null;
   onSelect: () => void;
   register: (element: HTMLButtonElement | null) => void;
 }
 
-function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, hit, onSelect, register }: EnemyTokenProps) {
+function EnemyToken({ enemy, position, selected, roving, animate, celebrating, spriteReady, facing, hit, counter, onSelect, register }: EnemyTokenProps) {
   const effect = enemyEffect(enemy);
   const style = { left: `${position.x * 100}%`, top: `${position.y * 100}%`, '--sa-minion-scale': MINION_SCALE[enemy.sizeClass] } as CSSProperties;
   return (
@@ -172,13 +174,14 @@ function EnemyToken({ enemy, position, selected, roving, animate, celebrating, s
     >
       <AnimatedMinion
         minionType={enemy.size === 'encounter' ? 'patchbrute' : 'patchling'}
-        animation={celebrating ? 'defeat' : hit !== null && !enemy.defeated ? 'hit' : effect.pose === 'engaged' ? 'engaged' : 'idle'}
+        animation={celebrating ? 'defeat' : hit !== null && !enemy.defeated ? 'hit' : counter !== null && !enemy.defeated ? 'attack' : effect.pose === 'engaged' ? 'engaged' : 'idle'}
         animate={animate}
         spriteReady={spriteReady}
         defeated={enemy.defeated}
         facing={facing}
-        requestId={hit?.exchangeId ?? 0}
+        requestId={hit?.exchangeId ?? counter?.exchangeId ?? 0}
         recoil={hit?.recoil ?? 1}
+        lunge={counter?.lunge ?? 1}
         strong={hit?.strong ?? false}
       />
       <span className="sa-token__label" aria-hidden="true">
@@ -322,6 +325,11 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
   const heroFx = (bindingId: string): { animation: HeroAnimation; angle: number; flip: 1 | -1 } => {
     const view = exchanges.heroes.get(bindingId);
     const from = placement.specters.get(bindingId);
+    const flinch = exchanges.flinches.get(bindingId);
+    if (view === undefined && flinch !== undefined && from !== undefined) {
+      const minion = placement.enemies.get(flinch.workId);
+      return minion === undefined ? { animation: 'idle', angle: 0, flip: 1 } : { animation: 'flinch', angle: 0, flip: minion.x < from.x ? -1 : 1 };
+    }
     const to = view === undefined ? undefined : placement.enemies.get(view.workId);
     if (view === undefined || from === undefined || to === undefined) return { animation: 'idle', angle: 0, flip: 1 };
     const dx = (to.x - from.x) * ARENA_INTRINSIC.width;
@@ -334,6 +342,14 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
     const here = placement.enemies.get(enemy.workId);
     const there = view.bindingId === null ? undefined : placement.specters.get(view.bindingId);
     return { exchangeId: view.exchangeId, strong: view.strong, recoil: here !== undefined && there !== undefined && here.x < there.x ? -1 : 1 };
+  };
+
+  const enemyCounter = (enemy: SceneEnemy): EnemyTokenProps['counter'] => {
+    const view = exchanges.counters.get(enemy.workId);
+    if (view === undefined) return null;
+    const here = placement.enemies.get(enemy.workId);
+    const there = placement.specters.get(view.bindingId);
+    return here !== undefined && there !== undefined ? { exchangeId: view.exchangeId, lunge: there.x < here.x ? -1 : 1 } : null;
   };
 
   const heroIds = new Map(model.specters.map((specter) => [specter.bindingId, specter.heroId]));
@@ -427,6 +443,7 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
                 spriteReady={(enemy.size === 'encounter' ? patchbrute : patchling).status === 'ready'}
                 facing={engagementFacing(enemy, placement)}
                 hit={enemyHit(enemy)}
+                counter={enemyCounter(enemy)}
                 onSelect={() => onSelect({ kind: 'work', workId: enemy.workId })}
                 register={register(enemy.workId)}
               />
