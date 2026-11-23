@@ -149,20 +149,20 @@ RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and
 
 ## 8. RC-6
 
-RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment dialog centred by the app's own CSS, and the Crew store listing (`store/hero.png` and four `store/screenshot-*.png`, about 4.35 MB more in the tarball). Permissions, version and store version are unchanged from RC-5. It is built with `npm run package -- --commit <RC-6 SHA>` from a clean clone after the RC-6 docs PR merges. The RELEASE window fills every cell below except the re-check result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment dialog centred by the app's own CSS, and the Crew store listing (`store/hero.png` and four `store/screenshot-*.png`, about 4.35 MB more in the tarball). Permissions, version and store version are unchanged from RC-5. It is built with `npm run package -- --commit <RC-6 SHA>` from a clean clone after the RC-6 docs PR merges. The RELEASE window filled every cell below except the re-check result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|
-| Commit | pending |
-| Artifact name | pending |
-| Bytes | pending |
-| sha256 | pending |
-| File count | pending |
-| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) and present (`store/hero.png`, four `store/screenshot-*.png`) | pending |
+| Commit | `86f2e186ff506f99fe86b1bb53e9c76238956c23` (PR #211, `main` after the RC-6 docs refresh) |
+| Artifact name | `specter-arena-0.1.0-86f2e186ff50.tar.gz` |
+| Bytes | 10,669,163 |
+| sha256 | `d23212e2d42954dd4df580003d485b66a711380dfe8ce805238ade0b5de2460c` |
+| File count | 1,762 entries in the tarball (`tar -tzf`), which is the 1,761 files that `RELEASE-MANIFEST.txt` lists plus the manifest itself. The packager prints 1762 |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) and present (`store/hero.png`, four `store/screenshot-*.png`) | absent: a listing matched none of `avatar-packs/`, `docs/images/`, `agents/`. Present: `store/hero.png` (sha256 `bad00b84…77da`, equal to its provenance row) and `store/screenshot-arena.png`, `-specters.png`, `-roster.png`, `-assign.png`. `app.json` names them as `heroImage` and `screenshots`, grants only `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`, and has no `agents` key. The newest migration is `0011_hero_choice.sql` |
 | Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
-| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
-| Build | pending |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both approved PR #211 head `336bfd7f` (requirements APPROVED (with note), fit APPROVED); verdict files `pr211-336bfd7-requirements.md` and `pr211-336bfd7-fit.md` in the release window's local gates folder (not committed). Head `47cd02eb` was BLOCKED by both (a 12-minute cap against a 13-minute total, a stale RC-5 reference). FP-25's own verdicts are in its handoff |
+| Build | 2026-11-23, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0. Two builds from separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass. The tarball is about 4.34 MB larger than RC-5 (10,669,163 against 6,328,259 bytes) |
 | Store version and migrations | 11 and 11, unchanged (FP-25 added no migration) |
 | UI bundle cap | 367,000 characters, unchanged (`ui/src/build-output.test.ts`) |
 | RC-4 per-step result and RC-6 re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-6 steps R1 to R8) |
