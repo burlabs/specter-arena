@@ -4,7 +4,7 @@ import type { RosterItemV1, TaskItemV1 } from '../contracts/types';
 import { rosterPath, tasksPath } from '../host/paths';
 import { ARENA_INTRINSIC } from './mapLayout';
 import { placeHeroes } from './heroPlacement';
-import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, apart, assignSlots, enemySlots, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
+import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, apart, assignFans, assignSlots, enemySlots, ownerOf, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
 import type { Point } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
 import { botOf, inputsOf, taskOf } from './testData';
@@ -107,16 +107,22 @@ describe('placeScene on the demo scenarios', () => {
     }
   });
 
-  it.each([['arena', 1], ['arena', 99999], ['arena-perf-1', 1], ['arena-perf-1', 99999]] as const)('%s with seeded hero points (seed %i): the same three properties hold', async (scenario, seed) => {
+  it.each([['arena', 1], ['arena', 99999], ['arena-perf-1', 1], ['arena-perf-1', 99999]] as const)('%s with seeded hero points (seed %i): heroes are apart, tasks stand beside their hero or on the lattice, all inside the margins', async (scenario, seed) => {
     const model = await modelOf(scenario);
     const heroPoints = placeHeroes(new Map(), model.specters.map((specter) => specter.bindingId), seed);
-    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model)), heroPoints);
+    const fans = assignFans(new Map(), model, heroPoints);
+    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model, fans)), heroPoints, fans);
     expect(placement.specters.size).toBe(model.specters.length);
-    expect(pairsTooClose([...placement.specters.values()], SPECTER_CELL)).toEqual([]);
-    const lowestEnemy = Math.max(...[...placement.enemies.values()].map((p) => p.y));
-    const highestSpecter = Math.min(...[...placement.specters.values()].map((p) => p.y));
-    expect(highestSpecter - lowestEnemy).toBeGreaterThanOrEqual(0.12);
-    for (const p of placement.specters.values()) {
+    expect(placement.enemies.size).toBe(model.enemies.length);
+    const fanned = model.enemies.filter((enemy) => fans.has(enemy.workId));
+    expect(fanned.length).toBeGreaterThan(0);
+    for (const enemy of fanned) {
+      const owner = ownerOf(enemy, heroPoints) as string;
+      const a = placement.enemies.get(enemy.workId) as Point;
+      const b = placement.specters.get(owner) as Point;
+      expect(Math.hypot((a.x - b.x) * ARENA_INTRINSIC.width, (a.y - b.y) * ARENA_INTRINSIC.height)).toBeLessThan(275);
+    }
+    for (const p of [...placement.specters.values(), ...placement.enemies.values()]) {
       expect(p.x).toBeGreaterThanOrEqual(0.03);
       expect(p.x).toBeLessThanOrEqual(0.97);
       expect(p.y).toBeGreaterThanOrEqual(0.03);
@@ -167,5 +173,33 @@ describe('placeScene', () => {
 
   it('is deterministic', () => {
     expect(placeScene(model, assignSlots(new Map(), slotIdsOf(model)))).toEqual(placement);
+  });
+});
+
+describe('tasks beside their hero', () => {
+  const bots = [botOf(1, { state: 'working' }), botOf(2, { state: 'working' })];
+  const work = [taskOf(1, bots[0]!), taskOf(2, bots[0]!), taskOf(3, bots[1]!), taskOf(4, bots[1]!, { attemptState: 'unknown' })];
+  const model = buildSceneModel(inputsOf({ roster: bots, tasks: work }));
+  const heroPoints = new Map<string, Point>([[model.specters[0]!.bindingId, { x: 0.3, y: 0.5 }]]);
+
+  it('seats an owned task on the hero\'s fan and leaves a task with no drawn hero on the lattice', () => {
+    const fans = assignFans(new Map(), model, heroPoints);
+    const owned = model.enemies.filter((enemy) => ownerOf(enemy, heroPoints) !== null);
+    expect(owned.length).toBeGreaterThan(0);
+    expect([...fans.keys()].sort()).toEqual(owned.map((enemy) => enemy.workId).sort());
+    expect(slotIdsOf(model, fans)).toEqual(model.enemies.filter((enemy) => !fans.has(enemy.workId)).map((enemy) => enemy.workId));
+    const placed = placeScene(model, assignSlots(new Map(), slotIdsOf(model, fans)), heroPoints, fans);
+    const lattice = enemySlots();
+    for (const enemy of model.enemies) {
+      const point = placed.enemies.get(enemy.workId) as Point;
+      if (fans.has(enemy.workId)) expect(lattice.some((slot) => slot.x === point.x && slot.y === point.y)).toBe(false);
+      else expect(lattice.some((slot) => slot.x === point.x && slot.y === point.y)).toBe(true);
+    }
+  });
+
+  it('keeps seats across polls and gives a new task the lowest free seat', () => {
+    const first = assignFans(new Map(), model, heroPoints);
+    expect(assignFans(first, model, heroPoints)).toEqual(first);
+    expect([...first.values()].sort()).toEqual([...new Set(first.values())].sort());
   });
 });

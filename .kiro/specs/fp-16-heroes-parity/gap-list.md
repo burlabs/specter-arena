@@ -8,13 +8,13 @@ CLOSED = ported with a test. PARTIAL = part ported, the rest named. OUT = not po
 |---|---|---|---|
 | G1 | Map and minimap paint nothing above 2 MiB in a CSS variable | CLOSED | PR-B #149; `A-14` red on `f586a025`, green on the head |
 | G2 | 512 px hero sprites with anchors in the arena | CLOSED | PR-B; `A-15`, `heroes.test.ts` |
-| G3 | Specters at lane positions on the map | OUT | The app has no position data and heroes imply no lane |
+| G3 | Specters at lane positions on the map | CLOSED (FP-24) | Reversed at Eric's request (PA-4). Heroes take seeded random slots on the Top, Mid, Bottom paths and the jungle clearings (`laneSlots.ts`, `heroPlacement.ts`, `A-22`). Placement only: no lane name is shown and a position never means a role, class or progress |
 | G4 | Minimap overlaid inside the map frame | CLOSED | PR-C; `A-17`. Placed top left, not bottom right as in the export: at bottom right it hid the Shard and Poly tokens in the default scenario (crop before and after in the PR-C report) |
 | G5 | Frame letterboxes the map | CLOSED | PR-C; `aspect-ratio: 1672 / 941`, `max-height: 70vh`; `A-17` checks the ratio |
 | G6 | Idle motion on tokens | CLOSED (idle, attack, cast) | PR-B; `A-16`. Attack and cast: IN as of FP-21 (`.kiro/specs/fp-21-battle-animations/`, `A-20` to `A-24`). They are presentation only, driven by a working bot's open attempt and a milestone count seen rising, and they show live activity, not progress |
 | G7 | Structures | CLOSED | PR-B; three minimap markers, `svgAndBadge.test.tsx`. The export draws none on the Arena |
 | G8 | Arena stat cards | CLOSED (three cards) | PR-C; `ArenaStats.test.tsx`, `ArenaView.test.tsx`. Replay button: OUT, replay is cut |
-| G9 | Rail cards: thumbnail, level, XP bar | CLOSED | PR-B thumbnail, PR-C progression; `railMinimapList.test.tsx`. Position tag: OUT (G3) |
+| G9 | Rail cards: thumbnail, level, XP bar | CLOSED | PR-B thumbnail, PR-C progression; `railMinimapList.test.tsx`. Position tag: OUT (a lane is never shown, FP-24) |
 | G10 | Export inspector | OUT | The app inspector already carries evidence, handoff and copy summary against the real contracts |
 | G11 | Pause motion in the top bar | OUT | Exists as the HUD button; the top bar is host chrome |
 | G12 | Arena page overflows to 506 px at 390 px | CLOSED | PR-C; `A-18`: `scrollWidth` 390 on all four tabs (506 before). The cause was the two list tables, not the header actions: hiding `.sa-arena-list` took the page from 506 to 390. The header actions also wrap now |

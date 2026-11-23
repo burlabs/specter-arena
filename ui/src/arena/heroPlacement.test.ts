@@ -1,19 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_REGION, PLACEMENT_TRIES, STAGING_CELLS, mulberry32, placeHeroes } from './heroPlacement';
-import { SPECTER_CELL, apart, specterSlot } from './sceneLayout';
+import { HERO_GAP_PX, PLACEMENT_TRIES, mulberry32, placeHeroes } from './heroPlacement';
+import { REGIONS, laneSlots } from './laneSlots';
+import type { Region } from './laneSlots';
+import { ARENA_INTRINSIC } from './mapLayout';
 import type { Point } from './sceneLayout';
 
 const idsOf = (count: number): string[] => Array.from({ length: count }, (_, i) => `bnd_${String(i * 7 + 1).padStart(24, '0')}`);
 const pairsTooClose = (points: readonly Point[]): number => {
   let bad = 0;
-  for (let i = 0; i < points.length; i += 1) for (let j = i + 1; j < points.length; j += 1) if (!apart(points[i] as Point, points[j] as Point, SPECTER_CELL)) bad += 1;
+  for (let i = 0; i < points.length; i += 1) for (let j = i + 1; j < points.length; j += 1) if (Math.hypot(((points[i] as Point).x - (points[j] as Point).x) * ARENA_INTRINSIC.width, ((points[i] as Point).y - (points[j] as Point).y) * ARENA_INTRINSIC.height) < HERO_GAP_PX - 1e-6) bad += 1;
   return bad;
 };
-const inRegion = (p: Point): boolean => p.x >= HERO_REGION.xMin - 1e-9 && p.x <= HERO_REGION.xMax + 1e-9 && p.y >= HERO_REGION.yMin - 1e-9 && p.y <= HERO_REGION.yMax + 1e-9;
-const onStaging = (p: Point): boolean => Array.from({ length: STAGING_CELLS }, (_, i) => specterSlot(i)).some((cell) => Math.abs(cell.x - p.x) < 1e-9 && Math.abs(cell.y - p.y) < 1e-9);
+const slotOf = (point: Point) => laneSlots().find((slot) => Math.abs(slot.point.x - point.x) < 1e-9 && Math.abs(slot.point.y - point.y) < 1e-9);
+const regionCounts = (points: Iterable<Point>): Map<Region, number> => {
+  const counts = new Map<Region, number>(REGIONS.map((region) => [region, 0]));
+  for (const point of points) {
+    const region = slotOf(point)?.region;
+    if (region !== undefined) counts.set(region, (counts.get(region) ?? 0) + 1);
+  }
+  return counts;
+};
 
 describe('mulberry32', () => {
-  it('mulberry32 repeats for one seed, differs across seeds and stays in [0, 1)', () => {
+  it('repeats for one seed, differs across seeds and stays in [0, 1)', () => {
     const a = mulberry32(42);
     const b = mulberry32(42);
     const run = Array.from({ length: 50 }, () => a());
@@ -31,27 +40,35 @@ describe('placeHeroes', () => {
     expect(placeHeroes(new Map(), ids, 4321)).not.toEqual(first);
   });
 
-  it('keeps every hero in the lower band, a cell apart, for 1 to 21 heroes over 200 seeds', () => {
-    for (const count of [1, 3, 7, 12, 20, 21]) {
+  it('puts each of up to the slot count of heroes on its own slot, over 200 seeds', () => {
+    const total = laneSlots().length;
+    for (const count of [1, 3, 4, 7, 11, total]) {
       const ids = idsOf(count);
       for (let seed = 0; seed < 200; seed += 1) {
         const points = [...placeHeroes(new Map(), ids, seed * 2654435761).values()];
         expect(points).toHaveLength(count);
+        expect(points.every((point) => slotOf(point) !== undefined)).toBe(true);
         expect(pairsTooClose(points)).toBe(0);
-        expect(points.every(inRegion)).toBe(true);
       }
     }
   });
 
-  it('stands below the enemy lattice by the gap the scene tests require', () => {
-    const lowestEnemyRow = 0.08 + 4 * 0.095;
-    expect(HERO_REGION.yMin - lowestEnemyRow).toBeGreaterThanOrEqual(0.12);
+  it('spreads across the four regions before any region doubles up', () => {
+    for (let seed = 0; seed < 200; seed += 1) {
+      for (const count of [2, 3, 4]) {
+        const counts = regionCounts(placeHeroes(new Map(), idsOf(count), seed * 40503).values());
+        expect(Math.max(...counts.values())).toBe(1);
+      }
+      const eight = regionCounts(placeHeroes(new Map(), idsOf(8), seed * 40503).values());
+      expect(Math.max(...eight.values())).toBe(2);
+    }
   });
 
-  it('places most small teams at random points and not on the staging cells', () => {
-    let random = 0;
-    for (let seed = 1; seed <= 50; seed += 1) for (const point of placeHeroes(new Map(), idsOf(3), seed * 40503).values()) if (!onStaging(point)) random += 1;
-    expect(random).toBeGreaterThan(100);
+  it('is random: different seeds put one hero on different slots', () => {
+    const id = idsOf(1);
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 60; seed += 1) seen.add(JSON.stringify([...placeHeroes(new Map(), id, seed * 977).values()]));
+    expect(seen.size).toBeGreaterThan(8);
   });
 
   it('keeps a hero where it is when others join or leave', () => {
@@ -64,18 +81,10 @@ describe('placeHeroes', () => {
     expect(left.has(ids[0] as string)).toBe(false);
   });
 
-  it('places a joiner the same way whether or not others were there first', () => {
-    const ids = idsOf(3);
-    const alone = placeHeroes(new Map(), [ids[2] as string], 9).get(ids[2] as string);
-    const together = placeHeroes(new Map(), ids, 9);
-    expect(together.get(ids[2] as string)).toBeDefined();
-    expect(alone).toBeDefined();
-  });
-
-  it('drops a previous point that is outside the band or touches a neighbour, and places that hero again', () => {
+  it('drops a previous point that is off the map or touches a neighbour, and places that hero again', () => {
     const ids = idsOf(2);
-    const outside = placeHeroes(new Map([[ids[0] as string, { x: 0.5, y: 0.2 }]]), ids, 3);
-    expect(inRegion(outside.get(ids[0] as string) as Point)).toBe(true);
+    const outside = placeHeroes(new Map([[ids[0] as string, { x: 1.5, y: 0.2 }]]), ids, 3);
+    expect(slotOf(outside.get(ids[0] as string) as Point)).toBeDefined();
     const crowded = placeHeroes(new Map([[ids[0] as string, { x: 0.5, y: 0.8 }], [ids[1] as string, { x: 0.51, y: 0.81 }]]), ids, 3);
     expect(pairsTooClose([...crowded.values()])).toBe(0);
     expect(crowded.get(ids[0] as string)).toEqual({ x: 0.5, y: 0.8 });
@@ -83,10 +92,9 @@ describe('placeHeroes', () => {
     expect(Number.isFinite((nan.get(ids[0] as string) as Point).x)).toBe(true);
   });
 
-  it('falls back to a staging cell when no random point fits', () => {
-    // 20 heroes: the random points run out of room, so some stand on staging cells and none overlap.
+  it('past the slot count, stands near the least-used region a cell apart (20 heroes)', () => {
     const points = [...placeHeroes(new Map(), idsOf(20), 5).values()];
-    expect(points.some(onStaging)).toBe(true);
+    expect(points).toHaveLength(20);
     expect(pairsTooClose(points)).toBe(0);
     expect(PLACEMENT_TRIES).toBe(12);
   });

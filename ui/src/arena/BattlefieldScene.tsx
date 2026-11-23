@@ -21,7 +21,7 @@ import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect 
 import { ARENA_INTRINSIC } from './mapLayout';
 import { MINION_SCALE, heroSizePx, minionBasePx } from './minionSize';
 import { placeHeroes } from './heroPlacement';
-import { assignSlots, placeScene, slotIdsOf } from './sceneLayout';
+import { assignFans, assignSlots, placeScene, slotIdsOf } from './sceneLayout';
 import type { Placement, Point } from './sceneLayout';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
@@ -237,13 +237,6 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
     [size, intrinsicWidth, intrinsicHeight, zoom, pan],
   );
 
-  const slotMemory = useRef<ReadonlyMap<string, number>>(new Map());
-  const slotIds = useMemo(() => slotIdsOf(model), [model]);
-  const slots = useMemo(() => {
-    const next = assignSlots(slotMemory.current, slotIds);
-    slotMemory.current = next;
-    return next;
-  }, [slotIds]);
   const heroMemory = useRef<ReadonlyMap<string, Point>>(new Map());
   const heroBindingIds = useMemo(() => model.specters.map((specter) => specter.bindingId), [model]);
   const heroPoints = useMemo(() => {
@@ -251,7 +244,20 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
     heroMemory.current = next;
     return next;
   }, [heroBindingIds, visitSeed]);
-  const placement = useMemo(() => placeScene(model, slots, heroPoints), [model, slots, heroPoints]);
+  const fanMemory = useRef<ReadonlyMap<string, number>>(new Map());
+  const fans = useMemo(() => {
+    const next = assignFans(fanMemory.current, model, heroPoints);
+    fanMemory.current = next;
+    return next;
+  }, [model, heroPoints]);
+  const slotMemory = useRef<ReadonlyMap<string, number>>(new Map());
+  const slotIds = useMemo(() => slotIdsOf(model, fans), [model, fans]);
+  const slots = useMemo(() => {
+    const next = assignSlots(slotMemory.current, slotIds);
+    slotMemory.current = next;
+    return next;
+  }, [slotIds]);
+  const placement = useMemo(() => placeScene(model, slots, heroPoints, fans), [model, slots, heroPoints, fans]);
   const view = useMemo(() => visibleNormalizedRect(transform), [transform]);
 
   const order = useMemo(() => [...model.specters.map((s) => s.bindingId), ...model.enemies.map((e) => e.workId)], [model]);
