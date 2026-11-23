@@ -39,6 +39,8 @@ export const ART_STATEMENT = 'created by Eric Jeffers using ChatGPT (OpenAI) ima
  * other image is served by the backend so that no art can drift into ui/dist (FP-10+11 raster guard).
  */
 export const UI_ICON_RASTERS = ['ui/icons/logo-active@2x.png', 'ui/icons/logo-active@3x.png', 'ui/icons/logo-inactive@2x.png', 'ui/icons/logo-inactive@3x.png'];
+/** The only rasters allowed under store/: the Crew app store hero and screenshots, which Crew serves from the installed app folder. */
+export const STORE_ART = /^store\/(?:hero|screenshot-[a-z0-9-]+)\.png$/;
 const ALLOWED_ENV_FILES = new Set(['.env.example']);
 
 /**
@@ -77,6 +79,9 @@ export function checkArt({ trackedFiles, readFile, readBytes }) {
   for (const path of rasters) if (QA_ART.test(path)) problems.push(`${path}: QA art file must not ship`);
   for (const path of rasters) {
     if (path.startsWith('ui/') && !UI_ICON_RASTERS.includes(path)) problems.push(`${path}: raster under ui/ that is not a named sidebar icon`);
+  }
+  for (const path of rasters) {
+    if (path.startsWith('store/') && !STORE_ART.test(path)) problems.push(`${path}: raster under store/ that is not the hero or a screenshot`);
   }
   if (rasters.length === 0 || readBytes === undefined) return problems;
   let doc;
