@@ -38,7 +38,7 @@ describe('the Crew app store listing in app.json', () => {
     }
   });
 
-  it('lists at most twelve screenshots, three to five of them, all under store/ and allowed by the provenance guard', () => {
+  it('lists three to five screenshots, all under store/ and allowed by the provenance guard', () => {
     for (const field of ART_LIST_FIELDS) {
       const list = app[field];
       assert.ok(list.length >= 3 && list.length <= 5, field);
@@ -47,6 +47,7 @@ describe('the Crew app store listing in app.json', () => {
   });
 
   it('uses the banner byte for byte as the hero, and keeps docs/images out of the artifact', () => {
+    /** @param {string} path */
     const hash = (path) => createHash('sha256').update(readFileSync(join(root, path))).digest('hex');
     assert.equal(app.heroImage, 'store/hero.png');
     assert.equal(hash('store/hero.png'), hash('docs/images/banner.png'));
