@@ -133,26 +133,45 @@ describe('the hero strip and the stage', () => {
   it('draws the chosen hero large and idle, labelled for assistive technology', async () => {
     await open('specters');
     expect(stage().getAttribute('role')).toBe('img');
-    expect(stage().getAttribute('aria-label')).toBe('Vell, large preview');
+    expect(stage().getAttribute('aria-label')).toBe('Vell and a practice target, large preview');
     expect(stage().querySelector('.sa-showcase__zoom')).toBeTruthy();
     expect(animation()).toBe('idle');
   });
 
-  it('plays Attack once, ignores a second press while it plays, then goes back to idle after the hero’s own duration', async () => {
+  it('plays Attack at the practice target: hit at impact, strike back, hero flinch, then idle; a second press waits', async () => {
     await open('specters');
+    const target = () => stage().querySelector('.sa-minion') as HTMLElement;
     const attack = screen.getByRole('button', { name: 'Attack' });
+    expect(screen.getByText('Practice target, for show')).toBeTruthy();
+    expect(target().className).toContain('sa-is-idle');
     fireEvent.click(attack);
     expect(animation()).toBe('attack');
     expect(attack.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: 'Cast' }));
     expect(animation()).toBe('attack');
-    await act(async () => void (await vi.advanceTimersByTimeAsync(559)));
-    expect(animation()).toBe('attack');
-    await act(async () => void (await vi.advanceTimersByTimeAsync(80)));
+    // Vell: attack 560 ms, impact 300 ms; Patchling: hit 320 ms, strike back 120 ms later, lands 260 ms in; flinch 360 ms.
+    await act(async () => void (await vi.advanceTimersByTimeAsync(300)));
+    expect(target().className).toContain('sa-is-hit');
+    await act(async () => void (await vi.advanceTimersByTimeAsync(440)));
+    expect(target().className).toContain('sa-is-attack');
     expect(animation()).toBe('idle');
+    await act(async () => void (await vi.advanceTimersByTimeAsync(260)));
+    expect(animation()).toBe('flinch');
+    await act(async () => void (await vi.advanceTimersByTimeAsync(360)));
+    expect(animation()).toBe('idle');
+    expect(target().className).toContain('sa-is-idle');
+    await act(async () => void (await vi.advanceTimersByTimeAsync(1)));
     expect(attack.getAttribute('aria-disabled')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: 'Cast' }));
     expect(animation()).toBe('cast');
+  });
+
+  it('sizes the stage from its width so the hero and the target stay inside it', async () => {
+    await open('specters');
+    expect(stage().style.height).toMatch(/px$/);
+    const zooms = [...stage().querySelectorAll<HTMLElement>('.sa-showcase__zoom')].map((el) => el.style.zoom);
+    expect(zooms).toHaveLength(2);
+    expect(zooms[0]).toBe(zooms[1]);
   });
 
   it('stops a one-shot when another hero is chosen', async () => {

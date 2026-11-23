@@ -110,7 +110,8 @@ export const plannerInputOf = (model: SceneModel): PlannerInput => ({
 
 const layerCount = (active: readonly Exchange[]): number => active.filter((exchange) => exchange.kind !== 'recoil').length;
 
-function build(id: number, kind: ExchangeKind, pair: Pair | null, workId: string, minionType: MinionType, nowMs: number, strong: boolean): Exchange {
+/** One exchange's whole timeline from its start: the arena planner and the Specters showcase practice target both build it here. */
+export function build(id: number, kind: ExchangeKind, pair: Pair | null, workId: string, minionType: MinionType, nowMs: number, strong: boolean): Exchange {
   const timing = pair === null ? null : combatTimingOf(pair.heroId);
   const length = timing === null ? 0 : kind === 'cast' ? timing.cast : timing.attack;
   const impact = timing === null ? RECOIL_ONLY_IMPACT_MS : kind === 'cast' ? timing.castImpact : timing.attackImpact;

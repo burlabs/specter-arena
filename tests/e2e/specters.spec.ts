@@ -276,9 +276,11 @@ test.describe('the showcase', () => {
     const sprite = stage.locator('img.sa-hero__img');
     await expect(sprite).toBeVisible();
     expect(await sprite.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(512);
+    // FP-24: zoomed out so every effect fits (the stage is sized from the measured effect extent); the sprite is still large.
     const box = await sprite.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(280);
-    expect(box?.height).toBeGreaterThanOrEqual(280);
+    expect(box?.width).toBeGreaterThanOrEqual(100);
+    expect(box?.height).toBeGreaterThanOrEqual(100);
+    await expect(stage.getByText('Practice target, for show')).toBeVisible();
     await expect(stage.locator('[data-animation]')).toHaveAttribute('data-animation', 'idle');
 
     const toggle = showcase(page).getByRole('button', { name: 'Bots with this Specter (1)' });
@@ -323,6 +325,71 @@ test.describe('the showcase', () => {
     expect((await page.locator('.specter-arena-root').textContent()) ?? '').not.toMatch(FORBIDDEN);
   });
 
+  for (const width of [1440, 390]) {
+    test(`FP-24 at ${width} px every hero's attack and cast stay inside the stage, and the practice target is inside too`, async ({ page }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize({ width, height: 900 });
+      await open(page, 'specters', 'Specters');
+      const stage = showcase(page).locator('.sa-showcase__stage');
+      for (const hero of ['vell', 'stitch', 'reeve', 'rattle', 'ember', 'shard', 'poly', 'tide', 'lume', 'moss', 'bur']) {
+        await showcase(page).locator(`input[value="${hero}"]`).check({ force: true });
+        for (const kind of ['Attack', 'Cast']) {
+          await expect(showcase(page).getByRole('button', { name: kind, exact: true })).toHaveAttribute('aria-disabled', 'false', { timeout: 3000 });
+          await page.evaluate(() => {
+            const w = window as unknown as { __out: number; __what: string };
+            w.__out = 0;
+            w.__what = '';
+            const t0 = performance.now();
+            const tick = () => {
+              const box = document.querySelector('.sa-showcase__stage')!.getBoundingClientRect();
+              for (const el of document.querySelectorAll('.sa-showcase__stage *')) {
+                const r = el.getBoundingClientRect();
+                if (r.width === 0 || r.height === 0) continue;
+                const over = Math.max(box.left - r.left, r.right - box.right, box.top - r.top, r.bottom - box.bottom);
+                if (over > w.__out) {
+                  w.__out = over;
+                  w.__what = `${el.getAttribute('class') ?? el.tagName} ${JSON.stringify([r.left, r.top, r.right, r.bottom].map(Math.round))} in ${JSON.stringify([box.left, box.top, box.right, box.bottom].map(Math.round))}`;
+                }
+              }
+              if (performance.now() - t0 < 1400) requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+          });
+          await showcase(page).getByRole('button', { name: kind, exact: true }).click();
+          await page.waitForTimeout(1450);
+          const { out, what } = await page.evaluate(() => ({ out: (window as unknown as { __out: number }).__out, what: (window as unknown as { __what: string }).__what }));
+          expect(out, `${width}px ${hero} ${kind}: ${what} reaches ${out.toFixed(1)} px outside the stage`).toBeLessThanOrEqual(1);
+        }
+      }
+      await expect(stage).toBeVisible();
+      expect(await writes(page)).toEqual([]);
+    });
+  }
+
+  test('FP-24 Attack hits the practice target: hit at impact, then it strikes back and the hero flinches; nothing is written', async ({ page }) => {
+    await open(page, 'specters', 'Specters');
+    await page.evaluate(() => {
+      const seen: Record<string, number> = {};
+      const probes: Record<string, string> = { strike: '.sa-showcase__stage .sa-hero.sa-is-attack', hit: '.sa-showcase__stage .sa-minion.sa-is-hit', counter: '.sa-showcase__stage .sa-minion.sa-is-attack', flinch: '.sa-showcase__stage .sa-hero.sa-is-flinch' };
+      const tick = () => {
+        for (const [name, selector] of Object.entries(probes)) if (seen[name] === undefined && document.querySelector(selector) !== null) seen[name] = performance.now();
+        requestAnimationFrame(tick);
+      };
+      (window as unknown as { __seen: Record<string, number> }).__seen = seen;
+      requestAnimationFrame(tick);
+    });
+    await showcase(page).getByRole('button', { name: 'Attack' }).click();
+    await expect(showcase(page).locator('.sa-hero.sa-is-flinch')).toHaveCount(1, { timeout: 3000 });
+    await expect(showcase(page).locator('[data-animation]')).toHaveAttribute('data-animation', 'idle');
+    const seen = await page.evaluate(() => (window as unknown as { __seen: Record<string, number> }).__seen);
+    expect(Object.keys(seen).sort()).toEqual(['counter', 'flinch', 'hit', 'strike']);
+    expect(seen.strike!).toBeLessThan(seen.hit!);
+    expect(seen.hit!).toBeLessThan(seen.counter!);
+    expect(seen.counter!).toBeLessThan(seen.flinch!);
+    expect(await writes(page)).toEqual([]);
+    expect((await page.locator('.specter-arena-root').textContent()) ?? '').not.toMatch(/\bHP\b|damage|health|\d\s?%/i);
+  });
+
   test('with reduced motion Attack and Cast are off with a note, and nothing animates', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, 'specters', 'Specters');
@@ -354,8 +421,9 @@ test.describe('the showcase', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
     const sprite = showcase(page).locator('img.sa-hero__img');
     await expect(sprite).toBeVisible();
+    // FP-24: the stage is zoomed out to hold every effect, so the sprite is smaller than FP-23's 200 px at this width.
     const box = await sprite.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(200);
+    expect(box?.width).toBeGreaterThanOrEqual(40);
     expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(390);
   });
 
