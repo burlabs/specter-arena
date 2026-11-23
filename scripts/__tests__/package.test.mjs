@@ -213,6 +213,19 @@ describe('packageRelease content', () => {
     assert.doesNotMatch(readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8'), /docs\/images\//);
   });
 
+  it('ships store/ art at the paths app.json declares while docs/images stays out', () => {
+    const declared = [realApp.heroImage, realApp.heroImageDark, ...realApp.screenshots, ...realApp.screenshotsDark];
+    const art = Object.fromEntries(declared.map((path) => [path, `art ${path}\n`]));
+    const repo = gitRepo(baseFiles({ ...art, 'docs/images/banner.png': 'banner\n' }));
+    const result = pack(repo);
+    assert.equal(result.code, 0, result.text);
+    const root = extract(tarballIn(result.out));
+    const dir = join(root, /** @type {string} */ (readdirSync(root)[0]));
+    for (const path of declared) assert.ok(existsSync(join(dir, path)), path);
+    assert.equal(existsSync(join(dir, 'docs/images')), false);
+    assert.match(readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8'), /store\/hero\.png/);
+  });
+
   it('leaves the avatar packs out of the artifact', () => {
     const repo = gitRepo(baseFiles({ 'avatar-packs/README.md': 'packs\n', 'avatar-packs/index.json': '{}\n', 'avatar-packs/packs/specters-vell.pack.json': '{}\n' }));
     const result = pack(repo);

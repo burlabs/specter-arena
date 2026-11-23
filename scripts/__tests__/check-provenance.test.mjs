@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
-import { ART_STATEMENT, DENYLIST, UI_ICON_RASTERS, checkArt, checkPortedRows, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
+import { ART_STATEMENT, DENYLIST, STORE_ART, UI_ICON_RASTERS, checkArt, checkPortedRows, checkRepository, findDenylisted, gitRepo, run } from '../check-provenance.mjs';
 
 // Markers are assembled at runtime so this file never contains them literally.
 const scopedImport = `import x from '@${'dragonboat'}-cms/app';`;
@@ -159,6 +159,16 @@ describe('checkArt (B13)', () => {
     assert.deepEqual(problems, [`${stray}: raster under ui/ that is not a named sidebar icon`]);
     assert.equal(UI_ICON_RASTERS.length, 4);
     for (const path of UI_ICON_RASTERS) assert.match(path, /^ui\/icons\/logo-(?:active|inactive)@[23]x\.png$/);
+  });
+
+  it('allows only the hero and screenshots as rasters under store/', () => {
+    const hero = 'store/hero.png';
+    const stray = 'store/extra.png';
+    const doc2 = doc(`${row(PNG, PNG_SHA)}\n${row(hero, PNG_SHA)}\n${row(stray, PNG_SHA)}`);
+    const problems = checkArt(artRepo({ 'docs/provenance.md': doc2 }, { [PNG]: PNG_BYTES, [hero]: PNG_BYTES, [stray]: PNG_BYTES }));
+    assert.deepEqual(problems, [`${stray}: raster under store/ that is not the hero or a screenshot`]);
+    for (const path of ['store/hero.png', 'store/screenshot-arena.png', 'store/screenshot-assign-2.png']) assert.ok(STORE_ART.test(path), path);
+    for (const path of ['store/hero.jpg', 'store/sub/hero.png', 'x/store/hero.png', 'store/Screenshot-a.png']) assert.equal(STORE_ART.test(path), false, path);
   });
 
   it('fails QA art files even when the doc is fine', () => {
