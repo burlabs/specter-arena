@@ -477,8 +477,12 @@
 }
 
 .specter-arena-root .sa-assign-dialog {
+  position: fixed;
+  inset: 0;
   width: min(760px, calc(100vw - 16px));
+  height: fit-content;
   max-height: calc(100vh - 16px);
+  margin: auto;
   padding: 20px;
   overflow: auto;
   border: 1px solid var(--line);

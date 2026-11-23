@@ -66,6 +66,28 @@ test.describe('the walkthrough', () => {
     expect(posted.every((tail) => tail.endsWith('/hero'))).toBe(true);
   });
 
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`stays centred under a host stylesheet that resets margins, at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('./?scenario=specters-unassigned');
+      await expect(dialog(page)).toBeVisible();
+      // Crew's global reset removes the margin the browser gives a modal dialog; the preview page has no such host CSS.
+      await page.addStyleTag({ content: '* { margin: 0; padding: 0; }' });
+      const box = await dialog(page).boundingBox();
+      expect(box).not.toBeNull();
+      const { x, y, width, height } = box!;
+      expect(Math.abs(x + width / 2 - viewport.width / 2)).toBeLessThanOrEqual(4);
+      expect(Math.abs(y + height / 2 - viewport.height / 2)).toBeLessThanOrEqual(4);
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(x + width).toBeLessThanOrEqual(viewport.width);
+      expect(y + height).toBeLessThanOrEqual(viewport.height);
+    });
+  }
+
   test('keeps focus out of the page behind it, and Escape closes it and remembers the bots, so a reload does not reopen it', async ({ page }) => {
     await page.goto('./?scenario=specters-unassigned');
     await expect(dialog(page)).toBeVisible();
