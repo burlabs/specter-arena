@@ -129,19 +129,20 @@ RC-4 is the candidate built from `main` after FP-22 (#186, #187), FP-23 (#192 to
 
 ## 7. RC-5
 
-RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and jungle hero placement, minions beside their hero, two-way fights and the zoomed-out showcase with a practice target. It changes the UI only. It is built with `npm run package -- --commit <RC-5 SHA>` from a clean clone after the RC-5 docs PR merges. The RELEASE window fills every cell below except the re-check result from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and jungle hero placement, minions beside their hero, two-way fights and the zoomed-out showcase with a practice target. It changes the UI only. It is built with `npm run package -- --commit <RC-5 SHA>` from a clean clone after the RC-5 docs PR merges. The RELEASE window filled every cell below except the re-check result from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|
-| Commit | pending |
-| Artifact name | pending |
-| Bytes | pending |
-| sha256 | pending |
-| File count | pending |
-| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) | pending |
+| Commit | `4a1eb347e3b2597b2b704c50439046b7da56291f` (PR #205, `main` after the RC-5 docs refresh) |
+| Artifact name | `specter-arena-0.1.0-4a1eb347e3b2.tar.gz` |
+| Bytes | 6,328,259 |
+| sha256 | `4661f6d2ae411cd3d6cb733fed2e2bedd2a06dded629db728e7af66e35ea8d3c` |
+| File count | 1,756 entries in the tarball (`tar -tzf`), which is the 1,755 files that `RELEASE-MANIFEST.txt` lists plus the manifest itself. The packager prints 1756 |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) | absent: a listing of the tarball matched none of the three. `app.json` grants `/apps/specter-arena/api/*`, `/api/agents` and `slots:user` and has no `agents` key. The newest migration is `0011_hero_choice.sql` |
+| Build | 2026-11-23, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0. Two builds from separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass |
 | Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
-| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both APPROVED (with note) on PR #205 head `4d2a62e8`; verdict files `pr205-4d2a62e-requirements.md` and `pr205-4d2a62e-fit.md` in the release window's local gates folder (not committed). FP-24's own gate verdicts are in its handoff |
 | Store version and migrations | 11 and 11, unchanged from RC-4 (FP-24 added no migration) |
 | UI bundle cap | 367,000 characters (321.24 kB at the FP-24 PR-C head, per the FP-24 report) |
 | RC-4 per-step result and RC-5 arena re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-5 steps R1 to R6) |
