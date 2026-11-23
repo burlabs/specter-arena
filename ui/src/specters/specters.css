@@ -348,28 +348,51 @@
 
 .specter-arena-root .sa-showcase__main {
   display: grid;
-  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
-  align-items: center;
+  align-items: start;
 }
 
 .specter-arena-root .sa-showcase__stage {
-  --sa-k: 7;
-  display: grid;
-  place-items: end center;
-  min-height: 380px;
-  padding: 24px 12px 28px;
+  /* Sized in SpectersView from the measured effect extent (showcaseStage.ts): the height is set inline from the width. */
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  min-height: 160px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: radial-gradient(circle at 50% 36%, rgba(180, 154, 255, 0.17), transparent 48%), #171020;
+  background: radial-gradient(circle at 38% 46%, rgba(180, 154, 255, 0.17), transparent 48%), #171020;
+}
+
+.specter-arena-root .sa-showcase__spot {
+  position: absolute;
+  display: block;
 }
 
 .specter-arena-root .sa-showcase__zoom {
   display: block;
   width: 44px;
   height: 44px;
-  zoom: var(--sa-k);
+}
+
+.specter-arena-root .sa-showcase__zoom--target {
+  width: 28px;
+  height: 28px;
+}
+
+.specter-arena-root .sa-showcase__caption {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+  background: rgba(20, 16, 32, 0.72);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
 }
 
 .specter-arena-root .sa-showcase__copy {
@@ -491,11 +514,6 @@
 }
 
 @media (max-width: 520px) {
-  .specter-arena-root .sa-showcase__stage {
-    --sa-k: 5;
-    min-height: 290px;
-  }
-
   .specter-arena-root .sa-hero-choice {
     grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   }

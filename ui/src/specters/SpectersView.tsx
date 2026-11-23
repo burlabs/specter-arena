@@ -1,13 +1,18 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { RosterItemV1 } from '../contracts/types';
+import { AnimatedMinion } from '../arena/AnimatedMinion';
 import { AnimatedSpecter } from '../arena/AnimatedSpecter';
-import { combatTimingOf } from '../arena/heroCombat';
+import type { HeroAnimation } from '../arena/AnimatedSpecter';
+import { PRACTICE_HERO, PRACTICE_TARGET, usePracticeExchange } from '../arena/usePracticeExchange';
+import { useSceneAsset } from '../arena/useSceneAsset';
 import { nameOf } from '../observatory/model';
 import { Button, EmptyState, ErrorState, Panel } from '../observatory/ui';
 import { avatarPackUrl } from './avatarPack';
 import { HeroChoice } from './HeroChoice';
 import { LOADING_SPECTERS, SHOWCASE, UNSUPPORTED_BACKEND, errorWords } from './copy';
 import { tokenInitials } from './model';
+import { STAGE_DEFAULT_WIDTH, stageLayout } from './showcaseStage';
 import type { HeroesState } from './useHeroes';
 import { useMotionAllowed } from './useMotionAllowed';
 import type { SpectersState } from './useSpecters';
@@ -23,15 +28,12 @@ interface Props {
   onShowInRoster: (bindingId: string) => void;
 }
 
-const SETTLE_MS = 60;
-
 /** The hero showcase: the 11 heroes, the chosen one large with its idle loop, and the bots that hold it. Everything here is a preview; it never reads a bot's work. */
 export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, onShowInRoster }: Props) {
   const motion = useMotionAllowed();
   const noteId = useId();
   const holdersId = useId();
   const [pickedId, setPickedId] = useState<string | null>(null);
-  const [playing, setPlaying] = useState<'attack' | 'cast' | null>(null);
   const [holdersOpen, setHoldersOpen] = useState(false);
 
   const items = heroes.items;
@@ -40,16 +42,29 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
   const hero = items?.find((entry) => entry.heroId === (pickedId ?? firstHeld)) ?? items?.[0];
   const heroId = hero?.heroId;
 
-  useEffect(() => {
-    setPlaying(null);
-    setHoldersOpen(false);
-  }, [heroId]);
+  const practice = usePracticeExchange(heroId, 'patchling', motion);
+  const patchling = useSceneAsset('minion-patchling-sprite');
+  // The stage mounts only once a hero is known, so it is observed through a callback ref, not a ref read on first mount.
+  const [stageElement, setStageElement] = useState<HTMLDivElement | null>(null);
+  const [stageWidth, setStageWidth] = useState(STAGE_DEFAULT_WIDTH);
+  useLayoutEffect(() => {
+    if (stageElement === null) return;
+    // Measured before the first paint, so the hero and the target never show at the default width.
+    const width = stageElement.getBoundingClientRect().width;
+    if (width > 0) setStageWidth(width);
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width;
+      if (width !== undefined && width > 0) setStageWidth(width);
+    });
+    observer.observe(stageElement);
+    return () => observer.disconnect();
+  }, [stageElement]);
+  const layout = stageLayout(stageWidth);
 
   useEffect(() => {
-    if (playing === null || heroId === undefined) return;
-    const timer = setTimeout(() => setPlaying(null), (combatTimingOf(heroId)?.[playing] ?? 0) + SETTLE_MS);
-    return () => clearTimeout(timer);
-  }, [playing, heroId]);
+    setHoldersOpen(false);
+  }, [heroId]);
 
   if (specters.status === 'loading') {
     return (
@@ -74,9 +89,12 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
     const specter = specters.byBinding.get(bot.bindingId);
     return specter !== undefined && specter.heroId === heroId ? [{ bot, specter }] : [];
   });
-  const play = (kind: 'attack' | 'cast') => {
-    if (playing === null) setPlaying(kind);
-  };
+  const playing = practice.playing;
+  const strike = practice.snapshot.heroes.get(PRACTICE_HERO);
+  const heroAnimation: HeroAnimation = strike !== undefined ? strike.kind : practice.snapshot.flinches.has(PRACTICE_HERO) ? 'flinch' : 'idle';
+  const hit = practice.snapshot.enemies.get(PRACTICE_TARGET);
+  const counter = practice.snapshot.counters.get(PRACTICE_TARGET);
+  const stageStyle = { height: `${layout.heightPx.toFixed(1)}px`, '--sa-sprite-patchling': patchling.status === 'ready' ? `url("${patchling.art.url}")` : undefined } as CSSProperties;
 
   return (
     <Panel label={SHOWCASE.label}>
@@ -110,9 +128,27 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
 
         {hero !== undefined && (
           <div className="sa-showcase__main">
-            <div className="sa-showcase__stage" role="img" aria-label={SHOWCASE.stageLabel(hero.name)}>
-              <span className="sa-showcase__zoom">
-                <AnimatedSpecter heroId={hero.heroId} animate={motion} initials={tokenInitials(hero.name)} animation={playing ?? 'idle'} />
+            <div ref={setStageElement} className="sa-showcase__stage" role="img" aria-label={SHOWCASE.stageLabel(hero.name)} style={stageStyle}>
+              <span className="sa-showcase__spot" style={{ left: layout.hero.left, top: layout.hero.top }}>
+                <span className="sa-showcase__zoom" style={{ zoom: layout.zoom }}>
+                  <AnimatedSpecter heroId={hero.heroId} animate={motion} initials={tokenInitials(hero.name)} animation={heroAnimation} />
+                </span>
+              </span>
+              <span className="sa-showcase__spot sa-showcase__target" style={{ left: layout.target.left, top: layout.target.top }}>
+                <span className="sa-showcase__zoom sa-showcase__zoom--target" style={{ zoom: layout.zoom }}>
+                  <AnimatedMinion
+                    minionType="patchling"
+                    animation={hit !== undefined ? 'hit' : counter !== undefined ? 'attack' : 'idle'}
+                    animate={motion}
+                    spriteReady={patchling.status === 'ready'}
+                    facing="left"
+                    requestId={hit?.exchangeId ?? counter?.exchangeId ?? 0}
+                    recoil={1}
+                    strong={hit?.strong ?? false}
+                    lunge={-1}
+                  />
+                </span>
+                <span className="sa-showcase__caption">{SHOWCASE.practiceTarget}</span>
               </span>
             </div>
             <div className="sa-showcase__copy">
@@ -120,10 +156,10 @@ export function SpectersView({ bots, specters, heroes, pendingCount, onAssign, o
               <p className="sa-showcase__epithet">{hero.epithet}</p>
               <p>{hero.personality}</p>
               <div className="sa-actions">
-                <Button aria-disabled={playing !== null} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => play('attack')}>
+                <Button aria-disabled={playing} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => practice.play('attack')}>
                   {SHOWCASE.attack}
                 </Button>
-                <Button aria-disabled={playing !== null} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => play('cast')}>
+                <Button aria-disabled={playing} disabled={!motion} aria-describedby={motion ? undefined : noteId} onClick={() => practice.play('cast')}>
                   {SHOWCASE.cast}
                 </Button>
               </div>

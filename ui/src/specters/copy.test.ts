@@ -49,7 +49,8 @@ describe('specter copy', () => {
     expect(ASSIGN.summary(3, 0, 2)).toBe('3 assigned, 0 skipped, 2 could not be assigned');
     expect(SHOWCASE.assignButton(4)).toBe('Assign Specters (4)');
     expect(SHOWCASE.holders(2)).toBe('Bots with this Specter (2)');
-    expect(SHOWCASE.stageLabel('Vell')).toBe('Vell, large preview');
+    expect(SHOWCASE.stageLabel('Vell')).toBe('Vell and a practice target, large preview');
+    expect(SHOWCASE.practiceTarget).toBe('Practice target, for show');
     expect(SHOWCASE.noHolders('Vell')).toBe('No bot holds Vell yet.');
     expect(SHOWCASE.showInRoster).toBe('Show in the Roster');
     expect(SHOWCASE.avatarPackLine).toBe('Use this Specter as your Crew avatar: download its avatar pack, then in Crew open Avatar → Customize → Library → Import.');
