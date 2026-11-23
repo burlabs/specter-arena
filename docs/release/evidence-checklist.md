@@ -149,7 +149,7 @@ RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and
 
 ## 8. RC-6
 
-RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment dialog centred by the app's own CSS, and the Crew store listing (`store/hero.png` and four `store/screenshot-*.png`, about 4.35 MB more in the tarball). Permissions, version and store version are unchanged from RC-5. It is built with `npm run package -- --commit <RC-6 SHA>` from a clean clone after the RC-6 docs PR merges. The RELEASE window fills every cell below except the re-check result from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment dialog centred by the app's own CSS, and the Crew store listing (`store/hero.png` and four `store/screenshot-*.png`, about 4.35 MB more in the tarball). Permissions, version and store version are unchanged from RC-5. It is built with `npm run package -- --commit <RC-6 SHA>` from a clean clone after the RC-6 docs PR merges. The RELEASE window fills every cell below except the re-check result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|
@@ -162,5 +162,7 @@ RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment
 | Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
 | Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
+| Build | pending |
 | Store version and migrations | 11 and 11, unchanged (FP-25 added no migration) |
+| UI bundle cap | 367,000 characters, unchanged (`ui/src/build-output.test.ts`) |
 | RC-4 per-step result and RC-6 re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-6 steps R1 to R8) |

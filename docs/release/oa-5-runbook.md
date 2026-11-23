@@ -86,7 +86,7 @@ Position, lane and fight behaviour is presentation only and never changes a numb
 
 Hand back, for each of R1 to R6: pass or fail, the exact text of anything that failed, a screenshot for R2, R4 and R6, the Crew version and the time. The agent writes it into `docs/release/oa-5-result.md` under an RC-5 heading and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate is cut, and only the failed steps are repeated.
 
-## RC-6 re-check (at most 12 minutes, after the RC-4 sitting)
+## RC-6 re-check (at most 13 minutes, after the RC-4 sitting)
 
 RC-6 adds FP-25 to RC-5: the assignment dialog is centred by the app's own CSS (Crew's global reset removes the browser's default centring), and the app has a Crew store listing (hero banner, highlights, use cases, configuration, four screenshots and the logo icon). Permissions, version and the store at version 11 are unchanged. The tarball is about 4.35 MB larger because `store/` ships; `docs/images/`, `avatar-packs/` and `agents/` stay out. The full RC-4 sitting stays the baseline, and RC-5 steps R1 to R6 are repeated here on RC-6 with R7 and R8 added. Run this on RC-6, plus any RC-4 step that failed. The agent builds RC-6 from `main` at `fe662428db77da73b160d2b8e22a945164da544a` or later; its commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 8.
 
