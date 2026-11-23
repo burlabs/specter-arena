@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
+Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
 
 The full record is `docs/provenance.md`. This page is the short version for the submission form. AI rewriting or new commit dates do not change where code came from.
 

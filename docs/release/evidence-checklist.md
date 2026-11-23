@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
+Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
 
 This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on the release candidate (RC-2, the merge commit of the RC-2 docs PR #151, for FP-14 issue #136, is section 4; RC-3 is section 5; RC-4 is section 6) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
 
@@ -123,6 +123,25 @@ RC-4 is the candidate built from `main` after FP-22 (#186, #187), FP-23 (#192 to
 | Build | 2026-11-22, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0. Two builds from separate clones gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass |
 | Coverage (Node scripts, UI, backend) | the `coverage` CI job passed on the PR #197 head `e7cd4021`, which has the same tree as the RC-4 commit for everything but the squash. Percentages were not re-measured in this window; the figures at the FP-23 PR-C head are in its handoff (UI 99.76% lines) |
 | Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both APPROVED on PR #197 head `e7cd4021`; verdict files `pr197-e7cd402-requirements.md` and `pr197-e7cd402-fit.md` in the release window's local gates folder (not committed). Earlier heads: `6c42e2f4` BLOCKED by both (a wrong bot-detail tab list, a stale step number); `13c33cec` APPROVED (requirements with note, fit without) |
-| Store version and migrations | 11 and 11 (`npm run check:schema`: 37 schemas, 11 migrations, read at `232629b6`) |
+| Store version and migrations | 11 and 11 (`npm run check:schema`: 37 schemas, 11 migrations, read at `232629b6`; unchanged at RC-5) |
 | UI bundle cap | 367,000 characters (`ui/src/build-output.test.ts`; the build was 307.49 kB at the FP-23 PR-C head, per the FP-23 report) |
 | OA-5 and OA-6 result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (steps 1 to 18; the optional avatar-pack step 19 is recorded there if it was run) |
+
+## 7. RC-5
+
+RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and jungle hero placement, minions beside their hero, two-way fights and the zoomed-out showcase with a practice target. It changes the UI only. It is built with `npm run package -- --commit <RC-5 SHA>` from a clean clone after the RC-5 docs PR merges. The RELEASE window fills every cell below except the re-check result from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+
+| Item | Value |
+|---|---|
+| Commit | pending |
+| Artifact name | pending |
+| Bytes | pending |
+| sha256 | pending |
+| File count | pending |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) | pending |
+| Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
+| App version | 0.1.0 |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
+| Store version and migrations | 11 and 11, unchanged from RC-4 (FP-24 added no migration) |
+| UI bundle cap | 367,000 characters (321.24 kB at the FP-24 PR-C head, per the FP-24 report) |
+| RC-4 per-step result and RC-5 arena re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-5 steps R1 to R6) |

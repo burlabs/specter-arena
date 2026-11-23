@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
+Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
 
 This page says where Specter Arena keeps its data, what it never deletes, how to copy it, how to restore it and what a restore loses. Facts come from the code and tests named in each row. Anything not run on a live Crew install says so.
 
