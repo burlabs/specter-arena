@@ -8,6 +8,20 @@ MANIFEST_PATH = Path(__file__).resolve().parents[2] / "app.json"
 
 IDENTITY_FIELDS = {"name", "version", "displayName", "description", "minKiroCrewVersion"}
 ICON_FIELDS = {"iconPath", "iconPathDark"}
+# The app store listing (FP-25). Crew reads these from the manifest's extra fields, so none of
+# them is a grant or a backend setting.
+LISTING_FIELDS = {
+    "author",
+    "tags",
+    "highlights",
+    "platform",
+    "useCases",
+    "configuration",
+    "heroImage",
+    "heroImageDark",
+    "screenshots",
+    "screenshotsDark",
+}
 # The fields Crew 0.13.0's `UIPage.from_dict` reads (kiro_crew/apps/manifest_sections.py); any
 # other page key is dropped silently, so a misspelt icon field would fall back to the default box.
 HOST_UI_PAGE_FIELDS = {
@@ -48,7 +62,11 @@ def load_manifest() -> dict[str, Any]:
 
 
 def test_manifest_has_identity_backend_and_ui_only() -> None:
-    assert set(load_manifest()) == IDENTITY_FIELDS | ICON_FIELDS | {"backend", "permissions", "ui"}
+    assert set(load_manifest()) == IDENTITY_FIELDS | ICON_FIELDS | LISTING_FIELDS | {
+        "backend",
+        "permissions",
+        "ui",
+    }
 
 
 def test_manifest_identity() -> None:
