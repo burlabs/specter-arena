@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `232629b65ceffb127675e7bd321fc901fcc5cd08` (`main` after the avatar packs PR #196; re-read for release candidate RC-4)
+Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
 
 ## One installable Crew app
 
@@ -36,7 +36,7 @@ Wire shapes are JSON Schema draft-07 files in `contracts/schemas/`, owned per `c
 
 ## Read-only arena
 
-The arena is a pure function of the polled reads (roster, specters, tasks, XP). Selection, camera, panel collapse, hero placement and animation state live in React state only. It makes no write. Attacks, casts and strikes (FP-21) are drawn from the same polled reads and never change a number. The UI writes only on an explicit click: a hero assignment (walkthrough, Roster or bot detail), an avatar choice, and the Data tab's actions.
+The arena is a pure function of the polled reads (roster, specters, tasks, XP). Selection, camera, panel collapse, hero placement and animation state live in React state only. It makes no write. Hero placement picks seeded random spots on the map's lanes and jungle clearings (FP-24, `ui/src/arena/laneSlots.ts`), and a task's minion stands beside its hero. Attacks, casts and strikes (FP-21) and the minion's strike back and the hero's flinch (FP-24) are drawn from the same polled reads and never change a number. The UI writes only on an explicit click: a hero assignment (walkthrough, Roster or bot detail), an avatar choice, and the Data tab's actions.
 
 ## Invariants
 
