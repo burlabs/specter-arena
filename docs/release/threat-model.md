@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
+Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
 This is the release threat model for Specter Arena (FP-14-AC02). Every control and test named below was found in the repository at the commit above. Where a limit is disclosed rather than fixed, the last column gives its ID in `docs/release/blockers.md`. Nothing here was verified on a live Crew install; that is the job of OA-5 (`docs/release/oa-5-runbook.md`).
 

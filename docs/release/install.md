@@ -2,13 +2,13 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
+Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
 Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "to be confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
 
 ## 1. Who this is for and what you get
 
-This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
+This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's Library the app also has a store page (hero banner, highlights, use cases, configuration, four screenshots of demo data); the images ship in the artifact under `store/`, which makes the tarball about 4.35 MB larger. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
 
 ## 2. Requirements
 

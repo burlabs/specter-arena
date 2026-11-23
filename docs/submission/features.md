@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
+Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
 ## What it is
 
@@ -36,5 +36,7 @@ The app has four tabs, in this order: Arena, Roster, Specters and Data (`ui/src/
 - No replay. No search, filter or sort of the heroes: the Specters tab shows the 11 fixed heroes, and the Roster searches bots by name.
 
 ## Not yet verified live
+
+In Crew's app Library the app has a store page with a hero banner, six highlights, two use cases, a short configuration note and four screenshots of the FIXTURE preview with demo data (`app.json` listing fields, `store/`). That page has not been seen in a running Crew yet (KL-33). The assignment dialog is centred by the app's own CSS because Crew's global reset removes the browser's default centring.
 
 The "Open Bots in Crew" click has been read statically, not clicked live (issue #124). The assignment walkthrough, the showcase, lane placement, the two-way fights and the automatic credit of a real worker run have run only on the FIXTURE preview until the RC-4 sitting and the RC-5 arena re-check record them. See `known-limitations.md`.

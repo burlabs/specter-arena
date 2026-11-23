@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
+Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
 This file maps each FP-14 acceptance criterion to the evidence for it, and each failure scenario to a test. Cells that need a run on the release candidate (RC-2, the merge commit of the RC-2 docs PR #151, for FP-14 issue #136, is section 4; RC-3 is section 5; RC-4 is section 6) or the OA-5 sitting read `pending` and are filled in the commit that records the result. A cell is never filled from memory: a number comes from a run, with its environment.
 
@@ -146,3 +146,21 @@ RC-5 is the candidate built from `main` after FP-24 (#202, #203, #204): lane and
 | Store version and migrations | 11 and 11, unchanged from RC-4 (FP-24 added no migration) |
 | UI bundle cap | 367,000 characters (321.24 kB at the FP-24 PR-C head, per the FP-24 report) |
 | RC-4 per-step result and RC-5 arena re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-5 steps R1 to R6) |
+
+## 8. RC-6
+
+RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment dialog centred by the app's own CSS, and the Crew store listing (`store/hero.png` and four `store/screenshot-*.png`, about 4.35 MB more in the tarball). Permissions, version and store version are unchanged from RC-5. It is built with `npm run package -- --commit <RC-6 SHA>` from a clean clone after the RC-6 docs PR merges. The RELEASE window fills every cell below except the re-check result from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+
+| Item | Value |
+|---|---|
+| Commit | pending |
+| Artifact name | pending |
+| Bytes | pending |
+| sha256 | pending |
+| File count | pending |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`) and present (`store/hero.png`, four `store/screenshot-*.png`) | pending |
+| Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
+| App version | 0.1.0 |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
+| Store version and migrations | 11 and 11, unchanged (FP-25 added no migration) |
+| RC-4 per-step result and RC-6 re-check result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-6 steps R1 to R8) |
