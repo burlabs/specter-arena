@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `78289679353aff280371095708b70dfc4e102ff4` (`main` after FP-24 PR-C #204; re-read for release candidate RC-5)
+Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
 This folder holds the text and checklists for the Kiroween 2026 submission of Specter Arena. Each claim names its source (a path, an acceptance criterion id or a command); unchecked items are marked as such.
 
@@ -25,7 +25,7 @@ Install and judge instructions live in `docs/release/install.md` and `docs/relea
 | Item | State |
 |---|---|
 | Text drafts in this folder | Written, not final |
-| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) is built by the release window after the RC-5 docs PR merges (`docs/release/evidence-checklist.md` sections 6 and 7). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a short arena re-check on RC-5 (`docs/release/oa-5-runbook.md`) |
+| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) was built after it; RC-6 (after FP-25) is built by the release window after the RC-6 docs PR merges (`docs/release/evidence-checklist.md` sections 6 to 8). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a short re-check on RC-6 (`docs/release/oa-5-runbook.md`) |
 
 ## Steps only Eric can do
 
