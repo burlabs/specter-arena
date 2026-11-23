@@ -85,39 +85,56 @@ export function laneSlots(): readonly Slot[] {
  * Candidate rings for the tasks beside a hero, in art pixels, nearest ring first. An angle is measured from "toward the enemy
  * side"; the order inside a ring is 0, +step, -step, +2 step, and so on.
  */
-export const FAN_RINGS: readonly { radius: number; angles: readonly number[] }[] = [
-  { radius: 100, angles: [0, 45, -45, 90, -90] },
-  { radius: 180, angles: [0, 20, -20, 40, -40, 60, -60, 80, -80] },
-  { radius: 260, angles: [0, 15, -15, 30, -30, 45, -45, 60, -60] },
-];
-/** A task needs this much room from every other task and from its hero, in x or in y (art pixels): a large minion is about 70 px wide on the default map. */
-export const FAN_BOX_PX = 80;
+export const FAN_RADII_PX = [100, 130, 160, 190, 220, 250] as const;
+export const FAN_ANGLE_STEP_DEG = 15;
+/**
+ * The click boxes of the tokens on the default map (860 px wide, 0.514 px per art pixel), in art pixels around the token's anchor
+ * (x to the right, y down). A task is kept only where its box touches neither its hero's box nor an earlier task's box, so
+ * every token stays clickable.
+ */
+export const HERO_BOX_PX = { left: -53, right: 53, top: -105, bottom: 25 } as const;
+export const TASK_BOX_PX = { left: -35, right: 35, top: -56, bottom: 14 } as const;
 const FAN_EDGE = { min: 0.03, max: 0.97 } as const;
 
-const boxApart = (a: NormalizedPoint, b: NormalizedPoint): boolean => Math.abs(a.x - b.x) * WIDTH >= FAN_BOX_PX - 1e-9 || Math.abs(a.y - b.y) * HEIGHT >= FAN_BOX_PX - 1e-9;
+type Box = { left: number; right: number; top: number; bottom: number };
+const boxesApart = (a: Box, ax: number, ay: number, b: Box, bx: number, by: number): boolean =>
+  ax + a.right <= bx + b.left || bx + b.right <= ax + a.left || ay + a.bottom <= by + b.top || by + b.bottom <= ay + a.top;
+
+/** Whether two tasks standing at `a` and `b` have token boxes that do not touch. */
+export const tasksApart = (a: NormalizedPoint, b: NormalizedPoint): boolean => boxesApart(TASK_BOX_PX, 0, 0, TASK_BOX_PX, (b.x - a.x) * WIDTH, (b.y - a.y) * HEIGHT);
+
+/** Whether a task standing at `task` leaves the hero at `hero` clickable (their token boxes do not touch). */
+export const clearOfHero = (hero: NormalizedPoint, task: NormalizedPoint): boolean =>
+  boxesApart(HERO_BOX_PX, 0, 0, TASK_BOX_PX, (task.x - hero.x) * WIDTH, (task.y - hero.y) * HEIGHT);
 
 /**
- * Where the nth task of a hero stands, as normalized map points in fan order. A candidate is kept when it is on the map and
- * a box apart from the hero and from every point kept before it, so the list can hold fewer points than the rings offer.
+ * Where the nth task of a hero stands, as normalized map points in fan order. A candidate is kept when it is on the map and its
+ * token box is clear of the hero's and of every box kept before it, so the list can hold fewer points than the rings offer.
  * Pure in its arguments.
  */
 export function fanPoints(origin: NormalizedPoint, toward: { x: number; y: number }): NormalizedPoint[] {
   const points: NormalizedPoint[] = [];
-  for (const ring of FAN_RINGS) {
-    for (const degrees of ring.angles) {
+  const offsets: { x: number; y: number }[] = [];
+  const angles: number[] = [0];
+  for (let degrees = FAN_ANGLE_STEP_DEG; degrees <= 90; degrees += FAN_ANGLE_STEP_DEG) angles.push(degrees, -degrees);
+  for (const radius of FAN_RADII_PX) {
+    for (const degrees of angles) {
       const angle = (degrees * Math.PI) / 180;
-      const dx = toward.x * Math.cos(angle) - toward.y * Math.sin(angle);
-      const dy = toward.x * Math.sin(angle) + toward.y * Math.cos(angle);
-      const candidate = { x: origin.x + (dx * ring.radius) / WIDTH, y: origin.y + (dy * ring.radius) / HEIGHT };
+      const x = (toward.x * Math.cos(angle) - toward.y * Math.sin(angle)) * radius;
+      const y = (toward.x * Math.sin(angle) + toward.y * Math.cos(angle)) * radius;
+      const candidate = { x: origin.x + x / WIDTH, y: origin.y + y / HEIGHT };
       const onMap = candidate.x >= FAN_EDGE.min && candidate.x <= FAN_EDGE.max && candidate.y >= FAN_EDGE.min && candidate.y <= FAN_EDGE.max;
-      if (onMap && boxApart(candidate, origin) && points.every((kept) => boxApart(candidate, kept))) points.push(candidate);
+      if (onMap && boxesApart(HERO_BOX_PX, 0, 0, TASK_BOX_PX, x, y) && offsets.every((kept) => boxesApart(TASK_BOX_PX, kept.x, kept.y, TASK_BOX_PX, x, y))) {
+        points.push(candidate);
+        offsets.push({ x, y });
+      }
     }
   }
   return points;
 }
 
 /** The direction from a point toward the far base: where tasks fan when the hero stands off the slot list. */
-export const towardFarBase = (point: NormalizedPoint): { x: number; y: number } => {
+const towardFarBase = (point: NormalizedPoint): { x: number; y: number } => {
   const far = toPx(ARENA_LAYOUT.farBase);
   const here = toPx(point);
   return unit(far.x - here.x, far.y - here.y);

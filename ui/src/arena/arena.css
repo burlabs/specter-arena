@@ -331,6 +331,14 @@
   transform: translateX(-50%);
 }
 
+.specter-arena-root .sa-token--enemy .sa-token__label,
+.specter-arena-root .sa-token--enemy .sa-token__meta,
+.specter-arena-root .sa-token--enemy .sa-token__xp,
+.specter-arena-root .sa-token--specter .sa-token__badge {
+  /* Text that floats over the map (shown on hover, focus or selection) never takes a click from a neighbouring token. */
+  pointer-events: none;
+}
+
 .specter-arena-root .sa-token--enemy {
   min-width: 0;
   min-height: 0;
@@ -489,6 +497,16 @@
 
 .specter-arena-root .sa-token--specter {
   z-index: 2;
+}
+
+/* A task stands beside its hero (FP-24), so it is drawn above heroes and stays clickable; a hero playing a strike comes back on top while it lasts. */
+.specter-arena-root .sa-token--enemy {
+  z-index: 3;
+}
+
+.specter-arena-root .sa-token--specter:has(.sa-hero.sa-is-attack),
+.specter-arena-root .sa-token--specter:has(.sa-hero.sa-is-cast) {
+  z-index: 4;
 }
 
 .specter-arena-root .sa-token--specter.sa-is-engaging {

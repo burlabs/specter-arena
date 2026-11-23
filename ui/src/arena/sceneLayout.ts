@@ -1,6 +1,6 @@
 import { clamp } from './geometry';
 import type { NormalizedPoint } from './geometry';
-import { fanDirection, fanPoints } from './laneSlots';
+import { clearOfHero, fanDirection, fanPoints, tasksApart } from './laneSlots';
 import { ARENA_LAYOUT } from './mapLayout';
 import type { SceneEnemy, SceneModel } from './sceneModel';
 
@@ -69,10 +69,21 @@ export function enemySlots(): readonly Point[] {
   return cachedSlots;
 }
 
-/** Existing assignments survive; new ids take the lowest free slot; ids that left free theirs. Pure. */
-export function assignSlots(previous: ReadonlyMap<string, number>, workIds: readonly string[], slotCount: number = SLOT_COUNT): Map<string, number> {
+/** The lattice slots a hero's token or a fanned task's token would touch. A task on the lattice never takes one, so every token stays clickable. */
+export function blockedSlots(heroPoints: Iterable<Point>, taskPoints: Iterable<Point> = []): Set<number> {
+  const heroes = [...heroPoints];
+  const tasks = [...taskPoints];
+  const blocked = new Set<number>();
+  enemySlots().forEach((slot, index) => {
+    if (!heroes.every((hero) => clearOfHero(hero, slot)) || !tasks.every((task) => tasksApart(task, slot))) blocked.add(index);
+  });
+  return blocked;
+}
+
+/** Existing assignments survive; new ids take the lowest free slot; ids that left free theirs. A `blocked` slot is never used. Pure. */
+export function assignSlots(previous: ReadonlyMap<string, number>, workIds: readonly string[], slotCount: number = SLOT_COUNT, blocked: ReadonlySet<number> = new Set()): Map<string, number> {
   const next = new Map<string, number>();
-  const taken = new Set<number>();
+  const taken = new Set<number>(blocked);
   for (const id of workIds) {
     const slot = previous.get(id);
     if (slot !== undefined && slot < slotCount && !taken.has(slot)) {
@@ -108,13 +119,50 @@ export function assignFans(previous: ReadonlyMap<string, number>, model: SceneMo
     const owner = ownerOf(enemy, heroPoints);
     if (owner !== null) byOwner.set(owner, [...(byOwner.get(owner) ?? []), enemy.workId]);
   }
+  const heroes = [...heroPoints.values()];
+  const placed: Point[] = [];
   const next = new Map<string, number>();
-  for (const [owner, ids] of byOwner) {
+  const owners = [...byOwner.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  for (const owner of owners) {
     const origin = heroPoints.get(owner) as Point;
-    const seats = fanPoints(origin, fanDirection(origin)).length;
-    for (const [id, seat] of assignSlots(previous, ids, seats)) next.set(id, seat);
+    const seats = fanPoints(origin, fanDirection(origin));
+    // A seat is usable when its token touches no other hero and no task already seated for any hero.
+    const usable = (seat: number): boolean => {
+      const point = seats[seat] as Point;
+      return heroes.every((hero) => hero === origin || clearOfHero(hero, point)) && placed.every((other) => tasksApart(other, point));
+    };
+    const ids = byOwner.get(owner) as string[];
+    const mine = new Set<number>();
+    const take = (id: string, seat: number) => {
+      next.set(id, seat);
+      mine.add(seat);
+      placed.push(seats[seat] as Point);
+    };
+    const waiting: string[] = [];
+    for (const id of ids) {
+      const kept = previous.get(id);
+      if (kept !== undefined && kept < seats.length && !mine.has(kept) && usable(kept)) take(id, kept);
+      else waiting.push(id);
+    }
+    for (const id of waiting) {
+      const seat = seats.findIndex((_, index) => !mine.has(index) && usable(index));
+      if (seat !== -1) take(id, seat);
+    }
   }
   return next;
+}
+
+/** The points of the tasks that stand beside a hero. */
+export function fanTaskPoints(model: SceneModel, heroPoints: ReadonlyMap<string, Point>, fans: ReadonlyMap<string, number>): Point[] {
+  const points: Point[] = [];
+  for (const enemy of model.enemies) {
+    const seat = fans.get(enemy.workId);
+    const owner = ownerOf(enemy, heroPoints);
+    const origin = owner === null ? undefined : heroPoints.get(owner);
+    const point = origin === undefined || seat === undefined ? undefined : fanPoints(origin, fanDirection(origin))[seat];
+    if (point !== undefined) points.push(point);
+  }
+  return points;
 }
 
 /** Tasks that have no fan seat take lattice slots, so none stands on another. */

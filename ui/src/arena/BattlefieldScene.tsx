@@ -21,7 +21,7 @@ import { MAX_ZOOM, MIN_ZOOM, clamp, createSceneTransform, visibleNormalizedRect 
 import { ARENA_INTRINSIC } from './mapLayout';
 import { MINION_SCALE, heroSizePx, minionBasePx } from './minionSize';
 import { placeHeroes } from './heroPlacement';
-import { assignFans, assignSlots, placeScene, slotIdsOf } from './sceneLayout';
+import { assignFans, assignSlots, blockedSlots, fanTaskPoints, placeScene, slotIdsOf } from './sceneLayout';
 import type { Placement, Point } from './sceneLayout';
 import type { SceneEnemy, SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
@@ -253,10 +253,10 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
   const slotMemory = useRef<ReadonlyMap<string, number>>(new Map());
   const slotIds = useMemo(() => slotIdsOf(model, fans), [model, fans]);
   const slots = useMemo(() => {
-    const next = assignSlots(slotMemory.current, slotIds);
+    const next = assignSlots(slotMemory.current, slotIds, undefined, blockedSlots(heroPoints.values(), fanTaskPoints(model, heroPoints, fans)));
     slotMemory.current = next;
     return next;
-  }, [slotIds]);
+  }, [slotIds, heroPoints, model, fans]);
   const placement = useMemo(() => placeScene(model, slots, heroPoints, fans), [model, slots, heroPoints, fans]);
   const view = useMemo(() => visibleNormalizedRect(transform), [transform]);
 

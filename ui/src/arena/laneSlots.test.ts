@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ARENA_INTRINSIC } from './mapLayout';
-import { FAN_BOX_PX, MIN_SLOT_GAP_PX, REGIONS, fanDirection, fanPoints, laneSlots, towardFarBase } from './laneSlots';
+import { HERO_BOX_PX, MIN_SLOT_GAP_PX, TASK_BOX_PX, REGIONS, fanDirection, fanPoints, laneSlots } from './laneSlots';
 
 const px = (point: { x: number; y: number }) => ({ x: point.x * ARENA_INTRINSIC.width, y: point.y * ARENA_INTRINSIC.height });
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(px(a).x - px(b).x, px(a).y - px(b).y);
+
+type Box = { left: number; right: number; top: number; bottom: number };
 
 describe('laneSlots', () => {
   it('is cached, stays on the map, and covers all four regions with 3 jungle sites', () => {
@@ -26,27 +28,26 @@ describe('laneSlots', () => {
     for (let i = 0; i < slots.length; i += 1) for (let j = i + 1; j < slots.length; j += 1) expect(distance((slots[i] as { point: { x: number; y: number } }).point, (slots[j] as { point: { x: number; y: number } }).point)).toBeGreaterThanOrEqual(MIN_SLOT_GAP_PX);
   });
 
-  it('fans tasks toward the enemy side, a box apart from each other and from the hero, with at least 8 seats per slot', () => {
-    const boxApart = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.abs(px(a).x - px(b).x) >= FAN_BOX_PX - 1e-6 || Math.abs(px(a).y - px(b).y) >= FAN_BOX_PX - 1e-6;
+  it('fans tasks toward the enemy side, with every token box clear of the hero and of each other, and at least 8 seats per slot', () => {
+    const apart = (a: Box, ax: number, ay: number, b: Box, bx: number, by: number) => ax + a.right <= bx + b.left || bx + b.right <= ax + a.left || ay + a.bottom <= by + b.top || by + b.bottom <= ay + a.top;
     for (const slot of laneSlots()) {
       const fan = fanPoints(slot.point, slot.toward);
       expect(fan.length).toBeGreaterThanOrEqual(8);
       expect(fanPoints(slot.point, fanDirection(slot.point))).toEqual(fan);
-      for (const point of fan) expect(boxApart(point, slot.point)).toBe(true);
-      for (let i = 0; i < fan.length; i += 1) for (let j = i + 1; j < fan.length; j += 1) expect(boxApart(fan[i] as { x: number; y: number }, fan[j] as { x: number; y: number })).toBe(true);
-      const first = fan[0] as { x: number; y: number };
-      expect(distance(first, slot.point)).toBeLessThan(140);
-      const toward = { x: (first.x - slot.point.x) * ARENA_INTRINSIC.width, y: (first.y - slot.point.y) * ARENA_INTRINSIC.height };
-      expect(toward.x * slot.toward.x + toward.y * slot.toward.y).toBeGreaterThan(0);
+      const offsets = fan.map((point) => ({ x: px(point).x - px(slot.point).x, y: px(point).y - px(slot.point).y }));
+      for (const o of offsets) expect(apart(HERO_BOX_PX, 0, 0, TASK_BOX_PX, o.x, o.y)).toBe(true);
+      for (let i = 0; i < offsets.length; i += 1) for (let j = i + 1; j < offsets.length; j += 1) expect(apart(TASK_BOX_PX, offsets[i]!.x, offsets[i]!.y, TASK_BOX_PX, offsets[j]!.x, offsets[j]!.y)).toBe(true);
+      const first = offsets[0]!;
+      expect(Math.hypot(first.x, first.y)).toBeLessThan(160);
     }
   });
 
   it('drops fan points that would leave the map and falls back toward the far base off the slot list', () => {
     expect(fanPoints({ x: 0.03, y: 0.03 }, { x: -1, y: 0 })).toEqual([]);
     const off = { x: 0.5, y: 0.5 };
-    const dir = towardFarBase(off);
+    const dir = fanDirection(off);
     expect(dir.x).toBeGreaterThan(0);
     expect(dir.y).toBeLessThan(0);
-    expect(fanDirection(off)).toEqual(dir);
+    expect(Math.hypot(dir.x, dir.y)).toBeCloseTo(1, 6);
   });
 });

@@ -4,7 +4,8 @@ import type { RosterItemV1, TaskItemV1 } from '../contracts/types';
 import { rosterPath, tasksPath } from '../host/paths';
 import { ARENA_INTRINSIC } from './mapLayout';
 import { placeHeroes } from './heroPlacement';
-import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, apart, assignFans, assignSlots, enemySlots, ownerOf, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
+import { clearOfHero, tasksApart } from './laneSlots';
+import { ENEMY_CELL, SLOT_COUNT, SPECTER_CELL, apart, assignFans, assignSlots, blockedSlots, enemySlots, fanTaskPoints, ownerOf, placeScene, slotIdsOf, specterSlot } from './sceneLayout';
 import type { Point } from './sceneLayout';
 import { buildSceneModel } from './sceneModel';
 import { botOf, inputsOf, taskOf } from './testData';
@@ -111,9 +112,21 @@ describe('placeScene on the demo scenarios', () => {
     const model = await modelOf(scenario);
     const heroPoints = placeHeroes(new Map(), model.specters.map((specter) => specter.bindingId), seed);
     const fans = assignFans(new Map(), model, heroPoints);
-    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model, fans)), heroPoints, fans);
+    const placement = placeScene(model, assignSlots(new Map(), slotIdsOf(model, fans), undefined, blockedSlots(heroPoints.values(), fanTaskPoints(model, heroPoints, fans))), heroPoints, fans);
     expect(placement.specters.size).toBe(model.specters.length);
     expect(placement.enemies.size).toBe(model.enemies.length);
+    for (const enemy of model.enemies.filter((candidate) => !fans.has(candidate.workId))) for (const hero of placement.specters.values()) {
+      const at = placement.enemies.get(enemy.workId) as Point;
+      // A task that found no lattice slot (arena-perf-1 has more tasks than free slots) stands at the centre, as before.
+      if (at.x !== 0.5 || at.y !== 0.5) expect(clearOfHero(hero, at)).toBe(true);
+    }
+    // A task beside a hero never touches another task, whether that one is beside a hero or on the lattice.
+    const beside = model.enemies.filter((enemy) => fans.has(enemy.workId)).map((enemy) => placement.enemies.get(enemy.workId) as Point);
+    const lattice = model.enemies.filter((enemy) => !fans.has(enemy.workId)).map((enemy) => placement.enemies.get(enemy.workId) as Point).filter((p) => p.x !== 0.5 || p.y !== 0.5);
+    for (let i = 0; i < beside.length; i += 1) {
+      for (let j = i + 1; j < beside.length; j += 1) expect(tasksApart(beside[i]!, beside[j]!)).toBe(true);
+      for (const other of lattice) expect(tasksApart(beside[i]!, other)).toBe(true);
+    }
     const fanned = model.enemies.filter((enemy) => fans.has(enemy.workId));
     expect(fanned.length).toBeGreaterThan(0);
     for (const enemy of fanned) {
@@ -201,5 +214,18 @@ describe('tasks beside their hero', () => {
     const first = assignFans(new Map(), model, heroPoints);
     expect(assignFans(first, model, heroPoints)).toEqual(first);
     expect([...first.values()].sort()).toEqual([...new Set(first.values())].sort());
+  });
+});
+
+describe('blockedSlots', () => {
+  it('blocks the lattice slots a hero token would cover, and assignSlots never uses them', () => {
+    expect(blockedSlots([]).size).toBe(0);
+    const hero = enemySlots()[3] as Point;
+    const blocked = blockedSlots([hero]);
+    expect(blocked.has(3)).toBe(true);
+    expect(blocked.size).toBeLessThan(SLOT_COUNT);
+    const seats = assignSlots(new Map([['a', 3]]), ['a', 'b', 'c'], SLOT_COUNT, blocked);
+    for (const seat of seats.values()) expect(blocked.has(seat)).toBe(false);
+    expect(seats.size).toBe(3);
   });
 });
