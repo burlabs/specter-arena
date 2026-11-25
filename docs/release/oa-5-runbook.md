@@ -109,7 +109,7 @@ Hand back, for each of R1 to R8: pass or fail, the exact text of anything that f
 
 ## RC-7 single sitting (at most 45 minutes, after the RC-4 sitting): R1 to R8, brand check, then registry install
 
-RC-7 adds FP-26 to RC-6: the app is branded "Specters of the Abyss" (the slug stays `specter-arena`), `app-registry.json` makes the repository installable from the Crew external registry, the Node floor for the registry build is 22, and the backend logs a warning when `ui/dist/index.mjs` is missing. Permissions, version 0.1.0 and the store at version 11 are unchanged. The tarball is about 4.35 MB larger than RC-5 because `store/` ships; `docs/images/`, `avatar-packs/`, `agents/` and `app-registry.json` stay out. Crew 0.13.1 is the tested version. One sitting covers all three parts, in this order, on one machine: Part A (R1 to R8, 13 minutes) updates your installed app from the RC-7 tarball; Part B (brand check, 2 minutes) reads the name in every place it shows; Part C (registry install, about 25 minutes) installs the same app from the registry. Part C uninstalls the tarball install first, because Crew refuses to install a name that is already installed. Run any failed RC-4 step too. The full RC-4 sitting stays the baseline. The RC-7 commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 9.
+RC-7 adds FP-26 to RC-6: the app is branded "Specters of the Abyss" (the slug stays `specter-arena`), the repository is installable from the Crew external registry on the prebuilt `release` branch (FP-28; no Node needed), and the backend logs a warning when `ui/dist/index.mjs` is missing. Permissions, version 0.1.0 and the store at version 11 are unchanged. The tarball is about 4.35 MB larger than RC-5 because `store/` ships; `docs/images/`, `avatar-packs/`, `agents/` and `app-registry.json` stay out. Crew 0.13.1 is the tested version. One sitting covers all three parts, in this order, on one machine: Part A (R1 to R8, 13 minutes) updates your installed app from the RC-7 tarball; Part B (brand check, 2 minutes) reads the name in every place it shows; Part C (registry install, about 25 minutes) installs the same app from the registry. Part C uninstalls the tarball install first, because Crew refuses to install a name that is already installed. Run any failed RC-4 step too. The full RC-4 sitting stays the baseline. The RC-7 commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 9.
 
 ### Part A: R1 to R8 on the RC-7 tarball
 
@@ -137,26 +137,28 @@ Hand back, for each of R1 to R8, B1 and B2: pass or fail, the exact text of anyt
 
 This part installs Specters of the Abyss from the Kiro Crew external registry. Crew 0.13.1 is the tested version. Nothing in this part has been run on a real Crew until you run it. Fill the results table as you go and record failures verbatim. Do not mark steps done that were not run.
 
-The registry is the repository `https://github.com/burlabs/specter-arena` on branch `main`. Crew builds the UI on your machine from that source, so **Node 22 or newer and `npm` must be on the PATH of the process that runs the Crew gateway**. A Node on your shell's PATH is not enough if the desktop app or the gateway starts with a different PATH. Install steps and the PATH fix are in `docs/release/install.md` section 2A.
+The registry is the repository `https://github.com/burlabs/specter-arena` on branch **`release`**. That branch holds the built app and has no `package.json`, so Crew runs no build and no Node or npm is needed. `main` is source only: typing `main` in Add Registry fails with "Failed to load external registry". Install steps are in `docs/release/install.md` section 2A.
 
-If the app shows as installed but the page has no UI (a blank page, or the log line `ui/dist/index.mjs not found`), the build was skipped. The fix is: put Node 22 or newer and npm on the gateway's PATH, restart Crew, open the app's card in Library and press **Update**. Update rebuilds the UI. Record that you needed it.
+**Before the sitting, refresh and publish the branch (owner step, `docs/release/install.md` section 11A).** From a clean checkout of `main` after `git fetch origin`, run `npm ci && npm run release:branch`, then run the push command the script prints. No agent has pushed `release`.
 
-Record first: Crew version, the commit SHA of `main` you installed (`git ls-remote https://github.com/burlabs/specter-arena main`), the registry URL, the branch `main`, and `node -v` and `npm -v` for the Node the gateway uses.
+If the app shows as installed but the page has no UI (a blank page, or the log line `ui/dist/index.mjs not found`), you installed something other than the `release` branch. Uninstall (keep data) and add the registry again with branch `release`. Record that this happened.
+
+Record first: Crew version, the commit SHA of `release` you installed (`git ls-remote https://github.com/burlabs/specter-arena release`), the `commit:` line of its `RELEASE-MANIFEST.txt` (the `main` SHA it was built from), the registry URL and the branch `release`.
 
 | # | Step | Expect and record |
 |---|---|---|
 | G0 | **Make room.** Uninstall the tarball install, keeping its data: `kirocrew app uninstall specter-arena` (no `--purge-data`). Check that `~/.kiro/crew/apps/specter-arena/` holds only `data/` | The app is gone from the sidebar and the data folder is kept |
-| G1 | **Prerequisite.** Confirm Node 22 or newer and `npm` exist on the PATH of the process that runs the Crew gateway. Restart Crew after installing Node. If the desktop app's PATH differs from your shell's, record that | Record how you checked |
-| G2 | **Add registry.** Settings, Apps, Manage app sources, External Registries, Add Registry. Name "Specters of the Abyss", repo `https://github.com/burlabs/specter-arena`, branch `main`. Save | The registry refreshes without error |
+| G1 | **Branch exists.** Run `git ls-remote https://github.com/burlabs/specter-arena release` | One line with a commit SHA. If nothing prints, the branch is not published yet; stop |
+| G2 | **Add registry.** Settings, Apps, Manage app sources, External Registries, Add Registry. Name "Specters of the Abyss", repo `https://github.com/burlabs/specter-arena`, branch `release`. Save | The registry refreshes without error |
 | G3 | **Listing.** Open the store | Exactly one app. DisplayName "Specters of the Abyss". The icon, hero and four screenshots render before install |
-| G4 | **Install**, watching the install log | The log shows `npm install`, `npm run build` and a success line. **Failure signature:** `npm not found on PATH — skipping JavaScript build step`. If you see it, stop, fix the PATH (`docs/release/install.md`, section 2A), restart Crew, press Update and rerun from G5 |
-| G5 | **UI-less check.** Confirm `<Crew home>/apps/specter-arena/ui/dist/index.mjs` exists | About 321 kB. Record the size. PASS only if the file exists, because Crew reports success without it |
+| G4 | **Install**, watching the install log | A success line. The log has no npm line: Crew runs no build because the branch has no `package.json` |
+| G5 | **UI check.** Confirm `<Crew home>/apps/specter-arena/ui/dist/index.mjs` exists and `<Crew home>/apps/specter-arena/package.json` does not | About 321 kB. Record the size. PASS only if the file exists and `package.json` is absent |
 | G6 | **Trust and enable** | Record both results |
 | G7 | **Backend.** Check the app's `/health` in Crew and that first-run Python provisioning finished | Healthy. The app log has no `ui/dist/index.mjs not found` warning |
 | G8 | **Sidebar** | Label "Specters of the Abyss". The logo icon shows active and inactive |
 | G9 | **Open** `/apps/specter-arena` | Heading "Specters of the Abyss". The module loads with no console errors. Your earlier data is still there, and first-run Specter assignment works for a new bot |
-| G10 | **Update.** Press Update | Up to date, or a same-version reinstall. Record which |
-| G11 | **Optional negative test**, on a throwaway Crew home only, never your real one: remove Node from the gateway PATH and install | The G4 failure signature appears and the page does not load. Then follow the recovery above (fix PATH, restart, press Update) and record that the UI appears |
+| G10 | **Update.** After a second `release` commit is published, press Update | The app updates to the new commit; with an unchanged version Crew reports a same-version update. Record which |
+| G11 | **Optional negative test**: add the registry with branch `main` | The registry fails to load ("Failed to load external registry") and lists nothing. Record the text, then remove that registry entry |
 | G12 | **Uninstall** | The sidebar entry is gone and the data folder is kept (Crew default) |
 
 #### Registry results

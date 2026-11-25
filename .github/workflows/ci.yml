@@ -233,6 +233,27 @@ jobs:
           ls -la ui/dist
           test "$(ls ui/dist)" = "index.mjs"
 
+  release-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build the release tarball
+        run: npm run package -- --out "$RUNNER_TEMP/tarball"
+      - name: Build the release-branch tree without committing and compare it with the tarball
+        run: npm run release:branch -- --dry-run --out "$RUNNER_TEMP/release-tree" --compare-tarball "$(ls "$RUNNER_TEMP"/tarball/*.tar.gz)"
+      - name: The tree has the built UI and no package.json
+        run: |
+          test -f "$RUNNER_TEMP/release-tree/ui/dist/index.mjs"
+          test ! -e "$RUNNER_TEMP/release-tree/package.json"
+          test ! -e app-registry.json
+          node -e 'for (const f of ["app.json", "app-registry.json"]) JSON.parse(require("node:fs").readFileSync(process.argv[1] + "/" + f, "utf8"))' "$RUNNER_TEMP/release-tree"
+
   fixtures:
     runs-on: ubuntu-latest
     timeout-minutes: 10

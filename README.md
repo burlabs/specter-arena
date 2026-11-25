@@ -47,7 +47,7 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 
 ## Install a release
 
-The recommended route is the Kiro Crew registry: add `https://github.com/burlabs/specter-arena` (branch `main`) under External Registries. It needs Node 22 or newer and npm on the Crew gateway's PATH; see "Install from the registry" in `docs/release/install.md` (section 2A). The fallback is a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
+The recommended route is the Kiro Crew registry: add `https://github.com/burlabs/specter-arena` with branch `release` under External Registries. The branch is prebuilt, so no Node or npm is needed; `main` is source only and lists nothing in a registry. See "Install from the registry" in `docs/release/install.md` (section 2A). The fallback is a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. The owner refreshes the `release` branch with `npm run release:branch` (see `docs/release/install.md`, section 11A). Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
 
 ## Kiro Crew avatar packs (optional)
 

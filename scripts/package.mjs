@@ -41,7 +41,7 @@ export const FORBIDDEN_RULES = [
 ];
 
 /**
- * @typedef {(command: string, args: string[], options?: { cwd?: string }) => Buffer} Run
+ * @typedef {(command: string, args: string[], options?: { cwd?: string, env?: Record<string, string> }) => Buffer} Run
  * @typedef {{ mode: string, path: string }} Entry
  * @typedef {{ path: string, data: Uint8Array, mode: number }} TarFile
  */
@@ -49,7 +49,7 @@ export const FORBIDDEN_RULES = [
 /**
  * @param {string} command
  * @param {string[]} args
- * @param {{ cwd?: string }} [options]
+ * @param {{ cwd?: string, env?: Record<string, string> }} [options]
  * @returns {Buffer}
  */
 export function defaultRun(command, args, options = {}) {
@@ -58,7 +58,7 @@ export function defaultRun(command, args, options = {}) {
     encoding: 'buffer',
     maxBuffer: 256 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, CI: '1' },
+    env: { ...process.env, CI: '1', ...options.env },
   });
 }
 
@@ -245,7 +245,7 @@ export function renderManifest({ commit, version, nodeVersion, npmVersion, minCr
  * @param {string} path
  * @returns {Record<string, unknown>}
  */
-function readJson(path) {
+export function readJson(path) {
   const parsed = JSON.parse(readFileSync(path, 'utf8'));
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error(`${path} is not a JSON object`);
   return parsed;
@@ -315,6 +315,48 @@ function firstLine(text) {
 }
 
 /**
+ * Lists the tracked release files of a checked-out clone, builds it and validates the build.
+ *
+ * @param {{ src: string, run: Run, build: (clone: string, run: Run) => void, log: (line: string) => void, scrub: (line: string) => string, prefix?: string }} input
+ * @returns {Entry[] | null} the tracked entries that ship, or null after logging each problem
+ */
+export function buildReleaseEntries({ src, run, build, log, scrub, prefix = 'package' }) {
+  const entries = parseLsFiles(run('git', ['-C', src, 'ls-files', '-s', '-z'])).filter(({ path }) => !RELEASE_EXCLUDED.test(path));
+  const problems = checkEntries(entries);
+  if (problems.length > 0) {
+    for (const problem of problems) log(`${prefix}: ${problem}`);
+    return null;
+  }
+  try {
+    build(src, run);
+  } catch (error) {
+    log(`${prefix}: build failed: ${scrub(firstLine(error instanceof Error ? error.message : String(error)))}`);
+    return null;
+  }
+  /** @type {string[]} */
+  const fixtureLog = [];
+  const fixtureCode = checkFixtures({
+    dir: join(src, 'ui/dist'),
+    backendDir: join(src, 'backend'),
+    manifest: join(src, 'app.json'),
+    releaseRoots: [src, join(src, 'ui'), join(src, 'backend')],
+    log: (line) => fixtureLog.push(scrub(line)),
+  });
+  if (fixtureCode !== 0) {
+    for (const line of fixtureLog) log(`${prefix}: ${line}`);
+    log(`${prefix}: fixture or diagnostic content in the release tree`);
+    return null;
+  }
+  const releaseProblems = assertRelease(src);
+  if (entries.some(({ path }) => path === BUILT_ENTRY)) releaseProblems.push(`${BUILT_ENTRY}: tracked, but it must come from the build`);
+  if (releaseProblems.length > 0) {
+    for (const problem of releaseProblems) log(`${prefix}: ${problem}`);
+    return null;
+  }
+  return entries;
+}
+
+/**
  * @param {{ repo?: string, ref?: string, outDir?: string, run?: Run, build?: (clone: string, run: Run) => void, log?: (line: string) => void, tmpRoot?: string }} [options]
  * @returns {number} process exit code
  */
@@ -356,38 +398,8 @@ export function packageRelease({ repo = '.', ref = 'HEAD', outDir = DEFAULT_OUT_
       log('package: --out must not be inside the temporary build clone');
       return 1;
     }
-    const entries = parseLsFiles(run('git', ['-C', src, 'ls-files', '-s', '-z'])).filter(({ path }) => !RELEASE_EXCLUDED.test(path));
-    const problems = checkEntries(entries);
-    if (problems.length > 0) {
-      for (const problem of problems) log(`package: ${problem}`);
-      return 1;
-    }
-    try {
-      build(src, run);
-    } catch (error) {
-      log(`package: build failed: ${scrub(firstLine(error instanceof Error ? error.message : String(error)))}`);
-      return 1;
-    }
-    /** @type {string[]} */
-    const fixtureLog = [];
-    const fixtureCode = checkFixtures({
-      dir: join(src, 'ui/dist'),
-      backendDir: join(src, 'backend'),
-      manifest: join(src, 'app.json'),
-      releaseRoots: [src, join(src, 'ui'), join(src, 'backend')],
-      log: (line) => fixtureLog.push(scrub(line)),
-    });
-    if (fixtureCode !== 0) {
-      for (const line of fixtureLog) log(`package: ${line}`);
-      log('package: fixture or diagnostic content in the release tree');
-      return 1;
-    }
-    const releaseProblems = assertRelease(src);
-    if (entries.some(({ path }) => path === BUILT_ENTRY)) releaseProblems.push(`${BUILT_ENTRY}: tracked, but it must come from the build`);
-    if (releaseProblems.length > 0) {
-      for (const problem of releaseProblems) log(`package: ${problem}`);
-      return 1;
-    }
+    const entries = buildReleaseEntries({ src, run, build, log, scrub });
+    if (entries === null) return 1;
     const app = readJson(join(src, 'app.json'));
     const version = /** @type {string} */ (app.version);
     const name = `${APP_NAME}-${version}-${sha.slice(0, 12)}`;
