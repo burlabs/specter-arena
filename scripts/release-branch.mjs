@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
@@ -232,11 +233,12 @@ export function releaseBranch({ repo = '.', ref = 'HEAD', dryRun = false, outDir
       log(`release-branch: ${tip.refusal}`);
       return 1;
     }
-    work = mkdtempSync(join(tmpRoot, 'specter-release-'));
-    const src = join(work, 'src');
-    const tree = join(work, 'tree');
+    const workDir = mkdtempSync(join(tmpRoot, 'specter-release-'));
+    work = workDir;
+    const src = join(workDir, 'src');
+    const tree = join(workDir, 'tree');
     /** @param {string} line */
-    const scrub = (line) => line.split(work).join('<work>');
+    const scrub = (line) => line.split(workDir).join('<work>');
     if (outDir !== undefined) {
       const out = resolve(outDir);
       const inside = relative(repoPath, out);
@@ -273,7 +275,7 @@ export function releaseBranch({ repo = '.', ref = 'HEAD', dryRun = false, outDir
     }
     const version = String(readJson(join(tree, 'app.json')).version);
     const message = `release: ${APP_NAME} ${version} from main ${sha}\n\nsource: ${sha}\nversion: ${version}\n`;
-    const { commit, changed } = commitTree({ repoPath, tree, work, parent: tip.parent, current: tip.current, message, run });
+    const { commit, changed } = commitTree({ repoPath, tree, work: workDir, parent: tip.parent, current: tip.current, message, run });
     if (!changed) {
       log(`release-branch: ${RELEASE_BRANCH} already holds this build (${commit}); nothing committed`);
       return 0;
@@ -284,11 +286,19 @@ export function releaseBranch({ repo = '.', ref = 'HEAD', dryRun = false, outDir
     log(`  git push origin ${RELEASE_BRANCH}`);
     return 0;
   } catch (error) {
-    log(`release-branch: ${error instanceof Error ? (error.message.split('\n')[0] ?? '') : String(error)}`);
+    log(`release-branch: ${error instanceof Error ? firstLine(error.message) : String(error)}`);
     return 1;
   } finally {
     if (work !== undefined) rmSync(work, { recursive: true, force: true });
   }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+function firstLine(text) {
+  return text.split('\n')[0] ?? '';
 }
 
 /**

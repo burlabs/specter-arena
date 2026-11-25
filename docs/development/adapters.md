@@ -14,7 +14,7 @@ The planner and implementer SOPs refer to provider keys instead of concrete tool
 
 ## ci.checks
 
-The final set has 13 required jobs plus one non-required job, `build-node22`. Each PR in the FP-00 sequence adds the jobs it can make pass on its own code.
+The final set has 13 required jobs plus two non-required jobs, `build-node22` and `release-branch`. Each PR in the FP-00 sequence adds the jobs it can make pass on its own code.
 
 | Job | Added by | Checks |
 |---|---|---|
@@ -29,9 +29,10 @@ The final set has 13 required jobs plus one non-required job, `build-node22`. Ea
 | `backend-smoke` | PR-2 Backend | Crew-style deps-only start of `backend.app:app`; `GET /health` returns 200 |
 | `cdk-synth` | PR-3 Preview infrastructure | In `infra/`: `npm ci`, `typecheck`, offline `synth`, and Vitest template assertions, with no AWS credentials |
 | `build` | PR-4 UI stub | The Vite library build writes `ui/dist/index.mjs` |
-| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/`; no tests or fixtures imports in the backend runtime; the offline validators `npm run probe:check` (FP-01) and `npm run check:schema` run as steps here, so neither adds a 14th required check. `check:schema` runs the contract and spec-id checks (FP-02+03) and then `scripts/check-registry.mjs` (FP-26), which validates `app-registry.json` against `app.json` and the declared art files |
+| `fixtures` | PR-4 UI stub | No fixture marker or host-module assignment in `ui/dist/`; no tests or fixtures imports in the backend runtime; the offline validators `npm run probe:check` (FP-01) and `npm run check:schema` run as steps here, so neither adds a 14th required check. `check:schema` runs the contract and spec-id checks (FP-02+03) and then `scripts/check-registry.mjs` (FP-26, FP-28), which validates the declared art files against `app.json` and fails if an `app-registry.json` is committed on `main` (only the generated `release` branch carries one) |
 | `e2e-smoke` | PR-4 UI stub | Playwright Chromium smoke against the built preview harness |
-| `build-node22` (not required) | FP-26 PR-B | The same `npm ci` and `npm run build` on Node 22, the floor the Crew registry install needs, and a check that `ui/dist` holds only `index.mjs` |
+| `build-node22` (not required) | FP-26 PR-B | The same `npm ci` and `npm run build` on Node 22, the `engines` floor, and a check that `ui/dist` holds only `index.mjs` |
+| `release-branch` (not required) | FP-28 | `npm run package`, then `npm run release:branch -- --dry-run` into a temp dir with no commit. Asserts `ui/dist/index.mjs` is present, root `package.json` is absent, `app.json` and the generated `app-registry.json` are valid, and the file list equals the tarball's (minus `package.json`, plus the registry index) |
 
 A PR with zero registered checks is not passing. The required-check list in `docs/ops/branch-protection.md` is applied only after all 13 required jobs have run at least once. `build-node22` is not in that list.
 

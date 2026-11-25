@@ -4,7 +4,7 @@ Specters of the Abyss is a Kiro Crew app. It runs inside a Kiro Crew installatio
 
 ## The real app (default and only supported path)
 
-Preferred route: add the registry `https://github.com/burlabs/specter-arena` (branch `main`) in Crew and install from the store. You need Node 22 or newer and npm on the Crew gateway's PATH; steps and the check for a UI-less install are in `docs/release/install.md`, section 2A. The artifact route below is the fallback and needs no Node.
+Preferred route: add the registry `https://github.com/burlabs/specter-arena` (branch `release`) in Crew and install from the store. The branch is prebuilt, so you need no Node or npm; steps and the check for a missing UI are in `docs/release/install.md`, section 2A. The artifact route below is the fallback and needs no Node.
 
 1. Install Kiro Crew 0.13.1 or later on macOS or Linux. The tested host is 0.13.1; the manifest minimum is 0.12.0 (`app.json` `minKiroCrewVersion`).
 2. Download the release artifact and its checksum from the GitHub Release page for the tagged commit, named on the Release page and, once published, in `docs/release/release-record.md`.
