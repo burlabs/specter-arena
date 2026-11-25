@@ -1,3 +1,5 @@
+import { MINION_BASE_PX } from '../arena/minionSize';
+
 /**
  * The showcase stage, in sprite units (one unit is the 44 px hero sprite before zoom; the origin is the sprite's top left).
  * `EFFECT_EXTENT` is the largest box any hero's attack or cast effect reached, measured in Chromium by sampling every frame
@@ -12,8 +14,8 @@ export const CAPTION_UNITS = 0.55;
 export const SPRITE_PX = 44;
 /** The width used before the stage has been measured (and in jsdom, which has no ResizeObserver). */
 export const STAGE_DEFAULT_WIDTH = 600;
-/** The practice target's left edge, in sprite units from the hero's left: inside the reach of every hero's attack. */
-export const TARGET_X = 3.2;
+/** The practice target's left edge, in sprite units from the hero's left: inside the reach of every hero's attack, and placed so the caption centred under the 36.4 px target stays inside the stage at 390 px. */
+export const TARGET_X = 3.0;
 
 export const STAGE_UNITS = {
   width: EFFECT_EXTENT.right - EFFECT_EXTENT.left + 2 * STAGE_MARGIN,
@@ -37,7 +39,7 @@ export function stageLayout(widthPx: number): StageLayout {
     zoom: unit / SPRITE_PX,
     heightPx: STAGE_UNITS.height * unit,
     hero: { left: originX, top: originY },
-    // The target stands on the hero's baseline: its bottom (a 28 px sprite) meets the hero sprite's bottom.
-    target: { left: originX + TARGET_X * unit, top: originY + (1 - 28 / SPRITE_PX) * unit },
+    // The target stands on the hero's baseline: its bottom (a 36.4 px sprite) meets the hero sprite's bottom.
+    target: { left: originX + TARGET_X * unit, top: originY + (1 - MINION_BASE_PX / SPRITE_PX) * unit },
   };
 }

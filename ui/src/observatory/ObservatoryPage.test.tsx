@@ -449,7 +449,7 @@ describe('sections', () => {
     expect(get.mock.calls.slice(after).filter(([path]) => String(path).includes('/tasks?'))).toHaveLength(0);
   });
 
-  it('gives the Arena one visit seed that survives a tab switch, and a new page visit gets another', async () => {
+  it('stands every hero on the same spot at each new visit, and across a tab switch', async () => {
     const spots = () => [...document.querySelectorAll<HTMLElement>('[data-sprite="specter"]')].map((node) => `${node.dataset.token}@${node.style.left},${node.style.top}`).sort();
     setArenaScenario('arena');
     const first = render(<ObservatoryPage />);
@@ -463,15 +463,13 @@ describe('sections', () => {
     await waitFor(() => expect(spots().length).toBe(7));
     expect(spots()).toEqual(before);
     first.unmount();
-    const others = new Set<string>();
     for (let visit = 0; visit < 3; visit += 1) {
       const again = render(<ObservatoryPage />);
       await screen.findByRole('group', { name: 'Arena map' });
       await waitFor(() => expect(spots().length).toBe(7));
-      others.add(spots().join('|'));
+      expect(spots()).toEqual(before);
       again.unmount();
     }
-    expect(others.has(before.join('|')) && others.size === 1).toBe(false);
   });
 
   it('tells the rail when the Specters read failed, instead of listing every bot as having no Specter', async () => {

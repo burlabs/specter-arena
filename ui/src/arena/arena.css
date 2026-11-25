@@ -528,8 +528,8 @@
 .specter-arena-root .sa-minion {
   position: relative;
   display: block;
-  width: calc(var(--sa-minion-base, 28px) * var(--sa-minion-scale, 1));
-  height: calc(var(--sa-minion-base, 28px) * var(--sa-minion-scale, 1));
+  width: calc(var(--sa-minion-base, 36.4px) * var(--sa-minion-scale, 1));
+  height: calc(var(--sa-minion-base, 36.4px) * var(--sa-minion-scale, 1));
   transform-origin: 53% 90%;
 }
 

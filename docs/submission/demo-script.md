@@ -22,7 +22,7 @@ Total: 8 + 28 + 20 + 28 + 28 + 14 + 12 + 10 = 148 s. That leaves 32 s of margin 
 ## Rules the footage must follow
 
 - Real supported behavior only. Do not show Blocked as a bot state (it is not observable), a numeric health value, a classification, or XP from tokens. Do not say that XP means the work was good or accepted: it means the app watched the task end cleanly. Do not say anyone reviewed it.
-- "Waiting on you" is read from Crew's source, not live-tested (KL-21): show it only if the RC-4 sitting confirmed it, and say so. Arena attacks show live activity, not progress or damage (KL-22). Minion size is run time only, and hero places on the map are random (KL-31).
+- "Waiting on you" is read from Crew's source, not live-tested (KL-21): show it only if the RC-4 sitting confirmed it, and say so. Arena attacks show live activity, not progress or damage (KL-22). Minion size is run time only, and hero places on the map are fixed per bot and mean nothing (KL-31).
 - State plainly in the voice-over that the arena is read-only.
 - The worker run in shot 3 takes minutes. Record it live in one take, or record separate takes of the same run and label the cut.
 - If a shot cannot be recorded on the day, drop it and say in the checklist which behaviour is covered by tests, not by footage.
