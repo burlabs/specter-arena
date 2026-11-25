@@ -26,7 +26,7 @@ Confirm with `gh api repos/burlabs/specter-arena/branches/main/protection`. Appl
 
 ## Step 2: after the UI stub PR merges
 
-Only after all 13 CI jobs have run at least once, make them required and require branches to be up to date. Running this earlier can block merges on a check that never registers, and a PR with zero registered checks must never count as passing.
+Only after all 13 required CI jobs have run at least once, make them required (the non-required `build-node22` job stays optional) and require branches to be up to date. Running this earlier can block merges on a check that never registers, and a PR with zero registered checks must never count as passing.
 
 Step 1 left `required_status_checks` null, so the status-checks sub-endpoint returns 404 until checks exist. Re-`PUT` the whole protection instead: the body keeps every step-1 setting and adds the checks. `app_id` 15368 is GitHub Actions, so a status posted by any other app cannot satisfy a required check.
 

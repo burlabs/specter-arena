@@ -1,4 +1,4 @@
-# OA-5 and OA-6 owner sitting runbook (RC-4)
+# OA-5 and OA-6 owner sitting runbook (RC-4 baseline; RC-7 single sitting at the end)
 
 Draft for Eric's review. The agent does not submit.
 
