@@ -64,3 +64,7 @@ gitleaks git . --config .gitleaks.toml --redact
 ## Tests
 
 New handwritten code ships with tests in the same PR, at ≥90% line coverage on its declared scope. A script that passes without testing anything does not count as a test.
+
+## Branch names
+
+Never create a branch whose name starts with `release/`. Git cannot hold a branch `release` and a branch `release/x` together, and the owner's `release` branch (the prebuilt registry install, `docs/release/install.md` section 11A) would be rejected with "directory file conflict". Use `rc/...`, `fp...` or `docs/...` for working branches. Only the owner pushes `release`.

@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7)
+Last verified commit: `3895df06d69cf14e9e78ea59bf3458cefb6894df` (`main` after FP-28 #220; re-read for release candidate RC-8)
 
 This is the written half of FP-14-AC05 (keyboard and reduced-motion operation). Part 1 lists what runs in CI. Part 2 lists what a person must check on the installed app. The manual items run inside the OA-5 sitting for RC-4 (`docs/release/oa-5-runbook.md`, Part 1 steps 6 to 11), so there is no separate sitting.
 
