@@ -46,7 +46,6 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
   const history = useXpHistory(specter.bindingId);
   const openWork = openTasksOf(specter.bindingId, items);
   const attemptsData = attempts.state.status === 'ready' ? attempts.state.data : null;
-  const name = specter.specterName ?? specter.displayName;
 
   return (
     <div className="sa-arena-inspector__body">
@@ -54,9 +53,9 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
         {record !== undefined && <SpecterPortrait specter={asPortraitRecord(record)} size="md" />}
         <div>
           <h2 ref={headingRef} tabIndex={-1}>
-            {name}
+            {specter.displayName}
           </h2>
-          {specter.specterName !== null && <p>{INSPECTOR.forBot(specter.displayName)}</p>}
+          {specter.specterName !== null && <p>{INSPECTOR.specterIs(specter.specterName)}</p>}
         </div>
       </div>
       <p className="sa-arena-inspector__state">

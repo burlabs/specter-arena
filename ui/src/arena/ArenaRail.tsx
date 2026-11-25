@@ -4,7 +4,7 @@ import { botCondition } from '../observatory/model';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { SpecterProgression } from '../specters/SpecterProgression';
 import { tokenInitials } from '../specters/model';
-import { ARENA, HUD } from './copy';
+import { ARENA, HUD, INSPECTOR } from './copy';
 import type { SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
 import type { ArenaSelection } from './selection';
@@ -59,8 +59,8 @@ export function ArenaRail({ model, bots, specters, xp, selection, onSelect, open
           </span>
         )}
         <span className="sa-arena-rail__copy">
-          <strong>{specter.specterName ?? specter.displayName}</strong>
-          {specter.specterName !== null && <span className="sa-help">{`for ${specter.displayName}`}</span>}
+          <strong>{specter.displayName}</strong>
+          {specter.specterName !== null && <span className="sa-help">{INSPECTOR.specterIs(specter.specterName)}</span>}
           {bot !== undefined && <ConditionBadge view={botCondition(bot.condition)} />}
           <SpecterProgression compact summary={xp.get(specter.bindingId)} unavailable={specter.xpReading === 'ready' ? undefined : specter.xpReading} />
           {specter.heroId !== null && <span className="sa-help">{ARENA.linked(specter.openAttemptIds.length)}</span>}

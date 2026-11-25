@@ -269,11 +269,14 @@ describe('performance marks', () => {
 });
 
 describe('with Specters', () => {
-  it('names a Specter and its bot', async () => {
+  it('names a Specter by its bot', async () => {
     setArenaScenario('arena');
     render(<ArenaView bots={bots} complete collector={collector} rosterRevision={1} specters={new Map([[bots[0]!.bindingId, specterOf(bots[0]!, 'Vesper')]])} xp={new Map()} />);
     await settle();
-    expect(screen.getByRole('button', { name: /^Vesper.* for Atlas/ })).toBeTruthy();
+    const token = document.querySelector('[data-scene-node="specter"]');
+    expect(token?.getAttribute('aria-label')).toMatch(/^Atlas/);
+    expect(token?.getAttribute('aria-label')).not.toMatch(/Vesper/);
+    expect(token?.querySelector('.sa-token__label')?.textContent).toBe('Atlas');
   });
 });
 

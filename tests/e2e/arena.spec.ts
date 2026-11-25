@@ -282,7 +282,8 @@ test('A-11b a bot that leaves the roster clears its Specter evidence at the next
   await page.clock.install();
   await openArena(page, 'arena-stale');
   await specterButton(page, 'Fenn').click();
-  await expect(inspectorHeading(page)).toHaveText('Poly');
+  await expect(inspectorHeading(page)).toHaveText('Fenn');
+  await expect(inspector(page)).toContainText('Specter: Poly');
   await expect(inspector(page).getByRole('heading', { level: 3, name: 'XP ledger' })).toBeVisible();
   await page.clock.runFor(16_000);
   await expect(inspectorHeading(page)).toHaveText('This item is no longer available');
@@ -525,6 +526,18 @@ test('A-14 the arena map paints a background image above 2 MiB', async ({ page }
   const painted = (selector: string) => page.locator(selector).evaluate((element) => getComputedStyle(element).backgroundImage);
   expect(await painted('.sa-arena-map')).toMatch(/^url\("(?:blob:|data:image\/png)/);
   expect(await painted('.sa-arena-minimap__frame')).toMatch(/^url\("(?:blob:|data:image\/png)/);
+});
+
+test('A-15b every Specter token prints and announces its bot name, and the list names the hero as a second line', async ({ page }) => {
+  await openArena(page, 'arena');
+  const botNames = (await listView(page).getByRole('table', { name: 'Specters' }).locator('th button').allTextContents()).sort();
+  const tokens = page.locator('[data-sprite="specter"]');
+  await expect(tokens).toHaveCount(7);
+  const printed = (await tokens.locator('.sa-token__label').allTextContents()).sort();
+  expect(printed).toEqual(botNames);
+  const labels = await tokens.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('aria-label') ?? ''));
+  for (const name of botNames) expect(labels.filter((label) => label.startsWith(`${name},`) || label.startsWith(`${name} ×`))).toHaveLength(1);
+  await expect(listView(page).getByText(/^Specter: /)).toHaveCount(7);
 });
 
 test('A-15 every Specter token shows a decoded hero sprite image', async ({ page }) => {
