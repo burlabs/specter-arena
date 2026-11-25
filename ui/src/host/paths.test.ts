@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ASSETS_PATH,
   PORTRAITS_PATH,
+  RECAP_PATH,
   ROSTER_PATH,
   HEROES_PATH,
   SPECTERS_ASSIGNMENT_PATH,
@@ -12,6 +13,7 @@ import {
   assetPath,
   sceneAssetPath,
   attemptsPath,
+  recapPath,
   rosterPath,
   specterPath,
   specterHeroPath,
@@ -72,6 +74,11 @@ describe('task and xp paths', () => {
     expect(tasksPath({ limit: 25, cursor: null })).toBe(`${TASKS_PATH}?limit=25`);
     expect(tasksPath({ state: 'not-credited', limit: 25, cursor: 'a b/c' })).toBe(`${TASKS_PATH}?state=not-credited&limit=25&cursor=a%20b%2Fc`);
     expect(tasksPath({ state: 'open', bindingId: 'bnd_1', limit: 10, cursor: null })).toBe(`${TASKS_PATH}?state=open&bindingId=bnd_1&limit=10`);
+  });
+
+  it('builds the recap path with both ends as plain integers', () => {
+    expect(RECAP_PATH).toBe('/apps/specter-arena/api/recap');
+    expect(recapPath(1_800_000_000_000, 1_800_000_600_000)).toBe(`${RECAP_PATH}?fromMs=1800000000000&toMs=1800000600000`);
   });
 
   it('encodes the task id in the item path', () => {

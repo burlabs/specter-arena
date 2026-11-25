@@ -531,6 +531,40 @@ export interface TaskItemV1 {
   policyVersion: string;
 }
 
+export type RecapSpanStateV1 = 'covered' | 'not-collected';
+export type RecapSpanReasonV1 = 'collecting' | 'paused' | 'collector-gap' | 'no-collector' | 'before-first-run' | 'purged';
+
+/** One stretch of a recap period: the collector was collecting (`covered`, reason `collecting`) or was not, and why. */
+export interface RecapSpanV1 {
+  fromMs: number;
+  toMs: number;
+  state: RecapSpanStateV1;
+  reason: RecapSpanReasonV1;
+}
+
+export interface RecapCoverageV1 {
+  firstRunMs: number | null;
+  purgeHorizonMs: number | null;
+  spans: RecapSpanV1[];
+}
+
+/**
+ * `recap.v1`: `GET /api/recap?fromMs=&toMs=`. The tasks that overlap the period (1,000 at most, earliest start first) and
+ * a coverage partition of `[fromMs, toMs]`. `toMs` is the requested end clamped to `asOfMs`. A `not-collected` span says
+ * nothing about what the bots did.
+ */
+export interface RecapV1 {
+  contractVersion: 1;
+  asOfMs: number;
+  fromMs: number;
+  toMs: number;
+  tasks: TaskItemV1[];
+  taskCap: number;
+  truncated: boolean;
+  omittedCount: number;
+  coverage: RecapCoverageV1;
+}
+
 /** `tasks.v1`: `GET /api/tasks`, one keyset page of at most 25 tasks, `updatedAtMs` newest first. */
 export interface TasksV1 {
   contractVersion: 1;
@@ -572,6 +606,9 @@ export const TASK_ITEM_KEYS: Record<keyof TaskItemV1, true> = {
   xpCredited: true,
   policyVersion: true,
 };
+export const RECAP_KEYS: Record<keyof RecapV1, true> = { contractVersion: true, asOfMs: true, fromMs: true, toMs: true, tasks: true, taskCap: true, truncated: true, omittedCount: true, coverage: true };
+export const RECAP_COVERAGE_KEYS: Record<keyof RecapCoverageV1, true> = { firstRunMs: true, purgeHorizonMs: true, spans: true };
+export const RECAP_SPAN_KEYS: Record<keyof RecapSpanV1, true> = { fromMs: true, toMs: true, state: true, reason: true };
 export const TASKS_KEYS: Record<keyof TasksV1, true> = { contractVersion: true, items: true, nextCursor: true, asOfMs: true };
 export const XP_ENTRY_KEYS: Record<keyof XpEntryV1, true> = { entryId: true, workId: true, workTitle: true, kind: true, amount: true, policyVersion: true, decisionId: true, createdAtMs: true };
 export const XP_HISTORY_KEYS: Record<keyof XpHistoryV1, true> = { contractVersion: true, bindingId: true, summary: true, items: true, nextCursor: true, asOfMs: true };

@@ -59,6 +59,9 @@ export interface TasksQuery {
 /** `tasks.v1`, newest update first. A cursor only fits the query it came from. GET only. */
 export const tasksPath = ({ state = null, bindingId = null, limit, cursor }: TasksQuery): string => withQuery(TASKS_PATH, { state, bindingId, limit, cursor });
 export const taskPath = (taskId: string): string => appApiPath(`/tasks/${enc(taskId)}`);
+export const RECAP_PATH = appApiPath('/recap');
+/** `recap.v1` for one period, both ends in epoch milliseconds. GET only. */
+export const recapPath = (fromMs: number, toMs: number): string => withQuery(RECAP_PATH, { fromMs, toMs });
 export const xpHistoryPath = (bindingId: string, limit = 50, cursor: string | null = null): string =>
   withQuery(appApiPath(`/roster/${enc(bindingId)}/xp`), { limit, cursor });
 
