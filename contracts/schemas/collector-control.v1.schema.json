@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:collector-control:v1",
+  "title": "Collector control v1",
+  "description": "Body of a successful POST /api/collector, whose request is {\"paused\": true|false}. paused is the stored collection setting after the call; the call is idempotent, so setting the value already in force returns 200 with the same revision and changedAtMs. revision and changedAtMs are the setting's own (0 and 0 until the first change). state is the collector's state after the call, the same pattern as roster.v1 collector.state (paused while paused). While paused the collector records a gap with reason paused: paused time is never zero activity. A newer major fails closed.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "paused": { "type": "boolean" },
+    "revision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "changedAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "state": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,47}$" }
+  },
+  "required": ["contractVersion", "paused", "revision", "changedAtMs", "state"],
+  "additionalProperties": false
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:quarantine-record:v1",
+  "title": "Quarantine record v1",
+  "description": "What the store keeps about the frames the collector would not trust, aggregated by the collector to one record per frame type and 60-second window: why, what type they claimed, how many there were, how big the largest was, and a short digest of the first (null when the collector did not compute one; the Pass 2 collector sends null). It carries no payload, no prompt text and no Crew slot key. frameType is a bounded token, or the literal invalid when the claimed type does not fit the token pattern (V3.1-19). count is the number of frames the record stands for (at least 1); firstReceivedAtMs is null when the collector did not keep the first receive time.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "installationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "bindingId": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_-]{1,64}$" },
+    "reasonCode": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+    "frameType": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "sizeBytes": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "digest": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{12}$" },
+    "count": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "firstReceivedAtMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 },
+    "receivedAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "sourceTimeMs": { "type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991 }
+  },
+  "required": ["contractVersion", "installationId", "bindingId", "reasonCode", "frameType", "sizeBytes", "digest", "count", "firstReceivedAtMs", "receivedAtMs", "sourceTimeMs"],
+  "additionalProperties": false
+}

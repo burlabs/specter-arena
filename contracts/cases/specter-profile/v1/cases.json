@@ -1,0 +1,136 @@
+[
+  {
+    "file": "valid/minimal-nulls.json",
+    "valid": true
+  },
+  {
+    "file": "valid/full-with-newline.json",
+    "valid": true
+  },
+  {
+    "file": "valid/name-forty-chars.json",
+    "valid": true
+  },
+  {
+    "file": "valid/non-latin-name.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-class-field.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-tier-field.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-archetype-field.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-name.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-epithet.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/name-empty.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/name-41-chars.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/name-tab.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/name-angle-bracket.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/name-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/name-numeric.json",
+    "valid": false,
+    "instancePath": "/name"
+  },
+  {
+    "file": "invalid/epithet-61-chars.json",
+    "valid": false,
+    "instancePath": "/epithet"
+  },
+  {
+    "file": "invalid/personality-401-chars.json",
+    "valid": false,
+    "instancePath": "/personality"
+  },
+  {
+    "file": "invalid/appearance-bell-char.json",
+    "valid": false,
+    "instancePath": "/appearance"
+  },
+  {
+    "file": "invalid/appearance-carriage-return.json",
+    "valid": false,
+    "instancePath": "/appearance"
+  },
+  {
+    "file": "invalid/mannerism-201-chars.json",
+    "valid": false,
+    "instancePath": "/mannerism"
+  },
+  {
+    "file": "invalid/signature-action-newline.json",
+    "valid": false,
+    "instancePath": "/signatureAction"
+  },
+  {
+    "file": "invalid/rationale-301-chars.json",
+    "valid": false,
+    "instancePath": "/assignmentRationale"
+  },
+  {
+    "file": "invalid/art-brief-401-chars.json",
+    "valid": false,
+    "instancePath": "/artBrief"
+  },
+  {
+    "file": "invalid/art-brief-null.json",
+    "valid": false,
+    "instancePath": "/artBrief"
+  },
+  {
+    "file": "invalid/version-string.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-nan.json",
+    "valid": false
+  }
+]

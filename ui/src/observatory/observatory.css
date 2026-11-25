@@ -1,0 +1,698 @@
+.specter-arena-root {
+  --ink: #141020;
+  --panel: #211a33;
+  --raised: #2c2340;
+  --line: #45375f;
+  --text: #f7f3ff;
+  --muted: #c5bdd6;
+  --violet: #b49aff;
+  --amber: #ffd080;
+  --cyan: #88dde6;
+  --success: #92dfb8;
+  --danger: #ff9bae;
+  box-sizing: border-box;
+  min-width: 320px;
+  padding: 20px;
+  color: var(--text);
+  background: radial-gradient(circle at 80% -10%, rgba(93, 57, 133, 0.18), transparent 35%), var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-synthesis: none;
+  line-height: 1.45;
+}
+
+.specter-arena-root *,
+.specter-arena-root *::before,
+.specter-arena-root *::after {
+  box-sizing: border-box;
+}
+
+.specter-arena-root h1,
+.specter-arena-root h2,
+.specter-arena-root h3,
+.specter-arena-root p,
+.specter-arena-root ul,
+.specter-arena-root ol,
+.specter-arena-root dl,
+.specter-arena-root dd {
+  margin: 0;
+}
+
+.specter-arena-root ul,
+.specter-arena-root ol {
+  padding: 0;
+  list-style: none;
+}
+
+.specter-arena-root button,
+.specter-arena-root a,
+.specter-arena-root input,
+.specter-arena-root select,
+.specter-arena-root textarea {
+  font-family: inherit;
+  outline: none;
+}
+
+.specter-arena-root button:focus-visible,
+.specter-arena-root a:focus-visible,
+.specter-arena-root input:focus-visible,
+.specter-arena-root select:focus-visible,
+.specter-arena-root textarea:focus-visible,
+.specter-arena-root [tabindex="0"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
+}
+
+.specter-arena-root [tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
+.specter-arena-root a {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .specter-arena-root button:focus-visible,
+  .specter-arena-root a:focus-visible,
+  .specter-arena-root input:focus-visible,
+  .specter-arena-root select:focus-visible,
+  .specter-arena-root textarea:focus-visible,
+  .specter-arena-root [tabindex="0"]:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
+.specter-arena-root button {
+  cursor: pointer;
+}
+
+.specter-arena-root button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.specter-arena-root .sa-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.specter-arena-root .sa-panel {
+  background: linear-gradient(145deg, rgba(38, 29, 55, 0.96), rgba(27, 21, 40, 0.96));
+  border: 1px solid rgba(180, 154, 255, 0.14);
+  border-radius: 16px;
+  box-shadow: 0 18px 48px rgba(7, 4, 13, 0.2);
+  padding: 18px;
+}
+
+.specter-arena-root .sa-page {
+  display: grid;
+  gap: 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.specter-arena-root .sa-header {
+  display: grid;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-header__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-header h1 {
+  font-size: 24px;
+}
+
+.specter-arena-root .sa-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-collector {
+  padding: 10px 12px;
+  border: 1px solid rgba(136, 221, 230, 0.22);
+  border-radius: 10px;
+  background: rgba(136, 221, 230, 0.06);
+}
+
+.specter-arena-root .sa-notes {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: rgba(255, 155, 174, 0.08);
+}
+
+.specter-arena-root .sa-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.specter-arena-root .sa-tabs {
+  display: flex;
+  padding: 3px;
+  border: 1px solid #3a304a;
+  border-radius: 10px;
+  background: #1a1526;
+}
+
+.specter-arena-root .sa-tab {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #a99fb8;
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-tab[aria-selected="true"] {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.specter-arena-root .sa-toolbar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.specter-arena-root .sa-search {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  min-height: 42px;
+  padding-left: 10px;
+  border: 1px solid #514165;
+  border-radius: 8px;
+  background: #241c35;
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-search:focus-within {
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
+}
+
+.specter-arena-root .sa-search input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 11px 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.specter-arena-root .sa-search input:focus-visible {
+  box-shadow: none;
+}
+
+.specter-arena-root .sa-result-count {
+  margin: 10px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-button--secondary {
+  background: var(--raised);
+  border-color: #52436b;
+}
+
+.specter-arena-root .sa-button--secondary:hover {
+  background: #382c4e;
+}
+
+.specter-arena-root .sa-button--ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-button--ghost:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.specter-arena-root .sa-roster {
+  display: grid;
+}
+
+.specter-arena-root .sa-row {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid #3a2f49;
+}
+
+.specter-arena-root .sa-row__select {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.specter-arena-root .sa-row__select:hover {
+  background: #261e37;
+}
+
+.specter-arena-root .sa-row__select[aria-current="true"] {
+  background: #2b213f;
+  box-shadow: inset 3px 0 var(--violet);
+}
+
+.specter-arena-root .sa-row__select[aria-current="true"]:focus-visible {
+  box-shadow: inset 3px 0 var(--violet), 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
+}
+
+.specter-arena-root .sa-row__watch {
+  align-self: center;
+  min-height: 36px;
+  margin: 0 6px;
+  padding: 0 10px;
+  border: 1px solid #52436b;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-row__watch[aria-pressed="true"] {
+  background: var(--raised);
+  color: var(--text);
+  border-color: var(--violet);
+}
+
+.specter-arena-root .sa-row__copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-row__copy strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.specter-arena-root .sa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-chip {
+  padding: 2px 8px;
+  border: 1px solid #4d4060;
+  border-radius: 999px;
+  background: #2c2440;
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-chip--working {
+  color: var(--success);
+}
+
+.specter-arena-root .sa-chip--unknown {
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-initials {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--violet);
+  font-weight: 800;
+}
+
+.specter-arena-root .sa-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  min-height: 25px;
+  padding: 0 8px;
+  border: 1px solid #4d4060;
+  border-radius: 999px;
+  background: #2c2440;
+  color: #dcd5e7;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.specter-arena-root .sa-status__dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.specter-arena-root .sa-status--working {
+  color: var(--success);
+}
+
+.specter-arena-root .sa-status--working .sa-status__dot {
+  background: currentColor;
+}
+
+.specter-arena-root .sa-status--settled {
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-status--unknown {
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-status--unknown .sa-status__dot {
+  border-style: dashed;
+}
+
+.specter-arena-root .sa-status--ended {
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-status--ended .sa-status__dot {
+  border-radius: 2px;
+}
+
+.specter-arena-root .sa-legend {
+  border: 1px solid #3b304d;
+  border-radius: 10px;
+  background: #1b1629;
+}
+
+.specter-arena-root .sa-legend__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-legend__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #3b304d;
+}
+
+.specter-arena-root .sa-legend__items dt {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-legend__items dd {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.specter-arena-root .sa-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #3a2f49;
+  border-radius: 10px;
+  background: #1b1629;
+}
+
+.specter-arena-root .sa-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.specter-arena-root .sa-kpi {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid #3a2f49;
+  border-radius: 10px;
+  background: #1b1629;
+}
+
+.specter-arena-root .sa-kpi dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-kpi dd {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-card h3 {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.specter-arena-root .sa-detail h2 {
+  font-size: 20px;
+}
+
+.specter-arena-root .sa-facts {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-state {
+  max-width: 360px;
+  margin: 24px auto;
+  text-align: center;
+}
+
+.specter-arena-root .sa-state__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border: 1px solid #504064;
+  border-radius: 15px;
+  background: var(--raised);
+  color: var(--violet);
+}
+
+.specter-arena-root .sa-state h3 {
+  font-size: 17px;
+}
+
+.specter-arena-root .sa-state p {
+  margin: 7px auto 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.specter-arena-root .sa-state--error .sa-state__icon {
+  color: var(--danger);
+}
+
+.specter-arena-root .sa-attempts {
+  display: grid;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-attempts ol {
+  display: grid;
+}
+
+.specter-arena-root .sa-attempt {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid #3a2f49;
+}
+
+.specter-arena-root .sa-attempt p {
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-activity {
+  display: grid;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-counts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-counts dd {
+  text-align: right;
+}
+
+.specter-arena-root .sa-source {
+  display: grid;
+  gap: 14px;
+}
+
+.specter-arena-root .sa-source h3 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.specter-arena-root .sa-source .sa-counts > div {
+  display: contents;
+}
+
+.specter-arena-root .sa-glossary summary {
+  cursor: pointer;
+  color: var(--violet);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-glossary dl {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.specter-arena-root .sa-glossary dt {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-glossary dd {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .specter-arena-root .sa-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .specter-arena-root {
+    padding: 12px;
+  }
+
+  .specter-arena-root .sa-header h1 {
+    font-size: 20px;
+  }
+
+  .specter-arena-root .sa-legend__items {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Five bot-detail tabs no longer fit one line at this width: they wrap instead of widening the page. */
+  .specter-arena-root .sa-tabs {
+    flex-wrap: wrap;
+  }
+
+  .specter-arena-root .sa-tab {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specter-arena-root,
+  .specter-arena-root *,
+  .specter-arena-root *::before,
+  .specter-arena-root *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.specter-arena-root .sa-status--waiting {
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-status--waiting .sa-status__dot {
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent 1px, currentColor 1px 2px, transparent 2px 4px, currentColor 4px 5px, transparent 5px);
+}
+
+.specter-arena-root .sa-tokens {
+  margin-top: 12px;
+}

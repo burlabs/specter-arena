@@ -1,0 +1,51 @@
+[
+  {
+    "file": "valid/paused.json",
+    "valid": true
+  },
+  {
+    "file": "valid/resumed.json",
+    "valid": true
+  },
+  {
+    "file": "valid/never-changed.json",
+    "valid": true
+  },
+  {
+    "file": "valid/working.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/contract-version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/state-uppercase.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/state-with-a-newline.json",
+    "valid": false,
+    "instancePath": "/state"
+  },
+  {
+    "file": "invalid/paused-is-a-string.json",
+    "valid": false,
+    "instancePath": "/paused"
+  },
+  {
+    "file": "invalid/revision-negative.json",
+    "valid": false,
+    "instancePath": "/revision"
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/missing-state.json",
+    "valid": false
+  }
+]

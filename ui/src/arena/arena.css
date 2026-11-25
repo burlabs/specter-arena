@@ -1,0 +1,3530 @@
+.specter-arena-root .sa-arena {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.specter-arena-root .sa-arena-header {
+  display: grid;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-arena-header__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-arena-header__top h2 {
+  font-size: 20px;
+}
+
+.specter-arena-root .sa-mode {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--raised);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.specter-arena-root .sa-mode--fixture {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.specter-arena-root .sa-mode--live {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.specter-arena-root .sa-mode--recorded {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.specter-arena-root .sa-page:has(.sa-arena) {
+  max-width: 1480px;
+}
+
+.specter-arena-root .sa-arena-layout {
+  --sa-rail-width: 200px;
+  --sa-inspector-width: 300px;
+  display: grid;
+  grid-template-columns: var(--sa-rail-width) minmax(0, 1fr) var(--sa-inspector-width);
+  gap: 12px;
+  align-items: start;
+}
+
+.specter-arena-root .sa-arena-layout.sa-is-rail-collapsed {
+  --sa-rail-width: 56px;
+}
+
+.specter-arena-root .sa-arena-layout.sa-is-inspector-collapsed {
+  --sa-inspector-width: 56px;
+}
+
+@media (max-width: 1100px) {
+  .specter-arena-root .sa-arena-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .specter-arena-root .sa-arena-scene {
+    order: -1;
+  }
+}
+
+.specter-arena-root .sa-arena-rail {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.specter-arena-root .sa-arena-rail__list {
+  display: grid;
+  gap: 6px;
+  max-height: 520px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.specter-arena-root .sa-arena-rail__body,
+.specter-arena-root .sa-arena-inspector__panel {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-arena-rail__body[hidden],
+.specter-arena-root .sa-arena-inspector__panel[hidden] {
+  display: none;
+}
+
+.specter-arena-root .sa-arena-rail.sa-is-collapsed,
+.specter-arena-root .sa-arena-inspector.sa-is-collapsed {
+  justify-items: center;
+  padding: 6px;
+}
+
+.specter-arena-root .sa-arena-pane__text {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .specter-arena-root .sa-arena-rail.sa-is-collapsed,
+  .specter-arena-root .sa-arena-inspector.sa-is-collapsed {
+    justify-items: start;
+  }
+
+  .specter-arena-root .sa-arena-pane__glyph {
+    display: none;
+  }
+
+  .specter-arena-root .sa-arena-pane__text {
+    display: inline;
+  }
+}
+
+.specter-arena-root .sa-arena-rail__unassigned {
+  display: grid;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-arena-rail__unassigned h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-arena-rail__unassigned-row {
+  display: grid;
+  gap: 4px;
+}
+
+.specter-arena-root .sa-arena-rail__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--raised);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-arena-rail__row[aria-pressed="true"] {
+  border-color: var(--violet);
+}
+
+.specter-arena-root .sa-arena-rail__copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.specter-arena-root .sa-arena-scene {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-arena-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.specter-arena-root .sa-arena-zoom {
+  min-width: 56px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.specter-arena-root .sa-arena-frame {
+  position: relative;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-arena-viewport {
+  position: relative;
+  aspect-ratio: 1672 / 941;
+  height: auto;
+  max-height: 78vh;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--ink);
+  touch-action: none;
+}
+
+.specter-arena-root .sa-arena-stage {
+  position: absolute;
+  contain: layout paint;
+}
+
+.specter-arena-root .sa-arena-map {
+  position: absolute;
+  inset: 0;
+  background-color: var(--panel);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.specter-arena-root .sa-arena-map.sa-has-art {
+  background-image: var(--sa-map);
+}
+
+.specter-arena-root .sa-arena-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-arena-engage {
+  stroke: var(--amber);
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  opacity: 0.85;
+}
+
+.specter-arena-root .sa-is-animated .sa-arena-engage {
+  animation: sa-arena-dash 1.2s linear infinite;
+}
+
+.specter-arena-root .sa-arena-plate {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  max-width: 60%;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-token {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  transform: translate(-50%, -80%);
+  contain: layout;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-token:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.specter-arena-root .sa-token.sa-is-selected {
+  border-color: var(--violet);
+  background: rgba(20, 16, 32, 0.7);
+}
+
+.specter-arena-root .sa-token__label,
+.specter-arena-root .sa-token__meta {
+  max-width: 5.25rem;
+  overflow: hidden;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(20, 16, 32, 0.72);
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.specter-arena-root .sa-token__meta {
+  color: var(--muted);
+}
+
+/* On a phone-width map two heroes one cell apart are about 31 px apart vertically, so the name shows only on hover, focus or selection. */
+@media (max-width: 600px) {
+  .specter-arena-root .sa-token--specter .sa-token__label {
+    visibility: hidden;
+  }
+
+  .specter-arena-root .sa-token--specter:hover .sa-token__label,
+  .specter-arena-root .sa-token--specter:focus-visible .sa-token__label,
+  .specter-arena-root .sa-token--specter.sa-is-selected .sa-token__label {
+    visibility: visible;
+  }
+}
+
+.specter-arena-root .sa-token--specter .sa-token__badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  padding: 0 4px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__label,
+.specter-arena-root .sa-token--enemy .sa-token__meta,
+.specter-arena-root .sa-token--enemy .sa-token__xp,
+.specter-arena-root .sa-token--specter .sa-token__badge {
+  /* Text that floats over the map (shown on hover, focus or selection) never takes a click from a neighbouring token. */
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-token--enemy {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__label,
+.specter-arena-root .sa-token--enemy .sa-token__meta,
+.specter-arena-root .sa-token--enemy .sa-token__xp {
+  position: absolute;
+  left: 50%;
+  z-index: 7;
+  display: none;
+  max-width: 14rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__label {
+  top: 100%;
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__meta {
+  top: calc(100% + 18px);
+}
+
+.specter-arena-root .sa-token--enemy .sa-token__xp {
+  top: calc(100% + 38px);
+}
+
+.specter-arena-root .sa-token--enemy:hover,
+.specter-arena-root .sa-token--enemy:focus-visible,
+.specter-arena-root .sa-token--enemy.sa-is-selected {
+  z-index: 6;
+}
+
+.specter-arena-root .sa-token--enemy:hover .sa-token__label,
+.specter-arena-root .sa-token--enemy:hover .sa-token__meta,
+.specter-arena-root .sa-token--enemy:hover .sa-token__xp,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__label,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__meta,
+.specter-arena-root .sa-token--enemy:focus-visible .sa-token__xp,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__label,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__meta,
+.specter-arena-root .sa-token--enemy.sa-is-selected .sa-token__xp {
+  display: block;
+}
+
+.specter-arena-root .sa-token__badge,
+.specter-arena-root .sa-token__xp {
+  padding: 0 6px;
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--amber);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-token__xp {
+  background: var(--success);
+}
+
+.specter-arena-root .sa-token__marker {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+}
+
+.specter-arena-root .sa-token__placeholder {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px dashed var(--muted);
+  border-radius: 50%;
+  color: var(--muted);
+  background: var(--raised);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-token__placeholder::before {
+  content: attr(data-initials);
+}
+
+.specter-arena-root .sa-hero {
+  position: relative;
+  display: block;
+  width: var(--sa-hero-size, 44px);
+  height: var(--sa-hero-size, 44px);
+  transform: translateX(calc((0.5 - var(--sa-ax)) * 100%));
+}
+
+.specter-arena-root .sa-hero__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+}
+
+.specter-arena-root .sa-hero.sa-is-animated .sa-hero__img {
+  transform-origin: inherit;
+  animation-duration: var(--sa-idle-ms);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.specter-arena-root .sa-hero--vell.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-vell-idle;
+}
+
+.specter-arena-root .sa-hero--stitch.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-stitch-idle;
+}
+
+.specter-arena-root .sa-hero--reeve.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-reeve-idle;
+}
+
+.specter-arena-root .sa-hero--rattle.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-rattle-idle;
+}
+
+.specter-arena-root .sa-hero--ember.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-ember-idle;
+}
+
+.specter-arena-root .sa-hero--shard.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-shard-idle;
+}
+
+.specter-arena-root .sa-hero--poly.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-poly-idle;
+}
+
+.specter-arena-root .sa-hero--tide.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-tide-idle;
+}
+
+.specter-arena-root .sa-hero--lume.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-lume-idle;
+}
+
+.specter-arena-root .sa-hero--moss.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-moss-idle;
+}
+
+.specter-arena-root .sa-hero--bur.sa-is-animated .sa-hero__img {
+  animation-name: sa-arena-bur-idle;
+}
+
+.specter-arena-root .sa-token--specter {
+  z-index: 2;
+}
+
+/* A task stands beside its hero (FP-24), so it is drawn above heroes and stays clickable; a hero playing a strike comes back on top while it lasts. */
+.specter-arena-root .sa-token--enemy {
+  z-index: 3;
+}
+
+.specter-arena-root .sa-token--specter:has(.sa-hero.sa-is-attack),
+.specter-arena-root .sa-token--specter:has(.sa-hero.sa-is-cast) {
+  z-index: 4;
+}
+
+.specter-arena-root .sa-token--specter.sa-is-engaging {
+  border-color: var(--amber);
+}
+
+.specter-arena-root .sa-token--specter.sa-is-coverage-unknown {
+  opacity: 0.85;
+}
+
+.specter-arena-root .sa-token--enemy.sa-is-defeated {
+  opacity: 0.8;
+}
+
+.specter-arena-root .sa-token--enemy.sa-is-blocked .sa-token__label {
+  box-shadow: inset 0 -2px 0 var(--danger);
+}
+
+.specter-arena-root .sa-minion {
+  position: relative;
+  display: block;
+  width: calc(var(--sa-minion-base, 36.4px) * var(--sa-minion-scale, 1));
+  height: calc(var(--sa-minion-base, 36.4px) * var(--sa-minion-scale, 1));
+  transform-origin: 53% 90%;
+}
+
+.specter-arena-root .sa-token--encounter .sa-minion {
+  width: 34px;
+  height: 34px;
+  transform-origin: 56% 90%;
+}
+
+.specter-arena-root .sa-minion[data-facing="left"] {
+  transform: scaleX(-1);
+}
+
+.specter-arena-root .sa-minion__art,
+.specter-arena-root .sa-minion__fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-minion__art {
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.specter-arena-root .sa-minion--patchling .sa-minion__art {
+  background-image: var(--sa-sprite-patchling);
+}
+
+.specter-arena-root .sa-minion--patchbrute .sa-minion__art {
+  background-image: var(--sa-sprite-patchbrute);
+}
+
+.specter-arena-root .sa-minion.sa-is-defeated {
+  filter: grayscale(0.7);
+  transform: rotate(-8deg);
+}
+
+.specter-arena-root .sa-minion.sa-is-defeated[data-facing="left"] {
+  transform: scaleX(-1) rotate(-8deg);
+}
+
+.specter-arena-root .sa-minion.sa-is-animated.sa-is-idle {
+  animation: sa-arena-bob 2.2s ease-in-out infinite;
+}
+
+.specter-arena-root .sa-minion.sa-is-animated.sa-is-engaged {
+  animation: sa-arena-engaged 1.1s ease-in-out infinite;
+}
+
+.specter-arena-root .sa-minion--patchling.sa-is-animated.sa-is-hit {
+  animation: sa-arena-patchling-hit 320ms cubic-bezier(0.25, 0.05, 0.25, 1) 1 both;
+}
+
+.specter-arena-root .sa-minion--patchbrute.sa-is-animated.sa-is-hit {
+  animation: sa-arena-patchbrute-hit 420ms cubic-bezier(0.22, 0.72, 0.3, 1) 1 both;
+}
+
+.specter-arena-root .sa-minion--patchling.sa-is-animated.sa-is-attack {
+  animation: sa-arena-patchling-attack 520ms cubic-bezier(0.3, 0.05, 0.2, 1) 1 both;
+}
+
+.specter-arena-root .sa-minion--patchbrute.sa-is-animated.sa-is-attack {
+  animation: sa-arena-patchbrute-attack 700ms cubic-bezier(0.3, 0.05, 0.2, 1) 1 both;
+}
+
+.specter-arena-root .sa-minion-impact i.sa-minion-impact__flash {
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  border: 3px solid var(--amber);
+  background: rgba(255, 240, 200, 0.5);
+  box-shadow: 0 0 14px 3px var(--amber);
+  opacity: 0;
+}
+
+.specter-arena-root .sa-is-strong .sa-minion-impact i.sa-minion-impact__flash {
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-width: 4px;
+}
+
+.specter-arena-root .sa-minion-impact i.sa-minion-impact__chip {
+  width: 7px;
+  height: 7px;
+  margin: -3px 0 0 -3px;
+  border-radius: 1px;
+  background: var(--text);
+  box-shadow: 0 0 6px var(--amber);
+  opacity: 0;
+}
+
+.specter-arena-root .sa-minion-impact i.sa-minion-impact__chip--one {
+  --sa-chip-x: -20px;
+  --sa-chip-y: -18px;
+}
+
+.specter-arena-root .sa-minion-impact i.sa-minion-impact__chip--two {
+  --sa-chip-x: 22px;
+  --sa-chip-y: -14px;
+}
+
+.specter-arena-root .sa-is-strong .sa-minion-impact i.sa-minion-impact__chip--one {
+  --sa-chip-x: -34px;
+  --sa-chip-y: -28px;
+}
+
+.specter-arena-root .sa-is-strong .sa-minion-impact i.sa-minion-impact__chip--two {
+  --sa-chip-x: 36px;
+  --sa-chip-y: -24px;
+}
+
+.specter-arena-root .sa-minion.sa-is-animated.sa-is-hit .sa-minion-impact i.sa-minion-impact__flash {
+  animation: sa-arena-minion-impact 380ms ease-out 1 both;
+}
+
+.specter-arena-root .sa-minion.sa-is-animated.sa-is-hit .sa-minion-impact i.sa-minion-impact__chip {
+  animation: sa-arena-minion-spark 380ms ease-out 1 both;
+}
+
+/* FP-21: the strike that travels from a hero to its target, tinted per hero. Drawn only while an exchange plays. */
+.specter-arena-root .sa-strike-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-strike {
+  position: absolute;
+  width: 0;
+  height: 0;
+  margin-top: -34px;
+  animation:
+    sa-arena-strike-travel calc(var(--sa-strike-ms) * 0.7) cubic-bezier(0.35, 0, 0.85, 0.7) calc(var(--sa-strike-ms) * 0.3) both,
+    sa-arena-strike-in 80ms ease-out calc(var(--sa-strike-ms) * 0.3) both,
+    sa-arena-strike-out 140ms linear var(--sa-strike-ms) forwards;
+}
+
+.specter-arena-root .sa-strike__bolt {
+  position: absolute;
+  left: -34px;
+  top: -3px;
+  width: 34px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--sa-strike-color));
+  box-shadow: 0 0 10px var(--sa-strike-color);
+  transform-origin: 100% 50%;
+  rotate: var(--sa-strike-angle);
+}
+
+.specter-arena-root .sa-strike__head {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow:
+    0 0 8px 3px var(--sa-strike-color),
+    0 0 18px 6px var(--sa-strike-color);
+}
+
+.specter-arena-root .sa-strike--cast .sa-strike__bolt {
+  left: -56px;
+  top: -5px;
+  width: 56px;
+  height: 10px;
+}
+
+.specter-arena-root .sa-strike--cast .sa-strike__head {
+  left: -12px;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+}
+
+.specter-arena-root .sa-minion.sa-is-animated.sa-is-defeat {
+  animation: sa-arena-defeat 0.65s ease-in 1 forwards;
+}
+
+.specter-arena-root .sa-minion-impact,
+.specter-arena-root .sa-minion-collapse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-minion-impact i,
+.specter-arena-root .sa-minion-collapse i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--amber);
+  opacity: 0.7;
+}
+
+.specter-arena-root .sa-arena-minimap {
+  display: grid;
+  gap: 6px;
+  justify-items: stretch;
+  width: min(100%, 320px);
+  padding: 6px;
+  border: 1px solid rgba(180, 154, 255, 0.35);
+  border-radius: 9px;
+  background: rgba(20, 16, 32, 0.93);
+}
+
+.specter-arena-root .sa-arena-minimap__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--panel);
+  background-size: 100% 100%;
+}
+
+.specter-arena-root .sa-arena-minimap__frame.sa-has-art {
+  background-image: var(--sa-map);
+}
+
+.specter-arena-root .sa-arena-minimap__paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-arena-minimap__path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.specter-arena-root .sa-arena-minimap__structure {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  transform: translate(-50%, -80%);
+}
+
+.specter-arena-root .sa-arena-minimap__structure svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-arena-minimap__dot {
+  position: absolute;
+  z-index: 1;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.specter-arena-root .sa-arena-minimap__dot--specter {
+  background: var(--cyan);
+}
+
+.specter-arena-root .sa-arena-minimap__dot--enemy {
+  background: var(--violet);
+}
+
+.specter-arena-root .sa-arena-minimap__view {
+  position: absolute;
+  border: 1px solid var(--text);
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-arena-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.specter-arena-root .sa-arena-stat {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.specter-arena-root .sa-arena-stat dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-arena-stat dd {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-bots-on-field summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-bots-on-field__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specter-arena-root .sa-bots-on-field__list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-bots-on-field__names {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-cue-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-cue {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 10px 16px;
+  border: 1px solid var(--success);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.specter-arena-root .sa-cue__eyebrow {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-cue__particles i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.specter-arena-root .sa-is-animated .sa-cue {
+  animation: sa-arena-cue 1.8s ease-out 1 forwards;
+}
+
+.specter-arena-root .sa-arena-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.specter-arena-root .sa-arena-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-arena-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-arena-filter {
+  min-height: 32px;
+  padding: 2px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--raised);
+  font: inherit;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-arena-filter[aria-pressed="true"] {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.specter-arena-root .sa-arena-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.specter-arena-root .sa-arena-table caption {
+  padding: 6px 0;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.specter-arena-root .sa-arena-table th,
+.specter-arena-root .sa-arena-table td {
+  padding: 6px 8px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.specter-arena-root .sa-arena-table thead th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.specter-arena-root .sa-arena-table__select {
+  padding: 2px 0;
+  border: 0;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-arena-table__select[aria-current="true"] {
+  color: var(--violet);
+  text-decoration: underline;
+}
+
+.specter-arena-root .sa-arena-inspector {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.specter-arena-root .sa-arena-inspector__panel {
+  max-height: 720px;
+  overflow-y: auto;
+}
+
+.specter-arena-root .sa-arena-inspector h2 {
+  margin: 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-arena-inspector h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-arena-inspector p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-arena-inspector__body {
+  display: grid;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-arena-inspector__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.specter-arena-root .sa-arena-inspector__state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.specter-arena-root .sa-arena-section {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.specter-arena-root .sa-arena-plain {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specter-arena-root .sa-arena-plain li {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-arena-opened {
+  padding: 4px 6px;
+  border-left: 3px solid var(--violet);
+  background: var(--raised);
+}
+
+.specter-arena-root .sa-arena-fiction {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.specter-arena-root .sa-arena-fiction figcaption {
+  font-size: 12px;
+  font-style: normal;
+}
+
+.specter-arena-root .sa-arena-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-arena-copy__text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+
+@keyframes sa-arena-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+@keyframes sa-arena-engaged {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 3px -1px;
+  }
+}
+
+@keyframes sa-arena-patchling-hit {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1 1;
+  }
+  30% {
+    translate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * 9px) -2px;
+    rotate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * 4deg);
+    scale: 1.12 0.9;
+    filter: brightness(1.9) saturate(1.4);
+  }
+  60% {
+    translate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * 4px) 2px;
+    rotate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * -2deg);
+    scale: 0.99 1.015;
+  }
+}
+
+@keyframes sa-arena-patchbrute-hit {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1 1;
+  }
+  30% {
+    translate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * 8px) 0;
+    rotate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * 2.5deg);
+    scale: 1.1 0.92;
+    filter: brightness(1.9) saturate(1.4);
+  }
+  55% {
+    translate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * -2px) 2px;
+    rotate: calc(var(--sa-recoil, 1) * var(--sa-recoil-mag, 1) * -1deg);
+    scale: 0.995 1.01;
+  }
+}
+
+/* The minion's strike back: a short wind-up away from the hero, a lunge toward it that lands at 50% (260 ms) or 49% (340 ms), then a return. Presentation only. */
+@keyframes sa-arena-patchling-attack {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1 1;
+  }
+  25% {
+    translate: calc(var(--sa-lunge, 1) * -4px) 1px;
+    rotate: calc(var(--sa-lunge, 1) * -6deg);
+    scale: 0.94 1.06;
+  }
+  50% {
+    translate: calc(var(--sa-lunge, 1) * 14px) -3px;
+    rotate: calc(var(--sa-lunge, 1) * 8deg);
+    scale: 1.14 0.9;
+    filter: brightness(1.35);
+  }
+  75% {
+    translate: calc(var(--sa-lunge, 1) * 5px) 0;
+    rotate: calc(var(--sa-lunge, 1) * 2deg);
+    scale: 1 1;
+  }
+}
+
+@keyframes sa-arena-patchbrute-attack {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1 1;
+  }
+  25% {
+    translate: calc(var(--sa-lunge, 1) * -5px) 1px;
+    rotate: calc(var(--sa-lunge, 1) * -4deg);
+    scale: 0.95 1.05;
+  }
+  49% {
+    translate: calc(var(--sa-lunge, 1) * 16px) -2px;
+    rotate: calc(var(--sa-lunge, 1) * 5deg);
+    scale: 1.12 0.92;
+    filter: brightness(1.35);
+  }
+  75% {
+    translate: calc(var(--sa-lunge, 1) * 6px) 0;
+    rotate: calc(var(--sa-lunge, 1) * 1.5deg);
+    scale: 1 1;
+  }
+}
+
+/* The hero's flinch when the minion's strike lands: a quick recoil away from the minion and a flash. */
+.specter-arena-root .sa-hero.sa-is-flinch {
+  z-index: 3;
+}
+
+.specter-arena-root .sa-hero.sa-is-flinch.sa-is-animated .sa-hero__img {
+  animation: sa-arena-hero-flinch 360ms cubic-bezier(0.25, 0.05, 0.25, 1) 1 both;
+}
+
+@keyframes sa-arena-hero-flinch {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1 1;
+  }
+  25% {
+    translate: calc(var(--sa-flinch, -1) * 7px) 1px;
+    rotate: calc(var(--sa-flinch, -1) * 5deg);
+    scale: 0.95 1.04;
+    filter: brightness(1.6) saturate(1.3);
+  }
+  60% {
+    translate: calc(var(--sa-flinch, -1) * 3px) 0;
+    rotate: calc(var(--sa-flinch, -1) * 2deg);
+    scale: 1 1;
+  }
+}
+
+@keyframes sa-arena-minion-impact {
+  0% {
+    opacity: 0;
+    scale: 0.3;
+  }
+  25% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+
+@keyframes sa-arena-minion-spark {
+  0% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+    translate: var(--sa-chip-x, 0) var(--sa-chip-y, 0);
+  }
+}
+
+@keyframes sa-arena-strike-travel {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: var(--sa-sx) var(--sa-sy);
+  }
+}
+
+@keyframes sa-arena-strike-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sa-arena-strike-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sa-arena-defeat {
+  to {
+    opacity: 0.45;
+    translate: 0 6px;
+  }
+}
+
+@keyframes sa-arena-cue {
+  0% {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  15%,
+  80% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sa-arena-dash {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+
+@keyframes sa-arena-vell-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  30% {
+    transform: translate3d(-1px, -2px, 0) rotate(-0.4deg) scale(1.003);
+  }
+  55% {
+    transform: translate3d(0, -4px, 0) rotate(0deg) scale(1.006);
+  }
+  80% {
+    transform: translate3d(1px, -2px, 0) rotate(0.4deg) scale(1.003);
+  }
+}
+
+@keyframes sa-arena-stitch-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.35deg) scaleX(1.008) scaleY(0.994);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0) rotate(0.35deg) scaleX(0.996) scaleY(1.008);
+  }
+}
+
+@keyframes sa-arena-reeve-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.6deg) scale(1);
+  }
+  25%,
+  75% {
+    transform: translate3d(0, -2px, 0) rotate(0deg) scale(1.004);
+  }
+  50% {
+    transform: translate3d(0, -5px, 0) rotate(0.6deg) scale(1.008);
+  }
+}
+
+@keyframes sa-arena-rattle-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.45deg);
+  }
+  46% {
+    transform: translate3d(0, -3px, 0) rotate(0.35deg);
+  }
+  49% {
+    transform: translate3d(1.2px, -3px, 0) rotate(0.7deg);
+  }
+  52% {
+    transform: translate3d(-1.2px, -3px, 0) rotate(-0.7deg);
+  }
+  55% {
+    transform: translate3d(0.6px, -3px, 0) rotate(0.4deg);
+  }
+  72% {
+    transform: translate3d(0, -2px, 0) rotate(0.25deg);
+  }
+}
+
+@keyframes sa-arena-ember-idle {
+  0%,
+  100% {
+    transform: translate3d(-1px, 0, 0) rotate(-0.5deg) scaleX(1.01) scaleY(0.99);
+  }
+  50% {
+    transform: translate3d(1px, -3px, 0) rotate(0.5deg) scaleX(0.99) scaleY(1.02);
+  }
+}
+
+@keyframes sa-arena-shard-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.12deg);
+  }
+  50% {
+    transform: translate3d(0, -3px, 0) rotate(0.12deg);
+  }
+}
+
+@keyframes sa-arena-poly-idle {
+  0%,
+  100% {
+    transform: translate3d(-1px, 0, 0) rotate(-0.3deg) scale(1);
+  }
+  50% {
+    transform: translate3d(1px, -3px, 0) rotate(0.3deg) scale(1.004);
+  }
+}
+
+@keyframes sa-arena-tide-idle {
+  0%,
+  100% {
+    transform: translate3d(-1px, 0, 0) rotate(-0.55deg);
+  }
+  50% {
+    transform: translate3d(1px, -4px, 0) rotate(0.55deg);
+  }
+}
+
+@keyframes sa-arena-lume-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-1deg);
+  }
+  50% {
+    transform: translate3d(0, -2px, 0) rotate(1deg);
+  }
+}
+
+@keyframes sa-arena-moss-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.7deg) scaleX(1.008) scaleY(0.995);
+  }
+  50% {
+    transform: translate3d(0, -3px, 0) rotate(0.7deg) scaleX(0.995) scaleY(1.012);
+  }
+}
+
+@keyframes sa-arena-bur-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 2px, 0) scaleX(1.012) scaleY(0.99);
+  }
+  46% {
+    transform: translate3d(0, -2px, 0) scaleX(0.997) scaleY(1.01);
+  }
+  72% {
+    transform: translate3d(0, 0, 0) scale(1.004);
+  }
+}
+
+.specter-arena-root .sa-arena-plate--paused {
+  right: auto;
+  bottom: auto;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text);
+}
+
+/* FP-21: hero attack and cast effect layers, ported from the Figma Make export (src/index.css) and scoped. */
+.specter-arena-root .sa-hero__fx {
+  position: absolute;
+  z-index: 3;
+  left: 6.5px;
+  top: -30px;
+  width: 31px;
+  height: 31px;
+  transform: scale(calc(2.5 * var(--sa-fx-flip, 1)), 2.5);
+  transform-origin: 50% 0;
+  filter: saturate(1.5) brightness(1.3) drop-shadow(0 0 4px rgba(255, 255, 255, 0.55));
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-hero.sa-is-attack,
+.specter-arena-root .sa-hero.sa-is-cast {
+  z-index: 3;
+}
+
+.specter-arena-root .sa-hero--reeve.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-reeve-attack 620ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--reeve.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-reeve-cast 900ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--vell.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-vell-attack 560ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--vell.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-vell-cast 950ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--stitch.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-stitch-attack 650ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--stitch.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-stitch-cast 1050ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--poly.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-poly-attack 600ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--poly.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-poly-cast 1000ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--rattle.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-rattle-attack 620ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--rattle.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-rattle-cast 1000ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--ember.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-ember-attack 520ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--ember.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-ember-cast 950ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--shard.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-shard-attack 650ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--shard.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-shard-cast 1100ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--tide.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-tide-attack 580ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--tide.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-tide-cast 1050ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--lume.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-lume-attack 600ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--lume.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-lume-cast 1100ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--moss.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-moss-attack 600ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--moss.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-moss-cast 1150ms ease-in-out both;
+}
+
+.specter-arena-root .sa-hero--bur.sa-is-attack.sa-is-animated .sa-hero__img {
+  animation: sa-arena-bur-attack 680ms cubic-bezier(0.3, 0.05, 0.2, 1) both;
+}
+
+.specter-arena-root .sa-hero--bur.sa-is-cast.sa-is-animated .sa-hero__img {
+  animation: sa-arena-bur-cast 1200ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-directional {
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-reeve-slash {
+  position: absolute;
+  z-index: 3;
+  left: 45%;
+  top: 0;
+  width: 48px;
+  height: 38px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 15% 70%;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-reeve-slash svg {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-fx-reeve-slash path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.specter-arena-root .sa-fx-reeve-slash__trail {
+  stroke: rgba(180, 154, 255, 0.38);
+  stroke-width: 8;
+  filter: blur(2px);
+}
+
+.specter-arena-root .sa-fx-reeve-slash__edge {
+  stroke: rgb(225, 212, 255);
+  stroke-width: 2.6;
+  filter: drop-shadow(0 0 3px rgba(180, 154, 255, 0.95));
+}
+
+.specter-arena-root .sa-fx-reeve-slash svg {
+  animation: sa-arena-reeve-slash 620ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-reeve-aura {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__ring {
+  position: absolute;
+  left: 50%;
+  top: 61%;
+  border: 1px solid rgba(203, 185, 255, 0.88);
+  border-radius: 50%;
+  box-shadow:
+  0 0 4px rgba(180, 154, 255, 0.7),
+  inset 0 0 4px rgba(180, 154, 255, 0.38);
+}
+
+.specter-arena-root .sa-fx-reeve-aura__ring--outer {
+  width: 35px;
+  height: 15px;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__ring--inner {
+  width: 25px;
+  height: 10px;
+  --sa-fx-delay: 80ms;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__mote {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgb(222, 208, 255);
+  box-shadow: 0 0 5px rgb(180, 154, 255);
+}
+
+.specter-arena-root .sa-fx-reeve-aura__mote--one {
+  left: 23%;
+  top: 54%;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__mote--two {
+  left: 68%;
+  top: 42%;
+  --sa-fx-delay: 90ms;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__mote--three {
+  left: 78%;
+  top: 66%;
+  --sa-fx-delay: 160ms;
+}
+
+.specter-arena-root .sa-fx-reeve-aura__ring {
+  animation: sa-arena-reeve-aura-ring 900ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-reeve-aura__mote {
+  animation: sa-arena-reeve-aura-mote 900ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-vell-wave {
+  position: absolute;
+  z-index: 3;
+  left: 42%;
+  top: 1px;
+  width: 50px;
+  height: 38px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 14% 68%;
+}
+
+.specter-arena-root .sa-fx-vell-wave svg,
+.specter-arena-root .sa-fx-stitch-shockwave svg {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-fx-vell-wave path,
+.specter-arena-root .sa-fx-stitch-shockwave path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.specter-arena-root .sa-fx-vell-wave path.sa-fx-vell-wave__trail {
+  fill: rgba(180, 154, 255, 0.16);
+  stroke: rgba(180, 154, 255, 0.35);
+  stroke-width: 7;
+  filter: blur(1.5px);
+}
+
+.specter-arena-root .sa-fx-vell-wave__edge {
+  stroke: rgba(225, 212, 255, 0.9);
+  stroke-width: 2;
+}
+
+.specter-arena-root .sa-fx-vell-wave svg {
+  animation: sa-arena-vell-wave 560ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-vell-ward,
+.specter-arena-root .sa-fx-stitch-rewire,
+.specter-arena-root .sa-fx-poly-scan {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-vell-ward__clasp {
+  position: absolute;
+  z-index: 3;
+  left: 57%;
+  top: 42%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(255, 226, 160);
+  box-shadow:
+  0 0 4px rgb(255, 208, 128),
+  0 0 8px rgba(255, 208, 128, 0.65);
+}
+
+.specter-arena-root .sa-fx-vell-ward__ring {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  border: 1px solid rgba(203, 185, 255, 0.76);
+  border-radius: 50%;
+  background: rgba(180, 154, 255, 0.05);
+  box-shadow: 0 0 5px rgba(180, 154, 255, 0.35);
+}
+
+.specter-arena-root .sa-fx-vell-ward__ring--outer {
+  width: 43px;
+  height: 34px;
+}
+
+.specter-arena-root .sa-fx-vell-ward__ring--inner {
+  width: 32px;
+  height: 25px;
+  --sa-fx-delay: 90ms;
+}
+
+.specter-arena-root .sa-fx-vell-ward__ring {
+  animation: sa-arena-ward-expand 950ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-vell-ward__clasp {
+  animation: sa-arena-poly-eye-pulse 950ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-stitch-shockwave {
+  position: absolute;
+  z-index: 3;
+  left: 42%;
+  top: 45%;
+  width: 46px;
+  height: 25px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 12% 75%;
+}
+
+.specter-arena-root .sa-fx-stitch-shockwave__arc {
+  stroke: rgba(203, 185, 255, 0.9);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 3px rgba(180, 154, 255, 0.7));
+}
+
+.specter-arena-root .sa-fx-stitch-shockwave__marks {
+  stroke: rgb(240, 233, 255);
+  stroke-width: 2;
+}
+
+.specter-arena-root .sa-fx-stitch-shockwave svg {
+  animation: sa-arena-stitch-shockwave 650ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__arc {
+  position: absolute;
+  top: 24%;
+  width: 12px;
+  height: 22px;
+  border-top: 2px solid rgb(217, 201, 255);
+  border-bottom: 2px solid rgb(180, 154, 255);
+  filter: drop-shadow(0 0 3px rgb(180, 154, 255));
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__arc--left {
+  left: 5%;
+  transform: skewY(-32deg) rotate(-12deg);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__arc--right {
+  right: 3%;
+  transform: skewY(32deg) rotate(12deg);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__particle {
+  position: absolute;
+  width: 5px;
+  height: 2px;
+  border-top: 1px solid rgb(239, 232, 255);
+  border-bottom: 1px solid rgb(239, 232, 255);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__particle--one {
+  left: 18%;
+  top: 18%;
+  transform: rotate(32deg);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__particle--two {
+  right: 12%;
+  top: 48%;
+  transform: rotate(-26deg);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__particle--three {
+  left: 44%;
+  top: 4%;
+  transform: rotate(80deg);
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__ring {
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  width: 38px;
+  height: 15px;
+  border: 1px solid rgba(180, 154, 255, 0.7);
+  border-radius: 50%;
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__arc,
+.specter-arena-root .sa-fx-stitch-rewire__particle {
+  animation: sa-arena-rewire-electric 1050ms linear both;
+}
+
+.specter-arena-root .sa-fx-stitch-rewire__ring {
+  animation: sa-arena-ward-expand 1050ms ease-out both;
+  animation-delay: 280ms;
+}
+
+.specter-arena-root .sa-fx-poly-beam {
+  position: absolute;
+  z-index: 3;
+  left: 51%;
+  top: 43%;
+  width: 56px;
+  height: 8px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-poly-beam i {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-poly-beam__glow {
+  height: 7px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(180, 154, 255, 0.8), rgba(180, 154, 255, 0));
+  filter: blur(2px);
+}
+
+.specter-arena-root .sa-fx-poly-beam__core {
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgb(244, 239, 255), rgb(197, 175, 255) 55%, transparent);
+  box-shadow: 0 0 3px rgba(225, 212, 255, 0.9);
+}
+
+.specter-arena-root .sa-fx-poly-beam i {
+  animation: sa-arena-poly-beam 600ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-poly-scan__eye,
+.specter-arena-root .sa-fx-poly-scan__ring {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  border: 1px solid rgba(203, 185, 255, 0.86);
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(180, 154, 255, 0.5);
+  transform: translate(-50%, -50%);
+}
+
+.specter-arena-root .sa-fx-poly-scan__eye {
+  width: 11px;
+  height: 11px;
+  background: radial-gradient(circle, rgba(239, 232, 255, 0.55), transparent 70%);
+}
+
+.specter-arena-root .sa-fx-poly-scan__ring--one {
+  width: 34px;
+  height: 34px;
+}
+
+.specter-arena-root .sa-fx-poly-scan__ring--two {
+  width: 47px;
+  height: 47px;
+  --sa-fx-delay: 110ms;
+}
+
+.specter-arena-root .sa-fx-poly-scan__ray {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: 21px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(203, 185, 255, 0.8), transparent);
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-poly-scan__ray--two {
+  transform: rotate(120deg);
+}
+
+.specter-arena-root .sa-fx-poly-scan__ray--three {
+  transform: rotate(240deg);
+}
+
+.specter-arena-root .sa-fx-poly-scan__eye {
+  animation: sa-arena-poly-eye-pulse 1000ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-poly-scan__ring {
+  animation: sa-arena-poly-scan 1000ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-poly-scan__ray {
+  animation: sa-arena-rewire-electric 1000ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-rattle-impact {
+  position: absolute;
+  z-index: 3;
+  left: 47%;
+  top: 22%;
+  width: 43px;
+  height: 31px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 10% 60%;
+}
+
+.specter-arena-root .sa-fx-rattle-impact__burst {
+  position: absolute;
+  left: 23px;
+  top: 10px;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(203, 185, 255, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(225, 212, 255, 0.5), transparent 68%);
+  box-shadow: 0 0 5px rgba(180, 154, 255, 0.7);
+}
+
+.specter-arena-root .sa-fx-rattle-impact__bone {
+  position: absolute;
+  left: 27px;
+  top: 14px;
+  width: 8px;
+  height: 3px;
+  border-radius: 3px;
+  background: rgb(238, 232, 229);
+  box-shadow:
+  -1px 0 rgb(238, 232, 229),
+  1px 0 rgb(238, 232, 229);
+}
+
+.specter-arena-root .sa-fx-rattle-impact__bone--one {
+  --sa-fragment-x: 6px;
+  --sa-fragment-y: -7px;
+  rotate: -28deg;
+}
+
+.specter-arena-root .sa-fx-rattle-impact__bone--two {
+  --sa-fragment-x: 9px;
+  --sa-fragment-y: 1px;
+  rotate: 18deg;
+}
+
+.specter-arena-root .sa-fx-rattle-impact__bone--three {
+  --sa-fragment-x: 4px;
+  --sa-fragment-y: 7px;
+  rotate: 48deg;
+}
+
+.specter-arena-root .sa-fx-rattle-impact__burst {
+  animation: sa-arena-rattle-impact 620ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-rattle-impact__bone {
+  animation: sa-arena-bone-fragment 620ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance,
+.specter-arena-root .sa-fx-ember-flare,
+.specter-arena-root .sa-fx-shard-prism {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__rib {
+  position: absolute;
+  top: 35%;
+  width: 11px;
+  height: 19px;
+  border-top: 2px solid rgba(238, 232, 229, 0.9);
+  border-bottom: 2px solid rgba(238, 232, 229, 0.72);
+  border-radius: 50%;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__rib--left {
+  left: 12%;
+  rotate: -18deg;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__rib--right {
+  right: 10%;
+  rotate: 18deg;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__ring {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  border: 1px solid rgba(180, 154, 255, 0.75);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__ring--one {
+  width: 36px;
+  height: 28px;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__ring--two {
+  width: 47px;
+  height: 36px;
+  --sa-fx-delay: 110ms;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__mote {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 5px;
+  height: 2px;
+  border-radius: 3px;
+  background: rgb(238, 232, 229);
+  transform-origin: 0 10px;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__mote--one {
+  rotate: 20deg;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__mote--two {
+  rotate: 140deg;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__mote--three {
+  rotate: 260deg;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__rib,
+.specter-arena-root .sa-fx-rattle-resonance__mote {
+  animation: sa-arena-rewire-electric 1000ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-rattle-resonance__ring {
+  animation: sa-arena-ward-expand 1000ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-ember-bolt {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 42%;
+  width: 55px;
+  height: 12px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-ember-bolt__trail {
+  position: absolute;
+  left: 1px;
+  top: 5px;
+  width: 27px;
+  height: 3px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(255, 208, 128, 0), rgba(180, 154, 255, 0.62));
+  filter: blur(1px);
+}
+
+.specter-arena-root .sa-fx-ember-bolt__orb {
+  position: absolute;
+  left: 21px;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(180, 154, 255, 0.82);
+  border-radius: 50%;
+  background: rgb(255, 226, 160);
+  box-shadow:
+  0 0 4px rgb(255, 208, 128),
+  0 0 8px rgba(180, 154, 255, 0.7);
+}
+
+.specter-arena-root .sa-fx-ember-bolt__trail,
+.specter-arena-root .sa-fx-ember-bolt__orb {
+  animation: sa-arena-ember-bolt 520ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-ember-flare__aura {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 44px;
+  height: 48px;
+  border: 1px solid rgba(180, 154, 255, 0.7);
+  border-radius: 48% 52% 42% 58%;
+  background: radial-gradient(
+  circle,
+  rgba(255, 208, 128, 0.35),
+  rgba(180, 154, 255, 0.12) 58%,
+  transparent 72%
+  );
+  box-shadow: 0 0 9px rgba(255, 208, 128, 0.35);
+}
+
+.specter-arena-root .sa-fx-ember-flare__mote {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 5px;
+  height: 8px;
+  border-radius: 70% 30% 60% 40%;
+  background: linear-gradient(rgb(255, 227, 164), rgb(157, 128, 238));
+  transform-origin: 0 14px;
+}
+
+.specter-arena-root .sa-fx-ember-flare__mote--one {
+  rotate: 25deg;
+}
+
+.specter-arena-root .sa-fx-ember-flare__mote--two {
+  rotate: 145deg;
+  --sa-fx-delay: 80ms;
+}
+
+.specter-arena-root .sa-fx-ember-flare__mote--three {
+  rotate: 265deg;
+  --sa-fx-delay: 150ms;
+}
+
+.specter-arena-root .sa-fx-ember-flare__aura {
+  animation: sa-arena-flare-bloom 950ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-ember-flare__mote {
+  animation: sa-arena-reeve-aura-mote 950ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-shard-volley {
+  position: absolute;
+  z-index: 3;
+  left: 56%;
+  top: 29%;
+  width: 57px;
+  height: 24px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-shard-volley__projectile {
+  --sa-shard-y: 0px;
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 9px;
+  height: 4px;
+  clip-path: polygon(0 50%, 72% 0, 100% 50%, 72% 100%);
+  background: linear-gradient(90deg, rgb(240, 234, 255), rgb(155, 124, 233));
+  filter: drop-shadow(0 0 3px rgba(180, 154, 255, 0.8));
+}
+
+.specter-arena-root .sa-fx-shard-volley__projectile--two {
+  --sa-shard-y: -6px;
+  --sa-fx-delay: 55ms;
+}
+
+.specter-arena-root .sa-fx-shard-volley__projectile--three {
+  --sa-shard-y: 6px;
+  --sa-fx-delay: 105ms;
+}
+
+.specter-arena-root .sa-fx-shard-volley__projectile {
+  animation: sa-arena-shard-projectile 650ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-shard-prism__glint {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(244, 239, 255);
+  box-shadow: 0 0 5px rgb(180, 154, 255);
+}
+
+.specter-arena-root .sa-fx-shard-prism__glint--one {
+  left: 59%;
+  top: 24%;
+}
+
+.specter-arena-root .sa-fx-shard-prism__glint--two {
+  left: 38%;
+  top: 42%;
+  --sa-fx-delay: 90ms;
+}
+
+.specter-arena-root .sa-fx-shard-prism__ring {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(203, 185, 255, 0.78);
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 5px rgba(180, 154, 255, 0.4);
+}
+
+.specter-arena-root .sa-fx-shard-prism__ray {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(240, 234, 255, 0.9), transparent);
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-shard-prism__ray--two {
+  rotate: 90deg;
+}
+
+.specter-arena-root .sa-fx-shard-prism__ray--three {
+  rotate: 180deg;
+}
+
+.specter-arena-root .sa-fx-shard-prism__ray--four {
+  rotate: 270deg;
+}
+
+.specter-arena-root .sa-fx-shard-prism__glint,
+.specter-arena-root .sa-fx-shard-prism__ray {
+  animation: sa-arena-rewire-electric 1100ms ease-in-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-shard-prism__ring {
+  animation: sa-arena-prism-ring 1100ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-tide-lash {
+  position: absolute;
+  z-index: 3;
+  left: 43%;
+  top: 3%;
+  width: 50px;
+  height: 36px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 12% 66%;
+}
+
+.specter-arena-root .sa-fx-tide-lash svg {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+}
+
+.specter-arena-root .sa-fx-tide-lash path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.specter-arena-root .sa-fx-tide-lash path.sa-fx-tide-lash__trail {
+  fill: rgba(112, 188, 232, 0.13);
+  stroke: rgba(112, 188, 232, 0.45);
+  stroke-width: 7;
+  filter: blur(1.5px);
+}
+
+.specter-arena-root .sa-fx-tide-lash__edge {
+  stroke: rgba(206, 226, 255, 0.95);
+  stroke-width: 2;
+}
+
+.specter-arena-root .sa-fx-tide-lash__drop {
+  position: absolute;
+  left: 32px;
+  top: 16px;
+  width: 4px;
+  height: 6px;
+  border-radius: 60% 40% 65% 35%;
+  background: rgb(168, 220, 244);
+}
+
+.specter-arena-root .sa-fx-tide-lash__drop--two {
+  left: 39px;
+  top: 10px;
+  --sa-fx-delay: 45ms;
+}
+
+.specter-arena-root .sa-fx-tide-lash__drop--three {
+  left: 42px;
+  top: 24px;
+  --sa-fx-delay: 90ms;
+}
+
+.specter-arena-root .sa-fx-tide-lash svg,
+.specter-arena-root .sa-fx-tide-lash__drop {
+  animation: sa-arena-water-lash 580ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-tide-undertow,
+.specter-arena-root .sa-fx-lume-beacon,
+.specter-arena-root .sa-fx-moss-bloom,
+.specter-arena-root .sa-fx-bur-avalanche {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__ripple {
+  position: absolute;
+  left: 50%;
+  top: 72%;
+  width: 43px;
+  height: 17px;
+  border: 2px solid rgba(112, 188, 232, 0.72);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(180, 154, 255, 0.4);
+}
+
+.specter-arena-root .sa-fx-tide-undertow__wave {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 44px;
+  height: 28px;
+  border-top: 2px solid rgba(180, 154, 255, 0.75);
+  border-radius: 50%;
+  transform-origin: 0 50%;
+  rotate: var(--sa-fx-angle, 0deg);
+}
+
+.specter-arena-root .sa-fx-tide-undertow__bubble--one {
+  left: 18%;
+  top: 54%;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__bubble--two {
+  right: 12%;
+  top: 46%;
+  --sa-fx-delay: 100ms;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__bubble--three {
+  left: 42%;
+  top: 25%;
+  --sa-fx-delay: 190ms;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__bubble--four {
+  right: 28%;
+  top: 18%;
+  --sa-fx-delay: 280ms;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__ripple,
+.specter-arena-root .sa-fx-tide-undertow__wave {
+  animation: sa-arena-water-ripple 1050ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-tide-undertow__bubble {
+  animation: sa-arena-bubble-rise 1050ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-lume-burst {
+  position: absolute;
+  z-index: 3;
+  left: 51%;
+  top: 42%;
+  width: 55px;
+  height: 18px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-lume-burst__cone,
+.specter-arena-root .sa-fx-lume-burst__core {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-lume-burst__cone {
+  height: 14px;
+  clip-path: polygon(0 42%, 100% 0, 100% 100%, 0 58%);
+  background: linear-gradient(90deg, rgba(255, 218, 145, 0.75), rgba(180, 154, 255, 0.08));
+  filter: blur(1.5px);
+}
+
+.specter-arena-root .sa-fx-lume-burst__core {
+  height: 3px;
+  background: linear-gradient(90deg, rgb(255, 228, 170), rgb(207, 188, 255) 65%, transparent);
+  box-shadow: 0 0 4px rgba(255, 218, 145, 0.7);
+}
+
+.specter-arena-root .sa-fx-lume-burst__cone,
+.specter-arena-root .sa-fx-lume-burst__core {
+  animation: sa-arena-ghostlight-burst 600ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__halo,
+.specter-arena-root .sa-fx-lume-beacon__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__halo {
+  width: 42px;
+  height: 42px;
+  background: radial-gradient(
+  circle,
+  rgba(255, 218, 145, 0.42),
+  rgba(180, 154, 255, 0.08) 66%,
+  transparent
+  );
+}
+
+.specter-arena-root .sa-fx-lume-beacon__ring {
+  width: 49px;
+  height: 49px;
+  border: 1px solid rgba(180, 154, 255, 0.72);
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(255, 228, 170);
+  box-shadow: 0 0 5px rgba(255, 218, 145, 0.8);
+  transform-origin: 0 16px;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote--one {
+  rotate: 0deg;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote--two {
+  rotate: 90deg;
+  --sa-fx-delay: 70ms;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote--three {
+  rotate: 180deg;
+  --sa-fx-delay: 140ms;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote--four {
+  rotate: 270deg;
+  --sa-fx-delay: 210ms;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__halo {
+  animation: sa-arena-ghostlight-pulse 1100ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__ring {
+  animation: sa-arena-ward-expand 1100ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-lume-beacon__mote {
+  animation: sa-arena-reeve-aura-mote 1100ms ease-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+.specter-arena-root .sa-fx-moss-puff {
+  position: absolute;
+  z-index: 3;
+  left: 51%;
+  top: 41%;
+  width: 52px;
+  height: 24px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 0 50%;
+}
+
+.specter-arena-root .sa-fx-moss-puff i {
+  position: absolute;
+  left: 3px;
+  top: calc(5px + var(--sa-spore-index) * 3px);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--sa-spore-color, rgb(184, 214, 159));
+  box-shadow: 0 0 4px rgba(180, 154, 255, 0.65);
+}
+
+.specter-arena-root .sa-fx-moss-puff i:nth-child(even) {
+  --sa-spore-color: rgb(201, 184, 245);
+}
+
+.specter-arena-root .sa-fx-moss-puff i {
+  animation: sa-arena-spore-drift 600ms ease-out both;
+  animation-delay: calc(var(--sa-spore-index) * 28ms);
+}
+
+.specter-arena-root .sa-fx-moss-bloom__ring {
+  position: absolute;
+  left: 50%;
+  top: 65%;
+  width: 44px;
+  height: 22px;
+  border: 1px solid rgba(155, 190, 125, 0.75);
+  border-radius: 48% 52% 44% 56%;
+  box-shadow: 0 0 5px rgba(180, 154, 255, 0.35);
+}
+
+.specter-arena-root .sa-fx-moss-bloom__tendril {
+  position: absolute;
+  bottom: 20%;
+  width: 12px;
+  height: 20px;
+  border-left: 2px solid rgba(155, 190, 125, 0.7);
+  border-radius: 50%;
+}
+
+.specter-arena-root .sa-fx-moss-bloom__tendril--one {
+  left: 24%;
+  rotate: -18deg;
+}
+
+.specter-arena-root .sa-fx-moss-bloom__tendril--two {
+  right: 22%;
+  rotate: 18deg;
+}
+
+.specter-arena-root .sa-fx-moss-bloom__spore {
+  position: absolute;
+  left: var(--sa-spore-left);
+  top: var(--sa-spore-top);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(199, 220, 174);
+  box-shadow: 0 0 3px rgba(180, 154, 255, 0.6);
+}
+
+.specter-arena-root .sa-fx-moss-bloom__ring {
+  animation: sa-arena-organic-bloom 1150ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-moss-bloom__tendril,
+.specter-arena-root .sa-fx-moss-bloom__spore {
+  animation: sa-arena-rewire-electric 1150ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact {
+  position: absolute;
+  z-index: 3;
+  left: 48%;
+  top: 25%;
+  width: 50px;
+  height: 34px;
+  transform: rotate(var(--sa-fx-angle, 0deg));
+  transform-origin: 8% 60%;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__crescent {
+  position: absolute;
+  left: 19px;
+  top: 7px;
+  width: 25px;
+  height: 19px;
+  border-top: 5px solid rgba(231, 226, 255, 0.85);
+  border-radius: 50%;
+  filter: drop-shadow(0 0 4px rgba(180, 154, 255, 0.7));
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk {
+  position: absolute;
+  left: 29px;
+  top: 15px;
+  width: 5px;
+  height: 5px;
+  rotate: 45deg;
+  background: rgb(238, 234, 255);
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk--one {
+  --sa-fragment-x: 7px;
+  --sa-fragment-y: -9px;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk--two {
+  --sa-fragment-x: 12px;
+  --sa-fragment-y: -2px;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk--three {
+  --sa-fragment-x: 10px;
+  --sa-fragment-y: 7px;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk--four {
+  --sa-fragment-x: 3px;
+  --sa-fragment-y: 10px;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__crescent {
+  animation: sa-arena-frost-impact 680ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-bur-frost-impact__chunk {
+  animation: sa-arena-bone-fragment 680ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__mist {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  width: 46px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(
+  circle,
+  rgba(236, 232, 255, 0.38),
+  rgba(180, 154, 255, 0.1) 62%,
+  transparent 76%
+  );
+  filter: blur(2px);
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__wave {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 52px;
+  height: 40px;
+  border: 2px solid rgba(220, 215, 255, 0.72);
+  border-radius: 50%;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__sparkle {
+  position: absolute;
+  left: 65%;
+  top: 22%;
+  width: 2px;
+  height: 11px;
+  background: rgb(255, 255, 255);
+  box-shadow: 0 0 4px rgb(203, 185, 255);
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__flake {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgb(243, 239, 255);
+  rotate: 45deg;
+  transform-origin: 0 18px;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__flake--one {
+  rotate: 20deg;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__flake--two {
+  rotate: 110deg;
+  --sa-fx-delay: 80ms;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__flake--three {
+  rotate: 200deg;
+  --sa-fx-delay: 160ms;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__flake--four {
+  rotate: 290deg;
+  --sa-fx-delay: 240ms;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__mist {
+  animation: sa-arena-ghostlight-pulse 1200ms ease-in-out both;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__wave {
+  animation: sa-arena-avalanche-wave 1200ms ease-out both;
+}
+
+.specter-arena-root .sa-fx-bur-avalanche__sparkle,
+.specter-arena-root .sa-fx-bur-avalanche__flake {
+  animation: sa-arena-rewire-electric 1200ms ease-in-out both;
+  animation-delay: var(--sa-fx-delay, 0ms);
+}
+
+@keyframes sa-arena-reeve-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  14% {
+    transform: translate3d(-2px, 1px, 0) rotate(-4deg) scale(0.99);
+  }
+  29% {
+    transform: translate3d(-5px, 2px, 0) rotate(-8deg) scale(0.985);
+  }
+  45% {
+    transform: translate3d(7px, -3px, 0) rotate(10deg) scale(1.025);
+  }
+  62% {
+    transform: translate3d(10px, -3px, 0) rotate(12deg) scale(1.03);
+  }
+  80% {
+    transform: translate3d(3px, -1px, 0) rotate(3deg) scale(1.01);
+  }
+}
+
+@keyframes sa-arena-reeve-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  20% {
+    transform: translate3d(0, -2px, 0) scale(1.005) rotate(-1deg);
+  }
+  45% {
+    transform: translate3d(0, -5px, 0) scale(1.02) rotate(0deg);
+  }
+  65% {
+    transform: translate3d(0, -5px, 0) scale(1.025) rotate(1deg);
+  }
+  82% {
+    transform: translate3d(0, -2px, 0) scale(1.01) rotate(0deg);
+  }
+}
+
+@keyframes sa-arena-vell-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translate3d(-3px, 1px, 0) rotate(-3deg) scale(0.99);
+  }
+  45% {
+    transform: translate3d(8px, -2px, 0) rotate(6deg) scale(1.02);
+  }
+  65% {
+    transform: translate3d(10px, -2px, 0) rotate(8deg) scale(1.025);
+  }
+  82% {
+    transform: translate3d(3px, 0, 0) rotate(2deg) scale(1.008);
+  }
+}
+
+@keyframes sa-arena-vell-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  24% {
+    transform: translate3d(0, -2px, 0) scaleX(1.01) scaleY(1.004);
+  }
+  52%,
+  70% {
+    transform: translate3d(0, -4px, 0) scaleX(1.035) scaleY(1.012);
+  }
+  84% {
+    transform: translate3d(0, -2px, 0) scale(1.006);
+  }
+}
+
+@keyframes sa-arena-stitch-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  18% {
+    transform: translate3d(0, 2px, 0) rotate(-2deg) scaleX(1.03) scaleY(0.97);
+  }
+  35% {
+    transform: translate3d(-3px, 1px, 0) rotate(-5deg) scale(1);
+  }
+  55% {
+    transform: translate3d(10px, -1px, 0) rotate(7deg) scaleX(0.98) scaleY(1.03);
+  }
+  68% {
+    transform: translate3d(8px, 2px, 0) rotate(5deg) scaleX(1.045) scaleY(0.96);
+  }
+  85% {
+    transform: translate3d(2px, 0, 0) rotate(1deg) scale(1);
+  }
+}
+
+@keyframes sa-arena-stitch-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  20% {
+    transform: translate3d(0, 1px, 0) scaleX(1.025) scaleY(0.98);
+  }
+  38% {
+    transform: translate3d(-2px, -1px, 0) rotate(-2deg) scale(1.005);
+  }
+  54% {
+    transform: translate3d(2px, -1px, 0) rotate(2deg) scale(1.015);
+  }
+  66% {
+    transform: translate3d(-1px, 0, 0) rotate(-1deg) scale(1.008);
+  }
+  82% {
+    transform: translate3d(0, -2px, 0) scale(1.02);
+  }
+}
+
+@keyframes sa-arena-poly-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translate3d(-2px, 1px, 0) scale(0.985);
+  }
+  38% {
+    transform: translate3d(0, -1px, 0) scale(1.01);
+  }
+  50%,
+  70% {
+    transform: translate3d(5px, -1px, 0) rotate(2deg) scale(1.02);
+  }
+}
+
+@keyframes sa-arena-poly-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(0, -3px, 0) scale(0.992);
+  }
+  48% {
+    transform: translate3d(0, -3px, 0) scale(1.015);
+  }
+  72% {
+    transform: translate3d(0, -1px, 0) scale(1.008);
+  }
+}
+
+@keyframes sa-arena-rattle-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  24% {
+    transform: translate3d(-3px, 1px, 0) rotate(-5deg) scale(0.99);
+  }
+  50% {
+    transform: translate3d(8px, -1px, 0) rotate(9deg) scaleX(1.025) scaleY(0.975);
+  }
+  68% {
+    transform: translate3d(6px, 0, 0) rotate(6deg) scale(1.008);
+  }
+  82% {
+    transform: translate3d(1px, 0, 0) rotate(-1deg) scale(0.998);
+  }
+}
+
+@keyframes sa-arena-rattle-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  24% {
+    transform: translate3d(-1.2px, -1px, 0) rotate(-1deg);
+  }
+  31% {
+    transform: translate3d(1.2px, -1px, 0) rotate(1deg);
+  }
+  48% {
+    transform: translate3d(-1.2px, -3px, 0) rotate(-0.8deg);
+  }
+  55% {
+    transform: translate3d(1.2px, -3px, 0) rotate(0.8deg);
+  }
+  76% {
+    transform: translate3d(0, -2px, 0) rotate(0deg);
+  }
+}
+
+@keyframes sa-arena-ember-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  28% {
+    transform: translate3d(-2px, 1px, 0) scaleX(0.96) scaleY(1.025);
+  }
+  48% {
+    transform: translate3d(7px, -1px, 0) scaleX(1.055) scaleY(0.985);
+  }
+  66% {
+    transform: translate3d(5px, 0, 0) scaleX(1.025) scaleY(0.995);
+  }
+  82% {
+    transform: translate3d(1px, 0, 0) scale(0.995);
+  }
+}
+
+@keyframes sa-arena-ember-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  28% {
+    transform: translate3d(0, -2px, 0) scale(1.015);
+  }
+  56%,
+  72% {
+    transform: translate3d(0, -4px, 0) scaleX(1.035) scaleY(1.045);
+  }
+  86% {
+    transform: translate3d(0, -2px, 0) scale(1.01);
+  }
+}
+
+@keyframes sa-arena-shard-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  28% {
+    transform: translate3d(-2px, 0, 0) rotate(-1.8deg) scale(0.995);
+  }
+  48% {
+    transform: translate3d(4px, -1px, 0) rotate(2deg) scale(1.012);
+  }
+  72% {
+    transform: translate3d(3px, -1px, 0) rotate(1deg) scale(1.006);
+  }
+}
+
+@keyframes sa-arena-shard-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  48%,
+  68% {
+    transform: translate3d(0, -3px, 0) scale(1.012);
+  }
+  84% {
+    transform: translate3d(0, -1px, 0) scale(1.005);
+  }
+}
+
+@keyframes sa-arena-tide-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate3d(-3px, 1px, 0) rotate(-4deg) scaleX(1.015) scaleY(0.99);
+  }
+  50% {
+    transform: translate3d(7px, -2px, 0) rotate(8deg) scaleX(0.985) scaleY(1.025);
+  }
+  72% {
+    transform: translate3d(4px, -1px, 0) rotate(3deg) scale(1.008);
+  }
+  86% {
+    transform: translate3d(1px, 0, 0) rotate(-1deg);
+  }
+}
+
+@keyframes sa-arena-tide-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  22% {
+    transform: translate3d(0, 2px, 0) scaleX(1.015) scaleY(0.99);
+  }
+  58%,
+  72% {
+    transform: translate3d(0, -5px, 0) scaleX(0.995) scaleY(1.018);
+  }
+  88% {
+    transform: translate3d(0, -2px, 0) scale(1.006);
+  }
+}
+
+@keyframes sa-arena-lume-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  28% {
+    transform: translate3d(-2px, 1px, 0) rotate(-3deg) scale(0.995);
+  }
+  50% {
+    transform: translate3d(6px, -1px, 0) rotate(5deg) scale(1.018);
+  }
+  76% {
+    transform: translate3d(2px, 0, 0) rotate(1deg) scale(1.005);
+  }
+}
+
+@keyframes sa-arena-lume-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  46%,
+  70% {
+    transform: translate3d(0, -3px, 0) scale(1.012);
+  }
+  86% {
+    transform: translate3d(0, -1px, 0) scale(1.004);
+  }
+}
+
+@keyframes sa-arena-moss-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  28% {
+    transform: translate3d(-1px, 1px, 0) rotate(-2deg) scaleX(1.025) scaleY(0.975);
+  }
+  52% {
+    transform: translate3d(5px, -1px, 0) rotate(5deg) scaleX(0.99) scaleY(1.02);
+  }
+  78% {
+    transform: translate3d(1px, 0, 0) rotate(1deg);
+  }
+}
+
+@keyframes sa-arena-moss-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  26% {
+    transform: translate3d(0, 2px, 0) scaleX(1.015) scaleY(0.99);
+  }
+  55%,
+  72% {
+    transform: translate3d(0, 0, 0) scaleX(1.005) scaleY(1.025);
+  }
+}
+
+@keyframes sa-arena-bur-attack {0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  28% {
+    transform: translate3d(-4px, 1px, 0) rotate(-4deg) scale(0.99);
+  }
+  56% {
+    transform: translate3d(10px, 1px, 0) rotate(7deg) scaleX(1.035) scaleY(0.97);
+  }
+  72% {
+    transform: translate3d(7px, 0, 0) rotate(4deg) scale(1.012);
+  }
+  88% {
+    transform: translate3d(1px, 0, 0) rotate(-1deg);
+  }
+}
+
+@keyframes sa-arena-bur-cast {0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(0, 2px, 0) scaleX(1.025) scaleY(0.98);
+  }
+  58%,
+  76% {
+    transform: translate3d(0, -3px, 0) scale(1.018);
+  }
+}
+
+@keyframes sa-arena-reeve-slash {0%,
+  34% {
+    opacity: 0;
+    transform: scale(0.7) rotate(-15deg);
+  }
+  43% {
+    opacity: 1;
+    transform: scale(0.86) rotate(-8deg);
+  }
+  62% {
+    opacity: 0.82;
+    transform: scale(1.15) rotate(12deg);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.18) rotate(14deg);
+  }
+}
+
+@keyframes sa-arena-reeve-aura-ring {0%,
+  18% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  50%,
+  65% {
+    opacity: 0.78;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes sa-arena-reeve-aura-mote {0%,
+  20% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.7);
+  }
+  52% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-9px) scale(0.3);
+  }
+}
+
+@keyframes sa-arena-vell-wave {0%,
+  34% {
+    opacity: 0;
+    transform: scaleX(0.55) scaleY(0.8) translateX(-3px);
+  }
+  48% {
+    opacity: 0.78;
+  }
+  70% {
+    opacity: 0;
+    transform: scaleX(1.18) scaleY(1.06) translateX(8px);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sa-arena-ward-expand {0%,
+  18% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  48%,
+  68% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.22);
+  }
+}
+
+@keyframes sa-arena-poly-eye-pulse {0%,
+  100% {
+    opacity: 0.12;
+    transform: translate(-50%, -50%) scale(0.82);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes sa-arena-stitch-shockwave {0%,
+  48% {
+    opacity: 0;
+    transform: scale(0.45) translateX(-2px);
+  }
+  62% {
+    opacity: 0.9;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: scale(1.18) translateX(8px);
+  }
+}
+
+@keyframes sa-arena-rewire-electric {0%,
+  20%,
+  100% {
+    opacity: 0;
+  }
+  32%,
+  44%,
+  58% {
+    opacity: 0.9;
+  }
+  38%,
+  51%,
+  72% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes sa-arena-poly-beam {0%,
+  48% {
+    opacity: 0;
+    transform: scaleX(0.05);
+  }
+  55% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  72% {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+  78%,
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes sa-arena-poly-scan {0%,
+  42% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  58% {
+    opacity: 0.8;
+  }
+  78%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+@keyframes sa-arena-rattle-impact {0%,
+  42% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes sa-arena-bone-fragment {0%,
+  42% {
+    opacity: 0;
+    translate: 0 0;
+  }
+  52% {
+    opacity: 0.95;
+  }
+  78%,
+  100% {
+    opacity: 0;
+    translate: var(--sa-fragment-x) var(--sa-fragment-y);
+  }
+}
+
+@keyframes sa-arena-ember-bolt {0%,
+  40% {
+    opacity: 0;
+    translate: 0 0;
+    scale: 0.55;
+  }
+  48% {
+    opacity: 1;
+  }
+  76% {
+    opacity: 0.9;
+    translate: 42px 0;
+    scale: 1;
+  }
+  86%,
+  100% {
+    opacity: 0;
+    translate: 52px 0;
+  }
+}
+
+@keyframes sa-arena-flare-bloom {0%,
+  26% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+  58%,
+  72% {
+    opacity: 0.82;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.22);
+  }
+}
+
+@keyframes sa-arena-shard-projectile {0%,
+  42% {
+    opacity: 0;
+    translate: 0 0;
+    scale: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  84% {
+    opacity: 0.82;
+    translate: 44px var(--sa-shard-y);
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 51px var(--sa-shard-y);
+  }
+}
+
+@keyframes sa-arena-prism-ring {0%,
+  35% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(0.4);
+  }
+  58% {
+    opacity: 0.82;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.16);
+  }
+}
+
+@keyframes sa-arena-water-lash {0%,
+  36% {
+    opacity: 0;
+    transform: scale(0.55) translateX(-3px);
+  }
+  50% {
+    opacity: 0.9;
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: scale(1.16) translateX(7px);
+  }
+}
+
+@keyframes sa-arena-water-ripple {0%,
+  20% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  48% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+}
+
+@keyframes sa-arena-bubble-rise {0% {
+    opacity: 0;
+    translate: 0 5px;
+    scale: 0.65;
+  }
+  25%,
+  68% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    translate: 2px -13px;
+    scale: 1;
+  }
+}
+
+@keyframes sa-arena-ghostlight-burst {0%,
+  40% {
+    opacity: 0;
+    transform: scaleX(0.1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scaleX(1);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: scaleX(1.08);
+  }
+}
+
+@keyframes sa-arena-ghostlight-pulse {0%,
+  100% {
+    opacity: 0.22;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes sa-arena-spore-drift {0%,
+  35% {
+    opacity: 0;
+    translate: 0 0;
+    scale: 0.55;
+  }
+  48% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    translate: calc(22px + var(--sa-spore-index) * 4px) calc((var(--sa-spore-index) - 2) * 3px);
+    scale: 1;
+  }
+}
+
+@keyframes sa-arena-organic-bloom {0%,
+  25% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45) rotate(-8deg);
+  }
+  58% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.18) rotate(6deg);
+  }
+}
+
+@keyframes sa-arena-frost-impact {0%,
+  42% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  56% {
+    opacity: 0.9;
+  }
+  82%,
+  100% {
+    opacity: 0;
+    transform: scale(1.25) translateX(5px);
+  }
+}
+
+@keyframes sa-arena-avalanche-wave {0%,
+  25% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  62% {
+    opacity: 0.78;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specter-arena-root .sa-arena-scene *,
+  .specter-arena-root .sa-arena-scene *::before,
+  .specter-arena-root .sa-arena-scene *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,83 @@
+name: preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # Fork PRs get no OIDC token, and running fork code with the base repository's
+    # privileges would hand it the deploy role, so previews run only for branches here.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: preview
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    env:
+      PREVIEW_ROLE_ARN: ${{ vars.PREVIEW_ROLE_ARN }}
+      PREVIEW_REGION: ${{ vars.PREVIEW_REGION }}
+      PREVIEW_BUCKET: ${{ vars.PREVIEW_BUCKET }}
+      PREVIEW_DISTRIBUTION_ID: ${{ vars.PREVIEW_DISTRIBUTION_ID }}
+      PREVIEW_DOMAIN: ${{ vars.PREVIEW_DOMAIN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Check preview configuration
+        id: config
+        run: |
+          if [ -z "$PREVIEW_ROLE_ARN" ] || [ -z "$PREVIEW_REGION" ] || [ -z "$PREVIEW_BUCKET" ] || [ -z "$PREVIEW_DISTRIBUTION_ID" ] || [ -z "$PREVIEW_DOMAIN" ]; then
+            echo "::notice title=Preview skipped::preview infrastructure not configured"
+            echo "preview infrastructure not configured; no preview URL will be posted"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.config.outputs.configured == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: steps.config.outputs.configured == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Build the preview harness
+        id: build
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          npm ci
+          npm run --if-present build:preview
+          if [ -f ui/preview-dist/index.html ]; then
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Preview skipped::this revision has no preview harness build"
+            echo "built=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.build.outputs.built == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.PREVIEW_REGION }}
+          role-session-name: specter-arena-preview-${{ github.event.pull_request.number }}
+      - name: Upload and invalidate
+        if: steps.build.outputs.built == 'true'
+        run: |
+          aws s3 sync ui/preview-dist "s3://${PREVIEW_BUCKET}/pr-${PR_NUMBER}/" --delete
+          aws cloudfront create-invalidation --distribution-id "$PREVIEW_DISTRIBUTION_ID" --paths "/pr-${PR_NUMBER}/*"
+      - name: Post the preview URL
+        if: steps.build.outputs.built == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://${PREVIEW_DOMAIN}/pr-${PR_NUMBER}/"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --edit-last --create-if-none \
+            --body "Preview for ${GITHUB_SHA::7}: ${url}"

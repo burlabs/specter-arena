@@ -1,0 +1,81 @@
+{
+  "name": "specter-arena",
+  "version": "0.1.0",
+  "minKiroCrewVersion": "0.12.0",
+  "displayName": "Specters of the Abyss",
+  "description": "Turn your Kiro Crew agents into Specters and watch their work unfold as battles across a haunted arena. XP is credited as tasks end cleanly. The screenshots use demo data.",
+  "author": "burlabs",
+  "tags": [
+    "kiro-crew",
+    "bots",
+    "game",
+    "arena",
+    "monitoring"
+  ],
+  "highlights": [
+    "Assign each bot a Specter: Vell, Stitch, Reeve, Rattle, Ember, Shard, Poly, Tide, Lume, Moss or bur.",
+    "Observed bot tasks appear as minions on the map, sized by how long each has run.",
+    "XP is credited automatically when a task ends cleanly. It reflects observed activity, not verified outcomes.",
+    "A live arena with lanes and jungle, and two-way battles between heroes and minions.",
+    "A Specters showcase with Attack and Cast previews against a practice target.",
+    "Runs on your machine. It does not read bot memory, notes or goals, and never changes a bot."
+  ],
+  "platform": {
+    "os": [
+      "macos",
+      "linux"
+    ]
+  },
+  "iconPath": "ui/icons/logo-active@3x.png",
+  "iconPathDark": "ui/icons/logo-active@3x.png",
+  "backend": {
+    "entryPoint": "backend/app.py",
+    "type": "asgi",
+    "healthCheck": "/health",
+    "routes": "/api/apps/specter-arena"
+  },
+  "permissions": {
+    "api": [
+      "/apps/specter-arena/api/*",
+      "/api/agents"
+    ],
+    "events": [
+      "slots:user"
+    ]
+  },
+  "ui": {
+    "entry": "dist/index.mjs",
+    "pages": [
+      {
+        "route": "/apps/specter-arena",
+        "label": "Specters of the Abyss",
+        "icon": "Package",
+        "iconUrl": "icons/logo-active@2x.png",
+        "iconInactiveUrl": "icons/logo-inactive@2x.png"
+      }
+    ]
+  },
+  "useCases": [
+    "Watch what your Crew bots are doing as a game: a hero per bot, a minion per task, XP as work ends cleanly.",
+    "See at a glance which bots are working, which have no turn running, and where monitoring has gaps."
+  ],
+  "configuration": [
+    "No setup. On your first visit the app walks you through assigning a Specter to each bot, or randomizes them for you.",
+    "Permissions: calls to its own backend, the bot list from /api/agents, and the slots:user event.",
+    "The screenshots use demo data, not live Crew activity."
+  ],
+  "heroImage": "store/hero.png",
+  "heroImageDark": "store/hero.png",
+  "screenshots": [
+    "store/screenshot-arena.png",
+    "store/screenshot-specters.png",
+    "store/screenshot-roster.png",
+    "store/screenshot-assign.png"
+  ],
+  "screenshotsDark": [
+    "store/screenshot-arena.png",
+    "store/screenshot-specters.png",
+    "store/screenshot-roster.png",
+    "store/screenshot-assign.png"
+  ]
+}

@@ -1,0 +1,436 @@
+import assert from 'node:assert/strict';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { after, describe, it } from 'node:test';
+import {
+  COPY_LIST,
+  EXCLUDED_PATHS,
+  INSTALL_COMMAND,
+  OVERLAY_BY_PHASE,
+  OVERLAY_PATH,
+  PHASES,
+  V2_EXTRA_API_ENTRY,
+  mergeManifest,
+  overlayForPhase,
+  RUN_OPTIONS_FILE,
+  parseArgs,
+  runOptions,
+  stage,
+} from '../stage-probe-app.mjs';
+import { DIAGNOSTIC_MARKER, OWN_API_ENTRY } from '../check-fixtures.mjs';
+
+const scratch = mkdtempSync(join(tmpdir(), 'stage-probe-'));
+after(() => rmSync(scratch, { recursive: true, force: true }));
+
+const realOverlay = JSON.parse(readFileSync(OVERLAY_PATH, 'utf8'));
+const narrowOverlay = JSON.parse(readFileSync(OVERLAY_BY_PHASE.v3, 'utf8'));
+const realManifest = JSON.parse(readFileSync('app.json', 'utf8'));
+
+/** @param {string} root @param {string} path @param {string} text */
+function put(root, path, text) {
+  const full = join(root, path);
+  mkdirSync(dirname(full), { recursive: true });
+  writeFileSync(full, text);
+}
+
+/** @param {{ marker?: boolean, diagnostic?: boolean, release?: boolean, overlay?: unknown }} [options] */
+function repo({ marker = true, diagnostic = true, release = true, overlay = realOverlay } = {}) {
+  const root = mkdtempSync(join(scratch, 'repo-'));
+  put(root, 'app.json', JSON.stringify(realManifest));
+  put(root, OVERLAY_PATH, JSON.stringify(overlay));
+  put(root, OVERLAY_BY_PHASE.v3, JSON.stringify(narrowOverlay));
+  put(root, 'requirements.txt', 'starlette==1\n');
+  put(root, 'backend/app.py', 'app = 1\n');
+  put(root, 'backend/__init__.py', '');
+  put(root, 'backend/specter_arena/routes.py', 'x = 1\n');
+  put(root, 'backend/specter_arena/__pycache__/routes.cpython-312.pyc', 'bytecode');
+  put(root, 'backend/tests/test_routes.py', 'def test(): ...\n');
+  put(root, 'backend/uv.lock', 'lock');
+  put(root, 'package-lock.json', '{}');
+  put(root, 'ui/src/mount.tsx', 'source');
+  if (release) put(root, 'ui/dist/index.mjs', 'export default 1;');
+  if (diagnostic) put(root, 'ui/diagnostic-dist/index.mjs', marker ? `export default "${DIAGNOSTIC_MARKER}";` : 'export default 1;');
+  return root;
+}
+
+const HOST = { '--host-version': '0.12.2' };
+
+/** @param {string} root @param {string} phase @param {Record<string, string | undefined>} [flags] */
+function staged(root, phase, flags = phase === 'v0' ? {} : HOST) {
+  /** @type {string[]} */
+  const lines = [];
+  const code = stage({ phase, flags, root, log: (line) => lines.push(line) });
+  return { code, lines, manifest: () => JSON.parse(readFileSync(join(root, '.probe-app', 'app.json'), 'utf8')) };
+}
+
+describe('the committed overlay', () => {
+  it('has no backend.hooks and no marker', () => {
+    assert.equal(realOverlay.backend, undefined);
+    assert.equal(JSON.stringify(realOverlay).includes(DIAGNOSTIC_MARKER), false);
+  });
+
+  it('points ui.entry at the diagnostic bundle relative to the staged ui/', () => {
+    assert.equal(realOverlay.ui.entry, 'diagnostic-dist/index.mjs');
+  });
+
+  it('declares exactly one page, on the only route the host gives a third-party app', () => {
+    assert.deepEqual(realOverlay.ui.pages, [{ route: '/apps/specter-arena', label: 'Specter Diagnostic', icon: 'Activity' }]);
+  });
+
+  it('holds exactly the D-P1 grants: the own-namespace entry first, three probe api paths and two events', () => {
+    assert.deepEqual(realOverlay.permissions, {
+      api: [OWN_API_ENTRY, '/api/agents', '/api/usage', '/api/sessions/usage'],
+      events: ['slots:user', 'subagent:user'],
+    });
+    assert.equal(realOverlay.version, '0.0.0-probe.2');
+  });
+
+  it('is not reflected in the release manifest, which has no diagnostic reference and only the release grants', () => {
+    assert.equal(JSON.stringify(realManifest).toLowerCase().includes('diagnostic'), false);
+    assert.deepEqual(realManifest.permissions, { api: [OWN_API_ENTRY, '/api/agents'], events: ['slots:user'] });
+    assert.equal(realManifest.backend.hooks, undefined);
+  });
+});
+
+describe('the narrow 0.13.0 overlay (phase v3)', () => {
+  it('declares the own entry first, exact usage entries, the member-records prefix and two events', () => {
+    assert.deepEqual(narrowOverlay.permissions, {
+      api: [OWN_API_ENTRY, '/api/agents', '=/api/usage', '=/api/sessions/usage', '=/api/usage/turns', '/api/member-records/*'],
+      events: ['slots:user', 'subagent:user'],
+    });
+    assert.equal(narrowOverlay.version, '0.0.0-probe.3');
+  });
+
+  it('has no backend, no marker, and the same diagnostic page as the committed overlay', () => {
+    assert.equal(narrowOverlay.backend, undefined);
+    assert.equal(JSON.stringify(narrowOverlay).includes(DIAGNOSTIC_MARKER), false);
+    assert.deepEqual(narrowOverlay.ui, realOverlay.ui);
+  });
+
+  it('adds nothing to the release grants except the entries it names, and no entry is a bare usage path', () => {
+    for (const entry of narrowOverlay.permissions.api) {
+      assert.notEqual(entry, '/api/usage');
+      assert.notEqual(entry, '/api/sessions/usage');
+      assert.equal(entry.includes('*') && entry.startsWith('='), false, entry);
+    }
+  });
+
+  it('is the overlay as committed for v3, read from its own file', () => {
+    assert.deepEqual(overlayForPhase(narrowOverlay, 'v3'), narrowOverlay);
+    assert.equal(OVERLAY_BY_PHASE.v3, 'probe/manifest-overlay-v3.json');
+  });
+
+  it('leaves the other phases on the committed overlay', () => {
+    assert.deepEqual(Object.keys(OVERLAY_BY_PHASE), ['v3']);
+    assert.deepEqual(staged(repo(), 'v1').manifest().permissions, realOverlay.permissions);
+  });
+});
+
+describe('overlayForPhase', () => {
+  it('v0 keeps only the own-namespace api entry: no probe grants, no events', () => {
+    const overlay = overlayForPhase(realOverlay, 'v0');
+    assert.deepEqual(overlay.permissions, { api: [OWN_API_ENTRY] });
+    assert.deepEqual(overlay.ui, realOverlay.ui);
+  });
+
+  it('v1 is the overlay as committed', () => {
+    assert.deepEqual(overlayForPhase(realOverlay, 'v1'), realOverlay);
+  });
+
+  it('v2 adds exactly one api entry to v1', () => {
+    const v1 = overlayForPhase(realOverlay, 'v1');
+    const v2 = overlayForPhase(realOverlay, 'v2');
+    assert.deepEqual(v2.permissions.api, [...v1.permissions.api, V2_EXTRA_API_ENTRY]);
+    assert.equal(v2.permissions.api[0], OWN_API_ENTRY);
+    assert.equal(v1.permissions.api[0], OWN_API_ENTRY);
+    assert.deepEqual(v2.permissions.events, v1.permissions.events);
+  });
+
+  it('does not mutate the overlay it reads', () => {
+    const before = JSON.stringify(realOverlay);
+    for (const phase of PHASES) overlayForPhase(realOverlay, phase);
+    assert.equal(JSON.stringify(realOverlay), before);
+  });
+
+  it('tolerates an overlay whose permissions are missing or malformed', () => {
+    assert.deepEqual(overlayForPhase({ version: 'x' }, 'v2').permissions, { api: [OWN_API_ENTRY, V2_EXTRA_API_ENTRY] });
+    assert.deepEqual(overlayForPhase({ permissions: 'nope' }, 'v1').permissions, { api: [OWN_API_ENTRY] });
+    assert.deepEqual(overlayForPhase({}, 'v0').permissions, { api: [OWN_API_ENTRY] });
+  });
+
+  it('rejects an unknown phase', () => {
+    assert.throws(() => overlayForPhase(realOverlay, 'v9'), /unknown phase v9/);
+  });
+
+  it('does not duplicate the own-namespace entry when the overlay already lists it', () => {
+    const overlay = { permissions: { api: [OWN_API_ENTRY, '/api/x', OWN_API_ENTRY] } };
+    assert.deepEqual(overlayForPhase(overlay, 'v1').permissions.api, [OWN_API_ENTRY, '/api/x']);
+  });
+
+  it('adds the own-namespace entry in every phase even when the overlay omits it', () => {
+    for (const phase of PHASES) {
+      assert.equal(overlayForPhase({ permissions: { api: ['/api/x'] } }, phase).permissions.api[0], OWN_API_ENTRY);
+    }
+  });
+
+  it('rejects an overlay that declares backend.hooks', () => {
+    assert.throws(() => overlayForPhase({ ...realOverlay, backend: { hooks: {} } }, 'v1'), /backend\.hooks/);
+  });
+});
+
+describe('mergeManifest', () => {
+  it('replaces scalars, ui entry and pages, and adds permissions', () => {
+    const merged = mergeManifest(realManifest, overlayForPhase(realOverlay, 'v1'));
+    assert.equal(merged.version, '0.0.0-probe.2');
+    assert.equal(merged.minKiroCrewVersion, realManifest.minKiroCrewVersion);
+    assert.equal(merged.ui.entry, 'diagnostic-dist/index.mjs');
+    assert.deepEqual(merged.ui.pages, realOverlay.ui.pages);
+    assert.deepEqual(merged.permissions, realOverlay.permissions);
+  });
+
+  it('the release manifest has no agents and the staged probe has none either', () => {
+    assert.equal(realManifest.agents, undefined);
+    for (const phase of ['v0', 'v1', 'v2']) {
+      assert.equal('agents' in mergeManifest(realManifest, overlayForPhase(realOverlay, phase)), false, phase);
+    }
+  });
+
+  it('merges only the own-namespace entry for v0', () => {
+    assert.deepEqual(mergeManifest(realManifest, overlayForPhase(realOverlay, 'v0')).permissions, { api: [OWN_API_ENTRY] });
+  });
+
+  it('keeps the base ui untouched when the overlay has no ui', () => {
+    const base = { ui: { entry: 'dist/index.mjs', pages: [{ route: '/a' }] } };
+    assert.deepEqual(mergeManifest(base, { version: '1' }).ui, base.ui);
+  });
+
+  it('tolerates a base without a ui section', () => {
+    assert.deepEqual(mergeManifest({ name: 'x' }, { ui: { pages: [{ route: '/a' }] } }).ui, { pages: [{ route: '/a' }] });
+  });
+
+  it('does not mutate the base manifest', () => {
+    const before = JSON.stringify(realManifest);
+    mergeManifest(realManifest, overlayForPhase(realOverlay, 'v2'));
+    assert.equal(JSON.stringify(realManifest), before);
+  });
+});
+
+describe('every staged phase', () => {
+  /** @type {Record<string, unknown>} */
+  const expectedPermissions = {
+    v0: { api: [OWN_API_ENTRY] },
+    v1: realOverlay.permissions,
+    v2: { ...realOverlay.permissions, api: [...realOverlay.permissions.api, V2_EXTRA_API_ENTRY] },
+    v3: narrowOverlay.permissions,
+  };
+
+  for (const phase of PHASES) {
+    it(`${phase} has exactly one page at /apps/specter-arena and the diagnostic ui.entry`, () => {
+      const manifest = staged(repo(), phase).manifest();
+      assert.equal(manifest.ui.entry, 'diagnostic-dist/index.mjs');
+      assert.deepEqual(manifest.ui.pages, [{ route: '/apps/specter-arena', label: 'Specter Diagnostic', icon: 'Activity' }]);
+      assert.deepEqual(manifest.permissions, expectedPermissions[phase]);
+    });
+  }
+
+  it('leaves the release app.json and ui/dist as they were', () => {
+    const root = repo();
+    const before = readFileSync(join(root, 'app.json'), 'utf8');
+    staged(root, 'v1');
+    assert.equal(readFileSync(join(root, 'app.json'), 'utf8'), before);
+    assert.equal(readFileSync(join(root, 'ui/dist/index.mjs'), 'utf8'), 'export default 1;');
+  });
+});
+
+describe('stage', () => {
+  it('writes .probe-app with the merged manifest and the probe switch file', () => {
+    const root = repo();
+    const { code, manifest } = staged(root, 'v1');
+    assert.equal(code, 0);
+    assert.equal(existsSync(join(root, '.probe-app', '.probe-enabled')), true);
+    assert.deepEqual(manifest().permissions, realOverlay.permissions);
+    assert.equal(manifest().backend.hooks, undefined);
+  });
+
+  it('stages only the own-namespace entry for v0 and one extra api entry for v2', () => {
+    const root = repo();
+    assert.deepEqual(staged(root, 'v0').manifest().permissions, { api: [OWN_API_ENTRY] });
+    const v2 = staged(root, 'v2').manifest();
+    assert.equal(v2.permissions.api.length, realOverlay.permissions.api.length + 1);
+  });
+
+  it('copies the runtime and both bundles, never tests, lockfiles, bytecode or sources', () => {
+    const root = repo();
+    staged(root, 'v1');
+    const out = join(root, '.probe-app');
+    for (const path of ['requirements.txt', 'backend/app.py', 'backend/__init__.py', 'backend/specter_arena/routes.py', 'ui/dist/index.mjs', 'ui/diagnostic-dist/index.mjs']) {
+      assert.equal(existsSync(join(out, path)), true, path);
+    }
+    for (const path of ['backend/tests', 'backend/uv.lock', 'package-lock.json', 'ui/src', 'backend/specter_arena/__pycache__']) {
+      assert.equal(existsSync(join(out, path)), false, path);
+    }
+    assert.ok(COPY_LIST.every((path) => !/tests|lock/.test(path)));
+  });
+
+  it('replaces a previous staging directory', () => {
+    const root = repo();
+    put(root, '.probe-app/stale.txt', 'old');
+    staged(root, 'v0');
+    assert.equal(existsSync(join(root, '.probe-app', 'stale.txt')), false);
+  });
+
+  it('prints the install command as text and installs nothing', () => {
+    const { lines } = staged(repo(), 'v0');
+    assert.ok(lines.some((line) => line.includes(`${INSTALL_COMMAND} .probe-app`)));
+  });
+
+  it('refuses a diagnostic bundle without the marker and leaves no staging directory', () => {
+    const root = repo({ marker: false });
+    const { code, lines } = staged(root, 'v1');
+    assert.equal(code, 1);
+    assert.match(lines.join('\n'), /lacks SPECTER-DIAGNOSTIC-ONLY/);
+    assert.equal(existsSync(join(root, '.probe-app')), false);
+  });
+
+  it('asks for the builds it needs', () => {
+    assert.match(staged(repo({ diagnostic: false }), 'v1').lines.join('\n'), /run npm run build:diagnostic first/);
+    assert.match(staged(repo({ release: false }), 'v1').lines.join('\n'), /run npm run build first/);
+  });
+
+  it('reports a bad phase and an unreadable overlay without staging', () => {
+    const root = repo();
+    assert.match(staged(root, 'v9').lines.join('\n'), /unknown phase v9/);
+    assert.match(staged(repo({ overlay: [] }), 'v1').lines.join('\n'), /is not a JSON object/);
+    assert.match(staged(repo({ overlay: { backend: { hooks: {} } } }), 'v1').lines.join('\n'), /backend\.hooks/);
+    assert.equal(existsSync(join(root, '.probe-app')), false);
+  });
+
+  it('keeps the output directory inside the repository', () => {
+    const root = repo();
+    for (const outDir of ['.', '..', '../elsewhere']) {
+      /** @type {string[]} */
+      const lines = [];
+      assert.equal(stage({ phase: 'v0', root, outDir, log: (line) => lines.push(line) }), 1);
+      assert.match(lines.join('\n'), /must be a directory inside the repository/);
+    }
+  });
+
+  it('reads the overlay from probe/manifest-overlay.json only', () => {
+    const root = repo();
+    put(root, 'ui/manifest-overlay.json', JSON.stringify({ permissions: { api: ['/api/everything'] } }));
+    assert.equal(JSON.stringify(staged(root, 'v1').manifest()).includes('/api/everything'), false);
+    assert.equal(OVERLAY_PATH, 'probe/manifest-overlay.json');
+  });
+});
+
+describe('the staged run options', () => {
+  const sharedFixture = JSON.parse(readFileSync('backend/tests/probe_run_options_valid.json', 'utf8'));
+
+  it('writes .probe-run.json that matches the fixture the backend validates', () => {
+    const root = repo();
+    const flags = { '--host-version': '0.12.2', '--capture-seconds': '900', '--reconnect-after-start': '5' };
+    assert.equal(staged(root, 'v1', flags).code, 0);
+    const written = JSON.parse(readFileSync(join(root, '.probe-app', RUN_OPTIONS_FILE), 'utf8'));
+    assert.deepEqual(written, sharedFixture);
+  });
+
+  it('refuses v1 and v2 without a host version and stages nothing', () => {
+    for (const phase of ['v1', 'v2']) {
+      const root = repo();
+      const { code, lines } = staged(root, phase, { '--capture-seconds': '900' });
+      assert.equal(code, 1);
+      assert.match(lines.join('\n'), new RegExp(`phase ${phase} needs --host-version`));
+      assert.equal(existsSync(join(root, '.probe-app')), false);
+    }
+  });
+
+  it('lets v0 omit every option and then writes no options file', () => {
+    const root = repo();
+    assert.equal(staged(root, 'v0', {}).code, 0);
+    assert.equal(existsSync(join(root, '.probe-app', RUN_OPTIONS_FILE)), false);
+    assert.throws(() => runOptions('v0', { '--capture-seconds': '30' }), /needs --host-version/);
+    assert.deepEqual(runOptions('v0', HOST), { hostVersion: '0.12.2' });
+  });
+
+  it('validates each flag against the backend ranges', () => {
+    const bad = [
+      { '--host-version': '0.12' },
+      { '--host-version': 'latest' },
+      { ...HOST, '--capture-seconds': '0' },
+      { ...HOST, '--capture-seconds': '901' },
+      { ...HOST, '--capture-seconds': 'abc' },
+      { ...HOST, '--capture-seconds': '' },
+      { ...HOST, '--reconnect-after-start': '121' },
+      { ...HOST, '--reconnect-after-start': '0' },
+    ];
+    for (const flags of bad) assert.throws(() => runOptions('v1', flags), /must/, JSON.stringify(flags));
+    assert.deepEqual(runOptions('v1', { ...HOST, '--capture-seconds': '1', '--reconnect-after-start': '120' }), {
+      hostVersion: '0.12.2',
+      captureSeconds: 1,
+      reconnectAfterStartSeconds: 120,
+    });
+  });
+});
+
+describe('the store exclusion', () => {
+  it('leaves the product store out of the staged app and keeps the rest of the backend', () => {
+    const root = repo();
+    put(root, 'backend/specter_arena/store/__init__.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/store/migrations/0001_baseline.sql', 'create table t (x);\n');
+    put(root, 'backend/specter_arena/store_runtime.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/proxy_auth.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/probe/steps.py', 'x = 1\n');
+    put(root, 'backend/specter_arena/storefront.py', 'x = 1\n');
+    assert.equal(staged(root, 'v1').code, 0);
+    const out = join(root, '.probe-app');
+    for (const path of EXCLUDED_PATHS) assert.equal(existsSync(join(out, path)), false, path);
+    for (const path of ['proxy_auth.py', 'probe/steps.py', 'storefront.py', 'routes.py']) {
+      assert.equal(existsSync(join(out, 'backend/specter_arena', path)), true, path);
+    }
+  });
+});
+
+describe('parseArgs', () => {
+  it('defaults to v0', () => {
+    assert.equal(parseArgs([]).phase, 'v0');
+  });
+
+  it('reads the run-option flags as raw strings', () => {
+    const { flags } = parseArgs(['--phase', 'v1', '--host-version', '0.12.2', '--capture-seconds', '900', '--reconnect-after-start']);
+    assert.deepEqual(flags, { '--host-version': '0.12.2', '--capture-seconds': '900', '--reconnect-after-start': '' });
+    assert.deepEqual(parseArgs([]).flags, { '--host-version': undefined, '--capture-seconds': undefined, '--reconnect-after-start': undefined });
+  });
+
+  it('reads --phase', () => {
+    assert.equal(parseArgs(['--phase', 'v2']).phase, 'v2');
+  });
+
+  it('passes a missing phase value through so staging reports it', () => {
+    assert.equal(parseArgs(['--phase']).phase, '');
+  });
+});
+
+describe('--extra-steps', () => {
+  it('stages the opt-in step ids into the run options', () => {
+    const flags = { ...HOST, '--extra-steps': 'usage-turns,member-record-write' };
+    assert.deepEqual(runOptions('v3', flags), { hostVersion: '0.12.2', extraSteps: ['usage-turns', 'member-record-write'] });
+  });
+
+  it('rejects an id that is not a lower-case step id, and more than eight ids', () => {
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': 'Usage Turns' }), /--extra-steps/);
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': '' }), /--extra-steps/);
+    assert.throws(() => runOptions('v3', { ...HOST, '--extra-steps': 'a,b,c,d,e,f,g,h,i' }), /--extra-steps/);
+  });
+
+  it('is parsed from the command line and written to .probe-run.json', () => {
+    const args = ['--phase', 'v3', '--host-version', '0.13.0', '--extra-steps', 'usage-turns'];
+    const parsed = parseArgs(args);
+    assert.equal(parsed.flags['--extra-steps'], 'usage-turns');
+    const root = repo();
+    const result = staged(root, 'v3', parsed.flags);
+    assert.equal(result.code, 0);
+    const options = JSON.parse(readFileSync(join(root, '.probe-app', RUN_OPTIONS_FILE), 'utf8'));
+    assert.deepEqual(options, { hostVersion: '0.13.0', extraSteps: ['usage-turns'] });
+  });
+});

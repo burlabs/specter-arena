@@ -1,0 +1,289 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The 13 job names are the required-check contract in docs/development/adapters.md.
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  UV_VERSION: 0.13.7
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - run: npm ci
+      - run: npm test
+
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - run: npm ci
+      - run: npm run coverage
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install pinned gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" gitleaks
+      - name: Scan full history
+        run: ./gitleaks git . --config .gitleaks.toml --redact --verbose --exit-code 1
+
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm run check:provenance
+
+  lockfile-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - name: Install the root lock on Linux
+        run: npm ci
+      - name: Install the infra lock on Linux
+        run: npm ci
+        working-directory: infra
+      - run: npm run check:lock
+
+  lock-agreement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: "3.12"
+          cache-dependency-glob: backend/uv.lock
+      - name: uv.lock is current for pyproject.toml
+        run: uv lock --project backend --check
+      - name: requirements.txt matches the uv export
+        run: uv export --project backend --frozen --no-dev --no-emit-project --no-header --format requirements-txt | diff -u requirements.txt -
+
+  backend-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      # Mirrors Crew: deps-only install from the hashed requirements.txt, the repo itself
+      # never installed, `-s`, cwd = repo root, module backend.app:app.
+      - name: Install deps the way Crew provisions them
+        run: |
+          python -m pip install --require-hashes --target .deps -r requirements.txt
+          PYTHONPATH=.deps python -s -c "import websockets; print('websockets', websockets.__version__)"
+          PYTHONPATH=.deps python -s -c "import backend.specter_arena.probe.live as live; print('probe live driver', live.LiveGateway.__name__)"
+      - name: Start the backend and probe /health
+        run: |
+          PYTHONPATH=.deps python -s -m uvicorn backend.app:app --host 127.0.0.1 --port 9100 > uvicorn.log 2>&1 &
+          server=$!
+          status=000
+          for _ in $(seq 1 50); do
+            status=$(curl -s -o body.json -w '%{http_code}' --max-redirs 0 http://127.0.0.1:9100/health || true)
+            [ "$status" = "200" ] && break
+            sleep 0.1
+          done
+          kill "$server"
+          cat uvicorn.log
+          echo "GET /health -> $status $(cat body.json 2>/dev/null)"
+          test "$status" = "200"
+
+  cdk-synth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra
+    # Offline only: no credentials exist in this job, and nothing calls AWS.
+    env:
+      AWS_EC2_METADATA_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run synth
+      - run: npm test
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: The build emits exactly ui/dist/index.mjs
+        run: |
+          ls -la ui/dist
+          test "$(ls ui/dist)" = "index.mjs"
+
+  build-node22:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: node --version && npm --version
+      - run: npm ci
+      - run: npm run build
+      - name: The build emits exactly ui/dist/index.mjs
+        run: |
+          ls -la ui/dist
+          test "$(ls ui/dist)" = "index.mjs"
+
+  release-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build the release tarball
+        run: npm run package -- --out "$RUNNER_TEMP/tarball"
+      - name: Build the release-branch tree without committing and compare it with the tarball
+        run: npm run release:branch -- --dry-run --out "$RUNNER_TEMP/release-tree" --compare-tarball "$(ls "$RUNNER_TEMP"/tarball/*.tar.gz)"
+      - name: The tree has the built UI and no package.json
+        run: |
+          test -f "$RUNNER_TEMP/release-tree/ui/dist/index.mjs"
+          test ! -e "$RUNNER_TEMP/release-tree/package.json"
+          test ! -e app-registry.json
+          node -e 'for (const f of ["app.json", "app-registry.json"]) JSON.parse(require("node:fs").readFileSync(process.argv[1] + "/" + f, "utf8"))' "$RUNNER_TEMP/release-tree"
+
+  fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check:fixtures
+      - name: The diagnostic build still carries its marker (positive control)
+        run: |
+          npm run build:diagnostic
+          npm run check:diagnostic
+      - name: Committed capability matrix and recorded payloads validate offline
+        run: npm run probe:check
+      - name: Contract schemas, cases, owners, FP-02-AC06 guard and spec ids validate offline
+        run: npm run check:schema
+
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

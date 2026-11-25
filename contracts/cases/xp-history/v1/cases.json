@@ -1,0 +1,146 @@
+[
+  {
+    "file": "valid/one-award.json",
+    "valid": true
+  },
+  {
+    "file": "valid/empty-new-bot.json",
+    "valid": true
+  },
+  {
+    "file": "valid/award-correction-reinstatement-with-cursor.json",
+    "valid": true
+  },
+  {
+    "file": "valid/split-award-remainder.json",
+    "valid": true
+  },
+  {
+    "file": "valid/kind-and-policy-added-later.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-balance-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-summary.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/summary-wrong-version.json",
+    "valid": false,
+    "instancePath": "/summary/contractVersion"
+  },
+  {
+    "file": "invalid/summary-extra-health-field.json",
+    "valid": false,
+    "instancePath": "/summary"
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/items-not-array.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/entry-id-is-a-work-id.json",
+    "valid": false,
+    "instancePath": "/items/0/entryId"
+  },
+  {
+    "file": "invalid/entry-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/items/0/entryId"
+  },
+  {
+    "file": "invalid/entry-work-id-uppercase.json",
+    "valid": false,
+    "instancePath": "/items/0/workId"
+  },
+  {
+    "file": "invalid/entry-decision-id-wrong-prefix.json",
+    "valid": false,
+    "instancePath": "/items/0/decisionId"
+  },
+  {
+    "file": "invalid/entry-title-empty.json",
+    "valid": false,
+    "instancePath": "/items/0/workTitle"
+  },
+  {
+    "file": "invalid/entry-title-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/items/0/workTitle"
+  },
+  {
+    "file": "invalid/entry-kind-uppercase.json",
+    "valid": false,
+    "instancePath": "/items/0/kind"
+  },
+  {
+    "file": "invalid/entry-kind-underscore.json",
+    "valid": false,
+    "instancePath": "/items/0/kind"
+  },
+  {
+    "file": "invalid/entry-amount-string.json",
+    "valid": false,
+    "instancePath": "/items/0/amount"
+  },
+  {
+    "file": "invalid/entry-amount-fraction.json",
+    "valid": false,
+    "instancePath": "/items/0/amount"
+  },
+  {
+    "file": "invalid/entry-amount-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/entry-extra-token-count-property.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/entry-missing-decision-id.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/cursor-empty-string.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-slash.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/as-of-negative.json",
+    "valid": false,
+    "instancePath": "/asOfMs"
+  }
+]

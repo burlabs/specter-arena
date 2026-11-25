@@ -1,0 +1,81 @@
+[
+  {
+    "file": "valid/generated-with-portrait.json",
+    "valid": true
+  },
+  {
+    "file": "valid/manual-no-portrait.json",
+    "valid": true
+  },
+  {
+    "file": "valid/minimal-profile-nulls.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-experience-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-portrait.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/profile-with-class-field.json",
+    "valid": false,
+    "instancePath": "/profile"
+  },
+  {
+    "file": "invalid/profile-missing-name.json",
+    "valid": false,
+    "instancePath": "/profile"
+  },
+  {
+    "file": "invalid/binding-id-numeric.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/specter-id-bad-prefix.json",
+    "valid": false,
+    "instancePath": "/specterId"
+  },
+  {
+    "file": "invalid/version-zero.json",
+    "valid": false,
+    "instancePath": "/version"
+  },
+  {
+    "file": "invalid/source-ai.json",
+    "valid": false,
+    "instancePath": "/source"
+  },
+  {
+    "file": "invalid/prompt-version-uppercase.json",
+    "valid": false,
+    "instancePath": "/promptVersion"
+  },
+  {
+    "file": "invalid/portrait-jpeg.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/portrait-string.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/contract-version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/updated-nan.json",
+    "valid": false
+  }
+]

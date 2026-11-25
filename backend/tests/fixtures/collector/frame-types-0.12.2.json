@@ -1,0 +1,30 @@
+{
+  "crewVersion": "0.12.2",
+  "run": "S1-v1",
+  "types": {
+    "activity_event": 69,
+    "autonudge_state": 3,
+    "chat_chunk": 382,
+    "chat_done": 8,
+    "chat_message": 36,
+    "chat_message_update": 42,
+    "chat_segment": 13,
+    "chat_status": 8,
+    "chat_thinking": 744,
+    "context_usage": 27,
+    "dashboard": 180,
+    "heartbeat": 180,
+    "mcp_report_update": 1,
+    "notification": 6,
+    "queue_pop": 4,
+    "queue_push": 4,
+    "refresh": 10,
+    "session_health_changed": 10,
+    "slots": 33,
+    "subagent_chunk": 514,
+    "subagent_done": 1,
+    "subagent_snapshot_batch": 2,
+    "tool_call": 91,
+    "tool_result": 19
+  }
+}

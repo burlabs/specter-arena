@@ -1,0 +1,131 @@
+[
+  {
+    "file": "valid/empty-created-last-page.json",
+    "valid": true
+  },
+  {
+    "file": "valid/empty-updated-last-page.json",
+    "valid": true
+  },
+  {
+    "file": "valid/updated-three-items-with-cursor.json",
+    "valid": true
+  },
+  {
+    "file": "valid/created-one-item.json",
+    "valid": true
+  },
+  {
+    "file": "valid/twenty-five-items.json",
+    "valid": true
+  },
+  {
+    "file": "valid/as-of-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-one.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/version-three.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/order-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/order-unknown.json",
+    "valid": false,
+    "instancePath": "/order"
+  },
+  {
+    "file": "invalid/order-uppercase.json",
+    "valid": false,
+    "instancePath": "/order"
+  },
+  {
+    "file": "invalid/order-null.json",
+    "valid": false,
+    "instancePath": "/order"
+  },
+  {
+    "file": "invalid/twenty-six-items.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/items-not-array.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/items-string.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/item-v1-full-shape.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/item-wrong-version.json",
+    "valid": false,
+    "instancePath": "/items/0/contractVersion"
+  },
+  {
+    "file": "invalid/item-ever-accepted-absent.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/cursor-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/cursor-empty.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-bad-characters.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-too-long.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-number.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/as-of-negative.json",
+    "valid": false,
+    "instancePath": "/asOfMs"
+  },
+  {
+    "file": "invalid/as-of-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-total.json",
+    "valid": false,
+    "instancePath": ""
+  }
+]

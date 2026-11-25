@@ -1,0 +1,97 @@
+[
+  {
+    "file": "valid/empty-last-page.json",
+    "valid": true
+  },
+  {
+    "file": "valid/one-item-with-cursor.json",
+    "valid": true
+  },
+  {
+    "file": "valid/two-items-mixed-states.json",
+    "valid": true
+  },
+  {
+    "file": "valid/as-of-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/extra-total-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-next-cursor.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-as-of.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/items-not-array.json",
+    "valid": false,
+    "instancePath": "/items"
+  },
+  {
+    "file": "invalid/item-wrong-version.json",
+    "valid": false,
+    "instancePath": "/items/0/contractVersion"
+  },
+  {
+    "file": "invalid/item-extra-percent-field.json",
+    "valid": false,
+    "instancePath": "/items/0"
+  },
+  {
+    "file": "invalid/item-bad-state.json",
+    "valid": false,
+    "instancePath": "/items/0/state"
+  },
+  {
+    "file": "invalid/item-actor-not-app-owner.json",
+    "valid": false,
+    "instancePath": "/items/0/decisions/0/actor"
+  },
+  {
+    "file": "invalid/cursor-empty-string.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-slash.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/cursor-513-chars.json",
+    "valid": false,
+    "instancePath": "/nextCursor"
+  },
+  {
+    "file": "invalid/as-of-negative.json",
+    "valid": false,
+    "instancePath": "/asOfMs"
+  },
+  {
+    "file": "invalid/items-nan.json",
+    "valid": false
+  }
+]

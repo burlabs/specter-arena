@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:specters:v2",
+  "title": "Specters list v2",
+  "description": "Body of GET /api/specters: every bot binding, each with its hero, in assignment order, at most 500. A bot always has a hero, so none is absent. The client joins this list to the roster by bindingId. There is no cursor because a single install has few bots.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 2 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:specter:v2" }, "maxItems": 500 }
+  },
+  "required": ["contractVersion", "items"],
+  "additionalProperties": false
+}

@@ -1,0 +1,18 @@
+// Test-only view of the aliased fixture SDK: the real host module exports only useAppApi.
+declare module '@kirocrew/app-sdk' {
+  export type ScenarioName = import('../fixtures/monitoring-bodies.ts').ScenarioName;
+  export function setFixtureScenario(name: ScenarioName | null): void;
+  export function rosterBody(name: ScenarioName): import('../src/contracts/types').RosterV1;
+  export function attemptsBody(name: ScenarioName, bindingId: string): import('../src/contracts/types').AttemptsV1 | null;
+  export type SpecterScenarioName = import('../fixtures/specter-bodies.ts').SpecterScenarioName;
+  export function setSpecterScenario(name: SpecterScenarioName | null): void;
+  export type TaskScenarioName = import('../fixtures/task-bodies.ts').TaskScenarioName;
+  export function setTaskScenario(name: TaskScenarioName | null): void;
+  export type DataScenarioName = import('../fixtures/data-bodies.ts').DataScenarioName;
+  export function setDataScenario(name: DataScenarioName | null): void;
+  export function setSceneAssetsFailing(value: boolean): void;
+  export type ArenaScenarioName = import('../fixtures/arena-scenarios.ts').ArenaScenarioName;
+  export function setArenaScenario(name: ArenaScenarioName | null): void;
+  export const fixtureNavigations: string[];
+  export const fixtureCalls: Array<{ method: 'GET' | 'POST'; path: string }>;
+}

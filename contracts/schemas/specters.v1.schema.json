@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:specters:v1",
+  "title": "Specters list v1",
+  "description": "Body of GET /api/specters: every bot binding that has an active Specter, in ascending creation order, at most 500. A bot with no Specter is simply absent, and an archived Specter is not listed; the client joins this list to the roster by bindingId. There is no cursor because the roster itself is bounded at 200 bots per page and a single install has few Specters.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:specter:v1" }, "maxItems": 500 }
+  },
+  "required": ["contractVersion", "items"],
+  "additionalProperties": false
+}

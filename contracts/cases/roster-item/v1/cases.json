@@ -1,0 +1,176 @@
+[
+  {
+    "file": "valid/working-covered.json",
+    "valid": true
+  },
+  {
+    "file": "valid/never-observed-unknown.json",
+    "valid": true
+  },
+  {
+    "file": "valid/presence-unknown-before-first-poll.json",
+    "valid": true
+  },
+  {
+    "file": "valid/avatar-ghost-ref-null.json",
+    "valid": true
+  },
+  {
+    "file": "valid/open-gap-condition-unknown.json",
+    "valid": true
+  },
+  {
+    "file": "valid/signals-partly-seen.json",
+    "valid": true
+  },
+  {
+    "file": "valid/condition-state-added-later.json",
+    "valid": true
+  },
+  {
+    "file": "valid/reason-code-store-less-length.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "valid/workers-unknown-positive.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/extra-hp-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-condition.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-signals.json",
+    "valid": false,
+    "instancePath": "/condition"
+  },
+  {
+    "file": "invalid/signals-value-string.json",
+    "valid": false,
+    "instancePath": "/condition/signals/needsInput"
+  },
+  {
+    "file": "invalid/signals-missing-key.json",
+    "valid": false,
+    "instancePath": "/condition/signals"
+  },
+  {
+    "file": "invalid/signals-extra-property.json",
+    "valid": false,
+    "instancePath": "/condition/signals"
+  },
+  {
+    "file": "invalid/binding-id-numeric.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/binding-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/bindingId"
+  },
+  {
+    "file": "invalid/display-name-too-long.json",
+    "valid": false,
+    "instancePath": "/displayName"
+  },
+  {
+    "file": "invalid/presence-unknown-value.json",
+    "valid": false,
+    "instancePath": "/presence"
+  },
+  {
+    "file": "invalid/condition-state-uppercase.json",
+    "valid": false,
+    "instancePath": "/condition/state"
+  },
+  {
+    "file": "invalid/condition-reason-code-too-long.json",
+    "valid": false,
+    "instancePath": "/condition/reasonCode"
+  },
+  {
+    "file": "invalid/condition-basis-transcript.json",
+    "valid": false,
+    "instancePath": "/condition/basis"
+  },
+  {
+    "file": "invalid/condition-extra-score.json",
+    "valid": false,
+    "instancePath": "/condition"
+  },
+  {
+    "file": "invalid/coverage-state-full.json",
+    "valid": false,
+    "instancePath": "/coverage/state"
+  },
+  {
+    "file": "invalid/coverage-open-gaps-negative.json",
+    "valid": false,
+    "instancePath": "/coverage/openGapCount"
+  },
+  {
+    "file": "invalid/avatar-path-traversal.json",
+    "valid": false,
+    "instancePath": "/avatar/ref"
+  },
+  {
+    "file": "invalid/avatar-kind-uppercase.json",
+    "valid": false,
+    "instancePath": "/avatar/kind"
+  },
+  {
+    "file": "invalid/avatar-old-shape.json",
+    "valid": false,
+    "instancePath": "/avatar"
+  },
+  {
+    "file": "invalid/avatar-missing-kind.json",
+    "valid": false,
+    "instancePath": "/avatar"
+  },
+  {
+    "file": "invalid/workers-count-string.json",
+    "valid": false,
+    "instancePath": "/workers/running"
+  },
+  {
+    "file": "invalid/version-absent.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/observed-nan.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/workers-unknown-missing.json",
+    "valid": false,
+    "instancePath": "/workers"
+  },
+  {
+    "file": "invalid/workers-unknown-negative.json",
+    "valid": false,
+    "instancePath": "/workers/unknown"
+  }
+]

@@ -1,0 +1,1 @@
+{"contractVersion":1,"installationId":"inst_fake_01","bindingId":null,"reasonCode":"oversize-frame","frameType":"slots","sizeBytes":70000,"digest":"sha256:0123456789ab","count":1,"firstReceivedAtMs":null,"receivedAtMs":1760000000000,"sourceTimeMs":1760000000000}

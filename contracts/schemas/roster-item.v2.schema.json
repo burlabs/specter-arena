@@ -1,0 +1,262 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:roster-item:v2",
+  "title": "Roster item v2",
+  "description": "One bot as GET /api/roster?view=signals reports it: roster-item v1 plus the waiting condition and a context reading. condition.state is a documented string, not a closed list: working, settled, waiting, unknown. waiting means Crew says the person owes the bot an answer: condition.reasonCode approval-pending (Crew's pending_approval flag, while the bot is running) or question-pending (Crew's needs_input flag). waitingForInput and hasOptions never produce waiting. Coverage and presence rules come first: a bot the collector is not covering stays unknown. These states are derived from Crew's row flags and are not live-proven against an approval (FP-20, source reading). Blocked is not a state: Crew sends no durable signal for it. condition.signals are the four Crew flags as the collector last saw them (null when not seen). tokenReading is the context window in use on the bot's own slot at its latest context_usage frame: kind context, used tokens of window tokens, observedAt in epoch milliseconds. It is a gauge of the live turn, never spend, never a total, never ranked and never experience (FD-29). It is null (Not collected) when no reading exists, the collector is not covering the bot, or the reading predates the current coverage. coverage, presence, avatar and workers are as in v1.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 2
+    },
+    "bindingId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+    },
+    "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "avatar": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+        },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9._-]{1,128}$"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "presence": {
+      "enum": [
+        "present",
+        "absent",
+        "unknown"
+      ]
+    },
+    "condition": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,47}$"
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "row",
+            "event",
+            null
+          ]
+        },
+        "sourceTimeMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observedAtMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "signals": {
+          "type": "object",
+          "properties": {
+            "needsInput": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "hasOptions": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "pendingApproval": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "waitingForInput": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "needsInput",
+            "hasOptions",
+            "pendingApproval",
+            "waitingForInput"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "state",
+        "reasonCode",
+        "basis",
+        "sourceTimeMs",
+        "observedAtMs",
+        "signals"
+      ],
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "enum": [
+            "covered",
+            "gap",
+            "unknown"
+          ]
+        },
+        "sinceMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "reasonCode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9-]{0,63}$"
+        },
+        "openGapCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "state",
+        "sinceMs",
+        "reasonCode",
+        "openGapCount"
+      ],
+      "additionalProperties": false
+    },
+    "lastObservedAtMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "workers": {
+      "type": "object",
+      "properties": {
+        "running": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "seen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "running",
+        "seen",
+        "unknown"
+      ],
+      "additionalProperties": false
+    },
+    "tokenReading": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "context"
+          ]
+        },
+        "used": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000000000
+        },
+        "window": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000000
+        },
+        "observedAt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "kind",
+        "used",
+        "window",
+        "observedAt"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "bindingId",
+    "displayName",
+    "avatar",
+    "presence",
+    "condition",
+    "coverage",
+    "lastObservedAtMs",
+    "workers",
+    "tokenReading"
+  ],
+  "additionalProperties": false
+}

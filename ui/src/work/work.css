@@ -1,0 +1,120 @@
+/* XP and Progression views, and the task close-out badge. The shared classes sa-actions, sa-help and sa-error come from specters.css, which the page injects beside this file. */
+
+.specter-arena-root .sa-work-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.specter-arena-root .sa-work-badge--open {
+  color: var(--violet);
+  border-color: var(--violet);
+}
+
+.specter-arena-root .sa-work-badge--cancelled {
+  color: var(--muted);
+  border-color: var(--muted);
+  border-style: dotted;
+}
+
+.specter-arena-root .sa-work-badge--accepted {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.specter-arena-root .sa-work-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.specter-arena-root .sa-work-facts dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-work-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-work-text {
+  white-space: pre-wrap;
+}
+
+.specter-arena-root .sa-work-plain {
+  display: grid;
+  gap: 4px;
+}
+
+.specter-arena-root .sa-work-ledger {
+  display: grid;
+  gap: 8px;
+}
+
+.specter-arena-root .sa-work-xp-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-work-xp-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-xp-meter {
+  display: grid;
+  gap: 4px;
+}
+
+.specter-arena-root .sa-xp-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.specter-arena-root .sa-xp-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.specter-arena-root .sa-work-progression {
+  display: grid;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-work-progression__head {
+  display: grid;
+  gap: 6px;
+}
+
+.specter-arena-root .sa-work-ledger__entry {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--violet);
+  border-radius: 8px;
+  background: var(--raised);
+}
+
+.specter-arena-root .sa-work-ledger__title {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specter-arena-root .sa-xp-bar > span {
+    transition: none !important;
+    animation: none !important;
+  }
+}

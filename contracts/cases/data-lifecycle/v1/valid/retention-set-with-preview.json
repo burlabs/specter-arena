@@ -1,0 +1,27 @@
+{
+  "contractVersion": 1,
+  "asOfMs": 1800000000000,
+  "retention": {
+    "retentionDays": 90,
+    "changedAtMs": 1800000000000,
+    "revision": 1
+  },
+  "horizonMs": null,
+  "preview": {
+    "cutoffMs": 1792224000000,
+    "observations": 10,
+    "quarantine": 2,
+    "attempts": 1
+  },
+  "running": null,
+  "lastPurge": null,
+  "lastCleanup": null,
+  "lastExport": null,
+  "uploads": {
+    "stored": 0,
+    "cap": 100,
+    "unused": 0
+  },
+  "exports": [],
+  "paused": false
+}

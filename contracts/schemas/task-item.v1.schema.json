@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:task-item:v1",
+  "title": "Task item v1",
+  "description": "One automatic task: an observed attempt of one bot (its own turn that ran 60 seconds or longer, or a worker session it started) closed out by the backend without a human click. A task is created from an attempt and its taskId is a hash of the attemptId, so a rebuild of the projection keeps it. state is open (the attempt is running, or the task was reopened and is running again), credited (the attempt ended cleanly and the bot was credited once under policyVersion) or not-credited (the attempt ended and closeReason says why nothing was credited: unknown-terminal, coverage-gap or waiting-at-end). closeReason is null while open and clean-end exactly when credited; xpCredited is the single award (1 to 30) exactly when credited. A credited task never changes state, closeReason or xpCredited; if its worker runs again only attemptState, endedAtMs, runMs, sizeClass and updatedAtMs move. attemptState is the attempt's state now by the attempt-item rule (working, ended, unknown). runMs is endedAtMs minus startedAtMs when ended, else the response asOfMs minus startedAtMs, so a running task grows. sizeClass is small below 120000 ms, medium below 900000 ms and large from 900000 ms on, derived from runMs; it is presentation only and never means progress, health, remaining effort or XP. Credit reflects observed activity, not verified outcomes. Draft-07 cannot state the state, closeReason and xpCredited equivalences, so the producer test asserts them. The bot is referenced only by the opaque bindingId of the bot-binding contract.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "taskId": {
+      "type": "string",
+      "pattern": "^tsk_[0-9a-f]{24}$"
+    },
+    "bindingId": {
+      "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId"
+    },
+    "attemptId": {
+      "type": "string",
+      "pattern": "^att_[0-9a-f]{24}$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "bot-turn",
+        "worker"
+      ]
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "open",
+        "credited",
+        "not-credited"
+      ]
+    },
+    "attemptState": {
+      "type": "string",
+      "enum": [
+        "working",
+        "ended",
+        "unknown"
+      ]
+    },
+    "closeReason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        null,
+        "clean-end",
+        "unknown-terminal",
+        "coverage-gap",
+        "waiting-at-end"
+      ]
+    },
+    "startedAtMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "endedAtMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "closedAtMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "updatedAtMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "runMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "sizeClass": {
+      "type": "string",
+      "enum": [
+        "small",
+        "medium",
+        "large"
+      ]
+    },
+    "xpCredited": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 30
+    },
+    "policyVersion": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    }
+  },
+  "required": [
+    "contractVersion",
+    "taskId",
+    "bindingId",
+    "attemptId",
+    "kind",
+    "state",
+    "attemptState",
+    "closeReason",
+    "startedAtMs",
+    "endedAtMs",
+    "closedAtMs",
+    "updatedAtMs",
+    "runMs",
+    "sizeClass",
+    "xpCredited",
+    "policyVersion"
+  ],
+  "additionalProperties": false
+}

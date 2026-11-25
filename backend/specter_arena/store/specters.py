@@ -1,0 +1,393 @@
+from __future__ import annotations
+
+import hashlib
+import re
+import secrets
+import sqlite3
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from typing import Literal
+
+from .errors import (
+    NoHero,
+    StoreError,
+    StoreUsageError,
+    UnknownAsset,
+    UnknownBinding,
+    UploadLimitReached,
+    VersionConflict,
+)
+from .guard import translate_errors
+from .store import Store
+from .validate import is_time_ms
+
+AssetOrigin = Literal["bundled", "uploaded"]
+AssignedBy = Literal["auto", "picked", "random"]
+Pick = Callable[[Sequence[str]], str]
+
+# The roster order of `backend/specter_arena/specters/heroes.json` and of the CHECK and backfill
+# in migration 0007. `test_store_heroes.py` pins all three to each other.
+HERO_IDS: tuple[str, ...] = (
+    "vell",
+    "stitch",
+    "reeve",
+    "rattle",
+    "ember",
+    "shard",
+    "poly",
+    "tide",
+    "lume",
+    "moss",
+    "bur",
+)
+ROSTER_SIZE = len(HERO_IDS)
+MAX_LISTED_HEROES = 500
+MAX_LISTED_ASSETS = 200
+# Uploaded assets only; the bundled gallery is not counted. 11 bundled + 100 uploaded stays under
+# `MAX_LISTED_ASSETS`, so no stored asset drops out of the gallery list (KL-14).
+MAX_UPLOADED_ASSETS = 100
+MAX_ASSET_BYTES = 1_048_576
+MAX_ASSET_SIDE = 1024
+MAX_ASSET_LABEL_CHARS = 80
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+_BINDING_ID = re.compile(r"bnd_[0-9a-f]{24}")
+_ASSET_ID = re.compile(r"ast_[0-9a-f]{24}")
+_ORIGINS = ("bundled", "uploaded")
+
+
+@dataclass(frozen=True, slots=True)
+class AssetRecord:
+    """Asset metadata; `data` is the PNG bytes only when the caller asked for them."""
+
+    asset_id: str
+    sha256: str
+    media_type: str
+    width: int
+    height: int
+    byte_length: int
+    origin: AssetOrigin
+    label: str
+    created_ms: int
+    data: bytes | None
+
+
+@dataclass(frozen=True, slots=True)
+class HeroRecord:
+    """The hero of one binding and its current avatar choice (metadata only).
+
+    `version` is the newest `avatar_revision.revision_no` (0 when the user never chose one) and is
+    the caller's `expected_version` for `set_avatar`. `asset_id` is None while the hero's own
+    bundled portrait is the avatar; the caller reads the asset with `get_asset`.
+    """
+
+    binding_id: str
+    assignment_no: int
+    hero_id: str
+    ordinal: int
+    assigned_ms: int
+    version: int
+    asset_id: str | None
+    updated_ms: int
+    assigned_by: AssignedBy
+
+
+@dataclass(frozen=True, slots=True)
+class InsertedAsset:
+    record: AssetRecord
+    created: bool
+
+
+def _need_id(pattern: re.Pattern[str], value: object, what: str) -> str:
+    if not isinstance(value, str) or pattern.fullmatch(value) is None:
+        raise StoreUsageError(what)
+    return value
+
+
+def _need_time(value: object) -> int:
+    if not is_time_ms(value):
+        raise StoreUsageError("time")
+    assert isinstance(value, int)
+    return value
+
+
+def _need_version(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise StoreUsageError("expected version")
+    return value
+
+
+_ASSET_COLUMNS = (
+    "a.asset_id, a.sha256, a.media_type, a.width, a.height, a.byte_length, a.origin, a.label,"
+    " a.created_ms"
+)
+
+
+def _asset(row: Sequence[object], data: bytes | None = None) -> AssetRecord:
+    return AssetRecord(
+        asset_id=str(row[0]),
+        sha256=str(row[1]),
+        media_type=str(row[2]),
+        width=int(row[3]),  # type: ignore[call-overload]
+        height=int(row[4]),  # type: ignore[call-overload]
+        byte_length=int(row[5]),  # type: ignore[call-overload]
+        origin="bundled" if row[6] == "bundled" else "uploaded",
+        label=str(row[7]),
+        created_ms=int(row[8]),  # type: ignore[call-overload]
+        data=data,
+    )
+
+
+_HERO_SELECT = (
+    "SELECT h.binding_id, h.assignment_no, h.hero_id, h.ordinal, h.assigned_ms,"
+    " v.revision_no, v.created_ms, v.asset_id, h.assigned_by"
+    " FROM hero_assignment h"
+    " LEFT JOIN avatar_revision v ON v.binding_id = h.binding_id AND v.revision_no = ("
+    "SELECT max(revision_no) FROM avatar_revision WHERE binding_id = h.binding_id)"
+)
+
+
+def _hero(row: Sequence[object]) -> HeroRecord:
+    chosen = row[5] is not None
+    return HeroRecord(
+        binding_id=str(row[0]),
+        assignment_no=int(row[1]),  # type: ignore[call-overload]
+        hero_id=str(row[2]),
+        ordinal=int(row[3]),  # type: ignore[call-overload]
+        assigned_ms=int(row[4]),  # type: ignore[call-overload]
+        version=int(row[5]) if chosen else 0,  # type: ignore[call-overload]
+        asset_id=None if row[7] is None else str(row[7]),
+        updated_ms=int(row[6] if chosen else row[4]),  # type: ignore[call-overload]
+        assigned_by="random" if row[8] == "random" else "picked" if row[8] == "picked" else "auto",
+    )
+
+
+def list_heroes(store: Store) -> tuple[HeroRecord, ...]:
+    """Every binding's hero in assignment order, at most `MAX_LISTED_HEROES`."""
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(
+            _HERO_SELECT + " ORDER BY h.assignment_no LIMIT ?", (MAX_LISTED_HEROES,)
+        ).fetchall()
+        return tuple(_hero(row) for row in rows)
+
+
+def count_hero_assignments(store: Store) -> dict[str, int]:
+    """How many bindings were ever given each hero, by hero id; a hero nobody holds is absent.
+    One `GROUP BY` over every row, so `MAX_LISTED_HEROES` does not apply. Heroes are never
+    reclaimed, so a binding whose bot no longer shows in the roster still counts."""
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(
+            "SELECT hero_id, count(*) FROM hero_assignment GROUP BY hero_id"
+        ).fetchall()
+        return {str(row[0]): int(row[1]) for row in rows}
+
+
+def get_hero(store: Store, binding_id: str) -> HeroRecord:
+    """The hero of one binding. Raises `UnknownBinding` for an unknown or malformed id."""
+    if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
+        raise UnknownBinding
+    with translate_errors(), store.read() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is None:
+            raise UnknownBinding
+        return _hero(row)
+
+
+def _missing_hero(conn: sqlite3.Connection, binding_id: str) -> StoreError:
+    """`NoHero` for a binding that exists without a hero, `UnknownBinding` otherwise."""
+    known = conn.execute("SELECT 1 FROM bot_binding WHERE binding_id = ?", (binding_id,)).fetchone()
+    return NoHero() if known is not None else UnknownBinding()
+
+
+def get_assignment(store: Store, binding_id: str) -> HeroRecord:
+    """Like `get_hero`, but a known binding that holds no hero raises `NoHero`."""
+    if not isinstance(binding_id, str) or _BINDING_ID.fullmatch(binding_id) is None:
+        raise UnknownBinding
+    with translate_errors(), store.read() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is None:
+            raise _missing_hero(conn, binding_id)
+        return _hero(row)
+
+
+def list_assignment(store: Store) -> tuple[tuple[HeroRecord, ...], tuple[str, ...]]:
+    """The assigned heroes in assignment order and the ids of the bindings that hold no hero,
+    oldest binding first, each at most `MAX_LISTED_HEROES`, read in one snapshot."""
+    with translate_errors(), store.read() as conn:
+        heroes = conn.execute(
+            _HERO_SELECT + " ORDER BY h.assignment_no LIMIT ?", (MAX_LISTED_HEROES,)
+        ).fetchall()
+        bare = conn.execute(
+            "SELECT b.binding_id FROM bot_binding b WHERE NOT EXISTS"
+            " (SELECT 1 FROM hero_assignment h WHERE h.binding_id = b.binding_id)"
+            " ORDER BY b.first_seen_ms, b.binding_seq LIMIT ?",
+            (MAX_LISTED_HEROES,),
+        ).fetchall()
+        return tuple(_hero(row) for row in heroes), tuple(str(row[0]) for row in bare)
+
+
+def choose_hero(
+    store: Store,
+    binding_id: str,
+    expected_version: int,
+    hero_id: str | None,
+    now_ms: int,
+    *,
+    pick: Pick = secrets.choice,
+) -> HeroRecord:
+    """Give an unassigned binding a hero: `hero_id` as given ('picked'), or, for None, one of the
+    heroes held by the fewest bindings chosen uniformly at random ('random'). Idempotent: a binding
+    that already holds `hero_id` is returned unchanged. Appends one `hero_assignment` row and
+    nothing else (not the binding, not XP, not the avatar). Raises `UnknownBinding`,
+    `VersionConflict` (the binding holds a different hero, a random request on an assigned
+    binding, or `expected_version` is not 0), `StoreUsageError`."""
+    _need_id(_BINDING_ID, binding_id, "binding id")
+    _need_time(now_ms)
+    expected = _need_version(expected_version)
+    if hero_id is not None and hero_id not in HERO_IDS:
+        raise StoreUsageError("hero id")
+    with translate_errors(), store.write() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is not None:
+            current = _hero(row)
+            if hero_id is not None and hero_id == current.hero_id:
+                return current
+            raise VersionConflict(current.version)
+        known = conn.execute(
+            "SELECT 1 FROM bot_binding WHERE binding_id = ?", (binding_id,)
+        ).fetchone()
+        if known is None:
+            raise UnknownBinding
+        if expected != 0:
+            raise VersionConflict(0)
+        held = {
+            str(r[0]): int(r[1])
+            for r in conn.execute("SELECT hero_id, count(*) FROM hero_assignment GROUP BY hero_id")
+        }
+        assigned_by: AssignedBy = "picked"
+        if hero_id is None:
+            fewest = min(held.get(h, 0) for h in HERO_IDS)
+            hero_id = pick([h for h in HERO_IDS if held.get(h, 0) == fewest])
+            assigned_by = "random"
+        number = int(conn.execute("SELECT count(*) FROM hero_assignment").fetchone()[0])
+        conn.execute(
+            "INSERT INTO hero_assignment"
+            " (binding_id, assignment_no, hero_id, ordinal, assigned_ms, assigned_by)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (binding_id, number, hero_id, held.get(hero_id, 0) + 1, now_ms, assigned_by),
+        )
+        saved = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        return _hero(saved)
+
+
+def set_avatar(
+    store: Store,
+    binding_id: str,
+    expected_version: int,
+    asset_id: str | None,
+    now_ms: int,
+) -> HeroRecord:
+    """Point the avatar at `asset_id`; None means the hero's own portrait. Appends one
+    `avatar_revision` unless the choice is already current. Nothing else is written: not the hero,
+    not the binding, not XP. Raises `UnknownBinding`, `VersionConflict`, `UnknownAsset`."""
+    _need_id(_BINDING_ID, binding_id, "binding id")
+    _need_time(now_ms)
+    expected = _need_version(expected_version)
+    if asset_id is not None:
+        _need_id(_ASSET_ID, asset_id, "asset id")
+    with translate_errors(), store.write() as conn:
+        row = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        if row is None:
+            raise _missing_hero(conn, binding_id)
+        current = _hero(row)
+        if current.version != expected:
+            raise VersionConflict(current.version)
+        if (
+            asset_id is not None
+            and not conn.execute("SELECT 1 FROM asset WHERE asset_id = ?", (asset_id,)).fetchone()
+        ):
+            raise UnknownAsset
+        if asset_id == current.asset_id:
+            return current
+        conn.execute(
+            "INSERT INTO avatar_revision (binding_id, revision_no, asset_id, created_ms)"
+            " VALUES (?, ?, ?, ?)",
+            (binding_id, current.version + 1, asset_id, now_ms),
+        )
+        again = conn.execute(_HERO_SELECT + " WHERE h.binding_id = ?", (binding_id,)).fetchone()
+        return _hero(again)
+
+
+def _upload_would_exceed_cap(conn: sqlite3.Connection, asset_id: str) -> bool:
+    """True when the image is new and `MAX_UPLOADED_ASSETS` uploads are already stored."""
+    if conn.execute("SELECT 1 FROM asset WHERE asset_id = ?", (asset_id,)).fetchone():
+        return False
+    stored = conn.execute("SELECT count(*) FROM asset WHERE origin = 'uploaded'").fetchone()
+    return int(stored[0]) >= MAX_UPLOADED_ASSETS
+
+
+def insert_asset(
+    store: Store,
+    *,
+    data: bytes,
+    width: int,
+    height: int,
+    origin: AssetOrigin,
+    label: str,
+    now_ms: int,
+) -> InsertedAsset:
+    """Store re-encoded PNG bytes once. The id is `ast_` + the first 24 hex of the sha256 of
+    `data`, computed here. The same bytes again return the existing row (first writer's label and
+    origin win) with `created=False`."""
+    _need_time(now_ms)
+    if not isinstance(data, bytes) or not 1 <= len(data) <= MAX_ASSET_BYTES:
+        raise StoreUsageError("asset size")
+    if not data.startswith(PNG_SIGNATURE):
+        raise StoreUsageError("asset is not a PNG")
+    for side in (width, height):
+        if isinstance(side, bool) or not isinstance(side, int) or not 1 <= side <= MAX_ASSET_SIDE:
+            raise StoreUsageError("asset dimensions")
+    if origin not in _ORIGINS:
+        raise StoreUsageError("asset origin")
+    if not isinstance(label, str) or len(label) > MAX_ASSET_LABEL_CHARS:
+        raise StoreUsageError("asset label")
+    digest = hashlib.sha256(data).hexdigest()
+    asset_id = "ast_" + digest[:24]
+    with translate_errors(), store.write() as conn:
+        if origin == "uploaded" and _upload_would_exceed_cap(conn, asset_id):
+            raise UploadLimitReached
+        inserted = conn.execute(
+            "INSERT INTO asset (asset_id, sha256, media_type, width, height, byte_length, origin,"
+            " label, bytes, created_ms) VALUES (?, ?, 'image/png', ?, ?, ?, ?, ?, ?, ?)"
+            " ON CONFLICT (sha256) DO NOTHING",
+            (asset_id, digest, width, height, len(data), origin, label, data, now_ms),
+        )
+        row = conn.execute(
+            "SELECT " + _ASSET_COLUMNS + " FROM asset a WHERE a.asset_id = ?", (asset_id,)
+        ).fetchone()
+        return InsertedAsset(_asset(row), inserted.rowcount == 1)
+
+
+def get_asset(store: Store, asset_id: str, *, with_data: bool = True) -> AssetRecord | None:
+    if not isinstance(asset_id, str) or _ASSET_ID.fullmatch(asset_id) is None:
+        return None
+    with translate_errors(), store.read() as conn:
+        row = conn.execute(
+            "SELECT " + _ASSET_COLUMNS + ", a.bytes FROM asset a WHERE a.asset_id = ?", (asset_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return _asset(row[:9], bytes(row[9]) if with_data else None)
+
+
+def list_assets(store: Store) -> tuple[AssetRecord, ...]:
+    """Bundled assets first, then uploads, oldest first; metadata only, at most
+    `MAX_LISTED_ASSETS`."""
+    with translate_errors(), store.read() as conn:
+        rows = conn.execute(
+            "SELECT " + _ASSET_COLUMNS + " FROM asset a"
+            " ORDER BY CASE a.origin WHEN 'bundled' THEN 0 ELSE 1 END, a.created_ms, a.asset_id"
+            " LIMIT ?",
+            (MAX_LISTED_ASSETS,),
+        ).fetchall()
+        return tuple(_asset(row) for row in rows)

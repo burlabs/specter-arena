@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:specter:v2",
+  "title": "Specter v2",
+  "description": "The hero a bot was assigned and the avatar it shows. Every bot binding has exactly one hero, assigned automatically the first time the binding appears and never changed, reclaimed or edited: heroId, ordinal, name, epithet, personality and appearance are fixed authored content, not generated, and imply no role, capability or lane. displayName is name for ordinal 1 and name plus a Roman numeral from ordinal 2 (digits above 3999); the client never composes it. bindingId is the only reference to the bot (the bot-binding contract's opaque id, never a Crew id). version is the avatar revision, 0 when the user has never changed the avatar; a client sends it back as expectedVersion on POST /api/specters/{bindingId}/portrait and a mismatch is a 409. portrait is always present: the hero's own bundled portrait when avatarChosen is false, otherwise the avatar the user picked; the embedded portrait always has dataBase64 null. source is always roster. A Specter is cosmetic: nothing here is an agent setting, permission, experience value or level.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 2 },
+    "bindingId": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+    "version": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "heroId": { "type": "string", "enum": ["vell", "stitch", "reeve", "rattle", "ember", "shard", "poly", "tide", "lume", "moss", "bur"] },
+    "ordinal": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "epithet": { "type": "string", "minLength": 1, "maxLength": 60 },
+    "personality": { "type": "string", "minLength": 1, "maxLength": 220 },
+    "appearance": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "portrait": { "$ref": "urn:specter-arena:contract:portrait-asset:v1" },
+    "avatarChosen": { "type": "boolean" },
+    "source": { "type": "string", "const": "roster" },
+    "createdAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "updatedAtMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+  },
+  "required": ["contractVersion", "bindingId", "version", "heroId", "ordinal", "displayName", "name", "epithet", "personality", "appearance", "portrait", "avatarChosen", "source", "createdAtMs", "updatedAtMs"],
+  "additionalProperties": false
+}

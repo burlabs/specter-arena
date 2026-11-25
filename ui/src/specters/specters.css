@@ -1,0 +1,587 @@
+.specter-arena-root .sa-portrait {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--raised);
+}
+
+.specter-arena-root .sa-portrait--sm {
+  width: 32px;
+  height: 32px;
+}
+
+.specter-arena-root .sa-portrait--md {
+  width: 96px;
+  height: 96px;
+}
+
+.specter-arena-root .sa-portrait--lg {
+  width: 160px;
+  height: 160px;
+}
+
+.specter-arena-root .sa-portrait__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.specter-arena-root .sa-portrait__token {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--muted);
+  border-radius: inherit;
+  background: hsl(var(--sa-hue, 270) 45% 28%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.specter-arena-root .sa-portrait__token[data-initials]::before {
+  content: attr(data-initials);
+}
+
+.specter-arena-root .sa-portrait--lg .sa-portrait__token {
+  font-size: 40px;
+}
+
+.specter-arena-root .sa-portrait--md .sa-portrait__token {
+  font-size: 26px;
+}
+
+.specter-arena-root .sa-portrait-wrap {
+  display: inline-grid;
+  justify-items: start;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.specter-arena-root .sa-caption {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-portrait--loading {
+  background: linear-gradient(135deg, var(--raised), var(--panel));
+}
+
+.specter-arena-root .sa-portrait--float {
+  animation: sa-float 4s ease-in-out infinite;
+}
+
+.specter-arena-root .sa-portrait--active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--success);
+  animation: sa-pulse 1.6s ease-out infinite;
+}
+
+@keyframes sa-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes sa-pulse {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.specter-arena-root .sa-row__specter,
+.specter-arena-root .sa-profile h2,
+.specter-arena-root .sa-profile p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-row__specter {
+  color: var(--violet);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-row__select > .sa-portrait {
+  margin-right: -4px;
+}
+
+.specter-arena-root .sa-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.specter-arena-root .sa-profile__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.specter-arena-root .sa-profile__head > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-profile h2 {
+  font-size: 22px;
+}
+
+.specter-arena-root .sa-profile dl {
+  display: grid;
+  gap: 10px;
+}
+
+.specter-arena-root .sa-field dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-field dd {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.specter-arena-root .sa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.specter-arena-root .sa-form {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #3a304a;
+  border-radius: 12px;
+  background: rgba(20, 16, 32, 0.4);
+}
+
+.specter-arena-root .sa-form h3 {
+  font-size: 16px;
+}
+
+.specter-arena-root .sa-form label,
+.specter-arena-root .sa-form legend {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-form fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.specter-arena-root .sa-form input[type="text"],
+.specter-arena-root .sa-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #514165;
+  border-radius: 8px;
+  background: #241c35;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.specter-arena-root .sa-counter {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-help {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-error {
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: rgba(255, 155, 174, 0.08);
+}
+
+.specter-arena-root .sa-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.specter-arena-root .sa-gallery__item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #3a304a;
+  border-radius: 10px;
+  font-size: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-gallery__item:has(input:checked) {
+  border-color: var(--violet);
+  background: #2b213f;
+}
+
+.specter-arena-root .sa-gallery__item:focus-within {
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
+}
+
+.specter-arena-root .sa-row__specter--none {
+  color: var(--muted);
+}
+
+.specter-arena-root .sa-row__assign {
+  flex: none;
+  min-width: 64px;
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid #3a2f49;
+  background: transparent;
+  color: var(--violet);
+  font-weight: 700;
+}
+
+.specter-arena-root .sa-row__assign:hover {
+  background: #261e37;
+}
+
+.specter-arena-root .sa-hero-choice {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+}
+
+.specter-arena-root .sa-hero-choice__item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #3a304a;
+  border-radius: 12px;
+  background: #1b1629;
+  text-align: center;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-hero-choice__item:hover {
+  background: #261e37;
+}
+
+.specter-arena-root .sa-hero-choice__item:has(input:checked) {
+  border-color: var(--violet);
+  background: #2b213f;
+  box-shadow: inset 0 0 0 1px var(--violet);
+}
+
+.specter-arena-root .sa-hero-choice__item:focus-within {
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--violet);
+}
+
+.specter-arena-root .sa-hero-choice__item .sa-portrait {
+  width: 100%;
+  max-width: 96px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.specter-arena-root .sa-hero-choice__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.specter-arena-root .sa-hero-choice__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-hero-choice__held {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-showcase {
+  display: grid;
+  gap: 16px;
+}
+
+.specter-arena-root .sa-showcase__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.specter-arena-root .sa-showcase__head h2,
+.specter-arena-root .sa-showcase__head p {
+  margin: 0;
+}
+
+.specter-arena-root .sa-showcase__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.specter-arena-root .sa-showcase__stage {
+  /* Sized in SpectersView from the measured effect extent (showcaseStage.ts): the height is set inline from the width. */
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  min-height: 160px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: radial-gradient(circle at 38% 46%, rgba(180, 154, 255, 0.17), transparent 48%), #171020;
+}
+
+.specter-arena-root .sa-showcase__spot {
+  position: absolute;
+  display: block;
+}
+
+.specter-arena-root .sa-showcase__zoom {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.specter-arena-root .sa-showcase__zoom--target {
+  width: 36.4px;
+  height: 36.4px;
+}
+
+.specter-arena-root .sa-showcase__caption {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--muted);
+  background: rgba(20, 16, 32, 0.72);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.specter-arena-root .sa-showcase__copy {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-showcase__copy h3 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -0.03em;
+}
+
+.specter-arena-root .sa-showcase__copy p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-showcase__epithet {
+  color: var(--violet);
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-showcase__pack {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-showcase__pack a {
+  color: var(--violet);
+  font-weight: 650;
+}
+
+.specter-arena-root .sa-showcase__pack code {
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-showcase__holders {
+  width: 100%;
+}
+
+.specter-arena-root .sa-showcase__holders ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specter-arena-root .sa-showcase__holder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #3a2f49;
+  border-radius: 10px;
+  background: #1b1629;
+  color: var(--text);
+  text-align: left;
+}
+
+.specter-arena-root .sa-showcase__holder:hover {
+  background: #261e37;
+}
+
+.specter-arena-root .sa-showcase__holder span {
+  color: var(--violet);
+}
+
+.specter-arena-root .sa-collection-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.specter-arena-root .sa-assign-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(760px, calc(100vw - 16px));
+  height: fit-content;
+  max-height: calc(100vh - 16px);
+  margin: auto;
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.specter-arena-root .sa-assign-dialog::backdrop {
+  background: rgba(10, 6, 20, 0.72);
+}
+
+.specter-arena-root .sa-assign-dialog__body {
+  display: grid;
+  gap: 14px;
+}
+
+.specter-arena-root .sa-assign-dialog h2,
+.specter-arena-root .sa-assign-dialog p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.specter-arena-root .sa-assign-dialog__step {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .specter-arena-root .sa-showcase__main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .specter-arena-root .sa-hero-choice {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+
+  .specter-arena-root .sa-assign-dialog {
+    padding: 14px;
+  }
+
+  .specter-arena-root .sa-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .specter-arena-root .sa-row__select > .sa-portrait {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .specter-arena-root .sa-hero-choice__item,
+  .specter-arena-root .sa-showcase__holder,
+  .specter-arena-root .sa-assign-dialog {
+    border: 1px solid CanvasText;
+  }
+
+  .specter-arena-root .sa-hero-choice__item:focus-within {
+    outline: 2px solid Highlight;
+  }
+
+  .specter-arena-root .sa-portrait__token {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specter-arena-root .sa-portrait--float,
+  .specter-arena-root .sa-portrait--active::after {
+    animation: none !important;
+  }
+}
+
+.specter-arena-root .sa-progression {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.specter-arena-root .sa-progression strong {
+  font-size: 13px;
+}
+
+.specter-arena-root .sa-progression small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.specter-arena-root .sa-progression--compact {
+  grid-template-columns: auto minmax(40px, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+
+.specter-arena-root .sa-progression--compact small {
+  grid-column: 1 / -1;
+}

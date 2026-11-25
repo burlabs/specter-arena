@@ -1,0 +1,45 @@
+name: preview-cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PREVIEW_ROLE_ARN: ${{ vars.PREVIEW_ROLE_ARN }}
+      PREVIEW_REGION: ${{ vars.PREVIEW_REGION }}
+      PREVIEW_BUCKET: ${{ vars.PREVIEW_BUCKET }}
+      PREVIEW_DISTRIBUTION_ID: ${{ vars.PREVIEW_DISTRIBUTION_ID }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Check preview configuration
+        id: config
+        run: |
+          if [ -z "$PREVIEW_ROLE_ARN" ] || [ -z "$PREVIEW_REGION" ] || [ -z "$PREVIEW_BUCKET" ] || [ -z "$PREVIEW_DISTRIBUTION_ID" ]; then
+            echo "::notice title=Preview cleanup skipped::preview infrastructure not configured"
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.config.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ env.PREVIEW_ROLE_ARN }}
+          aws-region: ${{ env.PREVIEW_REGION }}
+          role-session-name: specter-arena-preview-cleanup-${{ github.event.pull_request.number }}
+      - name: Delete the PR prefix and invalidate
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          aws s3 rm "s3://${PREVIEW_BUCKET}/pr-${PR_NUMBER}/" --recursive
+          aws cloudfront create-invalidation --distribution-id "$PREVIEW_DISTRIBUTION_ID" --paths "/pr-${PR_NUMBER}/*"

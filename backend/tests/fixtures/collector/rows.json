@@ -1,0 +1,46 @@
+{
+  "fixtureOnly": "SPECTER-FIXTURE-ONLY",
+  "rows": {
+    "botA": {
+      "key": "member-bot-a-9d63166ee3a3.memory-member-bot-a-9d63166ee3a3-aa11",
+      "mode": "member",
+      "running": true,
+      "turn": 1,
+      "turn_gen": "a8b8767e",
+      "last_activity_ts": "2026-11-16T12:00:00+00:00"
+    },
+    "botB": {
+      "key": "member-bot-b-0a1b2c3d4e5f.memory-member-bot-b-0a1b2c3d4e5f-bb22",
+      "mode": "member",
+      "running": false,
+      "turn": 3,
+      "turn_gen": "a8b8767e",
+      "last_activity_ts": "2026-11-16T12:00:05+00:00"
+    },
+    "replacementOfA": {
+      "key": "member-bot-a-9d63166ee3a3x.memory-member-bot-a-9d63166ee3a3x-cc33",
+      "mode": "member",
+      "running": true,
+      "turn": 1,
+      "turn_gen": "a8b8767e",
+      "last_activity_ts": "2026-11-16T12:01:00+00:00"
+    },
+    "workerExact": {
+      "key": "chat-61-1794779966",
+      "origin": "user",
+      "created_by": "member-bot-a-9d63166ee3a3.memory-member-bot-a-9d63166ee3a3-aa11",
+      "running": false
+    },
+    "workerOffByOne": {
+      "key": "chat-62-1794779999",
+      "origin": "user",
+      "created_by": "member-bot-a-9d63166ee3a3.memory-member-bot-a-9d63166ee3a3-aa12",
+      "running": false
+    },
+    "nonBot": {
+      "key": "chat-70-1794700000",
+      "origin": "user",
+      "running": true
+    }
+  }
+}

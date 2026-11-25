@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:specters:v3",
+  "title": "Specters list v3",
+  "description": "Body of GET /api/specters?view=assignment: every bot binding that holds a hero, each with its hero, in assignment order (oldest assignment first), at most 500, and unassignedBindingIds, the bindings that hold no hero yet, oldest binding first, at most 500. A binding is in exactly one of the two lists. unassignedBindingIds is the authoritative list of bots with no Specter: a client must not infer it from the roster. The client joins both lists to the roster by bindingId. There is no cursor because a single install has few bots.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 3 },
+    "items": { "type": "array", "items": { "$ref": "urn:specter-arena:contract:specter:v3" }, "maxItems": 500 },
+    "unassignedBindingIds": {
+      "type": "array",
+      "items": { "$ref": "urn:specter-arena:contract:bot-binding:v1#/definitions/bindingId" },
+      "maxItems": 500
+    }
+  },
+  "required": ["contractVersion", "items", "unassignedBindingIds"],
+  "additionalProperties": false
+}

@@ -1,0 +1,118 @@
+[
+  {
+    "file": "valid/ready-with-candidate.json",
+    "valid": true
+  },
+  {
+    "file": "valid/queued-no-candidate.json",
+    "valid": true
+  },
+  {
+    "file": "valid/failed-timeout.json",
+    "valid": true
+  },
+  {
+    "file": "valid/cancelled.json",
+    "valid": true
+  },
+  {
+    "file": "valid/keep-all-fields-but-one.json",
+    "valid": true
+  },
+  {
+    "file": "valid/integer-written-as-float.json",
+    "valid": true
+  },
+  {
+    "file": "invalid/extra-property.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/missing-budget.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/status-unknown.json",
+    "valid": false,
+    "instancePath": "/status"
+  },
+  {
+    "file": "invalid/status-numeric.json",
+    "valid": false,
+    "instancePath": "/status"
+  },
+  {
+    "file": "invalid/request-id-bad-prefix.json",
+    "valid": false,
+    "instancePath": "/requestId"
+  },
+  {
+    "file": "invalid/request-id-trailing-newline.json",
+    "valid": false,
+    "instancePath": "/requestId"
+  },
+  {
+    "file": "invalid/candidate-with-class-field.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/candidate-string.json",
+    "valid": false
+  },
+  {
+    "file": "invalid/error-free-text.json",
+    "valid": false,
+    "instancePath": "/error"
+  },
+  {
+    "file": "invalid/keep-unknown-field.json",
+    "valid": false,
+    "instancePath": "/keep/0"
+  },
+  {
+    "file": "invalid/keep-duplicate.json",
+    "valid": false,
+    "instancePath": "/keep"
+  },
+  {
+    "file": "invalid/keep-nine-items.json",
+    "valid": false,
+    "instancePath": "/keep"
+  },
+  {
+    "file": "invalid/budget-extra-property.json",
+    "valid": false,
+    "instancePath": "/budget"
+  },
+  {
+    "file": "invalid/budget-negative-remaining.json",
+    "valid": false,
+    "instancePath": "/budget/bindingRemaining"
+  },
+  {
+    "file": "invalid/budget-limit-zero.json",
+    "valid": false,
+    "instancePath": "/budget/installLimit"
+  },
+  {
+    "file": "invalid/prompt-version-missing.json",
+    "valid": false,
+    "instancePath": ""
+  },
+  {
+    "file": "invalid/finished-fraction.json",
+    "valid": false,
+    "instancePath": "/finishedAtMs"
+  },
+  {
+    "file": "invalid/version-two.json",
+    "valid": false,
+    "instancePath": "/contractVersion"
+  },
+  {
+    "file": "invalid/finished-nan.json",
+    "valid": false
+  }
+]

@@ -1,0 +1,169 @@
+# Monitoring scope (FP-01-AC05)
+
+Status: APPROVED
+
+Approved by: Eric
+Approved on: 2026-11-13
+
+FP-03 monitoring work starts only when the status line reads `Status: APPROVED` with `Approved by:` and `Approved on:` lines; `node scripts/check-matrix.mjs` enforces the format. FP-03 is unblocked within the scope below only; anything outside it needs a new scope decision.
+
+## Inputs
+
+- `docs/compatibility/capability-matrix.md` and `capability-matrix.json`: what the app may read, per scope, with the credential that proved it.
+- `docs/compatibility/host-facts.json` and `crew-0.12.0.md`: how the host behaves (not permissions).
+- `docs/compatibility/evidence/<runId>/`: the run evidence the cells cite.
+
+The live probe run is closed (A7 timebox, 2026-11-12). The matrix records 7 ALLOWED, 10 DENIED and 29 UNTESTED cells. Every id below is a cell id in `capability-matrix.json`. This decision rests on those cells, except the token-endpoint findings from FD-28, which are marked as design findings and are not matrix evidence.
+
+## Decisions
+
+### 1. AC05 monitoring scope: native, bot-level (FD-28)
+
+The app monitors through the host's native paths only: the `slots:user` feed and `GET /api/agents`. It adds no authorized observer, bridge or app-owned mode.
+
+Product scope, narrowed by Eric on 2026-11-13, is three things per bot: the bot's name, the tokens the bot used, and the tasks or spawned work it has done.
+
+Proven (ALLOWED, `APP-TOKEN` evidence):
+
+- `bot-id-observable`: the bot's own thread appears in `slots:user` rows under a key of the form `member-<member_id>[.memory-<memory_store>]` on Crew 0.12.2, where `member_id` is the slug or `<slug first 48 characters>-<12 hex>` and `memory_store` is the bot's private memory store. The key identifies the bot. Stability across a rename is owner-attested by OA-1 for the release app; the probe cell `bot-id-stable-across-rename` stays UNTESTED in the matrix. See "Pass 2 decisions".
+- `bot-own-session-attribution`: that thread's row carries the key and an `agent` field, so the thread is attributable to the bot.
+- `bot-list-via-agents`: `GET /api/agents` returns the bot's row.
+- `bot-name-avatar`: that row carries `name`, `display_name` and `avatar`, which covers the bot-name part of the scope.
+- `user-slots-visible`: user-origin slot rows are delivered once `slots:user` is granted.
+- `app-owned-token-exchange` and `app-owned-ws-token-transport`: the app can exchange its own token and read the WebSocket feed with the token in the query string.
+
+Closed (DENIED). The app cannot use these paths and the design must not depend on them:
+
+- `bot-list-members-denied`: `/api/members` is refused to app tokens.
+- `bot-activity-read`, `bot-goals-read`, `bot-key-results-read`, `bot-ledger-read`, `bot-notes-memory-private`: bot activity, goals, key results, ledger projections and notes are refused to app tokens.
+- `user-chat-slots-api`: `GET /api/chat/slots` answers `Forbidden` even with an approved grant. The slots feed is the only supported source of session rows.
+- `user-slots-no-grant-denied`: without the `slots:user` grant no user-origin rows arrive.
+
+Not proven (UNTESTED). Nothing in the product may rely on these until a probe settles them:
+
+- `bot-worker-session-attribution`: no worker row was seen, and whether the probe bot ever dispatched a worker is unknown.
+- `user-signal-start`, `user-signal-progress`, `user-signal-terminal`, `user-signal-approval`, `user-signal-tool-error`: no lifecycle signal was observed. The bot thread produced only `removed` signals.
+- `user-outcome-evidence`, `user-source-links`, `user-chat-slot-history`: not probed.
+
+Token usage is unproven and likely unavailable to apps. No matrix cell covers a per-bot token path. The unproven design findings behind this (FD-28, no matrix cell) are that `/api/usage/turns` returns only rows stamped with the calling app, and `/api/usage/series` refuses app callers. Token data is therefore an operational stat only, shown if and only if a supported path is proven (see decision 2).
+
+Required first step for FP-03: open with a focused probe before building on worker, spawn or token data. The probe must:
+
+1. Add the `subagent:user` event declaration. Subagent events default to the app's own slots unless it is declared, and the FP-01 overlay never declared it, so spawned work was never in view.
+2. Try `/api/sessions/usage` and `/api/usage` with an app token. App access to both is unread.
+3. Record each result as a new matrix cell or an update to `bot-worker-session-attribution`, with `APP-TOKEN` evidence.
+
+If the probe shows a path is closed, that part of the scope is dropped and the product shows only what is proven. It does not fall back to an unapproved mechanism.
+
+Caveat, acknowledged by Eric: the `slots:user` grant exposes every chat of the user, not only bot threads (`user-slots-visible`). Decision 3 limits what the app keeps.
+
+### 2. XP basis (FD-29)
+
+XP stays tied to attributable accepted outcomes (product invariant 3, unchanged). Tokens are never XP. If a supported app path to token usage is ever proven, tokens may appear only as an operational stat.
+
+### 3. Unbound sessions (PA1-D2, FD-30)
+
+Bots only. The app keeps a bot's own thread (key `member-<member_id>.memory-<memory_store>`; see `bot-id-observable`) and sessions whose `created_by` equals the bot's own slot key exactly. A deeper `created_by` chain is not followed. Every other session received through `slots:user` is dropped at collection time and is never stored or shown. Plain chats and agents with no bot are out of scope.
+
+### 4. Arena on a bot dashboard (PA1-D5, FD-31)
+
+The arena UI lives at `/apps/specter-arena`. The app may also write a small per-bot summary record (for example the Specter name and condition) with `POST /api/member-records/{slug}` for a bot dashboard page to bind. No app UI is embedded in bot dashboards: the host does not support it, and `bot-dashboard-webview-hook` is UNTESTED. (Superseded 2026-11-18 by FP-10+11, recorded in "Arena on the app page; bot-dashboard summary records skipped" below: the app does not write member records and holds no grant for them.)
+
+This is untested live. `bot-dashboard-member-record` is UNTESTED: the one attempt answered `400 bad_record_type`, a defect in the probe request, not a host answer. `bot-dashboard-record-ungranted` is UNTESTED, so the refusal without a grant is also unknown.
+
+FP-10 owns the live probe of both the write and the ungranted refusal, and owns adding `/api/member-records/*` to the release manifest at that point. The manifest does not include it before then. (FP-10+11 skipped the probe and the grant; the manifest still does not include it.)
+
+## Result
+
+The approved scope is native, bot-level monitoring of bot name, tasks or spawned work, and (only if proven) tokens as an operational stat, restricted to bots. It supports a demo built on bot identity and name today (`bot-id-observable`, `bot-name-avatar`). Task and spawned-work display depends on the FP-03 opening probe above.
+
+FP-03 monitoring implementation is UNBLOCKED within this scope only.
+
+## Pass 2 decisions
+
+These record what the Pass 2 collector (FP-02+03) keeps and what it does not know. The status header above is unchanged.
+
+### Grants (D-P9)
+
+The release manifest grants exactly one event, `slots:user`, and two api entries: the app's own namespace (`/apps/specter-arena/api/*`) and `/api/agents`. It grants no usage endpoint, no `/api/members`, no `/api/chat/slots` and no `/api/member-records`, and no `subagent:user`. The collector re-reads its manifest before each dial and each roster poll, and stops with `scope-lost-or-silent` if a grant is gone. (FP-06+07 briefly had a third api entry, `/api/chat`; FP-16 removed it.)
+
+### Bot identity (D-P10)
+
+1. A binding is `member_id` plus `memory_store`, taken from the DM slot key, scoped to one installation. Two generations never share a key, so a delete-and-recreate under the same name is a second binding and is never merged.
+2. `/api/agents` rows join to bindings by exact `memory_store`, never by name. Only `scope == "global"` rows count. The `agent` field of a slot row is a diagnostic and is not used to join.
+3. A rename is a new display revision of the same binding. A bot that leaves `/api/agents` becomes absent and keeps its history; a bot that reappears under the same key reuses its binding.
+4. A bot with no private memory store (a `member-<id>` key without `.memory-`) is not bound. The roster reports how many were seen as the note `unsupported-store-less-bot`.
+5. A worker session belongs to a bot only when its `created_by` equals that bot's slot key exactly. Nothing is attributed by name, prefix or a longer chain.
+
+### What the collector keeps
+
+The bot's name, display name, avatar kind and file or id, condition facts (running, turn, flags, timestamps) and per-event counters. It keeps no title, message, prompt, path, tool input or avatar trait, and it never reads `/api/members/*`. Rows for sessions that do not belong to a bound bot are dropped at collection time.
+
+### Owner-attested by OA-1 (2026-11-16, Crew 0.12.2, release grants)
+
+Eric ran the owner acceptance sitting (OA-1, #80) against the release app built from main `3e7dc25`, with only the D-P9 grants, and read four `GET /api/roster` bodies. Record: https://github.com/burlabs/specter-arena/issues/66#issuecomment-6937679089. The collector stayed `running`, coverage read `covered` throughout with no gaps, and the `cron-turns-not-observable` note was present. This is owner-attested product evidence; the probe cells in `capability-matrix.json` keep their APP-TOKEN states.
+
+- Narrow-grant delivery (D-P9): bot DM rows and their lifecycle reach the app under `slots:user` alone. A throwaway bot went `working`, then `settled`.
+- Closed-tab collection (FP-03-AC01): a 180 s shell turn finished while every Crew tab was closed, and the roster showed it `settled` with source and observed times from inside the closed window.
+- Rename stability (FP-03-AC05): after a display-name change the bot kept the same binding, and the roster showed the new display name.
+- Delete and recreate (FP-03-AC05): the recreated bot got a second binding; the old binding read `absent` with its history kept. Two earlier generations of the probe bot also stayed separate bindings, both `absent`.
+- Absent bots read condition `unknown` (`presence-absent`), never `working` or `settled`.
+
+### Accepted gaps (D-P11), still unproven live
+
+No probe sitting was held for Pass 2, and OA-1 did not exercise these:
+
+- Worker attribution under the narrow grant: no worker session was started during OA-1, so `workers` stayed 0. Direct `created_by` attribution is tested offline only.
+- Approval signals, tool errors and `spawn_run` subagent attribution: not collected in Pass 2.
+- Gateway restart behaviour and an open socket outliving its token (worst case, one counted coverage gap per hour).
+- Cron-origin (scheduled) turns are not delivered under `slots:user`, so they are invisible. Every roster response carries the standing note `cron-turns-not-observable`.
+- A bot whose DM thread was never opened has no slot and is not on the roster (OA-1 saw this for two such bots, as designed).
+- Whether reinstalling shows a consent screen for the new grants was not reported.
+
+## Generation grant, not monitoring (FP-06+07)
+
+Added 2026-11-18 under Eric's approval of grant A. The status header and every decision above are unchanged.
+
+Superseded by FP-16 (2026-11-19): FP-06+07 adds one grant for summoning a Specter: `permissions.api` gains `/api/chat`, and the manifest lists one app agent, `specter-arena-summoner` (file `agents/specter-summoner.json`), with no tools, no MCP servers, no `.mcp.json` and the `auto` model. It adds no event, `spawn`, `jobs`, `network` or `sessionApproval`. The app uses it only to start its own chat slot, send one prompt and read that slot's reply.
+
+- This is generation, not monitoring. It reads nothing about any bot. The app still monitors through `slots:user` and `GET /api/agents` only, and the three-part product scope (name, tokens, tasks or spawned work) is not widened.
+- Superseded by FP-16 (2026-11-19): Slots the app creates are app-owned. The `slots:user` collector receives user-origin slots, so it does not receive these, and they never become attempts, observations or coverage. Each request is also recorded as `internal: summoning` in `generation_request`, so a later XP feature must exclude it.
+- Superseded by FP-16 (2026-11-19): The host matches a bare grant entry against its child paths, so `/api/chat` also matches `/api/chat/slots/...`. Crew confines an app token to slots it owns, and the probe cell `user-chat-slots-api` (the all-user slot list) stays DENIED. The app must not call `GET /api/chat/slots` and must not read any slot it did not create. A backend test pins the paths the summoner uses.
+- Superseded by FP-16 (2026-11-19): Not proven on a live install: that the host still refuses `GET /api/chat/slots` once `/api/chat` is granted. The owner step OA-3 records the answer. Until then nothing depends on that refusal.
+- Updating an installed app stages the added grant until the owner approves it. Without approval, generation reports `generation_unavailable` and monitoring keeps working.
+
+## Acceptance and XP are app-owned (FP-08+09)
+
+Added 2026-11-18. The status header and every decision above are unchanged.
+
+FP-08+09 adds WorkItems, human acceptance and an XP ledger. It adds no manifest grant: `app.json` and `agents/` are not edited, and the release grants stay exactly those in D-P9 and the generation paragraph above.
+
+- Acceptance and XP are records this app keeps about its own work items. They are not read from Crew. The inputs are the attempts the collector already projects (a bot's own turn or a worker session whose `created_by` is the bot's slot key) and what the app owner types. Bot goals, key results, ledger items, activity and notes stay DENIED and are not used to define a WorkItem.
+- An ended attempt is not success. A WorkItem is accepted only by a decision the app owner makes through a signed route. The host gives an app no per-user identity, so the recorded actor is the constant `app-owner`; no bot, collector or observation path can reach acceptance.
+- Tokens are never XP (FD-29). No token, tool-call, retry, time or generation-job count is read by the XP code.
+- Superseded by FP-16 (2026-11-19): Summoning and other app-owned slots never become attempts, so they cannot be linked to a WorkItem and earn nothing.
+- Nothing here widens the three-part product scope (bot name, tokens as an operational stat if ever proven, tasks or spawned work) or the untested items in decision 1.
+
+## Arena on the app page; bot-dashboard summary records skipped (FP-10+11)
+
+Added 2026-11-18 by FP-10+11 PR-C. The status header and every decision above are unchanged.
+
+FP-10+11 puts the arena and the encounter inspector on the app page `/apps/specter-arena` only. It does not write bot-dashboard summary records. `POST /api/member-records/{slug}` would need a new grant (`/api/member-records/*`), the two probe cells for it (`bot-dashboard-member-record` and `bot-dashboard-record-ungranted`) are still UNTESTED, and no probe-free path exists: the host refuses an ungranted path in the SDK before any request is sent, so the write cannot be tried without the grant. The session skipped it, as decided in advance (default: skip, no ask).
+
+- `app.json` and `agents/` are not edited. The release grants stay exactly those in D-P9 and the generation paragraph. `scripts/check-fixtures.mjs` still passes with no edit, which shows no grant was added.
+- The last paragraph of decision 4 (FP-10 owns the live probe and adding the grant) is not carried out. A later session that wants bot-dashboard summaries starts by asking Eric for that grant and then runs both probes; adding the grant is an escalation to Eric.
+- The arena is a read-only projection of the app's own routes. It adds one signed read route, `GET /api/scene-assets/{key}`, inside the existing `/apps/specter-arena/api/*` grant. It reads no bot goal, key result, ledger item, activity or note, sends nothing to Crew, and its only write is the existing in-app decision route from FP-08+09, labelled as in-app acceptance and not a Crew tool approval.
+- Crew handoff links from the inspector exist only for routes recorded as allowed in `docs/compatibility/handoff-routes.md` (machine-readable: `handoff-routes.json`). That is one route, the Bots page at `/members`. Everything else the inspector could want, a bot's chat, an approval, a session, is recorded there as unsupported or denied, so the inspector also offers a bounded, redacted "Copy diagnostic summary". "Waiting on you" is never shown, because approval signals are UNTESTED.
+- Nothing here widens the three-part product scope or the untested items in decision 1.
+
+## FP-14 re-check (2026-11-19)
+
+The status header and every decision above are unchanged. Re-read against the code and the shipped manifest at `9d215422d1d9ff64aeea1d2b23286c35e6284742`:
+
+- The bot's DM key is `member-<member_id>[.memory-<memory_store>]` (`backend/specter_arena/collector/identity.py`: `bot_dm_key`, `is_store_less_key`). No statement above uses a different form for the app's own behavior. The older slug-based spelling of the key remains only in the generated probe vocabulary and evidence under `docs/compatibility/` (`capability-*` files and `evidence/`), which record the question as it was asked.
+- `app.json` grants `/apps/specter-arena/api/*` and `/api/agents` under `permissions.api`, and `slots:user` under `permissions.events`. Nothing else (FP-16 removed `/api/chat`).
+- Superseded by FP-16 (2026-11-19): The `/api/chat` grant is matched by Crew on its path prefix, so it can also reach `/api/chat/slots`, including a list of all slots (FP-06+07 handoff, risk R2; not observed on a live host). The app never issues a GET on that path (`backend/tests/test_summoner_source_guard.py`). The release classifies this as KNOWN LIMITATION KL-02 in `docs/release/blockers.md`, and it becomes a blocker only if OA-5 step 7 shows slot rows reaching an app route, a log or the copied summary.
+
+## FP-16 removes the generation grant (2026-11-19)
+
+`/api/chat` and the `specter-arena-summoner` agent leave the release manifest. The grants are `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`. The slot-list reach noted as R2 is closed because the grant is gone. Chat slots named `specter-summon-*` created by RC-1 may remain in Crew's history; the app cannot clean them. What Crew does with an already approved grant on update is read from the Crew source (`manager_records._approved_grants_after_manifest_change`) and confirmed end to end only at the OA-5 sitting.

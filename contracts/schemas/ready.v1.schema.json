@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:ready:v1",
+  "title": "Readiness response v1",
+  "description": "Body of GET /api/ready. 200 when status is ready; 503 when it is not-ready. Carries no paths and no exception text.",
+  "type": "object",
+  "properties": {
+    "contractVersion": { "type": "integer", "const": 1 },
+    "status": { "enum": ["ready", "not-ready"] },
+    "store": { "enum": ["ready", "unconfigured", "migrating", "schema-newer", "sqlite-too-old", "unavailable", "disabled"] },
+    "storeVersion": { "type": ["integer", "null"], "minimum": 0 },
+    "latestVersion": { "type": ["integer", "null"], "minimum": 1 }
+  },
+  "required": ["contractVersion", "status", "store", "storeVersion", "latestVersion"],
+  "additionalProperties": false,
+  "if": { "properties": { "status": { "const": "ready" } } },
+  "then": { "properties": { "store": { "const": "ready" }, "storeVersion": { "type": "integer" }, "latestVersion": { "type": "integer" } } },
+  "else": {
+    "properties": { "store": { "not": { "const": "ready" } } },
+    "if": { "properties": { "store": { "not": { "const": "disabled" } } } },
+    "then": { "properties": { "latestVersion": { "type": "integer" } } }
+  }
+}
