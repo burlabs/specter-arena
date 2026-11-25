@@ -1,8 +1,8 @@
-# OA-5 and OA-6 owner sitting runbook (RC-4)
+# OA-5 and OA-6 owner sitting runbook (RC-4 baseline; RC-7 single sitting at the end)
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6). The full sitting below was written for RC-4 and stays the baseline; the RC-5 arena re-check and the RC-6 re-check (the same steps retargeted, plus R7 and R8) are the last sections. The artifact the full sitting runs on is built from RC-4. Its commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 6 and in the build record the agent hands you (step 0).
+Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7). The full sitting below was written for RC-4 and stays the baseline; the RC-5 arena re-check, the RC-6 re-check and the RC-7 single sitting (the same steps retargeted, plus R7, R8, a brand check and the registry install) are the last sections. Follow the RC-7 single sitting. The artifact the full sitting runs on is built from RC-4. Its commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 6 and in the build record the agent hands you (step 0).
 
 This is one consolidated sitting of at most 30 minutes, with two parts. Part 1 is OA-5 (issue #140): the update of your installed app to RC-4 and the integrated journey. It replaces the separate owner checks OA-2 (issue #101), OA-4 (issue #124) and the re-checks of FP-17, FP-19, FP-20 and FP-21, and it is the first live check of FP-22 and FP-23 (the PA-3 changes). It is the evidence for FP-14-AC01 and AC06 and closes BLK-01 in `docs/release/blockers.md`. Part 2 is OA-6 (issue #133): uninstall, clean install from the tarball, Trust modal wording, permissions view and re-enable behaviour. It is the evidence for FP-15-AC01 and confirms the "to be confirmed in OA-6" facts in `docs/release/install.md`. Part 2 ends by putting your own data back. One optional step (19) imports an avatar pack; it is not part of the 30 minutes.
 
@@ -71,6 +71,8 @@ For each step: pass or fail, the exact text of anything that failed, a screensho
 
 ## RC-5 arena re-check (at most 10 minutes, after the RC-4 sitting)
 
+Superseded by the RC-7 single sitting below; kept as history.
+
 RC-5 adds FP-24 (PA-4) to RC-4: heroes stand on the map's Top, Mid and Bottom lanes and its jungle clearings instead of the lower band, each minion stands next to its own hero, a fight goes both ways, and the Specters showcase is zoomed out with a "Practice target, for show". It changes the UI only: no migration, no grant, no new route. The full RC-4 sitting above stays the baseline. Run this re-check on RC-5, plus any RC-4 step that failed (repeat only those). The agent builds RC-5 from `main` at `78289679353aff280371095708b70dfc4e102ff4` or later; its commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 7.
 
 Position, lane and fight behaviour is presentation only and never changes a number.
@@ -88,6 +90,8 @@ Hand back, for each of R1 to R6: pass or fail, the exact text of anything that f
 
 ## RC-6 re-check (at most 13 minutes, after the RC-4 sitting)
 
+Superseded by the RC-7 single sitting below; kept as history.
+
 RC-6 adds FP-25 to RC-5: the assignment dialog is centred by the app's own CSS (Crew's global reset removes the browser's default centring), and the app has a Crew store listing (hero banner, highlights, use cases, configuration, four screenshots and the logo icon). Permissions, version and the store at version 11 are unchanged. The tarball is about 4.35 MB larger because `store/` ships; `docs/images/`, `avatar-packs/` and `agents/` stay out. The full RC-4 sitting stays the baseline, and RC-5 steps R1 to R6 are repeated here on RC-6 with R7 and R8 added. Run this on RC-6, plus any RC-4 step that failed. The agent builds RC-6 from `main` at `fe662428db77da73b160d2b8e22a945164da544a` or later; its commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 8.
 
 | # | Min | Step | Expect and record |
@@ -103,40 +107,74 @@ RC-6 adds FP-25 to RC-5: the assignment dialog is centred by the app's own CSS (
 
 Hand back, for each of R1 to R8: pass or fail, the exact text of anything that failed, a screenshot for R2, R4, R6, R7 and R8, the Crew version and the time. The agent writes it into `docs/release/oa-5-result.md` under an RC-6 heading and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate is cut, and only the failed steps are repeated.
 
-## Registry install runbook (owner sitting, pending)
+## RC-7 single sitting (at most 45 minutes, after the RC-4 sitting): R1 to R8, brand check, then registry install
 
-This runbook checks the install of Specters of the Abyss from the Kiro Crew external registry. Crew 0.13.1 is the tested version. Nothing below has been run on a real Crew. Fill the results table as you go and record failures verbatim. Do not mark steps done that were not run.
+RC-7 adds FP-26 to RC-6: the app is branded "Specters of the Abyss" (the slug stays `specter-arena`), `app-registry.json` makes the repository installable from the Crew external registry, the Node floor for the registry build is 22, and the backend logs a warning when `ui/dist/index.mjs` is missing. Permissions, version 0.1.0 and the store at version 11 are unchanged. The tarball is about 4.35 MB larger than RC-5 because `store/` ships; `docs/images/`, `avatar-packs/`, `agents/` and `app-registry.json` stay out. Crew 0.13.1 is the tested version. One sitting covers all three parts, in this order, on one machine: Part A (R1 to R8, 13 minutes) updates your installed app from the RC-7 tarball; Part B (brand check, 2 minutes) reads the name in every place it shows; Part C (registry install, about 25 minutes) installs the same app from the registry. Part C uninstalls the tarball install first, because Crew refuses to install a name that is already installed. Run any failed RC-4 step too. The full RC-4 sitting stays the baseline. The RC-7 commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 9.
 
-Record first: Crew version, the commit SHA of `main` you installed, the registry URL, the branch `main`, and `node -v` and `npm -v` for the Node the gateway uses.
+### Part A: R1 to R8 on the RC-7 tarball
+
+| # | Min | Step | Expect and record |
+|---|---|---|---|
+| R1 | 1 | Run `shasum -a 256 -c` on the RC-7 checksum file, extract, and run the manifest check (`docs/release/install.md` section 3). Run `ls store` and `ls` in the extracted folder. Run `kirocrew app update specter-arena --source <extracted RC-7 folder>`, then enable. Record `PRAGMA user_version` with `sqlite3 'file:<db>?immutable=1'` | `OK`. No non-OK manifest line. The folder has no `agents/`, `avatar-packs/`, `docs/images/` or `app-registry.json`. `store/` holds `hero.png` and four `screenshot-*.png` files. The grants are still `/apps/specter-arena/api/*`, `/api/agents` and `slots:user`. Store version 11 and no new `pre-migrate-*` file |
+| R2 | 2 | **Lane and jungle placement.** Open the Arena with at least four bots that have Specters (assign some first if you need to). Look at where the heroes stand. Reload the page three times, and switch to Roster and back once | Heroes stand on the map's lanes (Top, Mid, Bottom) and on the jungle clearings, spread out, none stacked or touching another hero. Across reloads you see heroes on all four regions (lanes and jungle), and their spots change after each reload and stay the same after the tab switch. No hero, row, inspector or label names a lane. The legend reads "Heroes take random positions on the map's lanes and jungle; position means nothing about the bot." |
+| R3 | 1 | **Minions beside their hero.** Ask a bot for a worker of about 2 minutes, or use a bot with running work. Look at where its minion stands. Then click the hero token and the minion token | The minion stands next to its own hero, on the side toward the enemy. A task with no drawn hero (a bot with no Specter yet) sits on the field away from the heroes. Every hero token and every task token can be clicked and opens its inspector, and no floating label blocks a click |
+| R4 | 2 | **Two-way fight.** Watch one working hero and its minion for a full exchange, ten seconds or more. Look for each beat, in this order | The hero strikes or casts, the minion is hit, a moment later the minion strikes back, and the hero flinches briefly. The next exchange does not start until the flinch ends. There is no health bar and no damage number, and nothing about the task or XP changes. A minion striking back does not mean the task is failing |
+| R5 | 2 | **No fight when it should not fight.** (a) With the waiting bot's approval unanswered, look at that hero. (b) On the Data tab press Pause collection, then look at the Arena for 15 seconds. Resume. (c) Turn on the OS "reduce motion" setting and reload the Arena | (a) The waiting hero does not attack and its minion does not strike; the awaiting-approval marker shows. (b) No exchange plays while paused, and the "Collection paused" plate shows. After Resume a working hero fights again. (c) With reduced motion on, no strike, strike back or flinch plays, and the defeat is a static label. If no bot waits on an approval, record that and skip (a) |
+| R6 | 2 | **Specters showcase.** Turn reduced motion off. Open Specters. Select Ember and press Attack. Select Shard and press Cast. Press Attack on one other hero. Then at 390 px (narrow the window) press Attack once | The stage is wide and zoomed out. Ember's attack and Shard's cast stay inside the stage, with nothing cut off at any edge. A "Practice target, for show" stands to the right of the hero, is hit, strikes back, and the hero flinches. It does not appear on the Arena, creates no task, and no XP changes. At 390 px the stage fits with no sideways scroll. With reduced motion on, Attack and Cast are off with the note and the target does not move |
+| R7 | 1 | **Centred assignment dialog.** Have at least one bot with no Specter (create a new bot and send it one message, or use one you skipped). Open the Assign dialog from the Specters tab ("Assign Specters (N)"). Look at where it sits in the Crew window at full width. Close it, narrow the Crew window to about 390 px wide and open it again | The dialog opens in the middle of the Crew window, horizontally and vertically, with equal space on both sides and above and below (not pinned to the top left). It stays centred when the window is narrow and fits inside it. Escape closes it. Screenshot both widths |
+| R8 | 2 | **Store page.** In Crew open Apps, then Library, then Specters of the Abyss to its detail page. Look at the whole page, then switch Crew to dark and look again | The page shows the hero banner (the "Specters of the Abyss" art), the six highlights, the two use cases, the configuration note, the four screenshots (Arena, Specters, Roster and the Assign dialog, all with demo data) and the Specters of the Abyss logo as the icon. All of it reads in light and in dark (the dark page reuses the light images). Record anything missing, cut off or blank, and the exact wording Crew shows for the author, tags and platform. If Crew shows a blank hero or no screenshots, record it: the listing fields were written from the Crew 0.13.1 source and have never been seen in a running Crew |
+
+### Part B: brand check
+
+| # | Min | Step | Expect and record |
+|---|---|---|---|
+| B1 | 1 | In the extracted RC-7 folder read `app.json` (`grep -e displayName -e label -e '"name"' app.json`). Then in Crew read the sidebar entry, the Apps, Library card, and the heading at the top of the app page | `displayName` and `ui.pages[0].label` both read "Specters of the Abyss". `name` stays `specter-arena`. The sidebar entry, the Library card and the page heading all read "Specters of the Abyss". The URL still ends `/apps/specter-arena`. Record any place that still says "Specter Arena" |
+| B2 | 1 | Open the Data tab, the Roster and the Specters tab. Look for the app's name in tab text, the copy-summary text and any dialog title. Read the first line of the repository README on GitHub | No user-facing text says "Specter Arena", with one known exception: the first line of the copied diagnostic summary still reads "Specter Arena diagnostic summary" (KL-34). Record what it says. The README banner and its first heading carry the new name. Names of files and the slug are not user-facing and are allowed to stay |
+
+Hand back, for each of R1 to R8, B1 and B2: pass or fail, the exact text of anything that failed, a screenshot for R2, R4, R6, R7, R8 and B1, the Crew version and the time.
+
+### Part C: registry install
+
+This part installs Specters of the Abyss from the Kiro Crew external registry. Crew 0.13.1 is the tested version. Nothing in this part has been run on a real Crew until you run it. Fill the results table as you go and record failures verbatim. Do not mark steps done that were not run.
+
+The registry is the repository `https://github.com/burlabs/specter-arena` on branch `main`. Crew builds the UI on your machine from that source, so **Node 22 or newer and `npm` must be on the PATH of the process that runs the Crew gateway**. A Node on your shell's PATH is not enough if the desktop app or the gateway starts with a different PATH. Install steps and the PATH fix are in `docs/release/install.md` section 2A.
+
+If the app shows as installed but the page has no UI (a blank page, or the log line `ui/dist/index.mjs not found`), the build was skipped. The fix is: put Node 22 or newer and npm on the gateway's PATH, restart Crew, open the app's card in Library and press **Update**. Update rebuilds the UI. Record that you needed it.
+
+Record first: Crew version, the commit SHA of `main` you installed (`git ls-remote https://github.com/burlabs/specter-arena main`), the registry URL, the branch `main`, and `node -v` and `npm -v` for the Node the gateway uses.
 
 | # | Step | Expect and record |
 |---|---|---|
-| 1 | **Prerequisite.** Confirm Node 22 or newer and `npm` exist on the PATH of the process that runs the Crew gateway. Restart Crew after installing Node. If the desktop app's PATH differs from your shell's, record that | Record how you checked |
-| 2 | **Add registry.** Settings, Apps, Manage app sources, External Registries, Add Registry. Name "Specters of the Abyss", repo `https://github.com/burlabs/specter-arena`, branch `main`. Save | The registry refreshes without error |
-| 3 | **Listing.** Open the store | Exactly one app. DisplayName "Specters of the Abyss". The icon, hero and four screenshots render before install |
-| 4 | **Install**, watching the install log | The log shows `npm install`, `npm run build` and a success line. **Failure signature:** `npm not found on PATH — skipping JavaScript build step`. If you see it, stop, fix the PATH (`docs/release/install.md`, section 2A), then Update and rerun from here |
-| 5 | **UI-less check.** Confirm `<Crew home>/apps/specter-arena/ui/dist/index.mjs` exists | About 321 kB. Record the size. PASS only if the file exists, because Crew reports success without it |
-| 6 | **Trust and enable** | Record both results |
-| 7 | **Backend.** Check the app's `/health` in Crew and that first-run Python provisioning finished | Healthy. The app log has no `ui/dist/index.mjs not found` warning |
-| 8 | **Sidebar** | Label "Specters of the Abyss". The logo icon shows active and inactive |
-| 9 | **Open** `/apps/specter-arena` | Heading "Specters of the Abyss". The module loads with no console errors. First-run Specter assignment works |
-| 10 | **Update.** Press Update | Up to date, or a same-version reinstall. Record which |
-| 11 | **Optional negative test**, on a throwaway Crew home only: remove Node from the gateway PATH and install | The step 4 failure signature appears and the page does not load. Then follow the fix in section 2A |
-| 12 | **Uninstall** | The sidebar entry is gone and the data folder is kept (Crew default) |
+| G0 | **Make room.** Uninstall the tarball install, keeping its data: `kirocrew app uninstall specter-arena` (no `--purge-data`). Check that `~/.kiro/crew/apps/specter-arena/` holds only `data/` | The app is gone from the sidebar and the data folder is kept |
+| G1 | **Prerequisite.** Confirm Node 22 or newer and `npm` exist on the PATH of the process that runs the Crew gateway. Restart Crew after installing Node. If the desktop app's PATH differs from your shell's, record that | Record how you checked |
+| G2 | **Add registry.** Settings, Apps, Manage app sources, External Registries, Add Registry. Name "Specters of the Abyss", repo `https://github.com/burlabs/specter-arena`, branch `main`. Save | The registry refreshes without error |
+| G3 | **Listing.** Open the store | Exactly one app. DisplayName "Specters of the Abyss". The icon, hero and four screenshots render before install |
+| G4 | **Install**, watching the install log | The log shows `npm install`, `npm run build` and a success line. **Failure signature:** `npm not found on PATH — skipping JavaScript build step`. If you see it, stop, fix the PATH (`docs/release/install.md`, section 2A), restart Crew, press Update and rerun from G5 |
+| G5 | **UI-less check.** Confirm `<Crew home>/apps/specter-arena/ui/dist/index.mjs` exists | About 321 kB. Record the size. PASS only if the file exists, because Crew reports success without it |
+| G6 | **Trust and enable** | Record both results |
+| G7 | **Backend.** Check the app's `/health` in Crew and that first-run Python provisioning finished | Healthy. The app log has no `ui/dist/index.mjs not found` warning |
+| G8 | **Sidebar** | Label "Specters of the Abyss". The logo icon shows active and inactive |
+| G9 | **Open** `/apps/specter-arena` | Heading "Specters of the Abyss". The module loads with no console errors. Your earlier data is still there, and first-run Specter assignment works for a new bot |
+| G10 | **Update.** Press Update | Up to date, or a same-version reinstall. Record which |
+| G11 | **Optional negative test**, on a throwaway Crew home only, never your real one: remove Node from the gateway PATH and install | The G4 failure signature appears and the page does not load. Then follow the recovery above (fix PATH, restart, press Update) and record that the UI appears |
+| G12 | **Uninstall** | The sidebar entry is gone and the data folder is kept (Crew default) |
 
-### Registry results
+#### Registry results
 
 | # | Result (pass or fail) | Exact text of anything that failed | Time |
 |---|---|---|---|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
-| 11 | | | |
-| 12 | | | |
+| G0 | | | |
+| G1 | | | |
+| G2 | | | |
+| G3 | | | |
+| G4 | | | |
+| G5 | | | |
+| G6 | | | |
+| G7 | | | |
+| G8 | | | |
+| G9 | | | |
+| G10 | | | |
+| G11 | | | |
+| G12 | | | |
+
+The agent writes the results into `docs/release/oa-5-result.md` under an RC-7 heading and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate is cut, and only the failed steps are repeated. Do not tag, release or submit from this sitting.

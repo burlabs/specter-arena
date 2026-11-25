@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit. The classified list (BLOCKER or KNOWN LIMITATION, with evidence) is `docs/release/blockers.md`; the rows below are the judge-facing wording. Each KNOWN LIMITATION there names where it is disclosed, and security-relevant ones are disclosed in `docs/release/threat-model.md`.
 
-Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
+Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7)
 
 Each row names where the limit was recorded.
 
@@ -38,4 +38,5 @@ Each row names where the limit was recorded.
 | Arena attacks and casts are presentation only | A working hero attacks its enemy and a milestone plays a cast. They show live activity. They are not progress or damage, and no health bar exists. A bot that is waiting on you does not attack, and reduced motion turns attacks off (FP-21, KL-22) | FP-21 handoff; `docs/release/blockers.md` (KL-22) |
 | A purge does not shrink the database file | The migration runner forbids `VACUUM`. Deleted observations, quarantine rows and attempts can remain in free pages of the file and in the newest `pre-purge-*` backup until the pages are reused or the backup is deleted (FP-19, KL-23) | `docs/release/data-and-recovery.md` section 2; `docs/release/blockers.md` (KL-23) |
 | An export cannot be downloaded or restored through the app | An export is a file under `data/exports/`. You copy it and restore it by hand (FP-19, KL-24) | `docs/release/data-and-recovery.md` sections 3 and 5; `docs/release/blockers.md` (KL-24) |
-| The store listing was not seen in a running Crew | The listing fields were written against the installed Crew 0.13.1 source. The four listing screenshots are FIXTURE-preview captures with demo data, the dark variants reuse the light files, and the release artifact is about 4.35 MB larger because `store/` ships. The Library detail page is checked in the RC-6 sitting | FP-25 handoff; `docs/release/blockers.md` (KL-33) |
+| The store listing was not seen in a running Crew | The listing fields were written against the installed Crew 0.13.1 source. The four listing screenshots are FIXTURE-preview captures with demo data, the dark variants reuse the light files, and the release artifact is about 4.35 MB larger because `store/` ships. The Library detail page is checked in the RC-7 sitting | FP-25 handoff; `docs/release/blockers.md` (KL-33) |
+| The copied diagnostic summary still says "Specter Arena" | Its first line reads "Specter Arena diagnostic summary". The rebrand to "Specters of the Abyss" changed the user-facing names and docs but not that code string | `docs/release/blockers.md` (KL-34) |
