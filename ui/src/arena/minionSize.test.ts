@@ -13,16 +13,16 @@ describe('minion scale', () => {
     expect(MINION_SCALE).toEqual({ small: 0.8, medium: 1, large: 1.3 });
   });
 
-  it('keeps 28 px wherever a large minion fits one lattice cell, and shrinks below that', () => {
+  it('keeps 36.4 px wherever a large minion fits one lattice cell, and shrinks below that', () => {
     const fits = (MINION_BASE_PX * MINION_SCALE.large) / (ENEMY_CELL.x * MINION_FIT);
     expect(minionBasePx(fits)).toBeCloseTo(MINION_BASE_PX, 6);
     expect(minionBasePx(fits + 500)).toBe(MINION_BASE_PX);
-    expect(minionBasePx(728)).toBeLessThan(MINION_BASE_PX);
-    expect(minionBasePx(358)).toBeLessThan(15);
-    expect(minionBasePx(358)).toBeGreaterThan(10);
+    expect(minionBasePx(700)).toBeLessThan(MINION_BASE_PX);
+    expect(minionBasePx(346)).toBeCloseTo(16.4, 1);
+    expect(minionBasePx(358)).toBeGreaterThan(15);
   });
 
-  it('is the same 28 px in the stylesheet fallback', () => {
+  it('is the same 36.4 px in the stylesheet fallback', () => {
     expect(css).toContain(`var(--sa-minion-base, ${MINION_BASE_PX}px)`);
     expect(css).toContain('var(--sa-minion-scale, 1)');
   });

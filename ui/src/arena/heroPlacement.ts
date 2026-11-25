@@ -5,6 +5,8 @@ import type { Region, Slot } from './laneSlots';
 import type { Point } from './sceneLayout';
 import { specterSlot } from './sceneLayout';
 
+/** The one seed heroes are placed from, so a hero stands on the same spot at every visit. */
+export const PLACEMENT_SEED = 0x5eed;
 export const PLACEMENT_TRIES = 12;
 /** Three staging rows of seven (FP-23): the last resort when no jittered point is clear. */
 export const STAGING_CELLS = 21;
@@ -34,13 +36,13 @@ const same = (a: Point, b: Point): boolean => Math.abs(a.x - b.x) < 1e-9 && Math
 const regionOf = (point: Point, slots: readonly Slot[]): Region | null => slots.find((slot) => same(slot.point, point))?.region ?? null;
 
 /**
- * Where each hero stands. Pure in `(previous, bindingIds, visitSeed)`. A hero that already has a valid point keeps it. Each new
+ * Where each hero stands. Pure in `(previous, bindingIds, seed)`; the page always passes `PLACEMENT_SEED`, so the same bots stand on the same spots at every visit. A hero that already has a valid point keeps it. Each new
  * hero, in sorted id order, draws from its own stream `mulberry32(seedOf(seed:id))`: it takes a region that holds the fewest
  * heroes so far (a tie is broken by its own draw), then a random free slot of that region. When the region has no free slot
  * the hero stands near a slot of the least-used region, and last of all on a staging cell. The region is a spread rule only:
  * nothing here reads a role, a condition or progress, and no region name leaves this function.
  */
-export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: readonly string[], visitSeed: number): Map<string, Point> {
+export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: readonly string[], seed: number = PLACEMENT_SEED): Map<string, Point> {
   const slots = laneSlots();
   const ids = [...new Set(bindingIds)].sort(compareText);
   const next = new Map<string, Point>();
@@ -59,7 +61,7 @@ export function placeHeroes(previous: ReadonlyMap<string, Point>, bindingIds: re
     }
   }
   for (const id of ids.filter((candidate) => !next.has(candidate))) {
-    const random = mulberry32(seedOf(`${visitSeed >>> 0}:${id}`));
+    const random = mulberry32(seedOf(`${seed >>> 0}:${id}`));
     const free = (region: Region) => slots.filter((slot) => slot.region === region && clear(slot.point, placed));
     const open = REGIONS.filter((region) => free(region).length > 0);
     let chosen: Point | null = null;

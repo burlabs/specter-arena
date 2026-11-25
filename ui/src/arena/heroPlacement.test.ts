@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HERO_GAP_PX, PLACEMENT_TRIES, mulberry32, placeHeroes } from './heroPlacement';
+import { HERO_GAP_PX, PLACEMENT_SEED, PLACEMENT_TRIES, mulberry32, placeHeroes } from './heroPlacement';
 import { REGIONS, laneSlots } from './laneSlots';
 import type { Region } from './laneSlots';
 import { ARENA_INTRINSIC } from './mapLayout';
@@ -29,6 +29,33 @@ describe('mulberry32', () => {
     expect(run).toEqual(Array.from({ length: 50 }, () => b()));
     expect(run.every((value) => value >= 0 && value < 1)).toBe(true);
     expect(mulberry32(43)()).not.toBe(run[0]);
+  });
+});
+
+describe('placeHeroes at every visit', () => {
+  it('gives the same spots on every call without a seed, and the default is the fixed seed', () => {
+    const ids = idsOf(7);
+    expect(placeHeroes(new Map(), ids)).toEqual(placeHeroes(new Map(), [...ids].reverse()));
+    expect(placeHeroes(new Map(), ids)).toEqual(placeHeroes(new Map(), ids, PLACEMENT_SEED));
+  });
+
+  it('never stacks two heroes, for 1 to 11 heroes', () => {
+    for (let count = 1; count <= 11; count += 1) {
+      const points = [...placeHeroes(new Map(), idsOf(count)).values()];
+      expect(points).toHaveLength(count);
+      expect(pairsTooClose(points)).toBe(0);
+      expect(points.every((point) => slotOf(point) !== undefined)).toBe(true);
+    }
+  });
+
+  it('keeps every hero that sorts before an added bot where it was, on a fresh visit', () => {
+    const ids = idsOf(8);
+    for (let count = 1; count < ids.length; count += 1) {
+      const before = placeHeroes(new Map(), ids.slice(0, count));
+      const after = placeHeroes(new Map(), ids.slice(0, count + 1));
+      const added = ids[count] as string;
+      for (const id of ids.slice(0, count)) if (id < added) expect(after.get(id)).toEqual(before.get(id));
+    }
   });
 });
 

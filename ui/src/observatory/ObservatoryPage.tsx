@@ -23,7 +23,6 @@ import { DataView } from '../lifecycle/DataView';
 import { useDataStyle } from '../lifecycle/useDataStyle';
 import { ArenaView } from '../arena/ArenaView';
 import { useArenaStyle } from '../arena/useArenaStyle';
-import { newVisitSeed } from '../arena/visitSeed';
 import { useWorkStyle } from '../work/useWorkStyle';
 import { useXp, xpViewOf } from '../work/useXp';
 import { Button, EmptyState, ErrorState, Icon, Panel } from './ui';
@@ -89,8 +88,6 @@ export function ObservatoryPage() {
   const panelId = `${tabsId}-panel`;
   const tabId = (name: ViewName) => `${tabsId}-tab-${name}`;
   const [section, setSection] = useState<SectionName>('arena');
-  /** One number per page visit: heroes on the Arena are placed from it, so a tab switch keeps them and a reload moves them. */
-  const [visitSeed] = useState(newVisitSeed);
   const sectionsId = useId();
   const sectionPanelId = `${sectionsId}-panel`;
   const sectionTabId = (name: SectionName) => `${sectionsId}-tab-${name}`;
@@ -305,7 +302,6 @@ export function ObservatoryPage() {
               specterStatus={specters.status}
               xp={xp.byBinding}
               xpStatus={xp.status}
-              visitSeed={visitSeed}
               unassigned={unassignedIds}
               onAssign={assignFlow.open}
             />

@@ -1,5 +1,5 @@
 import { useAppApi } from '@kirocrew/app-sdk';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setSceneAssetsFailing } from '@kirocrew/app-sdk';
 import { HERO_GAP_PX } from './heroPlacement';
@@ -136,7 +136,7 @@ describe('hero placement and minion size', () => {
   const props = { selection: null, onSelect: vi.fn(), motion, cues: [], celebrating: new Set<string>(), onCueComplete: vi.fn() };
 
   it('stands every hero on a lane or jungle slot, at least a hero gap apart', () => {
-    const { container } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const { container } = render(<BattlefieldScene model={model} {...props} />);
     const spots = heroSpots(container);
     expect(spots).toHaveLength(3);
     const points = spots.map(([, left, top]) => ({ x: percent(left as string) / 100, y: percent(top as string) / 100 }));
@@ -149,7 +149,7 @@ describe('hero placement and minion size', () => {
   });
 
   it('draws each task beside its own hero, closer to it than to any other hero', () => {
-    const { container } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const { container } = render(<BattlefieldScene model={model} {...props} />);
     const at = (el: Element) => {
       const style = (el as HTMLElement).style;
       return { x: percent(style.left) / 100, y: percent(style.top) / 100 };
@@ -169,23 +169,23 @@ describe('hero placement and minion size', () => {
     expect(checked).toBeGreaterThan(0);
   });
 
-  it('keeps the same spots for the same seed, and moves them for another', () => {
-    const one = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={11} />).container);
-    const same = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={11} />).container);
-    const other = heroSpots(render(<BattlefieldScene model={model} {...props} visitSeed={12} />).container);
-    expect(same).toEqual(one);
-    expect(other).not.toEqual(one);
+  it('puts every hero on the same spot at every mount', () => {
+    const one = heroSpots(render(<BattlefieldScene model={model} {...props} />).container);
+    cleanup();
+    const again = heroSpots(render(<BattlefieldScene model={model} {...props} />).container);
+    expect(again).toEqual(one);
+    expect(one).toHaveLength(3);
   });
 
   it('does not move a hero on a later poll, and a joining bot leaves the others where they stand', () => {
-    const { container, rerender } = render(<BattlefieldScene model={model} {...props} visitSeed={11} />);
+    const { container, rerender } = render(<BattlefieldScene model={model} {...props} />);
     const before = heroSpots(container);
     const polled = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune], specters: [specterOf(atlas, 'Vesper'), specterOf(brindle, 'Wisp'), specterOf(dune, 'Murk')], xp: [xpOf(atlas, 251, 3)], tasks: work }));
-    rerender(<BattlefieldScene model={polled} {...props} visitSeed={11} />);
+    rerender(<BattlefieldScene model={polled} {...props} />);
     expect(heroSpots(container)).toEqual(before);
     const fenn = botOf(4, { displayName: 'Fenn' });
     const joined = buildSceneModel(inputsOf({ roster: [atlas, brindle, dune, fenn], specters: [specterOf(atlas, 'Vesper'), specterOf(brindle, 'Wisp'), specterOf(dune, 'Murk'), specterOf(fenn, 'Hollow')], tasks: work }));
-    rerender(<BattlefieldScene model={joined} {...props} visitSeed={11} />);
+    rerender(<BattlefieldScene model={joined} {...props} />);
     const after = heroSpots(container);
     expect(after).toHaveLength(4);
     for (const spot of before) expect(after).toContainEqual(spot);
@@ -196,7 +196,7 @@ describe('hero placement and minion size', () => {
     const byClass = new Map<string, string>();
     for (const token of container.querySelectorAll<HTMLElement>('[data-sprite="enemy"]')) byClass.set(token.dataset.sizeClass as string, token.style.getPropertyValue('--sa-minion-scale'));
     expect(Object.fromEntries(byClass)).toEqual({ small: '0.8', medium: '1', large: '1.3' });
-    expect(container.querySelector<HTMLElement>('.sa-arena-stage')?.style.getPropertyValue('--sa-minion-base')).toBe('28.00px');
+    expect(container.querySelector<HTMLElement>('.sa-arena-stage')?.style.getPropertyValue('--sa-minion-base')).toBe('36.40px');
   });
 
   it('puts the overview after the map frame, not inside it', () => {

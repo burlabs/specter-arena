@@ -90,7 +90,7 @@ RC-3 is the candidate built from `main` after Wave A (FP-17 to FP-21) and the lo
 2. Hero assignment is a user step. A new bot starts without a hero, and a first-visit walkthrough assigns one or randomizes all.
 3. The Specters tab is a showcase of the 11 heroes with a big idle sprite, Attack and Cast buttons and a list of the bots that hold a hero. The Roster shows the bots.
 4. The tab order is Arena, Roster, Specters, Data. The arena is bigger, the minimap sits below it and the side panels collapse.
-5. Heroes on the field get random positions (presentation only).
+5. Each hero keeps one fixed position on the lanes and jungle (presentation only).
 6. Minions are tasks, sized by run time (presentation only).
 
 | Item | Value |

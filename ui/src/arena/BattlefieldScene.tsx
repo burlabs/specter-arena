@@ -32,8 +32,6 @@ import { useSceneAsset } from './useSceneAsset';
 import { Button } from '../observatory/ui';
 
 const ZOOM_STEP = 0.25;
-/** The seed a scene uses when the page gives none (tests, the harness): one fixed, repeatable layout. */
-export const DEFAULT_VISIT_SEED = 0x5eed;
 
 interface Props {
   model: SceneModel;
@@ -49,8 +47,6 @@ interface Props {
   exchanges?: ExchangeSnapshot;
   /** The collector is paused: nothing plays and the plate says so, so the field never looks live. */
   collectorPaused?: boolean;
-  /** One number per page visit; heroes are placed from it. */
-  visitSeed?: number;
 }
 
 function MarkerIcon({ kind }: { kind: MarkerKind }) {
@@ -220,7 +216,7 @@ const cssUrl = (url: string): string | null => (url.length > MAX_CSS_VAR_URL_CHA
  * The map, the tokens and the camera. Everything here is presentation: camera, pause and animation live in
  * React state and CSS only, and nothing in this file calls the backend except the three read-only art fetches.
  */
-export function BattlefieldScene({ model: fullModel, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false, visitSeed = DEFAULT_VISIT_SEED }: Props) {
+export function BattlefieldScene({ model: fullModel, selection, onSelect, motion, cues, celebrating, onCueComplete, exchanges = EMPTY_SNAPSHOT, collectorPaused = false }: Props) {
   const model = useMemo(() => ({ ...fullModel, specters: fullModel.specters.filter(isDrawn) }), [fullModel]);
   const mapArt = useSceneAsset('arena-map');
   const patchling = useSceneAsset('minion-patchling-sprite');
@@ -243,10 +239,10 @@ export function BattlefieldScene({ model: fullModel, selection, onSelect, motion
   const heroMemory = useRef<ReadonlyMap<string, Point>>(new Map());
   const heroBindingIds = useMemo(() => model.specters.map((specter) => specter.bindingId), [model]);
   const heroPoints = useMemo(() => {
-    const next = placeHeroes(heroMemory.current, heroBindingIds, visitSeed);
+    const next = placeHeroes(heroMemory.current, heroBindingIds);
     heroMemory.current = next;
     return next;
-  }, [heroBindingIds, visitSeed]);
+  }, [heroBindingIds]);
   const fanMemory = useRef<ReadonlyMap<string, number>>(new Map());
   const fans = useMemo(() => {
     const next = assignFans(fanMemory.current, model, heroPoints);

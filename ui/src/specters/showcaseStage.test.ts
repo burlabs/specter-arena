@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { MINION_BASE_PX } from '../arena/minionSize';
 import { EFFECT_EXTENT, STAGE_MARGIN, STAGE_UNITS, TARGET_X, stageLayout } from './showcaseStage';
 
 describe('showcase stage', () => {
   it('holds the measured effect box with a margin, and keeps the target inside the attack reach', () => {
     expect(STAGE_UNITS.width).toBeCloseTo(EFFECT_EXTENT.right - EFFECT_EXTENT.left + 2 * STAGE_MARGIN, 9);
-    expect(TARGET_X + 28 / 44).toBeLessThan(EFFECT_EXTENT.right);
+    expect(TARGET_X + MINION_BASE_PX / 44).toBeLessThan(EFFECT_EXTENT.right);
     expect(TARGET_X).toBeGreaterThan(1.5);
   });
 

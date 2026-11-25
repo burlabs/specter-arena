@@ -12,14 +12,14 @@ export type Point = NormalizedPoint;
  * the room each token and its always-visible text needs.
  */
 export const SPECTER_CELL = { x: 0.135, y: 0.16 } as const;
-export const ENEMY_CELL = { x: 0.05, y: 0.095 } as const;
+export const ENEMY_CELL = { x: 0.065, y: 0.1235 } as const;
 
 const SPECTER_COLUMNS = 7;
 const SPECTER_BASE_X = 0.06;
 const SPECTER_BASE_Y = 0.95;
-const ENEMY_COLUMNS = 17;
-const ENEMY_ROWS = 5;
-const ENEMY_BASE_X = 0.08;
+const ENEMY_COLUMNS = 15;
+const ENEMY_ROWS = 6;
+const ENEMY_BASE_X = 0.06;
 const ENEMY_BASE_Y = 0.08;
 const EDGE_MIN = 0.03;
 const EDGE_MAX = 0.97;

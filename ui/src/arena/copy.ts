@@ -59,7 +59,7 @@ export const ARENA = {
   level: (level: number): string => `Lv. ${level}`,
   xpAward: (xp: number): string => `+${xp} XP`,
   xpCommitted: (xp: number): string => `${xp} XP`,
-  attackLegend: 'Attacks show live activity, not progress. A waiting marker is Crew\'s own flag. A minion\'s size follows how long its task has run. It never means progress or remaining effort. Heroes take random positions on the map\'s lanes and jungle; position means nothing about the bot.',
+  attackLegend: 'Attacks show live activity, not progress. A waiting marker is Crew\'s own flag. A minion\'s size follows how long its task has run. It never means progress or remaining effort. Each hero keeps its spot on the map\'s lanes and jungle; position means nothing about the bot.',
   xpLoading: 'Loading',
   xpUnavailable: 'Unavailable',
   noXp: 'No XP',

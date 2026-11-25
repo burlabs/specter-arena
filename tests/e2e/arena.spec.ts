@@ -627,7 +627,7 @@ test('A-21 at 390 px the panes start collapsed and stack below the map, and sele
   await expect(inspectorHeading(page)).toBeVisible();
 });
 
-test('A-22 heroes stand on lane and jungle slots apart from each other, keep their places across a tab switch, and move on a reload', async ({ page }) => {
+test('A-22 heroes stand on lane and jungle slots apart from each other, keep their places across a tab switch and a reload', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openArena(page, 'arena');
   const spots = () =>
@@ -651,7 +651,7 @@ test('A-22 heroes stand on lane and jungle slots apart from each other, keep the
   expect(await spots()).toEqual(first);
   await page.reload();
   await expect(page.locator('[data-sprite="specter"]')).toHaveCount(7);
-  expect(await spots()).not.toEqual(first);
+  expect(await spots()).toEqual(first);
   expect(await writes(page)).toEqual([]);
 });
 
