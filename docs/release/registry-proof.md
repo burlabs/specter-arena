@@ -10,7 +10,6 @@ Tested on Kiro Crew 0.13.1 (macOS, arm64). Crew 0.12.x was not run. The owner si
 |---|---|---|
 | With Node | Node 22 or newer first | The registry lists one app, `npm install` and `npm run build` run, and the installed tree contains `ui/dist/index.mjs` |
 | Without Node | `/usr/bin:/bin` | Crew logs `npm not found on PATH — skipping JavaScript build step`, then `No build step detected — using source as-is`, reports `installed specter-arena`, and the installed tree has no `ui/dist` |
-
 | Repair | Node 22 or newer first, in the home from the without-Node run | Crew reports `updated specter-arena v0.1.0 -> v0.1.0`, runs `npm install` and `npm run build`, and `ui/dist/index.mjs` now exists |
 
 The second run is the documented failure case and the third is its documented fix (`docs/release/install.md`, section 2A). The repair run is the same harness command as the with-Node run, pointed at the same home as the without-Node run.
