@@ -195,3 +195,20 @@ Rows G2, G4 and G5 are already reported above for attempt 2; repeat them only if
 | G12 | | | |
 
 The agent writes the results into `docs/release/oa-5-result.md` under an RC-8 heading and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate is cut, and only the failed steps are repeated. Do not tag, release or submit from this sitting.
+
+## FP-30 recap check (at most 15 minutes, on the release candidate cut after FP-30)
+
+FP-30 adds recaps to the Arena tab: a `Live | Today | Yesterday | This week` control that replays the tasks the app recorded, through the arena you already know. It reads only, issues no write, and adds no permission, grant, migration or setting. Run it on the first release candidate built from `main` after FP-30 PR 3, with some bot activity from today behind you (one or two finished tasks are enough). Reply pass or fail plus anything odd for each step.
+
+| # | Step | Expect and record |
+|---|---|---|
+| FP30-S1 | Open Specters of the Abyss, Arena tab | A control with Live, Today, Yesterday and This week, on Live. Record the four labels |
+| FP30-S2 | Choose Today | A RECORDED badge, the text "Heroes shown as they are today", a time readout, and a recap that opens paused on the first task of your local day with no idle lead-in. Record the first time shown and whether it matches your first task |
+| FP30-S3 | Press Play and watch | Minions appear at the right hero spot, grow, trade blows with the hero, and are defeated with a "+N XP" on a clean end. Record any minion that never leaves or any hero that moves |
+| FP30-S4 | Press Pause, drag the scrub bar, press Play, change speed to 2x | The scene follows, and no defeat burst replays after a scrub. Record pass or fail |
+| FP30-S5 | Look at the scrub bar while a recap plays | Every stretch with no task running is cut out and marked by a small notch and a caption such as "Skipped 47 min". Any time the collector was paused or the app was closed shows as a hatched "Not collected" block (not cut): a short hatched pause with the heroes unknown, or normal-speed hatching inside a task that kept running. Record whether a quiet stretch you remember reads "Skipped" (not hatched) and a stretch the app was closed reads "Not collected" (hatched) |
+| FP30-S6 | Choose Yesterday, then This week | The whole previous local day, then local Monday 00:00 to now, each between 30 s and 3 min (This week up to 4 min, plus at most 6 s of Not collected pauses). On a Monday This week shows the same recap as Today and says "This week started today (Monday)". Record the first time shown for This week (a Monday) and the length of each |
+| FP30-S7 | Press Exit to live | The live arena, with no burst of old celebrations. Record pass or fail |
+| FP30-S8 | In macOS System Settings turn on Reduce motion, reopen the app, choose Today | No autoplay, no Play button, Previous and Next event buttons, no attack animation. Turn it off again. Record pass or fail |
+| FP30-S9 | Open the Data tab | Retention and totals are unchanged by the recap, and no permission prompt appeared anywhere. Record pass or fail |
+
