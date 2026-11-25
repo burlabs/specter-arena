@@ -1,6 +1,6 @@
 # Judge access
 
-Specter Arena is a Kiro Crew app. It runs inside a Kiro Crew installation, so there is no hosted web address to open. This page says how to run the real app, what is supplementary, and what never appears in this repository.
+Specters of the Abyss is a Kiro Crew app. It runs inside a Kiro Crew installation, so there is no hosted web address to open. This page says how to run the real app, what is supplementary, and what never appears in this repository.
 
 ## The real app (default and only supported path)
 

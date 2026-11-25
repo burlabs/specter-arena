@@ -6,7 +6,7 @@ Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after F
 
 ## One installable Crew app
 
-Specter Arena is one Kiro Crew app. Crew copies the app folder, serves the UI bundle in its dashboard and starts the backend (`app.json`). `docs/architecture/component-index.md` names the five logical components used for planning and review: delivery, crew-integration, work-ledger, specter-identity and experience.
+Specters of the Abyss is one Kiro Crew app. Crew copies the app folder, serves the UI bundle in its dashboard and starts the backend (`app.json`). `docs/architecture/component-index.md` names the five logical components used for planning and review: delivery, crew-integration, work-ledger, specter-identity and experience.
 
 ## UI
 

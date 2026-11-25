@@ -25,7 +25,7 @@ describe('release entry', () => {
   it('renders the observatory heading and a loading status before the roster arrives', () => {
     client.get.mockReturnValue(new Promise(() => undefined));
     render(<SpecterArenaApp />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Specter Arena' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Specters of the Abyss' })).toBeTruthy();
     expect(screen.getByRole('status').textContent).toBe('Loading bots…');
   });
 

@@ -146,7 +146,7 @@ def test_ui_section_points_at_the_library_bundle_and_app_route() -> None:
         "pages": [
             {
                 "route": "/apps/specter-arena",
-                "label": "Specter Arena",
+                "label": "Specters of the Abyss",
                 "icon": "Package",
                 "iconUrl": "icons/logo-active@2x.png",
                 "iconInactiveUrl": "icons/logo-inactive@2x.png",

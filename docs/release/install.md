@@ -1,4 +1,4 @@
-# Install a Specter Arena release
+# Install a Specters of the Abyss release
 
 Draft for Eric's review. The agent does not submit.
 
@@ -8,7 +8,7 @@ Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboar
 
 ## 1. Who this is for and what you get
 
-This page installs the Specter Arena release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's Library the app also has a store page (hero banner, highlights, use cases, configuration, four screenshots of demo data); the images ship in the artifact under `store/`, which makes the tarball about 4.35 MB larger. In Crew's sidebar the app shows the Specter Arena logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
+This page installs the Specters of the Abyss release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's Library the app also has a store page (hero banner, highlights, use cases, configuration, four screenshots of demo data); the images ship in the artifact under `store/`, which makes the tarball about 4.35 MB larger. In Crew's sidebar the app shows the Specters of the Abyss logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
 
 ## 2. Requirements
 
@@ -52,11 +52,11 @@ Crew copies the whole folder without building anything. It skips only `node_modu
 
 ## 5. Trust and enable
 
-Open Apps, then Library, then Specter Arena. Locally installed apps appear in Library, not Discover (`docs/compatibility/host-facts.json`, fact "Where does a locally installed third-party app appear", evidence L2).
+Open Apps, then Library, then Specters of the Abyss. Locally installed apps appear in Library, not Discover (`docs/compatibility/host-facts.json`, fact "Where does a locally installed third-party app appear", evidence L2).
 
 The dashboard shows a modal titled "Trust "..." to run its own code?". It says trust covers this app only, and that the app runs its own code in Crew's process with Crew's access, keeps a background program running and runs shell commands from a list the app ships. Crew cannot limit it to less. Choose "Trust this app and enable". Cancel changes nothing (`trustAppModal.*` strings in the Crew dashboard bundle).
 
-This click is the consent click. The permissions Specter Arena declares in `app.json` are recorded as approved at install time, so there is no separate approve click on a first install (`install_app`, whose comment reads "Installing is the consent moment"). The declared permissions are:
+This click is the consent click. The permissions Specters of the Abyss declares in `app.json` are recorded as approved at install time, so there is no separate approve click on a first install (`install_app`, whose comment reads "Installing is the consent moment"). The declared permissions are:
 
 | Kind | Entry |
 |---|---|

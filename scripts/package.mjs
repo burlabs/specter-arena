@@ -227,7 +227,7 @@ export function sha256(data) {
 export function renderManifest({ commit, version, nodeVersion, npmVersion, minCrew, files }) {
   const sorted = [...files].sort((a, b) => Buffer.compare(Buffer.from(a.path), Buffer.from(b.path)));
   return [
-    'Specter Arena release manifest',
+    'Specters of the Abyss release manifest',
     `commit: ${commit}`,
     `version: ${version}`,
     `node: ${nodeVersion}`,

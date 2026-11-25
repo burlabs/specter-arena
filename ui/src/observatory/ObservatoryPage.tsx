@@ -145,8 +145,8 @@ export function ObservatoryPage() {
 
   if (state.status === 'loading') {
     return (
-      <div className="specter-arena-root" role="region" aria-label="Specter Arena">
-        <h1>Specter Arena</h1>
+      <div className="specter-arena-root" role="region" aria-label="Specters of the Abyss">
+        <h1>Specters of the Abyss</h1>
         <p role="status">Loading bots…</p>
       </div>
     );
@@ -155,8 +155,8 @@ export function ObservatoryPage() {
   if (state.status === 'failed') {
     const copy = FAILURE_COPY[state.failure];
     return (
-      <div className="specter-arena-root" role="region" aria-label="Specter Arena">
-        <h1>Specter Arena</h1>
+      <div className="specter-arena-root" role="region" aria-label="Specters of the Abyss">
+        <h1>Specters of the Abyss</h1>
         <ErrorState title={copy.title} body={copy.body} onRetry={refresh} />
       </div>
     );
@@ -197,11 +197,11 @@ export function ObservatoryPage() {
   })();
 
   return (
-    <div className="specter-arena-root" role="region" aria-label="Specter Arena">
+    <div className="specter-arena-root" role="region" aria-label="Specters of the Abyss">
       <div className="sa-page">
         <header className="sa-header">
           <div className="sa-header__top">
-            <h1>Specter Arena</h1>
+            <h1>Specters of the Abyss</h1>
             <div className="sa-header__actions">
               <span>
                 Updated <Time ms={roster.fetchedAtMs} />

@@ -4,7 +4,7 @@ Draft for Eric's review. The agent does not submit.
 
 Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
 
-This page says where Specter Arena keeps its data, what it never deletes, how to copy it, how to restore it and what a restore loses. Facts come from the code and tests named in each row. Anything not run on a live Crew install says so.
+This page says where Specters of the Abyss keeps its data, what it never deletes, how to copy it, how to restore it and what a restore loses. Facts come from the code and tests named in each row. Anything not run on a live Crew install says so.
 
 Related: `docs/release/install.md` (install, update, uninstall), `docs/release/blockers.md` (KL-07, KL-08, KL-10 to KL-14, KL-23 to KL-28), `docs/release/threat-model.md`.
 

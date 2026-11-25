@@ -1,8 +1,8 @@
-![Specter Arena banner art: Specters of the Abyss, a haunted Kiro Crew arena](docs/images/banner.png)
+![Specters of the Abyss banner art: a haunted Kiro Crew arena](docs/images/banner.png)
 
-# Specter Arena
+# Specters of the Abyss
 
-A Kiro Crew app, built in the open for Kiroween 2026. Specter Arena watches the Kiro Crew bots you choose, lets you give each one a named Specter (assigned by you, or randomly), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector. XP reflects observed activity: a task that ends cleanly while the app was watching. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).
+A Kiro Crew app, built in the open for Kiroween 2026. Specters of the Abyss watches the Kiro Crew bots you choose, lets you give each one a named Specter (assigned by you, or randomly), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector. XP reflects observed activity: a task that ends cleanly while the app was watching. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).
 
 Status: a proof of concept. Known limits are in `docs/submission/known-limitations.md`.
 
@@ -51,7 +51,7 @@ Judges and users install a release artifact, not a checkout: download `specter-a
 
 ## Kiro Crew avatar packs (optional)
 
-The repository also holds an optional set of Kiro Crew avatar packs, one for each of the 11 Specters. A pack is a Crew avatar appearance you can give to any of your bots. It is separate from Specter Arena's hero assignment: the app never installs or assigns these packs, and they are not part of the release artifact. The Specters tab links to the matching file on GitHub, so opening the link needs a network connection.
+The repository also holds an optional set of Kiro Crew avatar packs, one for each of the 11 Specters. A pack is a Crew avatar appearance you can give to any of your bots. It is separate from the app's hero assignment: the app never installs or assigns these packs, and they are not part of the release artifact. The Specters tab links to the matching file on GitHub, so opening the link needs a network connection.
 
 - [Vell](avatar-packs/packs/specters-vell.pack.json)
 - [Stitch](avatar-packs/packs/specters-stitch.pack.json)

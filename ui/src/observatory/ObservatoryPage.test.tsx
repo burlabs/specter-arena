@@ -19,7 +19,7 @@ const rosterResponse = () => new Response(JSON.stringify(rosterBody('default')))
 async function open(scenario: ScenarioName = 'default') {
   setFixtureScenario(scenario);
   render(<ObservatoryPage />);
-  await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+  await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
   await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
   showRoster();
 }
@@ -40,7 +40,7 @@ describe('first load', () => {
     setFixtureScenario('default');
     render(<ObservatoryPage />);
     expect(screen.getByRole('status').textContent).toBe('Loading bots…');
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     showRoster();
     await screen.findByRole('list', { name: 'Bots' });
     expect(rowNames()).toEqual(['Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Unnamed bot']);
@@ -128,7 +128,7 @@ describe('selection, watching and search', () => {
       return Promise.resolve(new Response(JSON.stringify(body)));
     });
     render(<ObservatoryPage />);
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     showRoster();
     await screen.findByRole('list', { name: 'Bots' });
     selectRow('Atlas');
@@ -309,7 +309,7 @@ describe('failures', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     });
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     showRoster();
     await screen.findByRole('list', { name: 'Bots' });
   });
@@ -405,7 +405,7 @@ describe('sections', () => {
   it('offers Arena, Roster, Specters and Data with the Arena selected on load, and no Work tab', async () => {
     setFixtureScenario('default');
     render(<ObservatoryPage />);
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
     expect(sections().getAllByRole('tab').map((entry) => entry.textContent)).toEqual(['Arena', 'Roster', 'Specters', 'Data']);
     expect(screen.queryByRole('tab', { name: 'Work' })).toBeNull();
@@ -480,7 +480,7 @@ describe('sections', () => {
       String(path).includes('/specters') ? Promise.resolve(new Response('{}', { status: 500 })) : Promise.resolve(new Response(JSON.stringify(rosterBody('default')))),
     );
     render(<ObservatoryPage />);
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     await waitFor(() => expect(screen.queryByText('Loading bots…')).toBeNull());
     expect(screen.queryByText(/No Specter yet/)).toBeNull();
   });
@@ -566,7 +566,7 @@ describe('assigning Specters', () => {
     setSpecterScenario('specters-unassigned');
     setFixtureScenario('default');
     render(<ObservatoryPage />);
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     await waitFor(() => expect(dialog()).not.toBeNull());
   }
 
@@ -585,7 +585,7 @@ describe('assigning Specters', () => {
     fireEvent.click(within(dialog() as HTMLElement).getByRole('button', { name: 'Close' }));
     cleanup();
     render(<ObservatoryPage />);
-    await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+    await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
     await flushAll();
     expect(dialog()).toBeNull();
     fireEvent.click(sectionsTab('Specters'));
@@ -596,7 +596,7 @@ describe('assigning Specters', () => {
     for (const scenario of ['specters', 'specters-none'] as const) {
       setSpecterScenario(scenario);
       render(<ObservatoryPage />);
-      await screen.findByRole('heading', { level: 1, name: 'Specter Arena' });
+      await screen.findByRole('heading', { level: 1, name: 'Specters of the Abyss' });
       await flushAll();
       expect(dialog(), scenario).toBeNull();
       cleanup();

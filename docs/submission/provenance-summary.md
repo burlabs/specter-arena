@@ -8,7 +8,7 @@ The full record is `docs/provenance.md`. This page is the short version for the 
 
 | Item | Origin | Where recorded | Status |
 |---|---|---|---|
-| App code and docs | Written for Specter Arena in this repository, from an empty first commit that holds only `LICENSE` (`156385b`) | `docs/provenance.md` "Original work" | New work, with the three exceptions below |
+| App code and docs | Written for Specters of the Abyss in this repository, from an empty first commit that holds only `LICENSE` (`156385b`) | `docs/provenance.md` "Original work" | New work, with the three exceptions below |
 | Adapted UI code | Began as Figma Make output and was adapted to this repository's contracts, toolchain and scoped CSS | `docs/provenance.md` "Generated code: Figma Make export" (file-by-file table) | Disclosed. Terms checked 2026-11-18 |
 | Raster art (38 files: 11 portraits, the arena map, 4 minion images, 11 hero sprites and 11 hero thumbnails) | Created by Eric Jeffers using ChatGPT (OpenAI) image generation | `docs/provenance.md` "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" (one row per file with sha256) | Disclosed. `npm run check:provenance` fails if a shipped image has no row. Terms checked 2026-11-18 |
 | Crew store listing art (`store/`: one hero image and four screenshots) | The hero is Eric Jeffers's banner, created using ChatGPT (OpenAI) image generation, byte for byte. The screenshots are FIXTURE-preview captures of this repository's own interface with its committed art and demo data. They ship in the artifact (about 4.35 MB) so Crew can serve them | `docs/provenance.md` "Crew app store listing" (one row per file with sha256) | Disclosed. `scripts/check-provenance.mjs` allows no other raster under `store/` |
