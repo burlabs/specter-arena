@@ -14,8 +14,8 @@ export const CAPTION_UNITS = 0.55;
 export const SPRITE_PX = 44;
 /** The width used before the stage has been measured (and in jsdom, which has no ResizeObserver). */
 export const STAGE_DEFAULT_WIDTH = 600;
-/** The practice target's left edge, in sprite units from the hero's left: inside the reach of every hero's attack. */
-export const TARGET_X = 3.2;
+/** The practice target's left edge, in sprite units from the hero's left: inside the reach of every hero's attack, and placed so the caption centred under the 36.4 px target stays inside the stage at 390 px. */
+export const TARGET_X = 3.0;
 
 export const STAGE_UNITS = {
   width: EFFECT_EXTENT.right - EFFECT_EXTENT.left + 2 * STAGE_MARGIN,
