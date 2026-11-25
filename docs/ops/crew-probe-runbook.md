@@ -1,6 +1,6 @@
 # Crew probe runbook
 
-How FP-01 produces committed, reproducible evidence about what an installed Specter Arena app can see in Kiro Crew 0.12.0. The FP-01 run is finished and its evidence is committed under `docs/compatibility/evidence/`; this runbook is the procedure for a re-probe.
+How FP-01 produces committed, reproducible evidence about what an installed Specters of the Abyss app can see in Kiro Crew 0.12.0. The FP-01 run is finished and its evidence is committed under `docs/compatibility/evidence/`; this runbook is the procedure for a re-probe.
 
 ## Purpose and limits
 
@@ -71,7 +71,7 @@ The Crew 0.12.0 dashboard router gives a third-party app exactly one route, `/ap
 ### Enable the staged app (owner steps)
 
 1. Eric runs the printed install command for `.probe-app`.
-2. In the dashboard, open Apps, then Library (the app is not under Discover), and enable "Specter Arena". Crew shows a per-app trust prompt for third-party apps; Eric approves it.
+2. In the dashboard, open Apps, then Library (the app is not under Discover), and enable "Specters of the Abyss". Crew shows a per-app trust prompt for third-party apps; Eric approves it.
 3. Open `/apps/specter-arena`. The page title is "Specter Diagnostic". If the page reads "Enable this app from Apps to use it.", the app is not enabled yet.
 4. For `v1` and `v2`, Eric approves each `permissions.api` grant the dashboard shows.
 5. To move to the next phase, uninstall the app, stage the next phase, install it again and enable it from the Library.

@@ -271,7 +271,7 @@ describe('packageRelease content', () => {
     const dir = join(root, /** @type {string} */ (readdirSync(root)[0]));
     const manifest = readFileSync(join(dir, 'RELEASE-MANIFEST.txt'), 'utf8');
     const [header = '', listing = ''] = manifest.split('\n\n');
-    assert.match(header, new RegExp(`^Specter Arena release manifest\\ncommit: ${sha}\\nversion: 0\\.1\\.0\\n`));
+    assert.match(header, new RegExp(`^Specters of the Abyss release manifest\\ncommit: ${sha}\\nversion: 0\\.1\\.0\\n`));
     assert.match(header, /minKiroCrewVersion: \d+\.\d+\.\d+\n/);
     assert.doesNotMatch(manifest, new RegExp(userInfo().username.length > 3 ? userInfo().username : '\u0000'));
     const lines = listing.trim().split('\n');
@@ -604,7 +604,7 @@ describe('helpers', () => {
       ],
     });
     assert.equal(text.split('\n').slice(-3).join('|'), '1  a|2  b|');
-    assert.match(text, /^Specter Arena release manifest\ncommit: c{40}\n/);
+    assert.match(text, /^Specters of the Abyss release manifest\ncommit: c{40}\n/);
     assert.match(text, /files: 2\n\n1 {2}a/);
   });
 

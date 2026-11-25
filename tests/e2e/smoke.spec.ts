@@ -12,7 +12,7 @@ test('the preview harness shows the FIXTURE banner and the observatory roster', 
   await expect(page.locator('#fixture-banner')).toHaveText(
     'SPECTER-FIXTURE-ONLY: FIXTURE, not live Crew data; backend not running in preview',
   );
-  await expect(page.getByRole('heading', { level: 1, name: 'Specter Arena' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Specters of the Abyss' })).toBeVisible();
   const roster = page.getByRole('list', { name: 'Bots' });
   await expect(roster.getByRole('listitem')).toHaveCount(7);
   for (const name of ['Atlas', 'Brindle', 'Cinder', 'Dune', 'Ember', 'Fenn', 'Unnamed bot']) {

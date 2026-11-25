@@ -2,7 +2,7 @@
 
 ## Original work
 
-All code and docs in this repository were written for Specter Arena starting from an empty repository (the initial commit holds only `LICENSE`), with three exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here; the raster images listed under "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" were supplied by Eric Jeffers; and the vector scene art described under "Figma Make-authored vector code, ported as TSX" was authored in the Figma Make project and is ported as code.
+All code and docs in this repository were written for Specters of the Abyss starting from an empty repository (the initial commit holds only `LICENSE`), with three exceptions: the files listed under "Generated code: Figma Make export" below began as Figma Make output and were adapted here; the raster images listed under "Art: created by Eric Jeffers using ChatGPT (OpenAI) image generation" were supplied by Eric Jeffers; and the vector scene art described under "Figma Make-authored vector code, ported as TSX" was authored in the Figma Make project and is ported as code.
 
 ## Reference only: Dragonboat
 
@@ -16,7 +16,7 @@ All code and docs in this repository were written for Specter Arena starting fro
 
 ## Generated code: Figma Make export
 
-The user interface design for Specter Arena was produced with Figma Make as a separate project (a local export of it, taken on 2026-11-16, is the reference). The export is not vendored in this repository. A session ports only the files for its own screens, adapts them to this repository's contracts, toolchain and scoped CSS, and lists them here. Where the export's fixture models and a contract in `contracts/` differ, the contract wins.
+The user interface design for Specters of the Abyss was produced with Figma Make as a separate project (a local export of it, taken on 2026-11-16, is the reference). The export is not vendored in this repository. A session ports only the files for its own screens, adapts them to this repository's contracts, toolchain and scoped CSS, and lists them here. Where the export's fixture models and a contract in `contracts/` differ, the contract wins.
 
 Figma's terms for generated code are recorded under "Terms checked" at the end of this file.
 
@@ -114,7 +114,7 @@ Each shipped raster has one row below with its repo path and sha256. The check f
 These files are not from the Figma Make export. Eric supplied them on 2026-11-21.
 
 - Sidebar logo. Source: Eric's `specters-arena-logo.png` (1254 x 1254 RGBA, sha256 `e5852cb226d7d8077817d81f2c56fdcc1d1f408f6f7785d9577b1afaf7089d24`, not shipped). Its embedded C2PA manifest names ChatGPT/OpenAI `gpt-image`. The four icons were created by Eric Jeffers using ChatGPT (OpenAI) image generation, then cropped, resized and recoloured: the source's transparent margin was cropped to the drawing's bounding box plus 8% padding on each side (a 740 px square), the square was resized with macOS `sips -z`, and the inactive pair has every lavender pixel set to the drawing's median outline gray (`#817d86`). The derivation used the Python standard library and `sips`; no image was generated again. The C2PA chunk is not carried into the icons.
-- README banner. Source: Eric's `specters-of-the-abyss-banner.png`, committed byte for byte. It was created by Eric Jeffers using ChatGPT (OpenAI) image generation. The file carries no C2PA metadata, so the tool attribution is Eric's statement (the 2026-11-18 art-release decision covers all his art). It is title art: the app's name is Specter Arena. The copy at `docs/images/banner.png` is kept out of the release artifact (`RELEASE_EXCLUDED` in `scripts/package.mjs`); the identical `store/hero.png` ships (see the next bullet).
+- README banner. Source: Eric's `specters-of-the-abyss-banner.png`, committed byte for byte. It was created by Eric Jeffers using ChatGPT (OpenAI) image generation. The file carries no C2PA metadata, so the tool attribution is Eric's statement (the 2026-11-18 art-release decision covers all his art). It is title art: the app's name is Specters of the Abyss. The copy at `docs/images/banner.png` is kept out of the release artifact (`RELEASE_EXCLUDED` in `scripts/package.mjs`); the identical `store/hero.png` ships (see the next bullet).
 - Crew app store listing (`store/`). `store/hero.png` is Eric's banner byte for byte (same sha256 as `docs/images/banner.png`), created by Eric Jeffers using ChatGPT (OpenAI) image generation; no crop or resize was applied. The four `store/screenshot-*.png` files are captures of the FIXTURE preview (`ui/preview`) with demo data. Every pixel of art in them is the committed hero, minion and map art above, and the interface is this repository's own code. They ship in the release artifact because Crew serves declared art only from the installed app folder, and `scripts/check-provenance.mjs` allows no other raster under `store/`.
 
 | File in this repository | Source | Pixels | Bytes | sha256 | Use |

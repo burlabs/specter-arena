@@ -6,13 +6,13 @@ Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after F
 
 ## What it is
 
-Specter Arena is a Kiro Crew app. It watches the Kiro Crew bots you choose, lets you give each one a named Specter (you pick one, or the app picks at random), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector. XP reflects observed activity. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version (`docs/release/judge-access.md`).
+Specters of the Abyss is a Kiro Crew app. It watches the Kiro Crew bots you choose, lets you give each one a named Specter (you pick one, or the app picks at random), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector. XP reflects observed activity. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version (`docs/release/judge-access.md`).
 
 Category line for the form: Costume Contest, with the Best Kiro Crew App bonus (Eric's choice in the form).
 
 ## Features by tab
 
-The app has four tabs, in this order: Arena, Roster, Specters and Data (`ui/src/observatory/ObservatoryPage.tsx`). It opens on the Arena. In Crew's sidebar it shows the Specter Arena logo, selected and unselected, instead of the default box. That icon behaviour is read from the Crew 0.13.0 source and is checked in the RC-4 sitting (`docs/compatibility/crew-0.13.0.md`).
+The app has four tabs, in this order: Arena, Roster, Specters and Data (`ui/src/observatory/ObservatoryPage.tsx`). It opens on the Arena. In Crew's sidebar it shows the Specters of the Abyss logo, selected and unselected, instead of the default box. That icon behaviour is read from the Crew 0.13.0 source and is checked in the RC-4 sitting (`docs/compatibility/crew-0.13.0.md`).
 
 | Tab | What it does | Source |
 |---|---|---|
