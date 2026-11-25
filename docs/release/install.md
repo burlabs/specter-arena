@@ -10,13 +10,48 @@ Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboar
 
 This page installs the Specters of the Abyss release into your own Kiro Crew. There is no hosted instance; Crew apps run inside the user's Crew (`docs/release/judge-access.md`). You get one Crew app with four tabs, in this order: Arena, Roster, Specters and Data. The app opens on the Arena. In Crew's Library the app also has a store page (hero banner, highlights, use cases, configuration, four screenshots of demo data); the images ship in the artifact under `store/`, which makes the tarball about 4.35 MB larger. In Crew's sidebar the app shows the Specters of the Abyss logo, not the default box, selected and unselected. That icon behaviour is read from the Crew 0.13.0 source (`docs/compatibility/crew-0.13.0.md`, "App icons on 0.13.0") and is checked on the installed app in the RC-4 sitting.
 
+Three routes install the app, in this order of preference:
+
+1. **Registry (recommended):** add this repository as a Crew external registry and install from the Crew store. Crew builds the UI on your machine, so Node 22 or newer and npm must be on the Crew gateway's PATH (section 2A).
+2. **Release artifact (fallback, offline):** download a built tarball and install it from a folder. No Node or npm is needed (sections 3 to 5).
+3. **Developer clone:** build in a checkout and install from the local path (section 12).
+
 ## 2. Requirements
 
 - Kiro Crew 0.13.1 is the host of the RC-4 sitting. Kiro Crew 0.13.0 hosted the RC-3 test, and Kiro Crew 0.12.2 was the version the install facts below were first read from (`kirocrew --version` printed `kirocrew 0.12.2` on 2026-11-18). Nothing is confirmed on an installed RC-4 until `docs/release/oa-5-result.md` exists. The minimum is 0.12.0 (`app.json` `minKiroCrewVersion`); Crew's install refuses a lower version (`manager_tree._validate_source_path`, which calls `check_min_version`).
 - macOS or Linux.
 - Network access to PyPI on the first enable. Crew installs the packages in `requirements.txt` with `pip --target` (`kiro_crew/apps/backend_runtime/provisioning.py`).
 - At least one Crew bot, to see a populated roster (`docs/compatibility/monitoring-scope.md`).
-- Node, npm and uv are not needed to install the artifact. They are only needed to build from a git clone (section 12).
+- Node, npm and uv are not needed to install the artifact (sections 3 to 5). The registry route needs Node 22 or newer and npm (section 2A). A git clone needs Node and npm too (section 12).
+
+## 2A. Install from the registry (recommended)
+
+Tested on Kiro Crew 0.13.1 for the install pipeline (registry listing, `npm install`, `npm run build`, copy into the Crew home), in a throwaway Crew home (`docs/release/registry-proof.md`). The owner sitting on a real Crew is pending until its results are recorded in `docs/release/oa-5-result.md`. The manifest minimum stays 0.12.0 (`app.json` `minKiroCrewVersion`). Registry behavior on Crew 0.12.x was not tested.
+
+**Prerequisites**
+
+- Node 22 or newer and `npm` on the PATH of the process that runs the Crew gateway. If you install Node after starting Crew, restart Crew. The desktop app's PATH can differ from your shell's.
+- Internet access for npm, and a few minutes for the first install. Crew runs `npm install` and `npm run build` from this repository, with a 10 minute limit per command.
+- Everything in section 2, except the Node note.
+
+**Steps**
+
+1. In Crew open Settings, Apps, Manage app sources, External Registries, Add Registry.
+2. Enter the name "Specters of the Abyss", the repository `https://github.com/burlabs/specter-arena` and the branch `main`. Save.
+3. Open the Crew store. One app, Specters of the Abyss, is listed. Install it.
+4. Trust and enable it (section 5).
+
+Registry installs track `main`: Crew clones the branch live, and caches the registry index for an hour. A broken `main` is a broken install.
+
+**Trust surface.** The install runs `npm install` and `npm run build` on your machine from this repository's lockfile, after you click install. That is more than copying a prebuilt folder, so read the repository first if that matters to you. The release artifact route runs no build.
+
+**How to tell an install has no UI.** Crew reports success even when it could not build. You have a UI-less install when all of these hold:
+
+- The install log shows `npm not found on PATH — skipping JavaScript build step`, then `No build step detected — using source as-is`, and the install still says it succeeded.
+- `<Crew home>/apps/specter-arena/ui/dist/index.mjs` does not exist. On a good install the file is about 321 kB.
+- The app's page does not load. The app's backend log also carries `ui/dist/index.mjs not found; the UI will not load.` once at startup.
+
+**Fix.** Install Node 22 or newer so `npm` is on the gateway's PATH, restart Crew so the gateway picks it up, then press Update on the app. A same-version update runs the build again. If Update does nothing, uninstall (data is kept by default) and install again. Or use the release artifact route, which ships a built UI.
 
 ## 3. Verify and extract
 
@@ -164,7 +199,7 @@ npm ci && npm run build
 kirocrew app install .
 ```
 
-A plain clone is not the supported route for judges. Crew's registry path runs `npm install`, not `npm ci` (`kiro_crew/apps/registry.py`, `_run_app_build`), and a local-path install does not build at all, so you must build first. This route needs Node and npm at the versions in `.nvmrc` and `package.json` `engines`.
+A local-path install does not build at all, so you must build first. Installing from the registry builds on your machine too, with `npm install` rather than `npm ci` (`kiro_crew/apps/registry.py`, `_run_app_build`); that route is in section 2A. This route needs Node 22 or newer and npm (`package.json` `engines`). Development and CI use the Node major in `.nvmrc`, and release builds (`npm run package`) must run on that Node.
 
 ## 13. Troubleshooting
 
@@ -175,6 +210,7 @@ A plain clone is not the supported route for judges. Crew's registry path runs `
 | Update fails because the source folder is gone | Recreate the folder, or pass `--source` with the new folder |
 | "could not verify this process as the local owner" | You ran the command from an agent shell. Run it in your own terminal (`docs/compatibility/crew-0.12.2.md`, "Install method") |
 | App starts, then reports a newer schema (`SchemaNewer`) | You installed an older release over a newer database. Install the newer release, or restore a `pre-migrate` backup (steps: `docs/release/data-and-recovery.md`, section 5) |
+| Registry install reports success but the page does not load | The build was skipped. See "How to tell an install has no UI" in section 2A |
 | First enable hangs or fails | PyPI is unreachable. Connect and enable again |
 
 ## 14. Privacy

@@ -1,5 +1,7 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from starlette.applications import Starlette
 from starlette.routing import BaseRoute, Route
@@ -15,10 +17,29 @@ from .specter_arena.work_routes import work_routes
 
 PROBE_ON = probe_enabled()
 runtime = StoreRuntime(probe_on=PROBE_ON)
+UI_BUNDLE = Path(__file__).resolve().parent.parent / "ui" / "dist" / "index.mjs"
+_LOG = logging.getLogger("specter_arena.app")
+
+
+def warn_when_ui_bundle_missing(bundle: Path | None = None) -> bool:
+    """Log one warning when the UI bundle was never built; return whether it is missing.
+
+    Crew reports a registry install as successful even when no npm was on its PATH and the
+    build step was skipped, so this line is the only signal the app itself can give.
+    """
+    path = UI_BUNDLE if bundle is None else bundle
+    if path.is_file():
+        return False
+    _LOG.warning(
+        "ui/dist/index.mjs not found; the UI will not load. "
+        "Build with Node 22+ and npm on the Crew gateway PATH."
+    )
+    return True
 
 
 @asynccontextmanager
 async def lifespan(started: Starlette) -> AsyncIterator[None]:
+    warn_when_ui_bundle_missing()
     store_runtime: StoreRuntime = started.state.store_runtime
     await store_runtime.open()
     started.state.collector = None
