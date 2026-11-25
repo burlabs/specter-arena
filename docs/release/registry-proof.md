@@ -11,7 +11,9 @@ Tested on Kiro Crew 0.13.1 (macOS, arm64). Crew 0.12.x was not run. The owner si
 | With Node | Node 22 or newer first | The registry lists one app, `npm install` and `npm run build` run, and the installed tree contains `ui/dist/index.mjs` |
 | Without Node | `/usr/bin:/bin` | Crew logs `npm not found on PATH — skipping JavaScript build step`, then `No build step detected — using source as-is`, reports `installed specter-arena`, and the installed tree has no `ui/dist` |
 
-The second run is the documented failure case (`docs/release/install.md`, section 2A).
+| Repair | Node 22 or newer first, in the home from the without-Node run | Crew reports `updated specter-arena v0.1.0 -> v0.1.0`, runs `npm install` and `npm run build`, and `ui/dist/index.mjs` now exists |
+
+The second run is the documented failure case and the third is its documented fix (`docs/release/install.md`, section 2A). The repair run is the same harness command as the with-Node run, pointed at the same home as the without-Node run.
 
 ## Safety rules
 
@@ -51,6 +53,8 @@ async def main():
 asyncio.run(main())
 EOF
 ```
+
+The committed `app-registry.json` names `https://github.com/burlabs/specter-arena`, and Crew clones the URL in the entry, so a test of an unmerged commit would build GitHub's `main` instead. Add one harness-only commit in a scratch clone of the local copy that rewrites the two URL keys to `git://127.0.0.1:9418/specter-arena.git`, and push that commit as `main` to the local copy. Nothing else changes, and nothing is committed back to this repository.
 
 Create one throwaway home per run and give it the registry entry.
 
