@@ -37,8 +37,8 @@ describe('ArenaRail', () => {
     const group = within(aside()).getByRole('region', { name: 'No Specter yet (2)' });
     expect(within(aside()).getAllByRole('listitem')).toHaveLength(3);
     expect(within(group).getAllByRole('listitem')).toHaveLength(2);
-    expect(within(aside()).getByText('Vesper')).toBeTruthy();
-    expect(within(aside()).getByText('for Atlas')).toBeTruthy();
+    expect(within(aside()).getByText('Atlas')).toBeTruthy();
+    expect(within(aside()).getByText('Specter: Vesper')).toBeTruthy();
     expect(within(aside()).getByText('Working')).toBeTruthy();
     expect(within(group).getByText('Brindle')).toBeTruthy();
     expect(within(group).getByText('Dune')).toBeTruthy();
@@ -50,7 +50,7 @@ describe('ArenaRail', () => {
     expect(within(aside()).queryAllByRole('progressbar')).toHaveLength(0);
     expect(aside().querySelectorAll('.sa-xp-bar[aria-hidden="true"]')).toHaveLength(1);
     expect(within(aside()).getAllByRole('button', { pressed: true })).toHaveLength(1);
-    fireEvent.click(within(aside()).getByText('Vesper'));
+    fireEvent.click(within(aside()).getByText('Atlas'));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
     fireEvent.click(within(group).getByText('Brindle'));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: brindle.bindingId });

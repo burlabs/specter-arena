@@ -113,7 +113,7 @@ export function ArenaView({ bots, complete, collector, rosterRevision, specters,
   const selectedTitle = selection?.kind === 'work' ? (selectedEnemy?.title ?? (selectedTask === undefined ? null : taskTitle(selectedTask))) : null;
   const announcement =
     selectedSpecter !== null
-      ? ARENA.selected(selectedSpecter.specterName ?? selectedSpecter.displayName, ARENA.linked(selectedSpecter.openAttemptIds.length))
+      ? ARENA.selected(selectedSpecter.displayName, ARENA.linked(selectedSpecter.openAttemptIds.length))
       : selectedEnemy !== null
         ? ARENA.selected(selectedEnemy.title, enemyEffect(selectedEnemy).stateText)
         : selectedTitle !== null

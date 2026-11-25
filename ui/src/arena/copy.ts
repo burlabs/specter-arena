@@ -139,7 +139,7 @@ export const INSPECTOR = {
   loadingOlder: 'Loading older entries…',
   olderFailed: 'Older entries could not be loaded.',
   source: 'Source details',
-  forBot: (name: string): string => `for ${name}`,
+  specterIs: (name: string): string => `Specter: ${name}`,
   entryLine: (kind: string, amount: string, title: string): string => `${kind} ${amount} · ${title}`,
 } as const;
 
