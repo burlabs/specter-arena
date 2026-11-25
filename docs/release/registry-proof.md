@@ -2,7 +2,7 @@
 
 This page records how to run Kiro Crew's own registry install code against a local copy of this repository, in a throwaway Crew home. It proves what Crew does with `app-registry.json` and the build step without touching a real Crew install. It is not a CI job, because it needs the Crew desktop app's bundled Python.
 
-Tested on Kiro Crew 0.13.1 (macOS, arm64). Crew 0.12.x was not run. The owner sitting in `docs/release/oa-5-runbook.md` ("Registry install runbook") is the check on a real Crew.
+Tested on Kiro Crew 0.13.1 (macOS, arm64). Crew 0.12.x was not run. The owner sitting in `docs/release/oa-5-runbook.md` ("RC-7 single sitting", Part C, registry install) is the check on a real Crew.
 
 ## What it proves
 

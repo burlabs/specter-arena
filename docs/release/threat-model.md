@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `fe662428db77da73b160d2b8e22a945164da544a` (`main` after FP-25 PR-B #210; re-read for release candidate RC-6)
+Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7)
 
 This is the release threat model for Specters of the Abyss (FP-14-AC02). Every control and test named below was found in the repository at the commit above. Where a limit is disclosed rather than fixed, the last column gives its ID in `docs/release/blockers.md`. Nothing here was verified on a live Crew install; that is the job of OA-5 (`docs/release/oa-5-runbook.md`).
 
