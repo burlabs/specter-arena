@@ -169,21 +169,21 @@ RC-6 is the candidate built from `main` after FP-25 (#209, #210): the assignment
 
 ## 9. RC-7
 
-RC-7 is the candidate built from `main` after FP-26 (#214, #216): the app is branded "Specters of the Abyss" (slug `specter-arena`), `app-registry.json` makes the repository installable from the Crew external registry (and stays out of the artifact), the Node floor for the build is 22, and the backend logs a warning when `ui/dist/index.mjs` is missing. Permissions, version and store version are unchanged. It is built with `npm run package -- --commit <RC-7 SHA>` from a clean clone after the RC-7 docs PR merges. The RELEASE window fills every cell below except the sitting result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+RC-7 is the candidate built from `main` after FP-26 (#214, #216): the app is branded "Specters of the Abyss" (slug `specter-arena`), `app-registry.json` makes the repository installable from the Crew external registry (and stays out of the artifact), the Node floor for the build is 22, and the backend logs a warning when `ui/dist/index.mjs` is missing. Permissions, version and store version are unchanged. It is built with `npm run package -- --commit <RC-7 SHA>` from a clean clone after the RC-7 docs PR merges. The RELEASE window filled every cell below except the sitting result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|
-| Commit | pending |
-| Artifact name | pending |
-| Bytes | pending |
-| sha256 | pending |
-| File count | pending |
-| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`, `app-registry.json`) and present (`store/hero.png`, four `store/screenshot-*.png`) | pending |
-| `app.json` `displayName` and `ui.pages[0].label` | pending |
+| Commit | `98acd0b750a84ca67b28f5d3a3c6a67732c7dc3d` (PR #217, `main` after the RC-7 docs PR) |
+| Artifact name | `specter-arena-0.1.0-98acd0b750a8.tar.gz` |
+| Bytes | 10,680,445 |
+| sha256 | `6254fadf77d3a78fd4d2c5b7e9b2a27ff1337c437d2547e92bab65169d709927` |
+| File count | 1,766 entries in the tarball (`tar -tzf`), which is the 1,765 files that `RELEASE-MANIFEST.txt` lists plus the manifest itself. The packager prints 1766 |
+| Paths that must be absent from the artifact (`avatar-packs/`, `docs/images/`, `agents/`, `app-registry.json`) and present (`store/hero.png`, four `store/screenshot-*.png`) | absent: a listing matched none of `avatar-packs/`, `docs/images/`, `agents/`, and `app-registry.json` is not in the extracted folder. Present: `store/hero.png` and `store/screenshot-arena.png`, `-assign.png`, `-roster.png`, `-specters.png`. `app.json` grants only `/apps/specter-arena/api/*`, `/api/agents` and `slots:user` and has no `agents` key. The newest migration is `0011_hero_choice.sql` |
+| `app.json` `displayName` and `ui.pages[0].label` | both read "Specters of the Abyss", read from the extracted artifact. `name` is still `specter-arena` |
 | Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
-| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | pending |
-| Build | pending |
+| Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both APPROVED (with note) on PR #217 head `602e2d00`; verdict files `pr217-602e2d0-requirements.md` and `pr217-602e2d0-fit.md` in the release window's local gates folder (not committed). Earlier heads: `6c3cdc31` BLOCKED by both (a duplicated RC-6 block, R7 and R8 missing from Part A), `33b8f273` BLOCKED by both (a code string the brand check would hit, an unescaped pipe in a table cell), `82979608` BLOCKED by requirements (an untrue KL-34 sentence) and APPROVED (with note) by fit |
+| Build | 2026-11-24, Apple M5 Pro, macOS 26.7.3, Node 26.13.0, npm 11.20.0. Two builds from separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass. The tarball is 11,282 bytes larger than RC-6 (10,680,445 against 10,669,163 bytes) |
 | Store version and migrations | 11 and 11, unchanged (FP-26 added no migration) |
 | UI bundle cap | 367,000 characters, unchanged (`ui/src/build-output.test.ts`) |
 | RC-4 per-step result and RC-7 sitting result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-7 steps R1 to R8, B1, B2, G0 to G12) |
