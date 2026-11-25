@@ -23,14 +23,24 @@ const FORBIDDEN: ReadonlyArray<[string, RegExp]> = [
   ['!important outside CSS', /!important/],
 ];
 
+/** The recap clock is the one place an animation-frame loop is allowed: it needs the browser's own frame timing, and `useRecapPlayer.test.tsx` holds it to one loop. */
+const ALLOWED_IN: Readonly<Record<string, readonly string[]>> = { requestAnimationFrame: ['useRecapPlayer.ts'] };
+
 describe('arena source guards', () => {
   it('reads the arena folder', () => {
     expect(sources.length).toBeGreaterThan(20);
   });
 
   it.each(FORBIDDEN)('contains no %s', (name, pattern) => {
-    const hits = sources.filter(({ file, text }) => (name === '!important outside CSS' && file.endsWith('.css') ? false : pattern.test(text))).map(({ file }) => file);
+    const hits = sources
+      .filter(({ file, text }) => (name === '!important outside CSS' && file.endsWith('.css') ? false : pattern.test(text)))
+      .map(({ file }) => file)
+      .filter((file) => !(ALLOWED_IN[name] ?? []).includes(file));
     expect(hits).toEqual([]);
+  });
+
+  it('runs an animation-frame loop in the recap clock and nowhere else', () => {
+    expect(sources.filter(({ text }) => /requestAnimationFrame/.test(text)).map(({ file }) => file)).toEqual(['useRecapPlayer.ts']);
   });
 
   it('imports nothing from the fixtures and nothing that writes', () => {

@@ -52,6 +52,9 @@ import {
   XP_SUMMARIES_TASK_VIEW_KEYS,
   XP_SUMMARY_KEYS,
   XP_SUMMARY_TASK_VIEW_KEYS,
+  RECAP_COVERAGE_KEYS,
+  RECAP_KEYS,
+  RECAP_SPAN_KEYS,
   TASK_ITEM_KEYS,
   TASKS_KEYS,
   DATA_LIFECYCLE_KEYS,
@@ -85,6 +88,7 @@ import type {
   XpSummaryV2,
   XpSummariesV3,
   TaskItemV1,
+  RecapV1,
   TasksV1,
 } from './types.ts';
 
@@ -206,6 +210,9 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'xp-summaries', version: 3, path: [], keys: XP_SUMMARIES_TASK_VIEW_KEYS },
   { schema: 'task-item', path: [], keys: TASK_ITEM_KEYS },
   { schema: 'tasks', path: [], keys: TASKS_KEYS },
+  { schema: 'recap', path: [], keys: RECAP_KEYS },
+  { schema: 'recap', path: ['properties', 'coverage'], keys: RECAP_COVERAGE_KEYS },
+  { schema: 'recap', path: ['properties', 'coverage', 'properties', 'spans', 'items'], keys: RECAP_SPAN_KEYS },
   { schema: 'xp-history', path: [], keys: XP_HISTORY_KEYS },
   { schema: 'xp-history', path: ['properties', 'items', 'items'], keys: XP_ENTRY_KEYS },
   { schema: 'data-lifecycle', path: [], keys: DATA_LIFECYCLE_KEYS },
@@ -217,8 +224,8 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'data-lifecycle', path: ['definitions', 'export'], keys: DATA_EXPORT_FILE_KEYS },
   { schema: 'collector-control', path: [], keys: COLLECTOR_CONTROL_KEYS },
 ];
-/** Schemas with no TypeScript reader. A schema in neither list fails the test below. `recap` leaves this list when FP-30 PR 2 adds its types. */
-const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record', 'recap'];
+/** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
+const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
 /** Contracts PA-2 retired: the v1 identity files stay for history and have no TypeScript reader. */
 const RETIRED = ['specter-profile', 'summoning'];
 
@@ -446,6 +453,25 @@ describe('hand-written types', () => {
     expect(ajv.getSchema('urn:specter-arena:contract:task-item:v1')?.(task)).toBe(true);
     expect(ajv.getSchema('urn:specter-arena:contract:task-item:v1')?.(open)).toBe(true);
     expect(ajv.getSchema('urn:specter-arena:contract:tasks:v1')?.(tasks)).toBe(true);
+    const recap: RecapV1 = {
+      contractVersion: 1,
+      asOfMs: 1760000400000,
+      fromMs: 1760000000000,
+      toMs: 1760000400000,
+      tasks: [task, open],
+      taskCap: 1000,
+      truncated: false,
+      omittedCount: 0,
+      coverage: {
+        firstRunMs: 1759999000000,
+        purgeHorizonMs: null,
+        spans: [
+          { fromMs: 1760000000000, toMs: 1760000200000, state: 'covered', reason: 'collecting' },
+          { fromMs: 1760000200000, toMs: 1760000400000, state: 'not-collected', reason: 'paused' },
+        ],
+      },
+    };
+    expect(ajv.getSchema('urn:specter-arena:contract:recap:v1')?.(recap)).toBe(true);
     for (const [name, value] of accepted) {
       expect(ajv.getSchema(`urn:specter-arena:contract:${name}:v1`)?.(value)).toBe(true);
     }
