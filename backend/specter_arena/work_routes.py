@@ -120,6 +120,12 @@ async def get_task(request: Request) -> Response:
 
 
 @signed
+async def get_recap(request: Request) -> Response:
+    query = request.query_params
+    return await _call(request, "recap", from_ms=query.get("fromMs"), to_ms=query.get("toMs"))
+
+
+@signed
 async def get_xp(request: Request) -> Response:
     query = request.query_params
     if "view" not in query:
@@ -155,6 +161,7 @@ def work_routes() -> list[BaseRoute]:
         Route("/api/work/{work_id}/decisions", decide, methods=["POST"]),
         Route("/api/tasks", list_tasks, methods=["GET"]),
         Route("/api/tasks/{task_id}", get_task, methods=["GET"]),
+        Route("/api/recap", get_recap, methods=["GET"]),
         Route("/api/xp", get_xp, methods=["GET"]),
         Route("/api/roster/{binding_id}/xp", get_xp_history, methods=["GET"]),
     ]

@@ -61,3 +61,5 @@ Central registry of spec-id prefixes. A prefix is reserved here before any requi
 | `FP19-CI` | FP-19 crew-integration requirements | crew-integration | 1-99 | open |
 | `FP19-WL` | FP-19 work-ledger requirements | work-ledger | 1-99 | open |
 | `FP19-DEL` | FP-19 delivery requirements | delivery | 1-99 | open |
+| `FP30-REQ` | FP-30 requirements R01 to R12 (Arena recaps), numbered FP30-REQ-01 to FP30-REQ-12 | delivery | 1-99 | open |
+| `FP30-WL` | FP-30 work-ledger requirements (recap read route and contract) | work-ledger | 1-99 | open |

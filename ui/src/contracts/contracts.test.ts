@@ -217,8 +217,8 @@ const TYPED: readonly TypedSchema[] = [
   { schema: 'data-lifecycle', path: ['definitions', 'export'], keys: DATA_EXPORT_FILE_KEYS },
   { schema: 'collector-control', path: [], keys: COLLECTOR_CONTROL_KEYS },
 ];
-/** Schemas with no TypeScript reader. A schema in neither list fails the test below. */
-const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record'];
+/** Schemas with no TypeScript reader. A schema in neither list fails the test below. `recap` leaves this list when FP-30 PR 2 adds its types. */
+const BACKEND_ONLY = ['bot-binding', 'observation', 'quarantine-record', 'recap'];
 /** Contracts PA-2 retired: the v1 identity files stay for history and have no TypeScript reader. */
 const RETIRED = ['specter-profile', 'summoning'];
 

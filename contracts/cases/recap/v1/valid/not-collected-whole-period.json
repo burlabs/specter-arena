@@ -1,0 +1,1 @@
+{"contractVersion":1,"asOfMs":1800086400000,"fromMs":1800000000000,"toMs":1800086400000,"tasks":[],"taskCap":1000,"truncated":false,"omittedCount":0,"coverage":{"firstRunMs":null,"purgeHorizonMs":null,"spans":[{"fromMs":1800000000000,"toMs":1800086400000,"state":"not-collected","reason":"no-collector"}]}}
