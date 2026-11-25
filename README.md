@@ -8,7 +8,7 @@ Status: a proof of concept. Known limits are in `docs/submission/known-limitatio
 
 ## Prerequisites
 
-- Node 26 and npm 11 (`.nvmrc` pins the Node major)
+- Node 22 or newer and npm to build (`package.json` `engines`). `.nvmrc` pins Node 26 and npm 11 for development and CI, and release artifacts are built on it
 - Python 3.12 and uv 0.13 (`.python-version` pins 3.12, the version Crew bundles)
 
 ## Commands
@@ -47,7 +47,7 @@ Run `npm ci && npm run build` before installing this repo into Crew from a local
 
 ## Install a release
 
-Judges and users install a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
+The recommended route is the Kiro Crew registry: add `https://github.com/burlabs/specter-arena` (branch `main`) under External Registries. It needs Node 22 or newer and npm on the Crew gateway's PATH; see "Install from the registry" in `docs/release/install.md` (section 2A). The fallback is a release artifact, not a checkout: download `specter-arena-<version>-<sha12>.tar.gz` and its `.sha256` from the GitHub Release, verify, extract and follow `docs/release/install.md`. Maintainers build the artifact from a pinned commit with `npm run package -- --commit <sha>` (see `docs/release/install.md`, "Building the artifact"); the output goes to the git-ignored `.release/`.
 
 ## Kiro Crew avatar packs (optional)
 

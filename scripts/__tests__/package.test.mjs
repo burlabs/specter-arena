@@ -239,9 +239,21 @@ describe('packageRelease content', () => {
     assert.doesNotMatch(listing, /avatar-packs/);
   });
 
-  it('excludes only docs/images/ and avatar-packs/ from the artifact', () => {
-    for (const path of ['docs/images/banner.png', 'avatar-packs/index.json', 'avatar-packs/packs/specters-bur.pack.json']) assert.ok(RELEASE_EXCLUDED.test(path), path);
-    for (const path of ['docs/release/install.md', 'ui/icons/logo-active@2x.png', 'x/docs/images/a.png', 'x/avatar-packs/a.json', 'avatar-packs-notes.md']) assert.equal(RELEASE_EXCLUDED.test(path), false, path);
+  it('leaves the registry index out of the artifact', () => {
+    const repo = gitRepo(baseFiles({ 'app-registry.json': '[]\n' }));
+    const result = pack(repo);
+    assert.equal(result.code, 0, result.text);
+    const root = extract(tarballIn(result.out));
+    const dir = join(root, /** @type {string} */ (readdirSync(root)[0]));
+    assert.equal(existsSync(join(dir, 'app-registry.json')), false);
+    assert.ok(existsSync(join(dir, 'LICENSE')));
+    const listing = execFileSync('tar', ['-tzf', tarballIn(result.out)], { encoding: 'utf8' });
+    assert.doesNotMatch(listing, /app-registry/);
+  });
+
+  it('excludes only docs/images/, avatar-packs/ and the registry index from the artifact', () => {
+    for (const path of ['docs/images/banner.png', 'avatar-packs/index.json', 'avatar-packs/packs/specters-bur.pack.json', 'app-registry.json']) assert.ok(RELEASE_EXCLUDED.test(path), path);
+    for (const path of ['docs/release/install.md', 'ui/icons/logo-active@2x.png', 'x/docs/images/a.png', 'x/avatar-packs/a.json', 'avatar-packs-notes.md', 'x/app-registry.json', 'app-registry.json.bak']) assert.equal(RELEASE_EXCLUDED.test(path), false, path);
   });
 
   it('refuses a commit that lacks a sidebar icon', () => {

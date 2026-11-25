@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=26 <27"
+    "node": ">=22"
   },
   "packageManager": "npm@11.20.0",
   "scripts": {
@@ -23,7 +23,7 @@
     "build:diagnostic": "vite build --config ui/vite.diagnostic.config.ts",
     "probe:check": "node scripts/check-matrix.mjs && node scripts/check-recorded.mjs",
     "probe:stage": "node scripts/stage-probe-app.mjs",
-    "check:schema": "node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs",
+    "check:schema": "node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs && node scripts/check-registry.mjs",
     "dev": "node scripts/dev.mjs",
     "package": "node scripts/package.mjs"
   },

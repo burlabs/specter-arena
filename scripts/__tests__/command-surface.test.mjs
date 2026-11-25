@@ -32,7 +32,7 @@ const CI_CHECKS = [
   'e2e-smoke',
 ];
 
-const CURRENT_JOBS = CI_CHECKS;
+const CURRENT_JOBS = CI_CHECKS.flatMap((job) => (job === 'build' ? [job, 'build-node22'] : [job]));
 
 /**
  * npm commands referenced in a markdown document, skipping any section whose
@@ -83,7 +83,7 @@ describe('package.json command surface', () => {
   });
 
   it('declares the FP-02+03 command surface without touching earlier names', () => {
-    assert.equal(scripts['check:schema'], 'node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs');
+    assert.equal(scripts['check:schema'], 'node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs && node scripts/check-registry.mjs');
     assert.equal(scripts['probe:check'], 'node scripts/check-matrix.mjs && node scripts/check-recorded.mjs');
   });
 
@@ -97,10 +97,16 @@ describe('package.json command surface', () => {
     assert.match(scripts.coverage ?? '', /--test-coverage-include=scripts\/\*\.mjs/);
   });
 
-  it('keeps .nvmrc and engines.node on the same major', () => {
-    const nvmrc = read('.nvmrc').trim();
-    const engineMajor = /(\d+)/.exec(pkg.engines.node)?.[1];
-    assert.equal(nvmrc, engineMajor);
+  it('pins .nvmrc at or above the engines.node floor', () => {
+    const nvmrcMajor = Number.parseInt(read('.nvmrc'), 10);
+    const engineFloor = Number.parseInt(/(\d+)/.exec(pkg.engines.node)?.[1] ?? '', 10);
+    assert.ok(Number.isInteger(nvmrcMajor) && Number.isInteger(engineFloor));
+    assert.ok(nvmrcMajor >= engineFloor, `.nvmrc pins ${nvmrcMajor}, below the engines floor ${engineFloor}`);
+  });
+
+  it('keeps package.json and the lockfile root on the same engines.node range', () => {
+    const lock = JSON.parse(read('package-lock.json'));
+    assert.equal(lock.packages[''].engines.node, pkg.engines.node);
   });
 });
 

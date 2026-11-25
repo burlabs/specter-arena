@@ -102,3 +102,41 @@ RC-6 adds FP-25 to RC-5: the assignment dialog is centred by the app's own CSS (
 | R8 | 2 | **Store page.** In Crew open Apps, then Library, then Specters of the Abyss to its detail page. Look at the whole page, then switch Crew to dark and look again | The page shows the hero banner (the "Specters of the Abyss" art), the six highlights, the two use cases, the configuration note, the four screenshots (Arena, Specters, Roster and the Assign dialog, all with demo data) and the Specters of the Abyss logo as the icon. All of it reads in light and in dark (the dark page reuses the light images). Record anything missing, cut off or blank, and the exact wording Crew shows for the author, tags and platform. If Crew shows a blank hero or no screenshots, record it: the listing fields were written from the Crew 0.13.1 source and have never been seen in a running Crew |
 
 Hand back, for each of R1 to R8: pass or fail, the exact text of anything that failed, a screenshot for R2, R4, R6, R7 and R8, the Crew version and the time. The agent writes it into `docs/release/oa-5-result.md` under an RC-6 heading and writes nothing you did not report. A failed step is fixed with a regression test, a new candidate is cut, and only the failed steps are repeated.
+
+## Registry install runbook (owner sitting, pending)
+
+This runbook checks the install of Specters of the Abyss from the Kiro Crew external registry. Crew 0.13.1 is the tested version. Nothing below has been run on a real Crew. Fill the results table as you go and record failures verbatim. Do not mark steps done that were not run.
+
+Record first: Crew version, the commit SHA of `main` you installed, the registry URL, the branch `main`, and `node -v` and `npm -v` for the Node the gateway uses.
+
+| # | Step | Expect and record |
+|---|---|---|
+| 1 | **Prerequisite.** Confirm Node 22 or newer and `npm` exist on the PATH of the process that runs the Crew gateway. Restart Crew after installing Node. If the desktop app's PATH differs from your shell's, record that | Record how you checked |
+| 2 | **Add registry.** Settings, Apps, Manage app sources, External Registries, Add Registry. Name "Specters of the Abyss", repo `https://github.com/burlabs/specter-arena`, branch `main`. Save | The registry refreshes without error |
+| 3 | **Listing.** Open the store | Exactly one app. DisplayName "Specters of the Abyss". The icon, hero and four screenshots render before install |
+| 4 | **Install**, watching the install log | The log shows `npm install`, `npm run build` and a success line. **Failure signature:** `npm not found on PATH — skipping JavaScript build step`. If you see it, stop, fix the PATH (`docs/release/install.md`, section 2A), then Update and rerun from here |
+| 5 | **UI-less check.** Confirm `<Crew home>/apps/specter-arena/ui/dist/index.mjs` exists | About 321 kB. Record the size. PASS only if the file exists, because Crew reports success without it |
+| 6 | **Trust and enable** | Record both results |
+| 7 | **Backend.** Check the app's `/health` in Crew and that first-run Python provisioning finished | Healthy. The app log has no `ui/dist/index.mjs not found` warning |
+| 8 | **Sidebar** | Label "Specters of the Abyss". The logo icon shows active and inactive |
+| 9 | **Open** `/apps/specter-arena` | Heading "Specters of the Abyss". The module loads with no console errors. First-run Specter assignment works |
+| 10 | **Update.** Press Update | Up to date, or a same-version reinstall. Record which |
+| 11 | **Optional negative test**, on a throwaway Crew home only: remove Node from the gateway PATH and install | The step 4 failure signature appears and the page does not load. Then follow the fix in section 2A |
+| 12 | **Uninstall** | The sidebar entry is gone and the data folder is kept (Crew default) |
+
+### Registry results
+
+| # | Result (pass or fail) | Exact text of anything that failed | Time |
+|---|---|---|---|
+| 1 | | | |
+| 2 | | | |
+| 3 | | | |
+| 4 | | | |
+| 5 | | | |
+| 6 | | | |
+| 7 | | | |
+| 8 | | | |
+| 9 | | | |
+| 10 | | | |
+| 11 | | | |
+| 12 | | | |
