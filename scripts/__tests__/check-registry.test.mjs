@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
-import { ART_MAX_BYTES, findRegistryProblems, run } from '../check-registry.mjs';
+import { ART_MAX_BYTES, findArtProblems, findRegistryProblems, run } from '../check-registry.mjs';
 
 const URL = 'https://github.com/burlabs/specter-arena';
-const goodEntry = { name: 'specter-arena', gitUrl: URL, repo: URL, branch: 'main' };
+const goodEntry = { name: 'specter-arena', gitUrl: URL, repo: URL, branch: 'release' };
 const goodManifest = {
   name: 'specter-arena',
   iconPath: 'ui/icons/logo.png',
@@ -108,6 +108,13 @@ describe('findRegistryProblems', () => {
   });
 });
 
+describe('findArtProblems', () => {
+  it('reports the art problems without needing an index', () => {
+    assert.deepEqual(findArtProblems(goodManifest, () => 1), []);
+    assert.deepEqual(findArtProblems(goodManifest, () => null).length, 4);
+  });
+});
+
 describe('run', () => {
   /** @param {Record<string, string>} files */
   const readFrom = (files) => (/** @type {string} */ path) => {
@@ -116,46 +123,38 @@ describe('run', () => {
     return text;
   };
 
-  it('exits 0 and says ok for a valid pair', () => {
+  it('exits 0 for a manifest with present art and no index on main', () => {
     /** @type {string[]} */
     const lines = [];
-    const code = run({
-      readFile: readFrom({ 'app-registry.json': JSON.stringify([goodEntry]), 'app.json': JSON.stringify(goodManifest) }),
-      sizeOf,
-      log: (line) => lines.push(line),
-    });
+    const code = run({ readFile: readFrom({ 'app.json': JSON.stringify(goodManifest) }), sizeOf, exists: () => false, log: (line) => lines.push(line) });
     assert.equal(code, 0);
-    assert.deepEqual(lines, ['check:registry: app-registry.json ok']);
+    assert.deepEqual(lines, ['check:registry: store art ok, no app-registry.json on main']);
   });
 
-  it('exits 1 and prints each problem', () => {
+  it('exits 1 when an index is committed on main', () => {
     /** @type {string[]} */
     const lines = [];
-    const code = run({
-      readFile: readFrom({ 'app-registry.json': JSON.stringify([{ ...goodEntry, name: 'x' }]), 'app.json': JSON.stringify(goodManifest) }),
-      sizeOf,
-      log: (line) => lines.push(line),
-    });
+    const code = run({ readFile: readFrom({ 'app.json': JSON.stringify(goodManifest) }), sizeOf, exists: (path) => path === 'app-registry.json', log: (line) => lines.push(line) });
     assert.equal(code, 1);
-    assert.match(lines[0] ?? '', /^check:registry: entry name/);
+    assert.match(lines[0] ?? '', /app-registry\.json must not be committed on main; npm run release:branch/);
   });
 
-  it('exits 1 when a file is missing or is not JSON', () => {
+  it('exits 1 when the manifest is missing or is not JSON', () => {
     /** @type {string[]} */
     const lines = [];
     assert.equal(run({ readFile: readFrom({}), log: (line) => lines.push(line) }), 1);
-    assert.equal(run({ readFile: readFrom({ 'app-registry.json': '{', 'app.json': '{}' }), log: (line) => lines.push(line) }), 1);
+    assert.equal(run({ readFile: readFrom({ 'app.json': '{' }), log: (line) => lines.push(line) }), 1);
     assert.equal(lines.length, 2);
-    assert.match(lines[0] ?? '', /cannot read the registry or manifest/);
+    assert.match(lines[0] ?? '', /cannot read the manifest/);
   });
 
-  it('passes on the committed registry and manifest', () => {
+  it('passes on the committed manifest and tree', () => {
     /** @type {string[]} */
     const lines = [];
     assert.equal(run({ log: (line) => lines.push(line) }), 0, lines.join('\n'));
   });
 
-  it('reports a committed-file layout where the registry names a missing art file', () => {
+  it('reports a manifest that names a missing art file', () => {
     const manifest = JSON.parse(readFileSync('app.json', 'utf8'));
     manifest.heroImage = 'store/not-there.png';
     /** @type {string[]} */

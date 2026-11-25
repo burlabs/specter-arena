@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -72,8 +72,20 @@ function artProblems(field, value, sizeOf) {
 }
 
 /**
- * Checks the committed registry index against the contract Crew enforces when it
- * reads an external registry and fetches store art before install.
+ * @param {Record<string, unknown>} manifest
+ * @param {(path: string) => number | null} sizeOf
+ * @returns {string[]} problems with the store art the manifest names
+ */
+export function findArtProblems(manifest, sizeOf) {
+  return Object.entries(manifest)
+    .filter(([field]) => ART_FIELD.test(field))
+    .flatMap(([field, value]) => artProblems(field, value, sizeOf));
+}
+
+/**
+ * Checks a registry index against the contract Crew enforces when it reads an
+ * external registry and fetches store art before install. The index lives only on
+ * the generated release branch; `main` carries none.
  *
  * @param {{ registry: unknown, manifest: Record<string, unknown>, sizeOf: (path: string) => number | null }} input
  * @returns {string[]} one line per problem
@@ -81,11 +93,7 @@ function artProblems(field, value, sizeOf) {
 export function findRegistryProblems({ registry, manifest, sizeOf }) {
   if (!Array.isArray(registry)) return [`${REGISTRY_FILE} must be a JSON list`];
   if (registry.length !== 1) return [`${REGISTRY_FILE} must hold exactly one entry, found ${registry.length}`];
-  const problems = entryProblems(registry[0], String(manifest.name));
-  for (const [field, value] of Object.entries(manifest)) {
-    if (ART_FIELD.test(field)) problems.push(...artProblems(field, value, sizeOf));
-  }
-  return problems;
+  return [...entryProblems(registry[0], String(manifest.name)), ...findArtProblems(manifest, sizeOf)];
 }
 
 /**
@@ -102,28 +110,31 @@ function fileSize(path) {
 }
 
 /**
+ * Checks the store art the manifest names and that `main` carries no registry index.
+ * Crew reads the index from the branch a user types in Add Registry, so an index on
+ * `main` would offer a source install that has no built UI.
+ *
  * @param {{
  *   readFile?: (path: string) => string,
  *   sizeOf?: (path: string) => number | null,
+ *   exists?: (path: string) => boolean,
  *   log?: (line: string) => void,
  * }} [options]
  * @returns {number} process exit code
  */
-export function run({ readFile = (path) => readFileSync(path, 'utf8'), sizeOf = fileSize, log = console.log } = {}) {
-  /** @type {unknown} */
-  let registry;
+export function run({ readFile = (path) => readFileSync(path, 'utf8'), sizeOf = fileSize, exists = existsSync, log = console.log } = {}) {
   /** @type {Record<string, unknown>} */
   let manifest;
   try {
-    registry = JSON.parse(readFile(REGISTRY_FILE));
     manifest = JSON.parse(readFile(MANIFEST_FILE));
   } catch (error) {
-    log(`check:registry: cannot read the registry or manifest: ${error instanceof Error ? error.message : String(error)}`);
+    log(`check:registry: cannot read the manifest: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
   }
-  const problems = findRegistryProblems({ registry, manifest, sizeOf });
+  const problems = findArtProblems(manifest, sizeOf);
+  if (exists(REGISTRY_FILE)) problems.push(`${REGISTRY_FILE} must not be committed on main; npm run release:branch generates it for the release branch`);
   for (const problem of problems) log(`check:registry: ${problem}`);
-  if (problems.length === 0) log(`check:registry: ${REGISTRY_FILE} ok`);
+  if (problems.length === 0) log(`check:registry: store art ok, no ${REGISTRY_FILE} on main`);
   return problems.length === 0 ? 0 : 1;
 }
 

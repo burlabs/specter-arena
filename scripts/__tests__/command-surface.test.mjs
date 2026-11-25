@@ -32,7 +32,7 @@ const CI_CHECKS = [
   'e2e-smoke',
 ];
 
-const CURRENT_JOBS = CI_CHECKS.flatMap((job) => (job === 'build' ? [job, 'build-node22'] : [job]));
+const CURRENT_JOBS = CI_CHECKS.flatMap((job) => (job === 'build' ? [job, 'build-node22', 'release-branch'] : [job]));
 
 /**
  * npm commands referenced in a markdown document, skipping any section whose
@@ -85,6 +85,10 @@ describe('package.json command surface', () => {
   it('declares the FP-02+03 command surface without touching earlier names', () => {
     assert.equal(scripts['check:schema'], 'node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs && node scripts/check-registry.mjs');
     assert.equal(scripts['probe:check'], 'node scripts/check-matrix.mjs && node scripts/check-recorded.mjs');
+  });
+
+  it('declares the release-branch command', () => {
+    assert.equal(scripts['release:branch'], 'node scripts/release-branch.mjs');
   });
 
   it('declares the FP-15 packaging command and ignores its output', () => {

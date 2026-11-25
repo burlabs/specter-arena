@@ -25,7 +25,8 @@
     "probe:stage": "node scripts/stage-probe-app.mjs",
     "check:schema": "node scripts/check-schema.mjs && node scripts/check-spec-ids.mjs && node scripts/check-registry.mjs",
     "dev": "node scripts/dev.mjs",
-    "package": "node scripts/package.mjs"
+    "package": "node scripts/package.mjs",
+    "release:branch": "node scripts/release-branch.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
