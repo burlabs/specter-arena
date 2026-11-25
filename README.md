@@ -2,7 +2,7 @@
 
 # Specters of the Abyss
 
-A Kiro Crew app, built in the open for Kiroween 2026. Specters of the Abyss watches the Kiro Crew bots you choose, lets you give each one a named Specter (assigned by you, or randomly), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector. XP reflects observed activity: a task that ends cleanly while the app was watching. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).
+A Kiro Crew app, built in the open for Kiroween 2026. Specters of the Abyss watches the Kiro Crew bots you choose, lets you give each one a named Specter (assigned by you, or randomly), turns the work it observes into XP automatically, and shows the result in a small read-only arena with an evidence inspector, live or as a recap of today, yesterday or this week. XP reflects observed activity: a task that ends cleanly while the app was watching. It does not check that the outcome was right, and no person accepts anything. It runs inside your own Kiro Crew; there is no hosted version. To try it, see [Install a release](#install-a-release).
 
 Status: a proof of concept. Known limits are in `docs/submission/known-limitations.md`.
 

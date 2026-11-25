@@ -26,15 +26,20 @@ beforeEach(() => {
     queued = queued.filter((item) => item.id !== id);
   });
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  onAdvance.mockReset();
+});
 
 const EVENTS = [0, 1_000, 5_000, 9_000, 10_000];
-const start = (extra: Partial<PlayerOptions> = {}) => renderHook((props: PlayerOptions) => useRecapPlayer(props), { initialProps: { totalMs: 10_000, events: EVENTS, allowed: true, ...extra } });
+const onAdvance = vi.fn();
+const start = (extra: Partial<PlayerOptions> = {}) => renderHook((props: PlayerOptions) => useRecapPlayer(props), { initialProps: { totalMs: 10_000, events: EVENTS, allowed: true, onAdvance, ...extra } });
 
 describe('useRecapPlayer', () => {
   it('opens paused at the first frame and moves nothing until Play', () => {
     const { result } = start();
-    expect(result.current).toMatchObject({ playMs: 0, playing: false, speed: 1, advance: null });
+    expect(result.current).toMatchObject({ playMs: 0, playing: false, speed: 1 });
+    expect(onAdvance).not.toHaveBeenCalled();
     frame(500);
     expect(result.current.playMs).toBe(0);
     expect(queued).toHaveLength(0);
@@ -45,9 +50,13 @@ describe('useRecapPlayer', () => {
     act(() => result.current.play());
     expect(result.current.playing).toBe(true);
     frame(100);
-    expect(result.current).toMatchObject({ playMs: 100, advance: { fromMs: 0, toMs: 100 } });
+    expect(result.current.playMs).toBe(100);
     frame(50);
-    expect(result.current).toMatchObject({ playMs: 150, advance: { fromMs: 100, toMs: 150 } });
+    expect(result.current.playMs).toBe(150);
+    expect(onAdvance.mock.calls).toEqual([
+      [0, 100],
+      [100, 150],
+    ]);
   });
 
   it.each([0.5, 2, 4] as const)('moves %sx as fast', (speed) => {
@@ -73,24 +82,31 @@ describe('useRecapPlayer', () => {
     act(() => result.current.play());
     frame(200);
     act(() => result.current.pause());
-    expect(result.current).toMatchObject({ playing: false, playMs: 200, advance: null });
+    expect(result.current).toMatchObject({ playing: false, playMs: 200 });
     frame(200);
     expect(result.current.playMs).toBe(200);
   });
 
-  it('re-baselines on a seek, a restart, a step and a speed change: no stretch is reported', () => {
+  it('reports no stretch for a seek, a restart, a step or a speed change, and no stretch goes missing', () => {
     const { result } = start();
     act(() => result.current.play());
     frame(100);
-    act(() => result.current.seek(4_000));
-    expect(result.current).toMatchObject({ playMs: 4_000, advance: null });
     frame(100);
-    expect(result.current.advance).not.toBeNull();
+    expect(onAdvance.mock.calls).toEqual([
+      [0, 100],
+      [100, 200],
+    ]);
+    onAdvance.mockClear();
+    act(() => result.current.seek(4_000));
+    act(() => result.current.step(1));
     act(() => result.current.setSpeed(2));
-    expect(result.current.advance).toBeNull();
-    frame(10);
     act(() => result.current.restart());
-    expect(result.current).toMatchObject({ playMs: 0, playing: false, advance: null });
+    expect(onAdvance).not.toHaveBeenCalled();
+    expect(result.current).toMatchObject({ playMs: 0, playing: false });
+    act(() => result.current.seek(4_000));
+    act(() => result.current.play());
+    frame(100);
+    expect(onAdvance).toHaveBeenCalledWith(4_000, 4_200);
   });
 
   it('keeps a seek inside the recap', () => {
@@ -105,7 +121,7 @@ describe('useRecapPlayer', () => {
     const { result } = start();
     act(() => result.current.play());
     act(() => result.current.step(1));
-    expect(result.current).toMatchObject({ playMs: 1_000, playing: false, advance: null });
+    expect(result.current).toMatchObject({ playMs: 1_000, playing: false });
     act(() => result.current.step(1));
     act(() => result.current.step(1));
     expect(result.current.playMs).toBe(9_000);
@@ -135,9 +151,9 @@ describe('useRecapPlayer', () => {
     const { result, rerender } = start();
     act(() => result.current.play());
     frame(100);
-    rerender({ totalMs: 10_000, events: EVENTS, allowed: false });
+    rerender({ totalMs: 10_000, events: EVENTS, allowed: false, onAdvance });
     expect(result.current.playing).toBe(false);
-    rerender({ totalMs: 10_000, events: EVENTS, allowed: true });
+    rerender({ totalMs: 10_000, events: EVENTS, allowed: true, onAdvance });
     expect(result.current.playing).toBe(false);
     frame(100);
     expect(result.current.playMs).toBe(100);
@@ -152,7 +168,7 @@ describe('useRecapPlayer', () => {
   it('starts over when the recap changes', () => {
     const { result, rerender } = start();
     act(() => result.current.seek(5_000));
-    rerender({ totalMs: 20_000, events: EVENTS, allowed: true });
+    rerender({ totalMs: 20_000, events: EVENTS, allowed: true, onAdvance });
     expect(result.current.playMs).toBe(0);
   });
 

@@ -16,7 +16,7 @@
     "Assign each bot a Specter: Vell, Stitch, Reeve, Rattle, Ember, Shard, Poly, Tide, Lume, Moss or bur.",
     "Observed bot tasks appear as minions on the map, sized by how long each has run.",
     "XP is credited automatically when a task ends cleanly. It reflects observed activity, not verified outcomes.",
-    "A live arena with lanes and jungle, and two-way battles between heroes and minions.",
+    "A live arena with lanes and jungle, two-way battles between heroes and minions, and recaps of today, yesterday or this week.",
     "A Specters showcase with Attack and Cast previews against a practice target.",
     "Runs on your machine. It does not read bot memory, notes or goals, and never changes a bot."
   ],

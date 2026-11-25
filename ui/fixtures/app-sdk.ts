@@ -7,6 +7,7 @@ import type { ArenaScenarioName } from './arena-scenarios.ts';
 import { dataResponse, setDataScenario } from './data-bodies.ts';
 import { attemptsBody, monitoringResponse, rosterBody, rosterV2Body, setFixtureScenario } from './monitoring-bodies.ts';
 import { sceneAssetResponse, setSceneAssetsFailing } from './scene-bodies.ts';
+import { recapResponse } from './recap-bodies.ts';
 import { setSpecterScenario, specterResponse } from './specter-bodies.ts';
 import { setTaskScenario, taskResponse } from './task-bodies.ts';
 
@@ -51,6 +52,7 @@ export function createFixtureClient(declared: readonly string[]): FixtureApiClie
       dataResponse(pathname, method, body) ??
       monitoringResponse(pathname, search) ??
       specterResponse(pathname, method, body, search) ??
+      recapResponse(pathname, method, search) ??
       taskResponse(pathname, method, body, search) ??
       sceneAssetResponse(pathname, method) ??
       Promise.resolve(CANNED_RESPONSE)

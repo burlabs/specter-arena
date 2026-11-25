@@ -10,14 +10,14 @@ export interface PlayerOptions {
   events: readonly number[];
   /** False for reduced motion or a hidden tab: the player never plays by itself and `play` does nothing. */
   allowed: boolean;
+  /** Called once for every stretch the playhead walks by itself, in order and with no stretch missing. A jump never calls it. */
+  onAdvance?: (fromMs: number, toMs: number) => void;
 }
 
 export interface RecapPlayer {
   playMs: number;
   playing: boolean;
   speed: RecapSpeed;
-  /** The last stretch the playhead walked by itself, or null after any jump. Defeats are celebrated only inside it. */
-  advance: { fromMs: number; toMs: number } | null;
   play: () => void;
   pause: () => void;
   restart: () => void;
@@ -31,21 +31,22 @@ const clamp = (value: number, max: number): number => Math.min(max, Math.max(0, 
 /**
  * The recap clock: one `requestAnimationFrame` loop that moves the playhead by the browser's own `performance.now()`
  * deltas times the speed. It starts paused, pauses itself at the end and when `allowed` turns false, and reports
- * `advance` only for steps it walked itself, so a seek, a restart, a step or a speed change plays no celebration.
+ * through `onAdvance` only the steps it walked itself, so a seek, a restart, a step or a speed change plays no celebration.
+ * The report is a callback, not state, because React may fold two frames into one render and a window would go missing.
  */
-export function useRecapPlayer({ totalMs, events, allowed }: PlayerOptions): RecapPlayer {
+export function useRecapPlayer({ totalMs, events, allowed, onAdvance }: PlayerOptions): RecapPlayer {
   const [playMs, setPlayMs] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeedState] = useState<RecapSpeed>(1);
-  const [advance, setAdvance] = useState<RecapPlayer['advance']>(null);
   const position = useRef(0);
+  const report = useRef(onAdvance);
+  report.current = onAdvance;
   const live = playing && allowed && totalMs > 0;
 
   const jump = useCallback(
     (to: number) => {
       position.current = clamp(to, totalMs);
       setPlayMs(position.current);
-      setAdvance(null);
     },
     [totalMs],
   );
@@ -60,7 +61,7 @@ export function useRecapPlayer({ totalMs, events, allowed }: PlayerOptions): Rec
       last = now;
       position.current = to;
       setPlayMs(to);
-      setAdvance({ fromMs: from, toMs: to });
+      report.current?.(from, to);
       if (to >= totalMs) setPlaying(false);
       else frame = window.requestAnimationFrame(tick);
     };
@@ -80,13 +81,9 @@ export function useRecapPlayer({ totalMs, events, allowed }: PlayerOptions): Rec
   const play = useCallback(() => {
     if (!allowed || totalMs === 0) return;
     if (position.current >= totalMs) jump(0);
-    setAdvance(null);
     setPlaying(true);
   }, [allowed, totalMs, jump]);
-  const pause = useCallback(() => {
-    setPlaying(false);
-    setAdvance(null);
-  }, []);
+  const pause = useCallback(() => setPlaying(false), []);
   const restart = useCallback(() => {
     jump(0);
     setPlaying(false);
@@ -100,10 +97,7 @@ export function useRecapPlayer({ totalMs, events, allowed }: PlayerOptions): Rec
     },
     [events, totalMs, jump],
   );
-  const setSpeed = useCallback((next: RecapSpeed) => {
-    setSpeedState(next);
-    setAdvance(null);
-  }, []);
+  const setSpeed = useCallback((next: RecapSpeed) => setSpeedState(next), []);
 
-  return { playMs, playing: live, speed, advance, play, pause, restart, seek: jump, step, setSpeed };
+  return { playMs, playing: live, speed, play, pause, restart, seek: jump, step, setSpeed };
 }
