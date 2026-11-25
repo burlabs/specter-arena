@@ -52,7 +52,7 @@ describe('a waiting Specter', () => {
     const fenn = botOf(4, { displayName: 'Fenn', state: 'waiting' });
     const waitingModel = buildSceneModel(inputsOf({ roster: [fenn], specters: [specterOf(fenn, 'Hollow')] }));
     render(<BattlefieldScene model={waitingModel} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
-    const token = screen.getByRole('button', { name: /^Hollow for Fenn, Waiting on you, Level 1$/ });
+    const token = screen.getByRole('button', { name: /^Fenn, Waiting on you, Level 1$/ });
     expect(token.className).not.toContain('sa-is-engaging');
     expect(token.getAttribute('aria-label')).not.toContain('No turn running');
   });
@@ -63,9 +63,31 @@ describe('tokens', () => {
     const { container } = show();
     expect(container.querySelectorAll('[data-sprite]')).toHaveLength(3 + 4);
     expect(container.querySelectorAll('[data-scene-node]')).toHaveLength(7);
-    expect(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas, Working, Level 3, 3 open attempts$/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Wisp for Brindle, No turn running, Level 1$/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Murk for Dune.*Coverage unknown/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Atlas ×3 attempts, Working, Level 3, 3 open attempts$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Brindle, No turn running, Level 1$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Dune.*Coverage unknown/ })).toBeTruthy();
+  });
+
+  it('names each token by its bot, so two bots with the same hero name are told apart, and never prints the hero name', () => {
+    const twinA = botOf(4, { displayName: 'Twin A' });
+    const twinB = botOf(5, { displayName: 'Twin B' });
+    const twins = buildSceneModel(inputsOf({ roster: [twinA, twinB], specters: [specterOf(twinA, 'Vesper'), specterOf(twinB, 'Vesper')], tasks: [] }));
+    const { container } = render(<BattlefieldScene model={twins} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    const labels = [...container.querySelectorAll('.sa-token--specter .sa-token__label')].map((node) => node.textContent);
+    expect(labels).toEqual(['Twin A', 'Twin B']);
+    expect(screen.getByRole('button', { name: /^Twin A,/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Twin B,/ })).toBeTruthy();
+    expect(container.textContent).not.toContain('Vesper');
+    expect(container.querySelector('.sa-token--specter')?.getAttribute('aria-label')).not.toContain('Vesper');
+  });
+
+  it('keeps the whole bot name in the accessible name of a token whose printed name is truncated', () => {
+    const longName = 'A very long bot name that cannot fit under a token';
+    const long = botOf(6, { displayName: longName });
+    const longModel = buildSceneModel(inputsOf({ roster: [long], specters: [specterOf(long, 'Vesper')], tasks: [] }));
+    const { container } = render(<BattlefieldScene model={longModel} selection={null} onSelect={vi.fn()} motion={motion} cues={[]} celebrating={new Set()} onCueComplete={vi.fn()} />);
+    expect(container.querySelector('.sa-token__label')?.textContent).toBe(longName);
+    expect(container.querySelector('.sa-token--specter')?.getAttribute('aria-label')).toContain(longName);
   });
 
   it('draws no token for a bot that has no Specter yet, and keeps it out of the keyboard order', () => {
@@ -125,7 +147,7 @@ describe('tokens', () => {
     expect(screen.getByRole('button', { name: /^Worker task · 10 min/ }).getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(screen.getByRole('button', { name: /^Worker task · 10 min/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'work', workId: work[3]!.taskId });
-    fireEvent.click(screen.getByRole('button', { name: /^Vesper ×3 attempts for Atlas/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Atlas ×3 attempts/ }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'specter', bindingId: atlas.bindingId });
   });
 });
@@ -494,6 +516,6 @@ describe('the waiting marker and XP words', () => {
 
   it('leaves the level out of the name while the ledger has not been read', () => {
     draw(scene(botOf(1, { displayName: 'Atlas' }), 'loading'));
-    expect(screen.getByRole('button', { name: /^Hollow for Atlas, No turn running$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Atlas, No turn running$/ })).toBeTruthy();
   });
 });

@@ -5335,7 +5335,7 @@ var gs = {
 	loadingOlder: "Loading older entries…",
 	olderFailed: "Older entries could not be loaded.",
 	source: "Source details",
-	forBot: (e) => `for ${e}`,
+	specterIs: (e) => `Specter: ${e}`,
 	entryLine: (e, t, n) => `${e} ${t} · ${n}`
 };
 function xs(e, t, n, r = "") {
@@ -5497,7 +5497,7 @@ function Is(e, t) {
 	return [...t.values()].filter((t) => t.bindingId === e && t.state === "open").sort((e, t) => t.startedAtMs - e.startedAtMs || (e.taskId < t.taskId ? -1 : 1));
 }
 function Ls({ specter: e, bot: t, record: n, summary: r, headingRef: i, list: a, collector: o, rosterRevision: s, items: c, onSelect: l, onClose: u }) {
-	let p = Ar(e.bindingId), m = mr(e.bindingId), h = Is(e.bindingId, c), g = p.state.status === "ready" ? p.state.data : null, _ = e.specterName ?? e.displayName;
+	let p = Ar(e.bindingId), m = mr(e.bindingId), h = Is(e.bindingId, c), g = p.state.status === "ready" ? p.state.data : null;
 	return /* @__PURE__ */ f("div", {
 		className: "sa-arena-inspector__body",
 		children: [
@@ -5509,8 +5509,8 @@ function Ls({ specter: e, bot: t, record: n, summary: r, headingRef: i, list: a,
 				}), /* @__PURE__ */ f("div", { children: [/* @__PURE__ */ d("h2", {
 					ref: i,
 					tabIndex: -1,
-					children: _
-				}), e.specterName !== null && /* @__PURE__ */ d("p", { children: $.forBot(e.displayName) })] })]
+					children: e.displayName
+				}), e.specterName !== null && /* @__PURE__ */ d("p", { children: $.specterIs(e.specterName) })] })]
 			}),
 			/* @__PURE__ */ f("p", {
 				className: "sa-arena-inspector__state",
@@ -6019,7 +6019,7 @@ function hc({ model: e, bots: t, items: n, drawn: r, selection: i, onSelect: a }
 									children: e.displayName
 								}), e.specterName !== null && /* @__PURE__ */ d("span", {
 									className: "sa-help",
-									children: `Specter: ${e.specterName}`
+									children: $.specterIs(e.specterName)
 								})]
 							}),
 							/* @__PURE__ */ d("td", { children: t !== void 0 && /* @__PURE__ */ d(be, { view: P(t.condition) }) }),
@@ -6115,10 +6115,10 @@ function gc({ model: e, bots: t, specters: n, xp: r, selection: i, onSelect: a, 
 			}), /* @__PURE__ */ f("span", {
 				className: "sa-arena-rail__copy",
 				children: [
-					/* @__PURE__ */ d("strong", { children: e.specterName ?? e.displayName }),
+					/* @__PURE__ */ d("strong", { children: e.displayName }),
 					e.specterName !== null && /* @__PURE__ */ d("span", {
 						className: "sa-help",
-						children: `for ${e.displayName}`
+						children: $.specterIs(e.specterName)
 					}),
 					o !== void 0 && /* @__PURE__ */ d(be, { view: P(o.condition) }),
 					/* @__PURE__ */ d(or, {
@@ -6485,7 +6485,7 @@ function Wc({ kind: e }) {
 }
 var Gc = (e) => e.heroId !== null && e.specterName !== null;
 function Kc(e) {
-	return `${e.openAttemptIds.length > 1 ? `${e.specterName} ${Z.attemptsBadge(e.openAttemptIds.length)}` : e.specterName} for ${e.displayName}`;
+	return e.openAttemptIds.length > 1 ? `${e.displayName} ${Z.attemptsBadge(e.openAttemptIds.length)}` : e.displayName;
 }
 function qc(e, t) {
 	let n = [
@@ -6527,12 +6527,12 @@ function Yc({ specter: e, position: t, selected: n, roving: r, animate: i, anima
 				animation: a,
 				angle: o,
 				flip: s,
-				initials: gn(e.specterName)
+				initials: gn(e.displayName)
 			}),
 			/* @__PURE__ */ d("span", {
 				className: "sa-token__label",
 				"aria-hidden": "true",
-				children: e.specterName
+				children: e.displayName
 			}),
 			e.openAttemptIds.length > 1 && /* @__PURE__ */ f(u, { children: [" ", /* @__PURE__ */ d("span", {
 				className: "sa-token__badge",
@@ -6900,9 +6900,9 @@ function el({ bots: e, specters: t }) {
 						}),
 						/* @__PURE__ */ f("span", {
 							className: "sa-bots-on-field__names",
-							children: [/* @__PURE__ */ d("strong", { children: n?.displayName ?? L(e) }), n !== void 0 && /* @__PURE__ */ d("span", {
+							children: [/* @__PURE__ */ d("strong", { children: L(e) }), n !== void 0 && /* @__PURE__ */ d("span", {
 								className: "sa-help",
-								children: `for ${L(e)}`
+								children: $.specterIs(n.displayName)
 							})]
 						}),
 						/* @__PURE__ */ d(be, { view: P(e.condition) })
@@ -7182,7 +7182,7 @@ function Cl({ bots: e, complete: t, collector: n, rosterRevision: r, specters: a
 		a,
 		p,
 		m
-	]), j = _l(A?.scene ?? null, D?.receivedAtMs ?? null, b.animate), M = n.state === "paused", N = fl(A?.scene ?? null, b.animate && !M, j.rises), ne = s(() => new Map((D?.items ?? []).map((e) => [e.taskId, e])), [D]), re = s(() => new Set(A?.scene.enemies.map((e) => e.workId) ?? []), [A]), P = x?.kind === "specter" ? A?.list.specters.find((e) => e.bindingId === x.bindingId) ?? null : null, F = x?.kind === "work" ? A?.list.enemies.find((e) => e.workId === x.workId) ?? null : null, I = x?.kind === "work" ? ne.get(x.workId) : void 0, ie = x?.kind === "work" ? F?.title ?? (I === void 0 ? null : ms(I)) : null, ae = P === null ? F === null ? ie === null ? "" : Z.selected(ie, "not on the field") : Z.selected(F.title, Ac(F).stateText) : Z.selected(P.specterName ?? P.displayName, Z.linked(P.openAttemptIds.length)), oe = /* @__PURE__ */ f("header", {
+	]), j = _l(A?.scene ?? null, D?.receivedAtMs ?? null, b.animate), M = n.state === "paused", N = fl(A?.scene ?? null, b.animate && !M, j.rises), ne = s(() => new Map((D?.items ?? []).map((e) => [e.taskId, e])), [D]), re = s(() => new Set(A?.scene.enemies.map((e) => e.workId) ?? []), [A]), P = x?.kind === "specter" ? A?.list.specters.find((e) => e.bindingId === x.bindingId) ?? null : null, F = x?.kind === "work" ? A?.list.enemies.find((e) => e.workId === x.workId) ?? null : null, I = x?.kind === "work" ? ne.get(x.workId) : void 0, ie = x?.kind === "work" ? F?.title ?? (I === void 0 ? null : ms(I)) : null, ae = P === null ? F === null ? ie === null ? "" : Z.selected(ie, "not on the field") : Z.selected(F.title, Ac(F).stateText) : Z.selected(P.displayName, Z.linked(P.openAttemptIds.length)), oe = /* @__PURE__ */ f("header", {
 		className: "sa-arena-header",
 		children: [
 			/* @__PURE__ */ f("div", {

@@ -4,7 +4,7 @@ import { botCondition, nameOf } from '../observatory/model';
 import { Panel } from '../observatory/ui';
 import { SpecterPortrait } from '../specters/SpecterPortrait';
 import { tokenInitials } from '../specters/model';
-import { ARENA } from './copy';
+import { ARENA, INSPECTOR } from './copy';
 import { asPortraitRecord } from './specterShape';
 import type { ArenaSpecter } from './specterShape';
 
@@ -35,8 +35,8 @@ export function BotsOnField({ bots, specters }: Props) {
                     </span>
                   )}
                   <span className="sa-bots-on-field__names">
-                    <strong>{specter?.displayName ?? nameOf(bot)}</strong>
-                    {specter !== undefined && <span className="sa-help">{`for ${nameOf(bot)}`}</span>}
+                    <strong>{nameOf(bot)}</strong>
+                    {specter !== undefined && <span className="sa-help">{INSPECTOR.specterIs(specter.displayName)}</span>}
                   </span>
                   <ConditionBadge view={botCondition(bot.condition)} />
                 </li>

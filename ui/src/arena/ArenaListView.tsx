@@ -7,7 +7,7 @@ import { TASK, closeOutWords, taskTitle } from '../tasks/copy';
 import { TaskStateBadge } from '../tasks/TaskStateBadge';
 import { botNameOf } from '../work/model';
 import { ModeBadge } from './ModeBadge';
-import { ARENA, FILTERS, levelXpText } from './copy';
+import { ARENA, FILTERS, INSPECTOR, levelXpText } from './copy';
 import type { FilterValue } from './copy';
 import type { SceneModel, SceneSpecter } from './sceneModel';
 import { isSelected } from './selection';
@@ -92,7 +92,7 @@ export function ArenaListView({ model, bots, items, drawn, selection, onSelect }
                   >
                     {specter.displayName}
                   </button>
-                  {specter.specterName !== null && <span className="sa-help">{`Specter: ${specter.specterName}`}</span>}
+                  {specter.specterName !== null && <span className="sa-help">{INSPECTOR.specterIs(specter.specterName)}</span>}
                 </th>
                 <td>{bot !== undefined && <ConditionBadge view={botCondition(bot.condition)} />}</td>
                 <td>{specter.openAttemptIds.length}</td>

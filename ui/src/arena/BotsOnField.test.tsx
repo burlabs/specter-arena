@@ -24,18 +24,19 @@ describe('BotsOnField', () => {
     expect(details?.hasAttribute('open') || details?.open).toBeTruthy();
   });
 
-  it('lists every bot with its hero name and condition, and a bot without a hero by its own name', () => {
+  it('lists every bot by its bot name, the hero name on a second line, and condition, and a bot without a hero by its own name', () => {
     render(<BotsOnField bots={bots} specters={specters} />);
     const items = screen.getAllByRole('listitem', { hidden: true });
     expect(items).toHaveLength(3);
-    expect(items[0]?.textContent).toContain('Vell');
-    expect(items[0]?.textContent).toContain('for Atlas');
+    expect(items[0]?.textContent).toContain('Atlas');
+    expect(items[0]?.textContent).toContain('Specter: Vell');
     expect(items[0]?.textContent).toContain('Working');
-    expect(items[1]?.textContent).toContain('Stitch');
+    expect(items[1]?.textContent).toContain('Brindle');
+    expect(items[1]?.textContent).toContain('Specter: Stitch');
     expect(items[1]?.textContent).toContain('No turn running');
     expect(items[2]?.textContent).toContain('Dune');
     expect(items[2]?.textContent).toContain('Unknown');
-    expect(items[2]?.textContent).not.toContain('for Dune');
+    expect(items[2]?.textContent).not.toContain('Specter:');
   });
 
   it('has no select, no input and no position word', () => {

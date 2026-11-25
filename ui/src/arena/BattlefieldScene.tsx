@@ -63,14 +63,13 @@ function MarkerIcon({ kind }: { kind: MarkerKind }) {
 type DrawnSpecter = SceneSpecter & { heroId: HeroId; specterName: string };
 const isDrawn = (specter: SceneSpecter): specter is DrawnSpecter => specter.heroId !== null && specter.specterName !== null;
 
-function specterName(specter: DrawnSpecter): string {
-  // The printed name and the "×N attempts" badge come first and in the printed order, so the accessible name contains the visible text.
-  const printed = specter.openAttemptIds.length > 1 ? `${specter.specterName} ${ARENA.attemptsBadge(specter.openAttemptIds.length)}` : specter.specterName;
-  return `${printed} for ${specter.displayName}`;
+function botTokenName(specter: DrawnSpecter): string {
+  // The printed bot name and the "×N attempts" badge come first and in the printed order, so the accessible name contains the visible text.
+  return specter.openAttemptIds.length > 1 ? `${specter.displayName} ${ARENA.attemptsBadge(specter.openAttemptIds.length)}` : specter.displayName;
 }
 
 function specterLabel(specter: DrawnSpecter, conditionLabel: string): string {
-  const parts = [specterName(specter), conditionLabel, specter.xpReading === 'ready' ? `Level ${specter.level}` : null];
+  const parts = [botTokenName(specter), conditionLabel, specter.xpReading === 'ready' ? `Level ${specter.level}` : null];
   if (specter.openAttemptIds.length > 0) parts.push(ARENA.linked(specter.openAttemptIds.length));
   return parts.filter((part): part is string => part !== null).join(', ');
 }
@@ -115,9 +114,9 @@ function SpecterToken({ specter, position, selected, roving, animate, animation,
       tabIndex={roving ? 0 : -1}
       onClick={onSelect}
     >
-      <AnimatedSpecter heroId={specter.heroId} animate={animate} animation={animation} angle={angle} flip={flip} initials={tokenInitials(specter.specterName)} />
+      <AnimatedSpecter heroId={specter.heroId} animate={animate} animation={animation} angle={angle} flip={flip} initials={tokenInitials(specter.displayName)} />
       <span className="sa-token__label" aria-hidden="true">
-        {specter.specterName}
+        {specter.displayName}
       </span>
       {specter.openAttemptIds.length > 1 && (
         <>
