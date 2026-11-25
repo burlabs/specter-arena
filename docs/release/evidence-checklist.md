@@ -190,7 +190,7 @@ RC-7 is the candidate built from `main` after FP-26 (#214, #216): the app is bra
 
 ## 10. RC-8
 
-RC-8 is the candidate built from `main` after FP-27 (#219: minions about 30% larger, each hero keeps one lane or jungle spot at every visit) and FP-28 (#220: the prebuilt `release` branch for the registry install, with `app-registry.json` removed from `main`). Permissions, version and store version are unchanged. It is built with `npm run package -- --commit <RC-8 SHA>` from a clean clone. The RELEASE window fills every cell below except the sitting result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
+RC-8 is the candidate built from `main` after FP-27 (#219: minions about 30% larger, each hero keeps one lane or jungle spot at every visit) and FP-28 (#220: the prebuilt `release` branch for the registry install, with `app-registry.json` removed from `main`). Permissions, version and store version are unchanged. It is built with `npm run package -- --commit 3895df06d69cf14e9e78ea59bf3458cefb6894df` from a clean clone, before the RC-8 docs PR, so the tarball's own docs are those of `3895df06`. The `release` branch published by the owner (`a496ac21…`) was built from the same commit. The RELEASE window fills every cell below except the sitting result, from that run's output and from the quality-gate verdict files only. Nothing here is filled from memory.
 
 | Item | Value |
 |---|---|

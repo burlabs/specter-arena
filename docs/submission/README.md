@@ -25,7 +25,7 @@ Install and judge instructions live in `docs/release/install.md` and `docs/relea
 | Item | State |
 |---|---|
 | Text drafts in this folder | Written, not final |
-| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) was built after it; RC-6 (after FP-25) was built after that; RC-7 (after FP-26) was built after that; RC-8 (after FP-27 and FP-28) is built by the release window after the RC-8 docs PR merges (`docs/release/evidence-checklist.md` sections 6 to 10). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a single RC-8 sitting that covers the re-check, the brand check and the registry install from the prebuilt `release` branch, which the owner publishes with `npm run release:branch` (`docs/release/oa-5-runbook.md`, `docs/release/install.md` section 11A) |
+| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) was built after it; RC-6 (after FP-25) was built after that; RC-7 (after FP-26) was built after that; RC-8 (after FP-27 and FP-28) is built from `main` at `3895df06`, before the RC-8 docs PR (`docs/release/evidence-checklist.md` sections 6 to 10). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a single RC-8 sitting that covers the re-check, the brand check and the registry install from the prebuilt `release` branch, which the owner publishes with `npm run release:branch` (`docs/release/oa-5-runbook.md`, `docs/release/install.md` section 11A) |
 
 ## Steps only Eric can do
 

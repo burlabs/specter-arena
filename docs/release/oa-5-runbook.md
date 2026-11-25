@@ -109,9 +109,9 @@ Hand back, for each of R1 to R8: pass or fail, the exact text of anything that f
 
 ## RC-8 single sitting (at most 45 minutes, after the RC-4 sitting): R1 to R8, brand check, then registry install
 
-This section supersedes the RC-7 single sitting. The RC-7 sitting was never run as written: the owner ran only part of the registry install, and the results so far are under "Registry results so far" in Part C.
+This section supersedes the RC-7 single sitting. The RC-7 sitting was not run: the owner went straight to a partial registry install, and the results so far are under "Registry results so far" in Part C.
 
-RC-8 adds FP-26, FP-27 and FP-28 to RC-6: the app is branded "Specters of the Abyss" (the slug stays `specter-arena`), the repository is installable from the Crew external registry on the prebuilt `release` branch (FP-28; no Node needed), and the backend logs a warning when `ui/dist/index.mjs` is missing. FP-27 makes minions about 30% larger and gives each hero one fixed lane or jungle spot at every visit. FP-28 moved the registry install to the prebuilt `release` branch and removed `app-registry.json` from `main`. Permissions, version 0.1.0 and the store at version 11 are unchanged. The tarball is about 4.35 MB larger than RC-5 because `store/` ships; `docs/images/`, `avatar-packs/`, `agents/` and `app-registry.json` stay out. Crew 0.13.1 is the tested version. One sitting covers all three parts, in this order, on one machine: Part A (R1 to R8, 13 minutes) updates your installed app from the RC-8 tarball; Part B (brand check, 2 minutes) reads the name in every place it shows; Part C (registry install, about 25 minutes) installs the same app from the registry. Part C uninstalls the tarball install first, because Crew refuses to install a name that is already installed. Run any failed RC-4 step too. R2 and R3 below carry the FP-27 expectations. The full RC-4 sitting stays the baseline. The RC-8 commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 9.
+RC-8 adds FP-26, FP-27 and FP-28 to RC-6: the app is branded "Specters of the Abyss" (the slug stays `specter-arena`), the repository is installable from the Crew external registry on the prebuilt `release` branch (FP-28; no Node needed), and the backend logs a warning when `ui/dist/index.mjs` is missing. FP-27 makes minions about 30% larger and gives each hero one fixed lane or jungle spot at every visit. FP-28 moved the registry install to the prebuilt `release` branch and removed `app-registry.json` from `main`. Permissions, version 0.1.0 and the store at version 11 are unchanged. The tarball is about 4.35 MB larger than RC-5 because `store/` ships; `docs/images/`, `avatar-packs/`, `agents/` and `app-registry.json` stay out. Crew 0.13.1 is the tested version. One sitting covers all three parts, in this order, on one machine: Part A (R1 to R8, 13 minutes) updates your installed app from the RC-8 tarball; Part B (brand check, 2 minutes) reads the name in every place it shows; Part C (registry install, about 25 minutes) installs the same app from the registry. Part C uninstalls the tarball install first, because Crew refuses to install a name that is already installed. Run any failed RC-4 step too. R2 and R3 below carry the FP-27 expectations. The full RC-4 sitting stays the baseline. The RC-8 commit, file name and sha256 are in `docs/release/evidence-checklist.md` section 10.
 
 ### Part A: R1 to R8 on the RC-8 tarball
 
@@ -163,9 +163,9 @@ Record first: Crew version, the commit SHA of `release` you installed (`git ls-r
 | G11 | **Optional negative test**: add the registry with branch `main` | The registry fails to load ("Failed to load external registry") and lists nothing. Record the text, then remove that registry entry |
 | G12 | **Uninstall** | The sidebar entry is gone and the data folder is kept (Crew default) |
 
-#### Registry results so far (reported by the owner)
+#### Registry results so far (owner's report, plus installed files read on 2026-11-25)
 
-Only what the owner reported is recorded here. Source: the owner's report and the installed files read on 2026-11-25.
+Only what the owner reported, or what was read from the installed files and GitHub on 2026-11-25, is recorded here.
 
 | Attempt | Branch | Result | What was reported |
 |---|---|---|---|
