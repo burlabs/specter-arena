@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:specter-arena:contract:recap:v1",
+  "title": "Recap v1",
+  "description": "Body of GET /api/recap?fromMs=&toMs=: what the bots did in one period, read-only. The caller sends two integers (its own local period); the backend has no time zone. fromMs and toMs are the period as served: toMs is the request's toMs clamped to asOfMs, the store clock. A period must be 1 ms to 8 days long. tasks are the task-item bodies that overlap the period, earliest startedAtMs first with taskId ascending as the tie-break, at most taskCap (1000); a running task has runMs up to asOfMs. When more overlap, truncated is true and omittedCount says how many were left out. coverage says, for every span of the period, whether the collector was collecting. spans are consecutive and together cover fromMs to toMs with no gap and no overlap (Draft-07 cannot state that, so the producer test and the UI reader assert it). state covered always has reason collecting. state not-collected has one of: paused (the owner paused collection), collector-gap (the collector stopped or lost its feed), no-collector (no collector run covers it), before-first-run (before the first collector run), purged (before the purge horizon, where history may have been deleted). The reasons are a closed set; stored free text never appears. A not-collected span says nothing about what the bots did. firstRunMs is the earliest collector run start, or null when there is none; purgeHorizonMs is the newest purge cutoff that deleted a row, or null. A recap computes no XP: xpCredited on a task is the recorded award.",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "asOfMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "fromMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "toMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:specter-arena:contract:task-item:v1"
+      },
+      "maxItems": 1000
+    },
+    "taskCap": {
+      "type": "integer",
+      "const": 1000
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "omittedCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "firstRunMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "purgeHorizonMs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "spans": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "fromMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "toMs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "covered",
+                  "not-collected"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "collecting",
+                  "paused",
+                  "collector-gap",
+                  "no-collector",
+                  "before-first-run",
+                  "purged"
+                ]
+              }
+            },
+            "required": [
+              "fromMs",
+              "toMs",
+              "state",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "firstRunMs",
+        "purgeHorizonMs",
+        "spans"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "asOfMs",
+    "fromMs",
+    "toMs",
+    "tasks",
+    "taskCap",
+    "truncated",
+    "omittedCount",
+    "coverage"
+  ],
+  "additionalProperties": false
+}
