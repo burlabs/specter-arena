@@ -183,7 +183,7 @@ RC-7 is the candidate built from `main` after FP-26 (#214, #216): the app is bra
 | Host | Kiro Crew 0.13.1 (as given by the owner; not read by the agent) |
 | App version | 0.1.0 |
 | Gates (`gate-requirements`, `gate-fit`: head approved and verdict file) | both APPROVED (with note) on PR #217 head `602e2d00`; verdict files `pr217-602e2d0-requirements.md` and `pr217-602e2d0-fit.md` in the release window's local gates folder (not committed). Earlier heads: `6c3cdc31` BLOCKED by both (a duplicated RC-6 block, R7 and R8 missing from Part A), `33b8f273` BLOCKED by both (a code string the brand check would hit, an unescaped pipe in a table cell), `82979608` BLOCKED by requirements (an untrue KL-34 sentence) and APPROVED (with note) by fit |
-| Build | 2026-11-24, Apple M5 Pro, macOS 26.6, Node 26.13.0, npm 11.20.0. Two builds from separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass. The tarball is 11,282 bytes larger than RC-6 (10,680,445 against 10,669,163 bytes) |
+| Build | 2026-11-24, Apple M5 Pro, macOS 26.7.3, Node 26.13.0, npm 11.20.0. Two builds from separate output folders gave the same sha256. `shasum -a 256 -c` on the sidecar and the per-file check of `RELEASE-MANIFEST.txt` both pass. The tarball is 11,282 bytes larger than RC-6 (10,680,445 against 10,669,163 bytes) |
 | Store version and migrations | 11 and 11, unchanged (FP-26 added no migration) |
 | UI bundle cap | 367,000 characters, unchanged (`ui/src/build-output.test.ts`) |
 | RC-4 per-step result and RC-7 sitting result | pending: `docs/release/oa-5-result.md`, written after the sitting in `docs/release/oa-5-runbook.md` (RC-7 steps R1 to R8, B1, B2, G0 to G12) |
