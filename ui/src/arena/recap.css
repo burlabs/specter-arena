@@ -1,0 +1,91 @@
+.specter-arena-root .sa-arena-modes {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.specter-arena-root .sa-arena-modes__group,
+.specter-arena-root .sa-recap-controls,
+.specter-arena-root .sa-recap-speeds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.specter-arena-root .sa-arena-modes .sa-button[aria-pressed='true'],
+.specter-arena-root .sa-recap-controls .sa-button[aria-pressed='true'] {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--raised);
+}
+
+.specter-arena-root .sa-recap-scrub {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+
+.specter-arena-root .sa-recap-track {
+  position: relative;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--raised);
+  overflow: hidden;
+}
+
+.specter-arena-root .sa-recap-block {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 3px;
+  background: var(--cyan);
+  opacity: 0.55;
+}
+
+.specter-arena-root .sa-recap-block--hatched {
+  background: repeating-linear-gradient(45deg, var(--amber) 0, var(--amber) 3px, transparent 3px, transparent 6px);
+  opacity: 0.9;
+}
+
+.specter-arena-root .sa-recap-notch {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  opacity: 0.8;
+}
+
+.specter-arena-root .sa-recap-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--success);
+}
+
+.specter-arena-root .sa-recap-slider {
+  width: 100%;
+  margin: 0;
+}
+
+.specter-arena-root .sa-recap-clock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.specter-arena-root .sa-recap-caption {
+  color: var(--text);
+}
+
+.specter-arena-root .sa-recap-caption--hatched {
+  color: var(--amber);
+}

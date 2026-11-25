@@ -8,10 +8,12 @@ from typing import Any, Final, TypeVar
 from ..specters.text import clean_text
 from ..store import Store
 from ..store import errors as store_errors
+from ..store import recap as db_recap
 from ..store import tasks as db_tasks
 from ..store import work as db_work
 from ..store import xp as db_xp
 from ..store import xp_policy as policy
+from .recap_wire import recap_wire
 from .task_wire import task_item_wire, tasks_wire, xp_summaries_v3_wire
 from .wire import (
     work_item_wire,
@@ -39,6 +41,8 @@ TASK_PAGE: Final = db_tasks.MAX_TASKS_PAGE
 TASK_STATES: Final = frozenset(db_tasks.STATES)
 ORDERS: Final = frozenset(db_work.LIST_ORDERS)
 MAX_LIMIT_DIGITS: Final = 6
+PERIOD_MAX_MS: Final = 8 * 24 * 3_600_000
+PERIOD_MS: Final = re.compile(r"[0-9]{1,16}")
 RAW_TEXT_FACTOR: Final = 4
 STATES: Final = frozenset(db_work.STATES)
 ACTIONS: Final = frozenset(db_work.ACTIONS)
@@ -125,6 +129,12 @@ class WorkService:
         if not isinstance(body, dict) or not required <= set(body) <= allowed:
             raise _invalid()
         return body
+
+    @staticmethod
+    def _period_ms(value: str | None) -> int:
+        if value is None or PERIOD_MS.fullmatch(value) is None:
+            raise WorkError("bad_period", 400)
+        return int(value)
 
     @staticmethod
     def _work_id(value: object) -> str:
@@ -295,6 +305,19 @@ class WorkService:
             as_of_ms=as_of_ms,
         )
         return tasks_wire(page, as_of_ms)
+
+    async def recap(self, *, from_ms: str | None, to_ms: str | None) -> dict[str, Any]:
+        """`recap.v1`: the tasks and collection coverage of `[fromMs, toMs]`, read-only. The caller
+        sends two integers (its own local period); `toMs` is clamped to the store clock."""
+        start, end = self._period_ms(from_ms), self._period_ms(to_ms)
+        if end <= start or end - start > PERIOD_MAX_MS:
+            raise WorkError("bad_period", 400)
+        as_of_ms = self._clock()
+        end = min(end, as_of_ms)
+        if end <= start:
+            raise WorkError("bad_period", 400)
+        result = await self._call(db_recap.recap_tasks, start, end, as_of_ms)
+        return recap_wire(result)
 
     async def get_task(self, task_id: str) -> dict[str, Any]:
         """One `task-item.v1`; an id the store does not hold is `unknown_task` (404)."""
