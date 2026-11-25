@@ -3,7 +3,7 @@ import type { SourceMode } from '../host';
 import { MEDIUM_BELOW_MS, SMALL_BELOW_MS, sizeClassOf } from '../tasks/model';
 import type { SceneInputs } from './sceneModel';
 import type { ArenaSpecter } from './specterShape';
-import { playToSource } from './recapTimeline';
+import { lastIndexAtOrBefore, playToSource } from './recapTimeline';
 import type { Timeline, TimelineTask } from './recapTimeline';
 
 export interface FrameContext {
@@ -29,20 +29,6 @@ type StableFrame = Omit<RecapFrame, 'sourceMs'>;
 
 const SIZE_FLOOR_MS: Readonly<Record<TaskSizeClassV1, number>> = { small: 0, medium: SMALL_BELOW_MS, large: MEDIUM_BELOW_MS };
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
-
-function lastEventAtOrBefore(events: readonly number[], playMs: number): number {
-  let low = 0;
-  let high = events.length - 1;
-  let found = 0;
-  while (low <= high) {
-    const middle = (low + high) >> 1;
-    if ((events[middle] as number) <= playMs) {
-      found = middle;
-      low = middle + 1;
-    } else high = middle - 1;
-  }
-  return events[found] ?? 0;
-}
 
 /** The recorded run so far: linear from the start of the task's visible run to its end, so a long task grows as its real time passes. */
 function elapsedAt(item: TimelineTask, playMs: number): number {
@@ -126,14 +112,14 @@ function stableFrame(recap: RecapV1, timeline: Timeline, context: FrameContext, 
 }
 
 /**
- * The scene at any play time (FP30-R05). The scene only changes at the timeline's events, so every play time inside one
+ * The scene at any play time. The scene only changes at the timeline's events, so every play time inside one
  * event interval returns the same `inputs` object and signature. Pure: no clock, no randomness.
  */
 export function createFrameSource(recap: RecapV1, timeline: Timeline, context: FrameContext): (playMs: number) => RecapFrame {
   let last: StableFrame | null = null;
   return (playMs) => {
     const clamped = Math.min(timeline.totalMs, Math.max(0, playMs));
-    const eventMs = lastEventAtOrBefore(timeline.events, clamped);
+    const eventMs = timeline.events[lastIndexAtOrBefore(timeline.events, clamped, (time) => time)] ?? 0;
     if (last === null || last.signature !== String(eventMs)) last = stableFrame(recap, timeline, context, eventMs);
     return { ...last, sourceMs: playToSource(timeline, clamped) };
   };

@@ -2,7 +2,7 @@ import type { RecapSpanV1, RecapV1, TaskItemV1 } from '../contracts/types';
 import { MEDIUM_BELOW_MS, SMALL_BELOW_MS } from '../tasks/model';
 import type { RecapKind } from './recapPeriods';
 
-/** Fork (b) and the design's playback constants, in one place. */
+/** The playback constants: play length, beat and minimum-stay times, and the shortest stretch that gets its own skip label. */
 export const TIMELINE = {
   MIN_PLAY_MS: 30_000,
   MAX_PLAY_MS: 180_000,
@@ -143,7 +143,8 @@ function mapSourceToPlay(segments: readonly PlaySegment[], fromMs: number, toMs:
   return segment.playFromMs + (span === 0 ? 0 : ((srcMs - segment.srcFromMs) / span) * (segment.playToMs - segment.playFromMs));
 }
 
-function lastIndexAtOrBefore<T>(list: readonly T[], value: number, key: (item: T) => number): number {
+/** The index of the last item whose key is at or before `value`, or 0 when none is. Keys ascend. */
+export function lastIndexAtOrBefore<T>(list: readonly T[], value: number, key: (item: T) => number): number {
   let low = 0;
   let high = list.length - 1;
   let found = 0;
@@ -158,10 +159,10 @@ function lastIndexAtOrBefore<T>(list: readonly T[], value: number, key: (item: T
 }
 
 /**
- * The play-time shape of a recap (FP30-R06). Active time A is source time with a task running; the length is A / 60
- * clamped to 30 s through 3 min (This week 4 min). Every stretch with no task running is cut out, and each covered one
- * becomes a skip marker. A not-collected stretch with no task is never cut: it plays as a 1.2 s beat, all beats together at
- * most 6 s. Inside a running task, time plays at the common rate whether collected or not. Pure: no clock.
+ * The play-time shape of a recap, with the numbers in `TIMELINE`. Length follows active time, source time with a
+ * task running. Every stretch with no task running is cut out, and each covered one becomes a skip marker. A not-collected
+ * stretch with no task is never cut: it plays as a short beat. Inside a running task, time plays at the common rate whether
+ * collected or not. Pure: no clock.
  */
 export function buildTimeline(recap: RecapV1, kind: RecapKind): Timeline {
   const runs = recap.tasks.map((task) => ({ task, ...clipped(task, recap.fromMs, recap.toMs) }));
