@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7)
+Last verified commit: `3895df06d69cf14e9e78ea59bf3458cefb6894df` (`main` after FP-28 #220; re-read for release candidate RC-8)
 
 Platform facts below were read from the Kiro Crew 0.12.2 source and its dashboard strings. Facts that only a live run can confirm say "to be confirmed in OA-6 (#133)": the owner's clean-install check, which this page does not claim has happened yet. Agents cannot perform the install, trust, enable, update or uninstall steps: Crew refuses them from an agent shell (`docs/compatibility/crew-0.12.2.md`, "Install method"). They are the owner's steps, in the owner's own terminal and dashboard.
 
@@ -184,7 +184,7 @@ The script never tags, uploads or publishes. Eric alone tags the release, upload
 
 ## 11A. Refreshing the `release` branch (owner)
 
-The `release` branch is what registry users install. Refresh it after each merge you want them to get. Only you push it; no agent and no CI job does.
+The `release` branch is what registry users install. Refresh it after each merge you want them to get. Only you push it; no agent and no CI job does. Never create a branch whose name starts with `release/`: Git cannot hold a `release` branch and a `release/x` branch together, and the push of `release` is rejected with "directory file conflict". Name working branches `rc/...`, `fp/...` or similar.
 
 ```sh
 git checkout main && git pull

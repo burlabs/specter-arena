@@ -2,7 +2,7 @@
 
 Draft for Eric's review. The agent does not submit.
 
-Last verified commit: `ea0d579547febf03c6dd6f9bcaafcf5e2f49fc70` (`main` after FP-26 PR-B #216; re-read for release candidate RC-7)
+Last verified commit: `3895df06d69cf14e9e78ea59bf3458cefb6894df` (`main` after FP-28 #220; re-read for release candidate RC-8)
 
 This folder holds the text and checklists for the Kiroween 2026 submission of Specters of the Abyss. Each claim names its source (a path, an acceptance criterion id or a command); unchecked items are marked as such.
 
@@ -25,7 +25,7 @@ Install and judge instructions live in `docs/release/install.md` and `docs/relea
 | Item | State |
 |---|---|
 | Text drafts in this folder | Written, not final |
-| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) was built after it; RC-6 (after FP-25) was built after that; RC-7 (after FP-26) is built by the release window after the RC-7 docs PR merges (`docs/release/evidence-checklist.md` sections 6 to 9). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a single RC-7 sitting that covers the re-check, the brand check and the registry install from the prebuilt `release` branch, which the owner publishes with `npm run release:branch` (`docs/release/oa-5-runbook.md`, `docs/release/install.md` section 11A) |
+| Release artifact and clean-install check | RC-4 was built and tested by the owner; RC-5 (after FP-24) was built after it; RC-6 (after FP-25) was built after that; RC-7 (after FP-26) was built after that; RC-8 (after FP-27 and FP-28) is built from `main` at `3895df06`, before the RC-8 docs PR (`docs/release/evidence-checklist.md` sections 6 to 10). The owner's install check (OA-6, issue #133) is part of the RC-4 sitting, with a single RC-8 sitting that covers the re-check, the brand check and the registry install from the prebuilt `release` branch, which the owner publishes with `npm run release:branch` (`docs/release/oa-5-runbook.md`, `docs/release/install.md` section 11A) |
 
 ## Steps only Eric can do
 
