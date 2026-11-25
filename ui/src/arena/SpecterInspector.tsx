@@ -46,7 +46,7 @@ export function SpecterInspector({ specter, bot, record, summary, headingRef, li
   const history = useXpHistory(specter.bindingId);
   const openWork = openTasksOf(specter.bindingId, items);
   const attemptsData = attempts.state.status === 'ready' ? attempts.state.data : null;
-  
+
   return (
     <div className="sa-arena-inspector__body">
       <div className="sa-arena-inspector__head">
